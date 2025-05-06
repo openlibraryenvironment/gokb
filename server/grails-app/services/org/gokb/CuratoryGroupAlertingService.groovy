@@ -3,8 +3,7 @@ package org.gokb
 import grails.gsp.PageRenderer
 
 import org.apache.commons.validator.routines.EmailValidator
-import org.gokb.cred.JobResult
-import org.gokb.cred.Package
+import org.gokb.cred.*
 import org.springframework.context.MessageSource
 
 class CuratoryGroupAlertingService {
@@ -16,6 +15,7 @@ class CuratoryGroupAlertingService {
 
 	static final String EMAIL_LAYOUT = "/layouts/email"
   static final String JOB_CANCELLATION_ALERT_TEMPLATE = "/group/_cancelledJobAlert"
+  static final String DAILY_GROUP_ALERT_TEMPLATE = "/group/_dailyAlerts"
 
   def sendJobFailureAlert(JobResult jr) {
     log.debug("sendJobFailureAlert...");
@@ -49,7 +49,7 @@ class CuratoryGroupAlertingService {
               locale: locale,
               startTime: jr.startTime,
               endTime: jr.endTime,
-              errorCode: jr.resultJson?.messageCode ?: 'kbart.error'
+              errorCode: jr.resultJson?.messageCode ?: 'kbart.errors.url.unknown'
             ]
           )
 
@@ -60,7 +60,7 @@ class CuratoryGroupAlertingService {
             mailService.sendMail {
               to cg.email
               from alerts_address
-              subject messageSource.getMessage('spring.security.ui.register.support.email.subject', null, locale)
+              subject messageSource.getMessage('curatoryGroup.alert.cancelledImport.subject', null, locale)
               html content
             }
 
@@ -80,6 +80,86 @@ class CuratoryGroupAlertingService {
           result.result = 'ERROR'
         }
       }
+    }
+
+    result
+  }
+
+  def triggerDailyJobsAlert(groupId, jobs) {
+    def result = [result: 'OK']
+
+    CuratoryGroup.withNewSession {
+      def obj = CuratoryGroup.get(groupId)
+
+      if (obj) {
+        Locale locale = new Locale(obj.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
+        String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'package/' : null
+        def jobs_table = jobs.collect { [
+                                        packageName: it.linkedItemName,
+                                        packageId: it.linkedItemId,
+                                        editLink: edit_base ? edit_base + "${it.linkedItemId}" : null,
+                                        messageCode: it.messageCode
+                                      ] }
+
+        result = sendDailyAlertsForGroup(obj.email, locale, 'jobs', jobs_table)
+      }
+      else {
+        result.result = 'ERROR'
+        result.message = 'Unable to resolve group from ID ${groupId}!'
+      }
+    }
+
+    result
+  }
+
+  def triggerDailyReviewsAlert(groupId) {
+    // TODO
+  }
+
+  def sendDailyAlertsForGroup(cg_address, locale, type, items) {
+    def result = [result: 'OK']
+    def support_address = grailsApplication.config.getProperty('gokb.support.emailTo')
+    def alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
+
+    def template_params = [
+      supportAddress: support_address,
+      locale: locale
+    ]
+
+    if (type == 'jobs') {
+      template_params.jobs = items
+    }
+    else if (type == 'reviews') {
+      template_params.reviews = items
+    }
+
+    def content = renderEmail(DAILY_GROUP_ALERT_TEMPLATE, EMAIL_LAYOUT, template_params)
+
+    EmailValidator validator = EmailValidator.getInstance()
+
+    if (alerts_address && cg_address && validator.isValid(cg_address)) {
+      try {
+        mailService.sendMail {
+          to cg_address
+          from alerts_address
+          subject messageSource.getMessage('curatoryGroup.alert.daily.' + type + '.subject', null, locale)
+          html content
+        }
+
+        log.debug("Mail sent!")
+      }
+      catch (Exception e) {
+        result.result = 'ERROR'
+        log.error("Unable to send registration alert!", e)
+      }
+    }
+    else if (!support_address){
+      log.debug("No support email entered!")
+      result.result = 'SKIPPED'
+    }
+    else {
+      log.error("Config value at (gokb.support.emailTo) is not a valid address!")
+      result.result = 'ERROR'
     }
 
     result

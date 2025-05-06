@@ -9,9 +9,9 @@
 <p/>
 <g:message code="curatoryGroup.alert.cancelledImport.feedback" locale="${locale ?: 'en'}"/> <a href="mailto:${supportAddress}">${supportAddress}</a>.
 <p/>
-<g:message code="curatoryGroup.alert.cancelledImport.closing" locale="${locale ?: 'en'}"/>
+<g:message code="curatoryGroup.alert.closing" locale="${locale ?: 'en'}"/>
 <br/>
-<g:message code="curatoryGroup.alert.cancelledImport.signature" locale="${locale ?: 'en'}"/>
+<g:message code="curatoryGroup.alert.signature" locale="${locale ?: 'en'}"/>
 <hr/>
 <div>Global Open Knowledge Base (GOKB)</div>
 <p/>

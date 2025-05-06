@@ -8,6 +8,7 @@ class AutoUpdatePackagesJob {
 
   def ezbCollectionService
   def packageSourceUpdateService
+  def curatoryGroupAlertingService
   def sessionFactory
   // Allow only one run at a time.
   static concurrent = false
@@ -17,6 +18,9 @@ class AutoUpdatePackagesJob {
   }
 
   def execute() {
+    def failed_jobs_by_group = [:]
+    def failed_jobs_no_group = []
+
     if (grailsApplication.config.getProperty('gokb.packageUpdate.enabled', Boolean, false)) {
       log.debug("Beginning scheduled auto update packages job.")
       def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
@@ -36,6 +40,19 @@ class AutoUpdatePackagesJob {
           def result = packageSourceUpdateService.updateFromSource(p.id)
           log.debug("Result of update: ${result}")
 
+          if (result.result == 'ERROR') {
+            if (result.jobInfo.groupId) {
+              if (result.jobInfo.groupId && !failed_jobs_by_group[result.jobInfo.groupId]) {
+                failed_jobs_by_group[result.jobInfo.groupId] = []
+              }
+
+              failed_jobs_by_group[result.jobInfo.groupId] << result.jobInfo
+            }
+            else {
+              failed_jobs_no_group << result.jobInfo
+            }
+          }
+
           sleep(5000)
         }
         else {
@@ -50,6 +67,13 @@ class AutoUpdatePackagesJob {
           break
         }
       }
+
+      if (grailsApplication.config.getProperty('gokb.alerts.emailFrom') && failed_jobs_by_group) {
+        failed_jobs_by_group.each { id, jobs ->
+          curatoryGroupAlertingService.sendDailyAlertsForGroup(id, jobs)
+        }
+      }
+
       log.info("auto update packages job completed.")
     } else {
       log.debug("automatic package update is not enabled - set config.gokb.packageUpdate_enabled = true in config to enable")
