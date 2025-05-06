@@ -61,7 +61,7 @@ class PackageUpdateService {
         }
         RefdataValue review_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
         RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
-        def open_reviews = ReviewRequest.executeQuery("from ReviewRequest as r where componentToReview.id = :pkg or exists (select t from TitleInstancePackagePlatform as t where t.id = r.componentToReview.id and exists (select 1 from Combo where fromComponent.id = :pkg and type = :ct and toComponent = t)) and status = :so", [pkg: obj.id, so: review_open, ct: combo_tipps],[max: 1])
+        def open_reviews = ReviewRequest.executeQuery("from ReviewRequest as r where status = :so and (componentToReview.id = :pkg or exists (select t from TitleInstancePackagePlatform as t where t.id = r.componentToReview.id and exists (select 1 from Combo where fromComponent.id = :pkg and type = :ct and toComponent = t)))", [pkg: obj.id, so: review_open, ct: combo_tipps],[max: 1])
 
 
         if (new_val && new_val != obj.listStatus) {
