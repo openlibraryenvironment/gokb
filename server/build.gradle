@@ -88,7 +88,7 @@ dependencies {
     implementation ('org.grails.plugins:database-migration:4.2.1')
 
     implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
-    implementation 'net.bull.javamelody:javamelody-core:1.99.0'
+    implementation 'net.bull.javamelody:javamelody-core:1.99.3'
 
     runtimeOnly 'com.bertramlabs.plugins:asset-pipeline-gradle:4.5.2'
     runtimeOnly 'com.bertramlabs.plugins:less-asset-pipeline:4.5.2'
@@ -101,24 +101,24 @@ dependencies {
     implementation 'org.grails.plugins:spring-security-rest:5.0.1'
     implementation 'commons-fileupload:commons-fileupload:1.5'
 
-    implementation 'commons-io:commons-io:2.13.0'
-    implementation 'org.apache.commons:commons-compress:1.23.0'
+    implementation 'commons-io:commons-io:2.19.0'
+    implementation 'org.apache.commons:commons-compress:1.27.1'
     implementation 'commons-validator:commons-validator:1.9.0'
-    implementation 'com.opencsv:opencsv:5.7.1'
+    implementation 'com.opencsv:opencsv:5.11'
     implementation 'com.github.ladutsko:isbn-core:1.5.3'
-    implementation 'joda-time:joda-time:2.13.0'
+    implementation 'joda-time:joda-time:2.14.0'
     implementation 'org.opensearch:opensearch:2.19.1'
     implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.19.1'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.19.0'
     implementation 'org.locationtech.spatial4j:spatial4j:0.8'
-    implementation 'org.slf4j:log4j-over-slf4j:2.0.16'
-    implementation 'org.apache.tika:tika-core:2.9.2'
+    implementation 'org.slf4j:log4j-over-slf4j:2.0.17'
+    implementation 'org.apache.tika:tika-core:2.9.4'
     implementation 'dk.glasius:external-config:4.0.0'
 
     implementation "io.micronaut:micronaut-http-client"
     // implementation 'io.micronaut.xml:micronaut-jackson-xml:4.4.0'
     implementation 'com.github.albfernandez:juniversalchardet:2.5.0'
-    implementation 'org.postgresql:postgresql:42.7.4'
+    implementation 'org.postgresql:postgresql:42.7.5'
     runtimeOnly "com.h2database:h2"
     runtimeOnly "org.apache.tomcat:tomcat-jdbc"
 
