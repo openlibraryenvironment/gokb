@@ -85,7 +85,7 @@ class PackageSourceUpdateService {
 
       isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value && pkg_source.importConfig.value != "EZB")
       if ( isExternalSourceImportOrUpdate ) {
-        result.report = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job)
+        result.report = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job, async)
 
       } else {
         if (pkg_source?.url) {
