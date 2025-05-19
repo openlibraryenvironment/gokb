@@ -470,7 +470,7 @@ class OrgService {
   public def updateRoles(Org org, roles, boolean remove = true) {
     RefdataCategory category = RefdataCategory.findByLabel('Org.Role')
     def result = [changed: false, errors: []]
-    def old_roles = org.roles
+    def old_roles = org.roles.toArray()
     def new_roles = []
 
     roles.each { nr ->
@@ -496,7 +496,7 @@ class OrgService {
 
     new_roles.each { nr ->
       if (!old_roles.contains(nr)) {
-        org.addToRoles(role_obj)
+        org.addToRoles(nr)
         result.changed = true
       }
     }
@@ -505,6 +505,7 @@ class OrgService {
       old_roles.each { old_role ->
         if (!new_roles.contains(old_role)) {
           org.removeFromRoles(old_role)
+          org.save(flush: true)
           result.changed = true
         }
       }

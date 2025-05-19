@@ -300,6 +300,15 @@ globalSearchTemplates = [
           placeholder:'Name or title of item',
           contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'R']
         ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'Org.Role',
+          prompt:'Role',
+          qparam:'qp_role',
+          placeholder:'Role',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'has', 'prop':'roles']
+        ],
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
