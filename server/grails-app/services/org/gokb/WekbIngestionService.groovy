@@ -97,7 +97,7 @@ class WekbIngestionService {
 
         for(int offset = 0; offset < titleCount; offset += batchSize) {
             def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
-            // log.debug("#### " + tipps)
+
             tippBatches.add(tipps)
 
             def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
@@ -279,59 +279,22 @@ class WekbIngestionService {
         currentSession.flush()
         currentSession.clear()
 
-
-        // ***************************************************************
-
-        /*try {
-            def pkgId = pkgInfo.id
-            def tippIDs = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
-          where exists (
-            from Combo as c1
-            where c1.fromComponent.id = :pkg
-            and c1.toComponent = tipp
-          )
-          and not exists (
-            from Combo as cmb
-            where cmb.toComponent = tipp
-            and cmb.type = :ctt
-          )''',
-                    [
-                            pkg: pkgId,
-                            ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-                    ]
-            )
-
-            def total = tippIDs.size()
-
-            log.debug("##### QUERY RESULT #####: " + total)
-            log.debug("IDs: " + tippIDs)
-
-        } catch (Exception exc) {
-            exc.printStackTrace()
-            log.error("Exception " + exc.getCause())
-        }*/
-        // ***************************************************************
+        // explicitly commit actual Transaction so that DB is up to date for the matching job
+        currentSession.getTransaction().commit()
 
 
-        Job matching_job
-
-        Package.withNewSession {
-            matching_job = concurrencyManagerService.createJob { mjob ->
-                tippService.matchPackage(pkgInfo.id, mjob)
-            }
-
-
-            //currentSession.clear()
-
-
-            Package p = Package.get(pkg.getId())
-            matching_job.description = "Package Title Matching".toString()
-            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-            matching_job.linkedItem = pkgInfo
-            matching_job.message("Starting title match for Package ${p.name}".toString())
-            matching_job.startOrQueue()
-            matching_job.startTime = new Date()
+        Job matching_job = concurrencyManagerService.createJob { mjob ->
+            tippService.matchPackage(pkgInfo.id, mjob)
         }
+
+        Package p = Package.get(pkg.getId())
+        matching_job.description = "Package Title Matching".toString()
+        matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+        matching_job.linkedItem = pkgInfo
+        matching_job.message("Starting title match for Package ${p.name}".toString())
+        matching_job.startOrQueue()
+        matching_job.startTime = new Date()
+
 
        if (!async) {
             result.matchingJob = matching_job.get()
@@ -339,9 +302,6 @@ class WekbIngestionService {
         else {
             result.matchingJob = matching_job.uuid
         }
-
-        // result.matchingJob = matching_job.uuid
-
 
         if (job) {
             job.setProgress(100)
@@ -372,10 +332,6 @@ class WekbIngestionService {
                 }
             }
         }
-
-
-        //-----------------------------------------------------------------------
-
 
 
         return result
