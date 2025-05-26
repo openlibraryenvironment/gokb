@@ -22,7 +22,7 @@ import org.hibernate.SessionFactory
 
 import java.time.LocalDate
 
-@Transactional
+//@Transactional
 class WekbIngestionService {
 
     WekbAPIService wekbAPIService
@@ -91,6 +91,18 @@ class WekbIngestionService {
 
         def targetNamespaceTitleIdSerial =  pkg_source.getTitleIdSerial()?.getValue()
         def targetNamespaceTitleIdMonograph =  pkg_source.getTitleIdMonograph()?.getValue()
+
+        def targetTypeMap = [:]
+        RefdataValue.findAllByOwner(RefdataCategory.findByLabel('IdentifierNamespace.TargetType'))
+                .each { refVal ->
+                    targetTypeMap.put((refVal.value), refVal)
+                }
+        def validIdentifiers = []
+        IdentifierNamespace.findAllByTargetTypeInList([targetTypeMap['Title'], targetTypeMap['Book'], targetTypeMap['Journal'], targetTypeMap['Database'], targetTypeMap['Other']])
+            .each {
+                ns -> validIdentifiers << ns.value
+            }
+
 
         int tippNum = 0
         def tippBatches = []
@@ -161,7 +173,9 @@ class WekbIngestionService {
                                     }
                                     break;
                                 default:
-                                    identifierType = identifier.namespace
+                                    if(validIdentifiers.contains(identifier.namespace)){
+                                        identifierType = identifier.namespace
+                                    }
                             }
                         }
                         if (identifierType) {
@@ -280,21 +294,22 @@ class WekbIngestionService {
         currentSession.clear()
 
         // explicitly commit actual Transaction so that DB is up to date for the matching job
-        currentSession.getTransaction().commit()
+        //currentSession.getTransaction().commit()
 
+        Job matching_job
+        Package.withNewSession {
+            matching_job = concurrencyManagerService.createJob { mjob ->
+                tippService.matchPackage(pkgInfo.id, mjob)
+            }
 
-        Job matching_job = concurrencyManagerService.createJob { mjob ->
-            tippService.matchPackage(pkgInfo.id, mjob)
+            Package p = Package.get(pkg.getId())
+            matching_job.description = "Package Title Matching".toString()
+            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+            matching_job.linkedItem = pkgInfo
+            matching_job.message("Starting title match for Package ${p.name}".toString())
+            matching_job.startOrQueue()
+            matching_job.startTime = new Date()
         }
-
-        Package p = Package.get(pkg.getId())
-        matching_job.description = "Package Title Matching".toString()
-        matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-        matching_job.linkedItem = pkgInfo
-        matching_job.message("Starting title match for Package ${p.name}".toString())
-        matching_job.startOrQueue()
-        matching_job.startTime = new Date()
-
 
        if (!async) {
             result.matchingJob = matching_job.get()
