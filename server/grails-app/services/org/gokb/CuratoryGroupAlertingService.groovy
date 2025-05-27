@@ -14,6 +14,7 @@ class CuratoryGroupAlertingService {
   PageRenderer groovyPageRenderer
 
   def grailsApplication
+  def sessionFactory
 
 	static final String EMAIL_LAYOUT = "/layouts/email"
   static final String JOB_CANCELLATION_ALERT_TEMPLATE = "/group/_cancelledJobAlert"
@@ -120,6 +121,7 @@ class CuratoryGroupAlertingService {
     Date lastDayDate = Date.from(LocalDateTime.now().minusHours(24).atZone(ZoneId.systemDefault()).toInstant())
     RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
     RefdataValue combo_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+    def session = sessionFactory.currentSession
 
     def completed_jobs = JobResult.executeQuery('''select ownerId, linkedItemId from JobResult
                                                     where linkedItemId is not null
@@ -174,6 +176,9 @@ class CuratoryGroupAlertingService {
           result.report[cg.name] = sendDailyAlertsForGroup(cg, locale, 'reviews', table_items)
         }
       }
+
+      session.flush()
+      session.clear()
     }
 
     result

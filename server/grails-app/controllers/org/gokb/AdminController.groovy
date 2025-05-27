@@ -505,6 +505,15 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def triggerDailyReviewsAlerts() {
+    log.debug("Triggering curator review notifications")
+    def result = [result: 'OK']
+
+    result = curatoryGroupAlertingService.triggerDailyReviewsAlerts()
+
+    render result as JSON
+  }
+
   def cleanupIssnConflicts() {
     Job j = concurrencyManagerService.createJob { Job job ->
       cleanupService.cleanupIssnConflictTitles(job)

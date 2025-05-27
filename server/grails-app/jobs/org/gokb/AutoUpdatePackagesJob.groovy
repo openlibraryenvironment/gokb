@@ -68,9 +68,9 @@ class AutoUpdatePackagesJob {
         }
       }
 
-      if (grailsApplication.config.getProperty('gokb.alerts.emailFrom') && failed_jobs_by_group) {
+      if (grailsApplication.config.getProperty('gokb.cancelledJobsNotifications', Boolean, false) && grailsApplication.config.getProperty('gokb.alerts.emailFrom') && failed_jobs_by_group) {
         failed_jobs_by_group.each { id, jobs ->
-          curatoryGroupAlertingService.sendDailyAlertsForGroup(id, jobs)
+          curatoryGroupAlertingService.triggerDailyJobsAlert(id, jobs)
         }
       }
 
