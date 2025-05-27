@@ -2,6 +2,8 @@ package org.gokb
 
 import grails.gsp.PageRenderer
 
+import java.time.*
+
 import org.apache.commons.validator.routines.EmailValidator
 import org.gokb.cred.*
 import org.springframework.context.MessageSource
@@ -101,7 +103,7 @@ class CuratoryGroupAlertingService {
                                         messageCode: it.messageCode
                                       ] }
 
-        result = sendDailyAlertsForGroup(obj.email, locale, 'jobs', jobs_table)
+        result = sendDailyAlertsForGroup(obj, locale, 'jobs', jobs_table)
       }
       else {
         result.result = 'ERROR'
@@ -112,11 +114,72 @@ class CuratoryGroupAlertingService {
     result
   }
 
-  def triggerDailyReviewsAlert(groupId) {
-    // TODO
+  def triggerDailyReviewsAlerts() {
+    def result = [result: 'OK', report: [:]]
+    String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'package/' : null
+    Date lastDayDate = Date.from(LocalDateTime.now().minusHours(24).atZone(ZoneId.systemDefault()).toInstant())
+    RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+    RefdataValue combo_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+
+    def completed_jobs = JobResult.executeQuery('''select ownerId, linkedItemId from JobResult
+                                                    where linkedItemId is not null
+                                                    and startTime > :lastDay''',
+                                                [lastDay: lastDayDate])
+
+    def groups_list = [:]
+
+    completed_jobs.each { jr ->
+      if (!groups.list[jr[0]]) {
+        groups_list[jr[0]] = []
+      }
+
+      groups_list[jr[0]] << jr[1]
+    }
+
+    groups_list.each { groupId, packageIdList ->
+      CuratoryGroup cg = CuratoryGroup.get(groupId)
+      Locale locale = new Locale(obj.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
+      def table_items = []
+
+      if (cg.newReviewsAlerts) {
+        packageIdList.each { pid ->
+          Package pkg = Package.get(pid)
+
+          def num_new_reviews = ReviewRequest.executeQuery('''select count(rr.id) from ReviewRequest as rr
+                                                              where status = :open
+                                                              and dateCreated > :lastDay
+                                                              and exists (
+                                                                select 1 from TitleInstancePackagePlatform as t
+                                                                where t.id = componentToReview.id
+                                                                and exists (
+                                                                  select 1 from Combo
+                                                                  where fromComponent.id = :pid
+                                                                  and toComponent.id = t.id
+                                                                  and type = :ctype
+                                                                )
+                                                              )''',
+                                                              [lastDay: lastDayDate, open: rr_open, ctype: combo_tipp])[0]
+
+          if (num_new_reviews > 0) {
+            table_items << [
+              packageName: pkg.name,
+              packageId: pid,
+              editLink: edit_base ? edit_base + "${pid}" : null,
+              reviewsTotal: num_new_reviews
+            ]
+          }
+        }
+
+        if (table_items.size() > 0) {
+          result.report[cg.name] = sendDailyAlertsForGroup(cg, locale, 'reviews', table_items)
+        }
+      }
+    }
+
+    result
   }
 
-  def sendDailyAlertsForGroup(cg_address, locale, type, items) {
+  def sendDailyAlertsForGroup(group, locale, type, items) {
     def result = [result: 'OK']
     def support_address = grailsApplication.config.getProperty('gokb.support.emailTo')
     def alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
@@ -137,29 +200,30 @@ class CuratoryGroupAlertingService {
 
     EmailValidator validator = EmailValidator.getInstance()
 
-    if (alerts_address && cg_address && validator.isValid(cg_address)) {
+    if (alerts_address && group.email && validator.isValid(group.email)) {
       try {
         mailService.sendMail {
-          to cg_address
+          to group.email
           from alerts_address
           subject messageSource.getMessage('curatoryGroup.alert.daily.' + type + '.subject', null, locale)
           html content
         }
 
-        log.debug("Mail sent!")
+        log.debug("Daily ${type} alert mail sent for group ${group.name} (ID ${group.id})!")
       }
       catch (Exception e) {
         result.result = 'ERROR'
-        log.error("Unable to send registration alert!", e)
+        log.error("Unable to send daily ${type} alert for group ${group.name} (ID ${group.id})!", e)
       }
     }
-    else if (!support_address){
+    else if (!alerts_address){
       log.debug("No support email entered!")
-      result.result = 'SKIPPED'
+      result.result = 'SKIPPED_NO_CONFIG'
     }
     else {
-      log.error("Config value at (gokb.support.emailTo) is not a valid address!")
+      log.error("Email ${group.email} of group ${group.name} (ID ${group.id}) is not valid!")
       result.result = 'ERROR'
+      result.message = "Unable to send mail to '${group.email}'!"
     }
 
     result

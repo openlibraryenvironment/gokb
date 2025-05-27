@@ -11,6 +11,7 @@ class CuratoryGroup extends KBComponent {
   CuratoryGroup superordinatedGroup
   RefdataValue organizationType
   Boolean cancelledImportAlerts = false
+  Boolean newReviewsAlerts = false
   String preferredLocaleString
 
   static hasMany = [

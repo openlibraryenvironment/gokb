@@ -1,5 +1,5 @@
 <p/>
-<g:message code="curatoryGroup.alert.cancelledImport.greeting"/>
+<g:message code="curatoryGroup.alert.daily.greeting"/>
 <p/>
 <g:if test="jobs">
   <g:message code="curatoryGroup.alert.daily.jobs.intro" locale="${locale ?: 'en'}"/>
@@ -33,49 +33,40 @@
 </g:if>
 <g:if test="reviews">
   <g:message code="curatoryGroup.alert.daily.reviews.intro" locale="${locale ?: 'en'}"/>
-  <g:each in="reviews" var="pkg">
-    <p/>
-    <h3><a href="${pkg.editLink}">${pkg.packageName}</a></h3>
-    </p>
-    <g:if test="pkg.reviews">
-      <table>
-        <thead>
-          <tr>
-            <th>
-              <g:message code="curatoryGroup.alert.daily.reviews.header.type" locale="${locale ?: 'en'}"/>
-            </th>
-            <th>
-              <g:message code="curatoryGroup.alert.daily.reviews.header.dateCreated" locale="${locale ?: 'en'}"/>
-            </th>
-          </tr>
-        <thead>
-        <tbody>
-          <g:each in="pkg.reviews" var="review">
-            <tr>
-              <td>
-                <g:if test="${review.editLink}">
-                  <a href="${review.editLink}">
-                    <g:message code="${review.typeDesc}" locale="${locale ?: 'en'}"/>
-                  </a>
-                </g:if>
-                <g:else>
-                  <g:message code="${review.typeDesc}" locale="${locale ?: 'en'}"/>
-                </g:else>
-              </td>
-              <td>
-                ${review.dateCreated}
-              </td>
-            </tr>
-          </g:each>
-        </tbody>
-      </table>
-    </g:if>
-  </g:each>
+  <p/>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          <g:message code="curatoryGroup.alert.daily.header.package" locale="${locale ?: 'en'}"/>
+        </th>
+        <th>
+          <g:message code="curatoryGroup.alert.daily.reviews.header.numberOfReviews" locale="${locale ?: 'en'}"/>
+        </th>
+      </tr>
+    <thead>
+    <tbody>
+      <g:each in="reviews" var="pkg">
+        <tr>
+          <td>
+            <a href="${pkg.editLink}">${pkg.packageName}</a>
+          </td>
+          <td>
+            ${pkg.reviewsTotal}
+          </td>
+        </tr>
+      </g:each>
+    </tbody>
+  </table>
+  <p/>
+  <g:message code="curatoryGroup.alert.daily.reviews.info" locale="${locale ?: 'en'}"/>
+  <p/>
+  <g:message code="curatoryGroup.alert.daily.reviews.note" locale="${locale ?: 'en'}"/>
   <p/>
   <g:message code="curatoryGroup.alert.daily.reviews.support" locale="${locale ?: 'en'}"/> <a href="mailto:${supportAddress}">${supportAddress}</a>.
 </g:if>
 
-<br/>
+<p/>
 <g:message code="curatoryGroup.alert.closing" locale="${locale ?: 'en'}"/>
 <g:message code="curatoryGroup.alert.signature" locale="${locale ?: 'en'}"/>
 <div>________________________________________</div>
