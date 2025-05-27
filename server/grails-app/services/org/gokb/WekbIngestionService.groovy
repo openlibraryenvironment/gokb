@@ -46,6 +46,7 @@ class WekbIngestionService {
     def rdv_retired
     SessionFactory sessionFactory
     ConcurrencyManagerService concurrencyManagerService
+    Map targetTypes = [:]
 
     def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Package pkg, Job job, Boolean async) {
         def result = [result: 'OK', dryRun: false]
@@ -54,6 +55,8 @@ class WekbIngestionService {
         ingest_systime = startTime
         def ingestDate = LocalDate.now().toString()
         int batchSize = 100
+
+        targetTypes = loadTargetTypes()
 
         rdv_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
         rdv_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -91,17 +94,6 @@ class WekbIngestionService {
 
         def targetNamespaceTitleIdSerial =  pkg_source.getTitleIdSerial()?.getValue()
         def targetNamespaceTitleIdMonograph =  pkg_source.getTitleIdMonograph()?.getValue()
-
-        def targetTypeMap = [:]
-        RefdataValue.findAllByOwner(RefdataCategory.findByLabel('IdentifierNamespace.TargetType'))
-                .each { refVal ->
-                    targetTypeMap.put((refVal.value), refVal)
-                }
-        def validIdentifiers = []
-        IdentifierNamespace.findAllByTargetTypeInList([targetTypeMap['Title'], targetTypeMap['Book'], targetTypeMap['Journal'], targetTypeMap['Database'], targetTypeMap['Other']])
-            .each {
-                ns -> validIdentifiers << ns.value
-            }
 
 
         int tippNum = 0
@@ -147,6 +139,8 @@ class WekbIngestionService {
                 }
 
                 def identifiers = []
+                def validIdentifiers = getValidIdentifiersForPublicationType(tipp.publicationType)
+
                 if (tipp.identifiers && tipp.identifiers.size() > 0) {
                     boolean titleIdIsToSet = false
                     if(targetNamespaceTitleId){
@@ -173,7 +167,7 @@ class WekbIngestionService {
                                     }
                                     break;
                                 default:
-                                    if(validIdentifiers.contains(identifier.namespace)){
+                                    if (validIdentifiers.contains(identifier.namespace)) {
                                         identifierType = identifier.namespace
                                     }
                             }
@@ -184,7 +178,6 @@ class WekbIngestionService {
                     }
                 }
 
-               //log.debug("ALL IDENTIFIERS: " + identifiers)
 
                 def tipp_map = [
                         uuid                       : tipp.uuid?.trim(),
@@ -293,8 +286,6 @@ class WekbIngestionService {
         currentSession.flush()
         currentSession.clear()
 
-        // explicitly commit actual Transaction so that DB is up to date for the matching job
-        //currentSession.getTransaction().commit()
 
         Job matching_job
         Package.withNewSession {
@@ -506,5 +497,27 @@ class WekbIngestionService {
         session.clear()
         return result
     }
+
+
+    Map loadTargetTypes () {
+        Map targetTypes = [:]
+        RefdataValue.findAllByOwner(RefdataCategory.findByLabel('IdentifierNamespace.TargetType'))
+                .each { refVal ->
+                    targetTypes.put((refVal.value), refVal)
+                }
+        return targetTypes
+    }
+
+   List getValidIdentifiersForPublicationType (String publicationType) {
+       List validIdentifiers = []
+       Map mapping = ["Monograph":"Book", "Serial":"Journal", "Database":"Database", "Other":"Other"]
+       IdentifierNamespace.findAllByTargetTypeInList([targetTypes["Title"], targetTypes[mapping.get(publicationType)]])
+               .each {
+                   ns -> validIdentifiers << ns.value
+               }
+
+       return validIdentifiers
+   }
+
 
 }
