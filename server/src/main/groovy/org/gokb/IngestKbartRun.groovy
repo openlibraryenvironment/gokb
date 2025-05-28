@@ -766,7 +766,7 @@ class IngestKbartRun {
               boolean isEzbImportId = false
               def matched_ns = []
 
-              ct.matchResult.each { mr ->
+              ct.matchResults.each { mr ->
                 if (mr.match == 'OK') {
                   matched_ns = mr.namespace
                 }
