@@ -79,13 +79,18 @@ class PackageSourceUpdateService {
       title_ns_serial_id = pkg_source?.titleIdSerial?.id ?: null
       title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: null
 
+      if ( restrictSize ) {
+        def ignoreSizeLimit = pkg_source.getIgnoreSizeLimit()
+        restrictSize = !ignoreSizeLimit
+      }
+
       if (job && !job.startTime) {
         job.startTime = startTime
       }
 
       isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value && pkg_source.importConfig.value != "EZB")
       if ( isExternalSourceImportOrUpdate ) {
-        result.report = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job, async)
+        result.report = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job, async, restrictSize)
 
       } else {
         if (pkg_source?.url) {

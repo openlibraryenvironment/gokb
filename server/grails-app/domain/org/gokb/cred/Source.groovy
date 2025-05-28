@@ -26,6 +26,7 @@ class Source extends KBComponent {
   Org responsibleParty
   BulkImportListConfig bulkConfig
   RefdataValue importConfig
+  Boolean ignoreSizeLimit = false
 
   static manyByCombo = [
     curatoryGroups: CuratoryGroup
@@ -56,6 +57,7 @@ class Source extends KBComponent {
     skipInvalid(nullable: true, default: false)
     bulkConfig(nullable: true, blank: false)
     importConfig(nullable: true, blank: true)
+    ignoreSizeLimit(nullable: true, blank: true)
   }
 
   public static final String restPath = "/sources"
