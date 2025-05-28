@@ -717,11 +717,13 @@ class TippService {
   @Transactional
   private void reviewAmbiguousMatches(tipp, reviews) {
     RefdataValue rr_status_closed = RefdataCategory.lookup("ReviewRequest.Status", "Closed")
-    Combo new_combo
+    RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+    RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
     for (rr_atm in reviews) {
       if (!tipp.title) {
-        def total_matches = rr_atm.additionalInfo instanceof Map ? (rr_atm.additionalInfo?.otherComponents ?: []) : []
+        def additionalInfo = rr_atm.getAdditional()
+        List total_matches = additionalInfo instanceof Map ? (additionalInfo?.otherComponents ?: []) : []
         def current_matches = []
 
         for (ttl in total_matches) {
@@ -735,9 +737,10 @@ class TippService {
         if (current_matches.size() <= 1) {
           rr_atm.status = rr_status_closed
           rr_atm.save(flush: true)
+          Combo new_combo = Combo.findByToComponentAndType(tipp, combo_type)
 
           if (!new_combo && current_matches.size() == 1) {
-            new_combo = new Combo(fromComponent: current_matches[0], toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
+            new Combo(fromComponent: current_matches[0], toComponent: tipp, type: combo_type).save(flush: true)
             touchPackage(tipp)
           }
         }
@@ -1259,7 +1262,7 @@ class TippService {
       def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: tipp, type: type_atm, so: status_open])[0]
 
       if (num_existing == 0) {
-        def additionalInfo = [otherComponents: []]
+        Map additionalInfo = [otherComponents: []]
         found.matches.each { comp ->
           additionalInfo.otherComponents << [
             oid: "${comp.object.class.name}:${comp.object.id}",
