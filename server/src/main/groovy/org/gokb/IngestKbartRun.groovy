@@ -335,7 +335,7 @@ class IngestKbartRun {
             }
 
             def matching_job = concurrencyManagerService.createJob { mjob ->
-              tippService.matchPackage(pid, mjob)
+              tippService.matchPackage(pkg_info.id, mjob, job)
             }
 
             Package.withNewSession {
@@ -891,7 +891,7 @@ class IngestKbartRun {
     }
 
     if (!dryRun && tipp) {
-      tipp = tippService.updateTippFields(tipp, tipp_map, user, new_coverage)
+      boolean hasTippChanged = tippService.updateTippFields(tipp, tipp_map, user, new_coverage)
       tipp.refresh()
 
       // log.debug("Values updated, set lastSeen");
@@ -916,7 +916,7 @@ class IngestKbartRun {
           log.debug("Skipping unchanged")
         }
 
-        tipp.save(flush: true)
+        tipp.save(flush: true, failOnError: true)
       }
       else {
         log.error("Validation failed!")
