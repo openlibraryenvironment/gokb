@@ -80,7 +80,7 @@ class PackageSourceUpdateService {
       title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: null
 
       if ( restrictSize ) {
-        def ignoreSizeLimit = pkg_source.getIgnoreSizeLimit()
+        def ignoreSizeLimit = pkg_source?.getIgnoreSizeLimit()
         restrictSize = !ignoreSizeLimit
       }
 
@@ -88,7 +88,7 @@ class PackageSourceUpdateService {
         job.startTime = startTime
       }
 
-      isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value && pkg_source.importConfig.value != "EZB")
+      isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value == "WEKB")
       if ( isExternalSourceImportOrUpdate ) {
         result.report = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job, async, restrictSize)
 
