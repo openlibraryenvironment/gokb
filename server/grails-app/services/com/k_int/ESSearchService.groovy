@@ -351,8 +351,10 @@ class ESSearchService{
   }
 
   private void addRefdataQuery(query, errors, field, value) {
+    log.debug("Refdata ${field}: ${value} (${value.class})")
     QueryBuilder refdataQuery = QueryBuilders.boolQuery()
-    if (value.getClass().isArray() || value instanceof List){
+
+    if (value.class.isArray() || value instanceof List){
       value.each {
         addRefdataToQuery(it, refdataQuery, field)
       }
@@ -377,6 +379,7 @@ class ESSearchService{
     }
 
     refdataQuery.should(QueryBuilders.termQuery(field, value))
+    refdataQuery.should(QueryBuilders.termQuery("${field}.keyword", value))
   }
 
   private void addNamespaceQuery(query, errors, field, value) {
