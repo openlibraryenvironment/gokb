@@ -41,15 +41,18 @@ class AutoUpdatePackagesJob {
           log.debug("Result of update: ${result}")
 
           if (result.result == 'ERROR') {
-            if (result.jobInfo.groupId) {
+            if (result.jobInfo?.groupId) {
               if (result.jobInfo.groupId && !failed_jobs_by_group[result.jobInfo.groupId]) {
                 failed_jobs_by_group[result.jobInfo.groupId] = []
               }
 
               failed_jobs_by_group[result.jobInfo.groupId] << result.jobInfo
             }
-            else {
+            else if (result.jobInfo) {
               failed_jobs_no_group << result.jobInfo
+            }
+            else {
+              log.warn("No job info for source update for package '${p.name}' (ID ${p.id})")
             }
           }
 
