@@ -22,7 +22,7 @@ import org.hibernate.SessionFactory
 
 import java.time.LocalDate
 
-@Transactional
+//@Transactional
 class WekbIngestionService {
 
     WekbAPIService wekbAPIService
@@ -46,8 +46,10 @@ class WekbIngestionService {
     def rdv_retired
     SessionFactory sessionFactory
     ConcurrencyManagerService concurrencyManagerService
+    Map identifierTargetTypes = [:]
+    final int SIZE_LIMIT = 30000
 
-    def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Package pkg, Job job) {
+    def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Package pkg, Job job, Boolean async, Boolean restrictSize) {
         def result = [result: 'OK', dryRun: false]
         result.messages = []
         long startTime = System.currentTimeMillis()
@@ -55,255 +57,277 @@ class WekbIngestionService {
         def ingestDate = LocalDate.now().toString()
         int batchSize = 100
 
-        rdv_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-        rdv_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        rdv_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-        rdv_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-
         String sourceUrl = pkg_source?.url
         String wekbUUID = extractUUIDFromUrlString(sourceUrl)
 
         def packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
         int titleCount = packageInfo[0]?.titleCount
 
-        isUpdate = false
-        int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) ' +
-                'from TitleInstancePackagePlatform as tipp, Combo as c ' +
-                'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
-                [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
-
-        result.report = [
-                numRows: titleCount,
-                skipped: 0,
-                matched: 0,
-                partial: 0,
-                created: 0,
-                retired: 0,
-                reviews: 0,
-                invalid: 0,
-                previous: old_tipp_count
-        ]
-
-        if (old_tipp_count > 0) {
-            log.debug("OLD TIPPCOUNT: " + old_tipp_count + "  ----> IS UPDATE... ")
-            isUpdate = true
-        }
-
-        def targetNamespaceTitleIdSerial =  pkg_source.getTitleIdSerial()?.getValue()
-        def targetNamespaceTitleIdMonograph =  pkg_source.getTitleIdMonograph()?.getValue()
-
-        int tippNum = 0
-        def tippBatches = []
-
-        for(int offset = 0; offset < titleCount; offset += batchSize) {
-            def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
-            // log.debug("#### " + tipps)
-            tippBatches.add(tipps)
-
-            def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
-            log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
-
-            for (tipp in tipps) {
-                def targetNamespaceTitleId =  null
-                tippNum++
-                log.debug('TIPP ' + tippNum + ": " + tipp)
-
-                if (tipp.status == 'Deleted') {
-                    //in der WEKB gelöschte Titel werden nicht importiert
-                    log.debug("Title is deleted --> SKIP")
-                    result.report["skipped"]++
-                    continue
-                }
-
-                Map ids = tipp.identifiers?.find { it.namespace == 'title_id' }
-                def title_id = null
-                if (ids) {
-                    title_id = ids.value
-                    log.debug('ids: ' + ids + ", title_id: " + title_id)
-                }
-
-                def lang = null
-                if (tipp.languages && tipp.languages.size() > 0) {
-                    lang = tipp.languages.get(0)?.value
-                }
+        if ( restrictSize && titleCount > SIZE_LIMIT ) {
+            result.result = 'ERROR'
+            //result.messageCode = 'kbart.errors.url.fileSize'
+            result.message = "The package you want to import is too big! Packages with more than 30.000 titles have to be authorized manually by an administrator."
+        } else {
 
 
-                if (tipp.publicationType == 'Serial') {
-                    targetNamespaceTitleId = targetNamespaceTitleIdSerial
-                } else {
-                    targetNamespaceTitleId = targetNamespaceTitleIdMonograph
-                }
+            identifierTargetTypes = loadIdentifierTargetTypes()
+            Map validIdentifierForPubType = [:]
+            validIdentifierForPubType.put("Monograph", getValidIdentifiersForPublicationType("Monograph"))
+            validIdentifierForPubType.put("Serial", getValidIdentifiersForPublicationType("Serial"))
+            validIdentifierForPubType.put("Database", getValidIdentifiersForPublicationType("Database"))
+            validIdentifierForPubType.put("Other", getValidIdentifiersForPublicationType("Other"))
 
-                def identifiers = []
-                if (tipp.identifiers && tipp.identifiers.size() > 0) {
-                    boolean titleIdIsToSet = false
-                    if(targetNamespaceTitleId){
-                        titleIdIsToSet = true
-                        for (identifier in tipp.identifiers) {
-                            if (identifier.namespace && identifier.namespace.equalsIgnoreCase(targetNamespaceTitleId)) {
-                                titleIdIsToSet = false
-                            }
-                        }
-                    }
-                    for (identifier in tipp.identifiers) {
-                        String identifierType = null
-                        if (identifier.namespace) {
-                            switch (identifier.namespace) {
-                                case "eisbn":
-                                    identifierType = "isbn"
-                                    break;
-                                case "isbn":
-                                    identifierType = "pisbn"
-                                    break;
-                                case "title_id":
-                                    if (titleIdIsToSet) {
-                                        identifierType = targetNamespaceTitleId
-                                    }
-                                    break;
-                                default:
-                                    identifierType = identifier.namespace
-                            }
-                        }
-                        if (identifierType) {
-                            identifiers << [type: identifierType, value: identifier.value]
-                        }
-                    }
-                }
+            rdv_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+            rdv_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+            rdv_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+            rdv_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
 
-               //log.debug("ALL IDENTIFIERS: " + identifiers)
 
-                def tipp_map = [
-                        uuid                       : tipp.uuid?.trim(),
-                        url                        : tipp.url?.trim(),
-                        coverageStatements         : tipp.coverage ?: [
-                                [
-                                        embargo      : null,
-                                        coverageDepth: 'Fulltext',
-                                        coverageNote : null,
-                                        startDate    : null,
-                                        startVolume  : null,
-                                        startIssue   : null,
-                                        endDate      : null,
-                                        endVolume    : null,
-                                        endIssue     : null
-                                ]
-                        ],
-                        importId                   : title_id?.trim(),
-                        name                       : tipp.name?.trim(),
-                        publicationType            : tipp.publicationType?.trim(),
-                        parentPublicationTitleId   : tipp.parentPublicationTitleId?.trim(),
-                        precedingPublicationTitleId: tipp.precedingPublicationTitleId?.trim(),
-                        firstAuthor                : tipp.firstAuthor?.trim(),
-                        publisherName              : tipp.publisherName?.trim(),
-                        volumeNumber               : tipp.volumeNumber?.trim(),
-                        editionStatement           : tipp.editionStatement?.trim(),
-                        dateFirstInPrint           : tipp.dateFirstInPrint?.trim(),
-                        dateFirstOnline            : tipp.dateFirstOnline?.trim(),
-                        firstEditor                : tipp.firstEditor?.trim(),
-                        subjectArea                : tipp.subjectArea?.trim(),
-                        series                     : tipp.series?.trim(),
-                        language                   : lang,
-                        medium                     : tipp.medium?.trim(),
-                        accessStartDate            : tipp.accessStartDate?.trim(),
-                        accessEndDate              : tipp.accessEndDate?.trim(),
-                        lastSeen                   : ingest_systime,
-                        identifiers                : identifiers,
-                        pkg                        : [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-                        hostPlatform               : [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
-                        paymentType                : tipp.accessType == "Free" ? "F" : "P"
-                ]
+            isUpdate = false
+            int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) ' +
+                    'from TitleInstancePackagePlatform as tipp, Combo as c ' +
+                    'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
+                    [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
-                def line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
+            result.report = [
+                    numRows : titleCount,
+                    skipped : 0,
+                    matched : 0,
+                    partial : 0,
+                    created : 0,
+                    retired : 0,
+                    reviews : 0,
+                    invalid : 0,
+                    previous: old_tipp_count
+            ]
 
-                result.report[line_result.status]++
-
-                if (tippNum % 50 == 0) {
-                    def session = sessionFactory.getCurrentSession()
-                    session.flush()
-                    session.clear()
-                }
-
+            if (old_tipp_count > 0) {
+                log.debug("OLD TIPPCOUNT: " + old_tipp_count + "  ----> IS UPDATE... ")
+                isUpdate = true
             }
 
-            int progress = (int) ((offset / titleCount) * 100)
-            log.debug("++++++++++ progress: " + progress)
-            job?.setProgress(progress)
+            def targetNamespaceTitleIdSerial = pkg_source.getTitleIdSerial()?.getValue()
+            def targetNamespaceTitleIdMonograph = pkg_source.getTitleIdMonograph()?.getValue()
+
+
+            int tippNum = 0
+            def tippBatches = []
+
+            for (int offset = 0; offset < titleCount; offset += batchSize) {
+                def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
+
+                tippBatches.add(tipps)
+
+                def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
+                log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
+
+                for (tipp in tipps) {
+                    def targetNamespaceTitleId = null
+                    tippNum++
+                    log.debug('TIPP ' + tippNum + ": " + tipp)
+
+                    if (tipp.status == 'Deleted') {
+                        //in der WEKB gelöschte Titel werden nicht importiert
+                        log.debug("Title is deleted --> SKIP")
+                        result.report["skipped"]++
+                        continue
+                    }
+
+                    Map ids = tipp.identifiers?.find { it.namespace == 'title_id' }
+                    def title_id = null
+                    if (ids) {
+                        title_id = ids.value
+                        log.debug('ids: ' + ids + ", title_id: " + title_id)
+                    }
+
+                    def lang = null
+                    if (tipp.languages && tipp.languages.size() > 0) {
+                        lang = tipp.languages.get(0)?.value
+                    }
+
+                    def pubtype = tipp.publicationType
+
+                    if (pubtype == 'Serial') {
+                        targetNamespaceTitleId = targetNamespaceTitleIdSerial
+                    } else {
+                        targetNamespaceTitleId = targetNamespaceTitleIdMonograph
+                    }
+
+                    def identifiers = []
+                    //def validIdentifiers = getValidIdentifiersForPublicationType(tipp.publicationType)
+
+                    if (tipp.identifiers && tipp.identifiers.size() > 0) {
+                        boolean titleIdIsToSet = false
+                        if (targetNamespaceTitleId) {
+                            titleIdIsToSet = true
+                            for (identifier in tipp.identifiers) {
+                                if (identifier.namespace && identifier.namespace.equalsIgnoreCase(targetNamespaceTitleId)) {
+                                    titleIdIsToSet = false
+                                }
+                            }
+                        }
+                        for (identifier in tipp.identifiers) {
+                            String identifierType = null
+                            if (identifier.namespace) {
+                                switch (identifier.namespace) {
+                                    case "eisbn":
+                                        if (pubtype == "Monograph") {
+                                            identifierType = "isbn"
+                                        }
+                                        break;
+                                    case "isbn":
+                                        if (pubtype == "Monograph") {
+                                            identifierType = "pisbn"
+                                        }
+                                        break;
+                                    case "title_id":
+                                        if (titleIdIsToSet) {
+                                            identifierType = targetNamespaceTitleId
+                                        }
+                                        break;
+                                    default:
+                                        if (validIdentifierForPubType.get(pubtype).contains(identifier.namespace)) {
+                                            identifierType = identifier.namespace
+                                        }
+                                }
+                            }
+                            if (identifierType) {
+                                identifiers << [type: identifierType, value: identifier.value]
+                            }
+                        }
+                    }
+
+
+                    def tipp_map = [
+                            uuid                       : tipp.uuid?.trim(),
+                            url                        : tipp.url?.trim(),
+                            coverageStatements         : tipp.coverage ?: [
+                                    [
+                                            embargo      : null,
+                                            coverageDepth: 'Fulltext',
+                                            coverageNote : null,
+                                            startDate    : null,
+                                            startVolume  : null,
+                                            startIssue   : null,
+                                            endDate      : null,
+                                            endVolume    : null,
+                                            endIssue     : null
+                                    ]
+                            ],
+                            importId                   : title_id?.trim(),
+                            name                       : tipp.name?.trim(),
+                            publicationType            : tipp.publicationType?.trim(),
+                            parentPublicationTitleId   : tipp.parentPublicationTitleId?.trim(),
+                            precedingPublicationTitleId: tipp.precedingPublicationTitleId?.trim(),
+                            firstAuthor                : tipp.firstAuthor?.trim(),
+                            publisherName              : tipp.publisherName?.trim(),
+                            volumeNumber               : tipp.volumeNumber?.trim(),
+                            editionStatement           : tipp.editionStatement?.trim(),
+                            dateFirstInPrint           : tipp.dateFirstInPrint?.trim(),
+                            dateFirstOnline            : tipp.dateFirstOnline?.trim(),
+                            firstEditor                : tipp.firstEditor?.trim(),
+                            subjectArea                : tipp.subjectArea?.trim(),
+                            series                     : tipp.series?.trim(),
+                            language                   : lang,
+                            medium                     : tipp.medium?.trim(),
+                            accessStartDate            : tipp.accessStartDate?.trim(),
+                            accessEndDate              : tipp.accessEndDate?.trim(),
+                            lastSeen                   : ingest_systime,
+                            identifiers                : identifiers,
+                            pkg                        : [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
+                            hostPlatform               : [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
+                            paymentType                : tipp.accessType == "Free" ? "F" : "P"
+                    ]
+
+                    def line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
+
+                    result.report[line_result.status]++
+
+                    if (tippNum % 50 == 0) {
+                        def session = sessionFactory.getCurrentSession()
+                        session.flush()
+                        session.clear()
+                    }
+
+                }
+
+                int progress = (int) ((offset / titleCount) * 100)
+                log.debug("++++++++++ progress: " + progress)
+                job?.setProgress(progress)
+
+                def session = sessionFactory.getCurrentSession()
+                session.flush()
+                session.clear()
+
+            }
 
             def session = sessionFactory.getCurrentSession()
             session.flush()
             session.clear()
 
-        }
 
-        def session = sessionFactory.getCurrentSession()
-        session.flush()
-        session.clear()
+            // handle Tipp-Status
+            //def status_map = ['Current': rdv_current, 'Deleted': rdv_deleted, 'Expected': rdv_expected, 'Retired': rdv_retired]
+            log.debug("set TIPP status...")
+            tippNum = 0
+            for (int i = 0; i < tippBatches.size(); i++) {
+                def tipps = tippBatches.get(i)
+                for (tipp in tipps) {
+                    tippNum++
+                    def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
+                    if (importedTipp == null) {
+                        log.debug("Title was not imported --> Skip")
+                        continue
+                    }
 
+                    def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
+                    importedTipp.setStatus(actualTippStatus)
 
-        // handle Tipp-Status
-        //def status_map = ['Current': rdv_current, 'Deleted': rdv_deleted, 'Expected': rdv_expected, 'Retired': rdv_retired]
-        log.debug("set TIPP status...")
-        tippNum = 0
-        for(int i = 0; i < tippBatches.size(); i++) {
-            def tipps = tippBatches.get(i)
-            for (tipp in tipps) {
-                tippNum++
-                def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
-                if (importedTipp == null) {
-                    log.debug("Title was not imported --> Skip")
-                    continue
+                    //result.report[tipp.status.toString().toLowerCase()]++
+                    //importedTipp.setStatus(status_map.get(tipp.status))
+
+                    if (tippNum % 50 == 0) {
+                        session = sessionFactory.getCurrentSession()
+                        session.flush()
+                        session.clear()
+                    }
+
                 }
-
-                def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
-                importedTipp.setStatus(actualTippStatus)
-
-                //result.report[tipp.status.toString().toLowerCase()]++
-                //importedTipp.setStatus(status_map.get(tipp.status))
-
-                if (tippNum % 50 == 0) {
-                    session = sessionFactory.getCurrentSession()
-                    session.flush()
-                    session.clear()
-                }
+                session = sessionFactory.getCurrentSession()
+                session.flush()
+                session.clear()
 
             }
-            session = sessionFactory.getCurrentSession()
-            session.flush()
-            session.clear()
+
+            log.debug("start Title Matching... ")
+
+            def currentSession = sessionFactory.getCurrentSession()
+            currentSession.flush()
+            currentSession.clear()
+
+
+            Job matching_job
+            Package.withNewSession {
+                matching_job = concurrencyManagerService.createJob { mjob ->
+                    tippService.matchPackage(pkgInfo.id, mjob)
+                }
+
+                Package p = Package.get(pkg.getId())
+                matching_job.description = "Package Title Matching".toString()
+                matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+                matching_job.linkedItem = pkgInfo
+                matching_job.message("Starting title match for Package ${p.name}".toString())
+                matching_job.startOrQueue()
+                matching_job.startTime = new Date()
+            }
+
+            if (!async) {
+                result.matchingJob = matching_job.get()
+            } else {
+                result.matchingJob = matching_job.uuid
+            }
 
         }
-
-        log.debug("start Title Matching... ")
-
-        def currentSession = sessionFactory.getCurrentSession()
-        currentSession.flush()
-        currentSession.clear()
-
-        def matching_job = concurrencyManagerService.createJob { mjob ->
-            tippService.matchPackage(pkgInfo.id, mjob)
-        }
-
-        currentSession.clear()
-
-        Package.withNewSession {
-            Package p = Package.get(pkg.getId())
-            matching_job.description = "Package Title Matching".toString()
-            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-            matching_job.linkedItem = pkgInfo
-            matching_job.message("Starting title match for Package ${p.name}".toString())
-            matching_job.startOrQueue()
-            matching_job.startTime = new Date()
-        }
-
-        /* if (!async) {
-            result.matchingJob = matching_job.get()
-        }
-        else {
-            result.matchingJob = matching_job.uuid
-        } */
-
-        result.matchingJob = matching_job.uuid
-
 
         if (job) {
             job.setProgress(100)
@@ -334,10 +358,6 @@ class WekbIngestionService {
                 }
             }
         }
-
-
-        //-----------------------------------------------------------------------
-
 
 
         return result
@@ -497,5 +517,27 @@ class WekbIngestionService {
         session.clear()
         return result
     }
+
+
+    Map loadIdentifierTargetTypes () {
+        Map targetTypes = [:]
+        RefdataValue.findAllByOwner(RefdataCategory.findByLabel('IdentifierNamespace.TargetType'))
+                .each { refVal ->
+                    targetTypes.put((refVal.value), refVal)
+                }
+        return targetTypes
+    }
+
+   List getValidIdentifiersForPublicationType (String publicationType) {
+       List validIdentifiers = []
+       Map mapping = ["Monograph":"Book", "Serial":"Journal", "Database":"Database", "Other":"Other"]
+       IdentifierNamespace.findAllByTargetTypeInList([identifierTargetTypes["Title"], identifierTargetTypes[mapping.get(publicationType)]])
+               .each {
+                   ns -> validIdentifiers << ns.value
+               }
+
+       return validIdentifiers
+   }
+
 
 }
