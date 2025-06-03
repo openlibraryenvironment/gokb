@@ -100,7 +100,11 @@ class IngestKbartRun {
 
   def start(nJob, session) {
     job = nJob ?: job
-    def pid = pkg.id
+    def pkg_info = [
+      id: pkg.id,
+      uuid: pkg.uuid,
+      name: pkg.name
+    ]
     log.debug("ingest start")
     def result = [result: 'OK', dryRun: dryRun]
     result.messages = []
@@ -157,7 +161,11 @@ class IngestKbartRun {
       job?.setProgress(0)
 
       def file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false, serialNamespace, monographNamespace)
-      result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, invalid: file_info.rows.error]
+      result.report = [
+        numRows: file_info.rows.total,
+        skipped: file_info.rows.skipped,
+        invalid: file_info.rows.error
+      ]
       result.validation = file_info
 
       if (file_info.errors.missingColumns) {
@@ -169,7 +177,7 @@ class IngestKbartRun {
         result.messages.add("There are ${file_info.rows.error} invalid rows (${file_info.rows.warning} with warnings)!")
       }
 
-      def running_jobs = concurrencyManagerService.getComponentJobs(pid)
+      def running_jobs = concurrencyManagerService.getComponentJobs(pkg_info.id)
 
       if (valid_encoding && (file_info.valid || (skipInvalid && !file_info.errors.missingColumns)) && running_jobs.data?.size() <= 1) {
         CSVReader csv = initReader(datafile)
@@ -189,7 +197,7 @@ class IngestKbartRun {
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                               'from TitleInstancePackagePlatform as tipp, Combo as c '+
                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
-                            [pkg: pid, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+                            [pkg: pkg_info.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
         result.report = [
           numRows: file_info.rows.total,
@@ -212,7 +220,7 @@ class IngestKbartRun {
         if (!dryRun) {
           Package.withNewTransaction {
             RefdataValue combo_fa_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
-            def p = Package.get(pid)
+            def p = Package.get(pkg_info.id)
             p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
             p.lastSeen = new Date().getTime()
             new Combo(fromComponent: p, toComponent: datafile, type: RefdataCategory.lookup('Combo.Type','KBComponent.FileAttachments')).save(flush: true, failOnError: true)
@@ -289,11 +297,11 @@ class IngestKbartRun {
           log.debug("Incremental -- no expunge")
         }
         else if (isUpdate || isCleanup) {
-          log.debug("Expunging old tipps [Tipps belonging to ${pid} last seen prior to ${ingest_date}]")
+          log.debug("Expunging old tipps [Tipps belonging to ${pkg_info.id} last seen prior to ${ingest_date}]")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
               TitleInstancePackagePlatform.withNewSession {
-                result.report << doCleanup(pid, ingest_date)
+                result.report << doCleanup(pkg_info.id, ingest_date)
               }
             }
             catch (Exception e) {
@@ -321,7 +329,7 @@ class IngestKbartRun {
         if (!dryRun) {
           try {
             Package.withNewSession {
-              Package p = Package.get(pid)
+              Package p = Package.get(pkg_info.id)
 
               def update_agent = User.findByUsername('IngestAgent')
               // insertBenchmark updateBenchmark
@@ -335,18 +343,15 @@ class IngestKbartRun {
             }
 
             def matching_job = concurrencyManagerService.createJob { mjob ->
-              tippService.matchPackage(pid, mjob)
+              tippService.matchPackage(pkg_info.id, mjob)
             }
 
-            Package.withNewSession {
-              Package p = Package.get(pid)
-              matching_job.description = "Package Title Matching".toString()
-              matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-              matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
-              matching_job.message("Starting title match for Package ${p.name}".toString())
-              matching_job.startOrQueue()
-              matching_job.startTime = new Date()
-            }
+            matching_job.description = "Package Title Matching".toString()
+            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+            matching_job.linkedItem = [name: pkg_info.name, type: "Package", id: pkg_info.id, uuid: pkg_info.uuid]
+            matching_job.message("Starting title match for Package ${pkg_info.name}".toString())
+            matching_job.startOrQueue()
+            matching_job.startTime = new Date()
 
             if (!async) {
               result.matchingJob = matching_job.get()
