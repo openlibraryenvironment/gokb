@@ -39,6 +39,7 @@ class BootStrap {
     def concurrencyManagerService
     def languagesService
     def ESWrapperService
+    def sessionFactory
 
     def init = { servletContext ->
 
@@ -149,7 +150,7 @@ class BootStrap {
         ensureCuratoryGroup(grailsApplication.config.getProperty('gokb.centralGroups.JournalInstance'))
 
         KBComponent.withTransaction {
-            log.info("GoKB missing normalised component names")
+            log.info("GOKB missing normalised component names")
             def ctr = 0;
             KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
                 def kbc = KBComponent.get(kbc_id)
@@ -159,16 +160,37 @@ class BootStrap {
                 kbc.save(flush: true, failOnError: true)
                 ctr++
             }
-            log.debug("${ctr} components updated")
 
-            log.info("GoKB remove usused refdata")
+            if (ctr > 0) {
+                log.info("${ctr} components updated")
+            }
+
+            log.info("GOKB setting missing component status")
+            def st_ctr = 0;
+            KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.status is null").each { kbc_id ->
+                def kbc = KBComponent.get(kbc_id)
+                log.debug("Repair component with no status.. ${kbc.class.name} ${kbc.id} ${kbc.name} (Created: ${kbc.dateCreated})")
+                kbc.status = RefdataCategory.lookup('KBComponent.Status', 'Current')
+                kbc.save(flush: true, failOnError: true)
+                st_ctr++
+
+                if (st_ctr % 50 == 0) {
+                    sessionFactory.currentSession.clear()
+                }
+            }
+
+            if (st_ctr > 0) {
+                log.info("${st_ctr} components updated")
+            }
+
+            log.info("GOKB remove usused refdata")
             def rr_std = RefdataCategory.lookup('ReviewRequest.StdDesc', 'RR Standard Desc 1')
 
             if (rr_std) {
                 rr_std.delete()
             }
 
-            log.info("GoKB missing normalised identifiers")
+            log.info("GOKB missing normalised identifiers")
 
             def id_ctr = 0;
             Identifier.executeQuery("select id.id from Identifier as id where id.normname is null and id.value is not null").each { id_id ->
@@ -177,7 +199,10 @@ class BootStrap {
                 i.save(flush: true, failOnError: true)
                 id_ctr++
             }
-            log.debug("${id_ctr} identifiers updated")
+
+            if (id_ctr > 0) {
+                log.info("${id_ctr} identifiers updated")
+            }
 
             log.info("Fix missing Combo status")
 
@@ -185,10 +210,10 @@ class BootStrap {
             int num_c = Combo.executeUpdate("update Combo set status = :sa where status is null", [sa: status_active])
             log.debug("${num_c} combos updated")
 
-            log.info("GoKB defaultSortKeys()")
+            log.info("GOKB defaultSortKeys()")
             defaultSortKeys()
 
-            log.info("GoKB sourceObjects()")
+            log.info("GOKB sourceObjects()")
             sourceObjects()
 
             log.info("Ensure default Identifier namespaces")
