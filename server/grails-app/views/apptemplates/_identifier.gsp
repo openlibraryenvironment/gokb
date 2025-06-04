@@ -9,6 +9,7 @@
   <dd>
     <g:render template="/apptemplates/combosByType"
       model="${[d:d, property:'identifiedComponents', combo_status: null, cols:[
+                [expr:'fromComponent.niceName', colhead:'Type'],
                 [expr:'fromComponent.name', colhead:'Name', action:'link'],
                 [expr:'fromComponent.status.value', colhead: 'Status']]]}" />
   </dd>

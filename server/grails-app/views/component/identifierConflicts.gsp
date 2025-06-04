@@ -47,7 +47,7 @@
       <h1 class="page-header">Components with multiple IDs of namespace <g:link controller="resource" action="show" id="${oid}">${nsname}</g:link> (${titleCount})</h1>
       <div id="mainarea" class="panel panel-default">
 
-        <g:if test="${singleTitles.size() > 0}">
+        <g:if test="${ambiguousComponents.size() > 0}">
           <table class="table table-striped table-condensed table-bordered">
             <thead style="white-space:nowrap;">
               <tr class="inline-nav">
@@ -56,19 +56,22 @@
               </tr>
             </thead>
             <tbody>
-              <g:each in="${singleTitles}" var="st">
+              <g:each in="${ambiguousComponents}" var="st">
                 <tr>
                   <td>
                     <g:link controller="resource" action="show" id="${st.uuid}">${st.name}</g:link>
                     <ul>
-                      <li>Edit Status: ${st.editStatus?.value ?: 'Not Set'}</li>
-                      <li>Latest Publisher: ${st.currentPublisher?.name ?: 'None'}</li>
+                      <li>Status: ${st.status}</li>
+                      <li>Edit Status: ${st.editStatus ?: 'Not Set'}</li>
+                      <g:if test="${st.currentPublisher}">
+                        <li>Latest Publisher: ${st.currentPublisher}</li>
+                      </g:if>
                     </ul>
                   </td>
                   <td>
                     <ul>
                     <g:each in="${st.ids}" var="cid">
-                      <li><span style="${cid.namespace.value == namespace.value ?'font-weight:bold;':''}">${cid.namespace.value}:${cid.value}</span></li>
+                      <li><span style="${cid.namespace == namespace ?'font-weight:bold;':''}">${cid.namespace}:${cid.value}</span></li>
                     </g:each>
                     </ul>
                   </td>
@@ -115,8 +118,8 @@
                   <tr>
                     <td><g:link controller="resource" action="show" id="${did.uuid}"><span style="white-space:nowrap">${did.value}</span></g:link></td>
                     <td>
-                      <g:each in="${did.getActiveIdentifiedComponents('TitleInstance')}" var="idc">
-                        <div><g:link controller="resource" action="show" id="${idc.uuid}">${idc.name} (${idc.status?.value ?: 'Unknown Status'}) - ${idc.niceName}</g:link></div>
+                      <g:each in="${did.components}" var="idc">
+                        <div><g:link controller="resource" action="show" id="${idc.uuid}">${idc.name} (${idc.status ?: 'Unknown Status'}) - ${idc.niceName}</g:link></div>
                       </g:each>
                     </td>
                   </tr>
