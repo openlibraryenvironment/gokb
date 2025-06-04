@@ -126,117 +126,133 @@ class PackageController {
     UpdateToken update_token = null
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
+    boolean editable = true
 
     if (reqBody) {
-      log.debug("Save package ${reqBody}")
-      def pkg_validation = Package.validateDTO(reqBody, request_locale)
-      def obj = null
+      if (!user.hasRole('ROLE_ADMIN') && (reqBody.curatoryGroups || reqBody.activeGroup)) {
+        def cur = reqBody.curatoryGroups ? user.curatoryGroups*.id.intersect(reqBody.curatoryGroups*.id) : user.curatoryGroups*.id.contains(reqBody.activeGroup.id)
 
-      if (pkg_validation.valid) {
-        def lookup_result = packageService.restLookup(reqBody)
-
-        if (lookup_result.to_create) {
-          def normname = Package.generateNormname(reqBody.name)
-          try {
-            obj = new Package(name: reqBody.name, normname: normname)
-          }
-          catch (grails.validation.ValidationException ve) {
-            errors << messageService.processValidationErrors(ve.errors, request_locale)
-          }
-          log.debug("New Object ${obj}")
+        if (!cur) {
+          editable = false
         }
-        else {
-          lookup_result.matches.each { id, errs ->
-            errs.each { e ->
-              if (!errors[e.field])
-                errors[e.field] = []
+      }
 
-              errors[e.field] << [matches: id] + e
+      if (editable) {
+        log.debug("Save package ${reqBody}")
+        def pkg_validation = Package.validateDTO(reqBody, request_locale)
+        def obj = null
+
+        if (pkg_validation.valid) {
+          def lookup_result = packageService.restLookup(reqBody)
+
+          if (lookup_result.to_create) {
+            def normname = Package.generateNormname(reqBody.name)
+            try {
+              obj = new Package(name: reqBody.name, normname: normname)
+            }
+            catch (grails.validation.ValidationException ve) {
+              errors << messageService.processValidationErrors(ve.errors, request_locale)
+            }
+            log.debug("New Object ${obj}")
+          }
+          else {
+            lookup_result.matches.each { id, errs ->
+              errs.each { e ->
+                if (!errors[e.field])
+                  errors[e.field] = []
+
+                errors[e.field] << [matches: id] + e
+              }
             }
           }
-        }
 
-        if (errors.size() > 0) {
-          log.debug("Object has validation errors!")
-        }
-        else if (lookup_result.to_create && !obj) {
-          log.debug("Could not upsert object!")
-          errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
-        }
-        else if (obj) {
-          obj.save(flush:true)
-          def jsonMap = obj.jsonMapping
+          if (errors.size() > 0) {
+            log.debug("Object has validation errors!")
+          }
+          else if (lookup_result.to_create && !obj) {
+            log.debug("Could not upsert object!")
+            errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
+          }
+          else if (obj) {
+            obj.save(flush:true)
+            def jsonMap = obj.jsonMapping
 
-          jsonMap.immutable = [
-              'userListVerifier',
-              'listVerifiedDate',
-              'listStatus'
-          ]
+            jsonMap.immutable = [
+                'userListVerifier',
+                'listVerifiedDate',
+                'listStatus'
+            ]
 
-          log.debug("Updating ${obj}")
-          obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+            log.debug("Updating ${obj}")
+            obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-          if (obj.validate()) {
-            if (errors.size() == 0) {
-              log.debug("No errors.. saving")
-              obj.save()
-
-              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
-
-              if (variant_result.errors.size() > 0) {
-                errors.variantNames = variant_result.errors
-              }
-
-              def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
-
-              if (subject_result.errors.size() > 0) {
-                errors.subjects = subject_result.errors
-              }
-
-              String charset = (('a'..'z') + ('0'..'9')).join()
-              def updateToken = RandomStringUtils.random(255, charset.toCharArray())
-              update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
-
-              if ((!reqBody.curatoryGroups || reqBody.curatoryGroups?.size() == 0) && reqBody.activeGroup) {
-                reqBody.curatoryGroups = [reqBody.activeGroup]
-              }
-
-              errors << packageUpdateService.updateCombos(obj, reqBody, false, user)
-
+            if (obj.validate()) {
               if (errors.size() == 0) {
-                log.debug("No errors: ${errors}")
-                obj.save(flush: true)
-                response.status = 201
-                result = restMappingService.mapObjectToJson(obj, params, user)
+                log.debug("No errors.. saving")
+                obj.save()
 
-                if (update_token) {
-                  result.updateToken = update_token.value
+                def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+                if (variant_result.errors.size() > 0) {
+                  errors.variantNames = variant_result.errors
+                }
+
+                def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+
+                if (subject_result.errors.size() > 0) {
+                  errors.subjects = subject_result.errors
+                }
+
+                String charset = (('a'..'z') + ('0'..'9')).join()
+                def updateToken = RandomStringUtils.random(255, charset.toCharArray())
+                update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
+
+                if ((!reqBody.curatoryGroups || reqBody.curatoryGroups?.size() == 0) && reqBody.activeGroup) {
+                  reqBody.curatoryGroups = [reqBody.activeGroup]
+                }
+
+                errors << packageUpdateService.updateCombos(obj, reqBody, false, user)
+
+                if (errors.size() == 0) {
+                  log.debug("No errors: ${errors}")
+                  obj.save(flush: true)
+                  response.status = 201
+                  result = restMappingService.mapObjectToJson(obj, params, user)
+
+                  if (update_token) {
+                    result.updateToken = update_token.value
+                  }
+                }
+                else {
+                  result.result = 'ERROR'
+                  log.debug("There were errors setting combo props!")
+                  obj.discard()
+                  result.error = errors
                 }
               }
               else {
                 result.result = 'ERROR'
-                log.debug("There were errors setting combo props!")
                 obj.discard()
-                result.error = errors
+                result.message = message(code: "default.create.errors.message")
+                response.status = 400
               }
             }
             else {
               result.result = 'ERROR'
               obj.discard()
-              result.message = message(code: "default.create.errors.message")
               response.status = 400
+              errors << messageService.processValidationErrors(obj.errors, request_locale)
             }
           }
-          else {
-            result.result = 'ERROR'
-            obj.discard()
-            response.status = 400
-            errors << messageService.processValidationErrors(obj.errors, request_locale)
-          }
+        }
+        else {
+          errors << pkg_validation.errors
         }
       }
       else {
-        errors << pkg_validation.errors
+        response.status = 403
+        result.result = 'ERROR'
+        response.message = "User is not authorized to create packages for this curatory group!"
       }
     }
     else {
@@ -625,7 +641,7 @@ class PackageController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def ingestKbart() {
     log.debug("Form post")
-    def result = ['result': 'OK']
+    def result = ['result': 'OK', errors: [:]]
     Package pkg = Package.findByUuid(params.id)
 
     if (!pkg) {
@@ -644,38 +660,78 @@ class PackageController {
     def user = User.get(springSecurityService.principal.id)
     def active_group_id = null
     def title_ns_id = null
+    def title_ns_serial_id = null
+    def title_ns_mono_id = null
 
-    if (params.int('activeGroup')) {
-      CuratoryGroup active_group = CuratoryGroup.get(params.int('activeGroup'))
+    if (params.activeGroup) {
+      CuratoryGroup active_group
+
+      if (params.int('activeGroup')) {
+        active_group = CuratoryGroup.get(params.int('activeGroup'))
+      }
 
       if (!active_group) {
-        response.status = 404
         result.result = 'ERROR'
-        result.message = "Unable to reference active curatory group!"
-
-        render result as JSON
+        result.errors.activeGroup = [[message: 'Unable to reference active curatory group!', baddata: params.activeGroup]]
       }
       else {
         active_group_id = active_group.id
       }
     }
 
-    if (params.int('titleIdNamespace')) {
-      IdentifierNamespace title_ns = IdentifierNamespace.get(params.int('titleIdNamespace'))
+    if (params.titleIdNamespace) {
+      IdentifierNamespace title_ns
+
+      if (params.int('titleIdNamespace')) {
+        title_ns = IdentifierNamespace.get(params.int('titleIdNamespace'))
+      }
 
       if (!title_ns) {
-        response.status = 404
         result.result = 'ERROR'
-        result.message = "Unable to reference active title id namespace!"
-
-        render result as JSON
+        result.errors.titleIdNamespace = [[message: 'Unable to reference title_id namespace!', baddata: params.titleIdNamespace]]
       }
       else {
         title_ns_id = title_ns.id
       }
     }
 
-    if (componentUpdateService.isUserCurator(pkg, user)) {
+    if (params.titleIdSerial) {
+      IdentifierNamespace title_ns
+
+      if (params.int('titleIdSerial')) {
+        title_ns = IdentifierNamespace.get(params.int('titleIdSerial'))
+      }
+
+      if (!title_ns) {
+        result.result = 'ERROR'
+        result.errors.titleIdSerial = [[message: "Unable to reference active serial title_id namespace!", baddata: params.titleIdSerial]]
+      }
+      else {
+        title_ns_serial_id = title_ns.id
+      }
+    }
+
+    if (params.titleIdMonograph) {
+      IdentifierNamespace title_ns
+
+      if (params.int('titleIdMonograph')) {
+        title_ns = IdentifierNamespace.get(params.int('titleIdMonograph'))
+      }
+
+      if (!title_ns) {
+        result.result = 'ERROR'
+        result.errors.titleIdMonograph = [[message: "Unable to reference active monograph title_id namespace!", baddata: params.titleIdMonograph]]
+      }
+      else {
+        title_ns_mono_id = title_ns.id
+      }
+    }
+
+    if (result.result == 'ERROR') {
+        result.message = "Failed to reference objects for one or more parameters!"
+        response.status = 400
+    }
+    else if (componentUpdateService.isUserCurator(pkg, user)) {
       pkgInfo = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
       DataFile datafile = null
       def upload_mime_type = request.getFile("submissionFile")?.contentType
@@ -724,7 +780,9 @@ class PackageController {
             dry_run,
             skip_invalid,
             delete_missing,
-            job
+            job,
+            title_ns_serial_id,
+            title_ns_mono_id
           )
         }
 
@@ -753,10 +811,15 @@ class PackageController {
         result.message = "There has been an error processing the KBART file!"
       }
     }
-    else {
+    else if (pkg?.id) {
       result.result = 'ERROR'
       response.status = 403
       result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.status = 500
+      result.message = "KBART import failed, please try again!"
     }
 
     render result as JSON

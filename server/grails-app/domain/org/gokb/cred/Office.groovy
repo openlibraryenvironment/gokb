@@ -25,42 +25,42 @@ class Office extends KBComponent {
   ]
 
   static manyByCombo = [
-	curatoryGroups : CuratoryGroup
+	  curatoryGroups : CuratoryGroup
   ]
 
   static mapping = {
-        includes KBComponent.mapping
-	website column:'office_website'
-	email column:'office_email'
-	phoneNumber column:'office_phone_number'
-	otherDetails column:'office_other_details'
-	addressLine1 column:'office_address_1'
-	addressLine2 column:'office_address_2'
-	city column:'office_city'
-	zipPostcode column:'office_zip_postcode'
-	region column:'office_region'
-	state column:'office_state'
-  country column:'office_country_fk_rv'
-  function column:'office_function_fk_rv' // , defaultValue: RefdataCategory.lookup(RD_FUNCTION, "Technical Support")
+    includes KBComponent.mapping
+    website column:'office_website'
+    email column:'office_email'
+    phoneNumber column:'office_phone_number'
+    otherDetails column:'office_other_details'
+    addressLine1 column:'office_address_1'
+    addressLine2 column:'office_address_2'
+    city column:'office_city'
+    zipPostcode column:'office_zip_postcode'
+    region column:'office_region'
+    state column:'office_state'
+    country column:'office_country_fk_rv'
+    function column:'office_function_fk_rv'
   }
 
   static constraints = {
-	website (nullable:true, blank:true)
-	email (nullable:true, blank:true)
-	phoneNumber (nullable:true, blank:true)
-	otherDetails (nullable:true, blank:true)
-	addressLine1 (nullable:true, blank:true)
-	addressLine2 (nullable:true, blank:true)
-	city (nullable:true, blank:true)
-	zipPostcode (nullable:true, blank:true)
-	region (nullable:true, blank:true)
-	state (nullable:true, blank:true)
-	country (nullable:true, blank:true)
-  function (nullable: true, blank: false)
+    website (nullable:true, blank:true)
+    email (nullable:true, blank:true)
+    phoneNumber (nullable:true, blank:true)
+    otherDetails (nullable:true, blank:true)
+    addressLine1 (nullable:true, blank:true)
+    addressLine2 (nullable:true, blank:true)
+    city (nullable:true, blank:true)
+    zipPostcode (nullable:true, blank:true)
+    region (nullable:true, blank:true)
+    state (nullable:true, blank:true)
+    country (nullable:true, blank:true)
+    function (nullable: true, blank: false)
   }
 
   private static refdataDefaults = [
-      "function"		: "Technical Support"
+    'function'		: 'Technical Support'
   ]
 
   /**

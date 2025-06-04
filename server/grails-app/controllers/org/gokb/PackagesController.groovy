@@ -16,6 +16,7 @@ class PackagesController {
   def concurrencyManagerService
   def TSVIngestionService
   def packageService
+  def packageCSVExportService
 
   public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id = :pkg and c.toComponent = tipp  and c.type.value = :ct order by tipp.id';
 
@@ -315,7 +316,7 @@ class PackagesController {
   def kbart() {
     if (request.method == "POST") {
       def packs = []
-      def type = request.JSON.data.exportType=='title'?PackageService.ExportType.KBART_TITLE:PackageService.ExportType.KBART_TIPP
+      def type = request.JSON.data.exportType == 'title' ? PackageCSVExportService.ExportType.KBART_TITLE : PackageCSVExportService.ExportType.KBART_TIPP
 
       request.JSON.data.ids.each { id ->
         def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
@@ -324,31 +325,37 @@ class PackagesController {
           packs << pkg
       }
 
-      packageService.sendZip(packs, type, response)
+      packageCSVExportService.sendZip(packs, type, response)
     }
     else {
-      def ids = params.list('pkg')
-      def type = params.exportType == 'title' ? PackageService.ExportType.KBART_TITLE : PackageService.ExportType.KBART_TIPP
+      def ids = params.list('pkg') ?: [params.id]
+      def type = params.exportType == 'title' ? PackageCSVExportService.ExportType.KBART_TITLE : PackageCSVExportService.ExportType.KBART_TIPP
 
-      if (!ids || ids.size() <= 1) {
-        def pkg = Package.findByUuid(params.id) ?: (genericOIDService.oidToId(params.id) ? Package.get(genericOIDService.oidToId(params.id)) : null)
+      if (!ids) {
+        response.status = 400
+      }
+      else if (ids.size() == 1) {
+        def pkg = Package.findByUuid(ids[0]) ?: (genericOIDService.oidToId(ids[0]) ? Package.get(genericOIDService.oidToId(ids[0])) : null)
 
-        if (pkg)
-          packageService.sendFile(pkg, type, response)
-        else
-          log.error("Cant find package with ID ${params.id}")
+        if (pkg) {
+          packageCSVExportService.sendFile(pkg, type, response)
+        }
+        else {
+          log.error("Cant find package with ID ${ids[0]}")
           response.status = 404
+        }
       }
       else {
         def packs = []
 
         ids.each { id ->
           def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
+
           if (pkg)
             packs << pkg
         }
 
-        packageService.sendZip(packs, type, response)
+        packageCSVExportService.sendZip(packs, type, response)
       }
     }
   }
@@ -365,24 +372,24 @@ class PackagesController {
           packs << pkg
       }
 
-      packageService.sendZip(packs, PackageService.ExportType.TSV, response)
+      packageCSVExportService.sendZip(packs, PackageCSVExportService.ExportType.TSV, response)
     }
     else {
-      def ids = params.list('pkg')
+      def ids = params.list('pkg') ?: [params.id]
 
-      if (ids?.size() == 0) {
-        if (params.id == "all") {
-          Package.all.each { pack ->
-            packageService.createTsvExport(pack)
-          }
-          return response
+      if (!ids) {
+        response.status = 400
+      }
+      else if (ids.size() == 1) {
+        def pkg = Package.findByUuid(ids[0]) ?: (genericOIDService.oidToId(ids[0]) ? Package.get(genericOIDService.oidToId(ids[0])) : null)
+
+        if (pkg) {
+          packageCSVExportService.sendFile(pkg, PackageCSVExportService.ExportType.TSV, response)
         }
-        def pkg = Package.findByUuid(params.id) ?: (genericOIDService.oidToId(params.id) ? Package.get(genericOIDService.oidToId(params.id)) : null)
-        if (pkg)
-          packageService.sendFile(pkg, PackageService.ExportType.TSV, response)
-        else
-          log.error("Cant find package with ID ${params.id}")
+        else {
+          log.error("Cant find package with ID ${ids[0]}")
           response.status = 404
+        }
       } else {
         def packs = []
 
@@ -392,7 +399,7 @@ class PackagesController {
             packs << pkg
         }
 
-        packageService.sendZip(packs, PackageService.ExportType.TSV, response)
+        packageCSVExportService.sendZip(packs, PackageCSVExportService.ExportType.TSV, response)
       }
     }
   }

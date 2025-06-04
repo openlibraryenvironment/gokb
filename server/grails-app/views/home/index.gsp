@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name='layout' content='public' />
-<title>GOKb: Welcome</title>
+<title>GOKB: Welcome</title>
 </head>
 
 <body>
@@ -19,7 +19,7 @@
                     <span class="icon-bar"></span>
                 </button>
                 <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-                <a class="navbar-brand" href="index.html">GOKb</a>
+                <a class="navbar-brand" href="index.html">GOKB</a>
             </div>
             <!-- Collect the nav links, forms, and other content for toggling -->
             <div class="collapse navbar-collapse" id="primary-nav">
@@ -74,7 +74,7 @@
 					</div>
 					<span class="brand-before"> <small>Welcome to</small>
 					</span>
-					<h1 class="brand-name">GOKb</h1>
+					<h1 class="brand-name">GOKB</h1>
 				</div>
 			</div>
 		</div>
@@ -84,34 +84,34 @@
 				<div class="col-lg-12">
 					<hr>
 					<h2 class="intro-text text-center">
-						About <strong>GOKb</strong>
+						About <strong>GOKB</strong>
 					</h2>
 					<hr>
-					<p>GOKb, the Global Open Knowledgebase, is a community-managed
+					<p>GOKB, the Global Open Knowledge Base, is a community-managed
 						project that aims to describe electronic journals and books,
 						publisher packages, and platforms in a way that will be familiar
 						to librarians who have worked with electronic resources. Following
 						launch in November 2014, libraries and consortia will be working
 						together to extend and maintain the knowledge base.</p>
 					<p>
-						The GOKb project has been supported by the Andrew W. Mellon
+						The GOKB project has been supported by the Andrew W. Mellon
 						Foundation. It is managed by the <a
 							href="http://www.kuali.org/ole/partners">Kuali OLE founding
 							partners</a> and <a href="https://www.jisc-collections.ac.uk/">JISC
 							Collections</a> of the United Kingdom, collaborating with
 						organizations and editors from a number of countries.
 					</p>
-					<p>The data found in GOKb is freely available for reuse under a
+					<p>The data found in GOKB is freely available for reuse under a
 						CC0 license.</p>
 					<p>
 						Organizations and individuals wishing to access data or to take
 						part as editorial contributors should contact <a
 							href="mailto:kristen_wilson@ncsu.edu">Kristen Wilson</a>, the
-						GOKb editor.
+						GOKB editor.
 					</p>
 					<p>
 						Guidance for editors can be found on the <a
-							href="https://wiki.kuali.org/display/OLE/GOKb+Data+Management+Wiki">GOKb
+							href="https://wiki.kuali.org/display/OLE/GOKb+Data+Management+Wiki">GOKB
 							Wiki</a>
 					</p>
 					<p>

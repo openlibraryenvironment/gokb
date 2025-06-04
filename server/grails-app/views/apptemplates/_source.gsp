@@ -65,6 +65,18 @@
 			<g:manyToOneReferenceTypedown owner="${d}" field="targetNamespace" baseClass="org.gokb.cred.IdentifierNamespace">${ d.targetNamespace }</g:manyToOneReferenceTypedown>
 		</dd>
 		<dt>
+			<g:annotatedLabel owner="${d}" property="titleIdSerial">Title ID Namespace (Serial)</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:manyToOneReferenceTypedown owner="${d}" field="titleIdSerial" baseClass="org.gokb.cred.IdentifierNamespace">${ d.titleIdSerial }</g:manyToOneReferenceTypedown>
+		</dd>
+		<dt>
+			<g:annotatedLabel owner="${d}" property="titleIdMonograph">Title ID Namespace (Monograph)</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:manyToOneReferenceTypedown owner="${d}" field="titleIdMonograph" baseClass="org.gokb.cred.IdentifierNamespace">${ d.titleIdMonograph }</g:manyToOneReferenceTypedown>
+		</dd>
+		<dt>
 			<g:annotatedLabel owner="${d}" property="lastRun">Last Run</g:annotatedLabel>
 		</dt>
 		<dd>

@@ -203,7 +203,7 @@ class TitleLookupServiceSpec extends Specification {
         matching_with_class_one_ids[0] == response.titleId
     }
 
-    void "Test Problem Record Identified In GOKb load"() {
+    void "Test Problem Record Identified In GOKB load"() {
       def c = new IntegrationController()
       given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
         def json_record = [

@@ -60,7 +60,7 @@
         <g:else>
           <div class="panel panel-default">
             <div class="panel-heading">
-              <b>GOKb</b> – ${message(code:'spring.security.ui.register.header', locale: locale)}
+              <b>GOKB</b> – ${message(code:'spring.security.ui.register.header', locale: locale)}
             </div>
             <div class="panel-body">
               <g:form
@@ -83,7 +83,7 @@
                         </i>
                       </label>
                       <div
-                        class="input-group input-group-xs ${registerCommand.errors.hasFieldErrors('email') ? 'has-error' : ''}"
+                        class="input-group input-group-xs"
                         style="margin-bottom:12px;width:100%"
                       >
                         <input
@@ -142,7 +142,7 @@
                         )
                       </label>
                       <div
-                        class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('username') || errs?.username?.size() > 0 ? 'has-error' : ''}"
+                        class="input-group ${registerCommand.errors.hasFieldErrors('username') || errors?.username?.size() > 0 ? 'has-error' : ''}"
                         style="margin-bottom:12px;width:100%"
                       >
                         <input

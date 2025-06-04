@@ -19,10 +19,14 @@ class Source extends KBComponent {
   RefdataValue defaultSupplyMethod
   RefdataValue defaultDataFormat
   IdentifierNamespace targetNamespace
+  IdentifierNamespace titleIdSerial
+  IdentifierNamespace titleIdMonograph
   Date lastRun
   Boolean ezbMatch = false
   Org responsibleParty
   BulkImportListConfig bulkConfig
+  RefdataValue importConfig
+  Boolean ignoreSizeLimit = false
 
   static manyByCombo = [
     curatoryGroups: CuratoryGroup
@@ -45,14 +49,36 @@ class Source extends KBComponent {
     responsibleParty(nullable:true, blank:true)
     ruleset(nullable:true, blank:true)
     targetNamespace(nullable:true, blank:true)
+    titleIdSerial(nullable: true, blank: true)
+    titleIdMonograph(nullable: true, blank: true)
     lastRun(nullable:true, default: null)
     ezbMatch(nullable:true, default: false)
     automaticUpdates(nullable: true, default: false)
     skipInvalid(nullable: true, default: false)
     bulkConfig(nullable: true, blank: false)
+    importConfig(nullable: true, blank: true)
+    ignoreSizeLimit(nullable: true, blank: true)
   }
 
   public static final String restPath = "/sources"
+
+  static jsonMapping = [
+    'ignore'       : [
+      'ruleset',
+      'defaultSupplyMethod',
+      'defaultDataFormat',
+      'ezbMatch',
+      'language',
+      'source'
+    ],
+    'es'           : [],
+    'defaultLinks' : [
+      'curatoryGroups'
+    ],
+    'defaultEmbeds': [
+      'curatoryGroups'
+    ]
+  ]
 
   static def refdataFind(params) {
     def result = [];
@@ -109,12 +135,17 @@ class Source extends KBComponent {
       builder.'explanationAtSource' (explanationAtSource)
       builder.'contextualNotes' (contextualNotes)
       builder.'frequency' (frequency)
-      builder.'ruleset' (ruleset)
       builder.'automaticUpdates' (automaticUpdates)
       builder.'ezbMatch' (ezbMatch)
       builder.'lastRun' (lastRun)
       if ( targetNamespace ) {
         builder.'targetNamespace'('namespaceName': targetNamespace.name, 'value': targetNamespace.value, 'id': targetNamespace.id)
+      }
+      if ( titleIdSerial ) {
+        builder.'titleIdSerial'('namespaceName': titleIdSerial.name, 'value': titleIdSerial.value, 'id': titleIdSerial.id)
+      }
+      if ( titleIdMonograph ) {
+        builder.'titleIdMonograph'('namespaceName': titleIdMonograph.name, 'value': titleIdMonograph.value, 'id': titleIdMonograph.id)
       }
       if ( defaultSupplyMethod ) {
         builder.'defaultSupplyMethod' ( defaultSupplyMethod.value )

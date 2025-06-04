@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb::Review Request Transfer</title>
+<title>GOKB::Review Request Transfer</title>
 </head>
 <body>
 	<h1 class="page-header">Review Request Transfer</h1>

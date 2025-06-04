@@ -24,6 +24,7 @@ class TitleController {
   def titleHistoryService
   def componentLookupService
   def dateFormatService
+  def reviewRequestService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def getTypes() {
@@ -165,6 +166,7 @@ class TitleController {
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
     def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    boolean allow_id_conflicts = user.isAdmin() || reqBody?._checked == true
 
     def publisher_name = null
 
@@ -189,7 +191,7 @@ class TitleController {
           type.name
         )
 
-        if (title_lookup.to_create || reqBody._checked == true) {
+        if (title_lookup.to_create || allow_id_conflicts) {
           obj = type.newInstance()
           obj.name = reqBody.name.trim()
 
@@ -201,6 +203,7 @@ class TitleController {
             if (title_lookup.matches.size() > 0 && !reqBody._checked) {
               def additionalInfo = [:]
               def combo_ids = [obj.id]
+              RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Duplicate Title Info")
 
               additionalInfo.otherComponents = []
 
@@ -216,13 +219,15 @@ class TitleController {
 
               additionalInfo.cstring = combo_ids.sort().join('_')
 
-              ReviewRequest.raise(
+              reviewRequestService.raise(
                 obj,
                 "New TI created.",
                 "There have been possible conflicts with other existing titles.",
-                user,
                 null,
-                (additionalInfo as JSON).toString()
+                null,
+                (additionalInfo as JSON).toString(),
+                rr_type,
+                componentLookupService.findCuratoryGroupOfInterest(obj)
               )
             }
 
@@ -794,7 +799,7 @@ class TitleController {
           errors << updateCombos(obj, reqBody, remove)
 
           if ( errors.size() == 0 ) {
-            obj = obj.save(flush:true)
+            obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -856,7 +861,7 @@ class TitleController {
     if (changed) {
       obj.lastSeen = System.currentTimeMillis()
 
-      titleAugmentService.touchTitleTipps(obj)
+      titleAugmentService.touchTitleTipps(obj, false)
     }
 
     errors
@@ -1005,9 +1010,12 @@ class TitleController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def merge() {
+    log.debug("Merging title ..")
     def result = ['result':'OK', 'params': params]
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstance.findByUuid(params.id) ?: TitleInstance.get(genericOIDService.oidToId(params.id))
+    RefdataValue id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
 
     if (obj && obj.isEditable()) {
       def curator = isUserCurator(obj, user)
@@ -1016,6 +1024,51 @@ class TitleController {
         def target = obj.class.get(params.int('target'))
 
         if (target) {
+          if (params.list('ids')?.size() > 0) {
+            params.list('ids').each { tid ->
+              def idObj = Identifier.get(Long.valueOf(tid))
+
+              if (idObj) {
+                def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: idObj, nt: target, ct: id_combo_type])
+
+                if (!dupes || dupes.size() == 0) {
+                  target.ids.add(idObj)
+                  target.save(flush: true)
+                }
+                else {
+                  log.warn("merge :: Not adding multiple links between title ${target} and ID ${idObj}!")
+                }
+              }
+              else {
+                if (!result.errors.ids) {
+                  result.errors.ids = []
+                }
+
+                result.errors.ids << [message: 'Unable to reference ID object!', baddata: tid]
+              }
+            }
+          }
+          else if (params.boolean('mergeIds')) {
+            obj.ids.each { old_id ->
+
+              def old_combo = Combo.findByFromComponentAndToComponent(obj, old_id)
+
+              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: old_id, nt: target, ct: id_combo_type])
+
+              if (!dupes || dupes.size() == 0){
+                log.debug("Adding Identifier ${old_id} to ${target}")
+                Combo new_id = new Combo(toComponent: old_id, fromComponent: target, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
+              }
+              else{
+                log.debug("Identifier ${old_id} is already connected to ${target}..")
+              }
+            }
+          }
+
+          titleHistoryService.transferEvents(obj, target)
+
+          obj.refresh()
+
           if (params.list('tipps')?.size() > 0) {
             params.list('tipps').each { tipp ->
               def tipp_combo = Combo.executeQuery("from Combo where fromComponent = :title and toComponent.id = :tippId", [title: obj, tippId: Long.valueOf(tipp)])
@@ -1030,45 +1083,32 @@ class TitleController {
               def tippObj = TitleInstancePackagePlatform.get(tipp.id)
 
               tippObj.title = target
+              tippObj.save(flush: true)
               target.save(flush: true)
+
+              log.debug("Changed TIPP title to ${tippObj.title}")
             }
           }
 
-          obj.refresh()
-
-          if (params.list('ids')?.size() > 0) {
-            params.list('ids').each { tid ->
-              def idObj = Identifier.get(Long.valueOf(tid))
-
-              if (idObj && !target.ids.contains(idObj)) {
-                target.ids.add(idObj)
-                target.save(flush: true)
-              }
-            }
+          if (params.boolean('transferName')) {
+            target.ensureVariantName(target.name)
+            target.name = obj.name
+            target.save(flush: true)
           }
-          else if (params.boolean('mergeIds')) {
-            def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
 
-            obj.ids.each{ old_id ->
+          obj.subjects.each { cs ->
+            def existing = ComponentSubject.findByComponentAndSubject(target, cs.subject)
 
-              def old_combo = Combo.findByFromComponentAndToComponent(obj, old_id)
-
-              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = ?0 and c.fromComponent = ?1 and c.type = ?2", [old_id, target, id_combo_type])
-              if (!dupes || dupes.size() == 0){
-                log.debug("Adding Identifier ${old_id} to ${target}")
-                Combo new_id = new Combo(toComponent: old_id, fromComponent: target, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
-              }
-              else{
-                log.debug("Identifier ${old_id} is already connected to ${target}..")
-              }
+            if (!existing) {
+              new ComponentSubject(component: target, subject: cs.subject).save(flush: true, failOnError: true)
             }
           }
 
-          target.save(flush: true)
-
-          titleHistoryService.transferEvents(obj, target)
-
+          log.debug("Deleting stale title ${obj}")
           obj.deleteSoft()
+          obj.save(flush: true)
+
+          log.debug("Title is ${obj.status.value}!")
         }
         else {
           result.result = 'ERROR'

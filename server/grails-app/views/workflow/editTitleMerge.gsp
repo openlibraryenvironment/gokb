@@ -4,7 +4,7 @@
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-<title>GOKb: Title Merge</title>
+<title>GOKB: Title Merge</title>
 </head>
 <body>
   <g:form controller="workflow" action="editTitleMerge" id="${params.id}">

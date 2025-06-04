@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 import java.time.LocalDateTime
 import java.time.LocalDate
+import java.time.YearMonth
 
 
 class GOKbTextUtils {
@@ -228,11 +229,13 @@ class GOKbTextUtils {
           }
         }
         else if ( datepart.length() == 7 ) {
-          if(start) {
-            result = LocalDate.parse(datepart + "-01", dateformatter).atStartOfDay()
+          YearMonth ym = YearMonth.parse(datepart)
+
+          if (start) {
+            result = ym.atDay(1).atStartOfDay()
           }
           else {
-            result = LocalDate.parse(datepart + "-31", dateformatter).atStartOfDay()
+            result = ym.atEndOfMonth().atStartOfDay()
           }
         }
         else if ( datepart.length() == 10 ) {

@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="public" />
-<title>GOKb: OAI Interface</title>
+<title>GOKB: OAI Interface</title>
 </head>
 <body>
 
@@ -40,4 +40,3 @@
       </div>
 </body>
 </html>
-

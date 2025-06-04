@@ -216,7 +216,6 @@ class OaiSpec extends Specification {
     title_node.isEmpty() == false
     title_node?.identifiers?.identifier?.size() == 2
     title_node.TIPPs.size() == 1
-    title_node.TIPPs.TIPP.prices.price.type == 'list'
     title_node.TIPPs.TIPP.package.@uuid == test_pkg.uuid
     title_node.TIPPs.TIPP.package.@uuid == test_pkg.uuid
     title_node.TIPPs.TIPP.accessStartDate ==~ /^\d{4}-\d{2}-\d{2}$/
@@ -244,9 +243,6 @@ class OaiSpec extends Specification {
     tipp_node.package.@uuid == test_pkg.uuid
     tipp_node.title.@uuid == title1.uuid
     tipp_node.platform.@uuid == test_plt.uuid
-    tipp_node.prices.price.type == 'list'
-    tipp_node.prices.price.amount == '1234.56'
-    tipp_node.prices.price.currency == 'EUR'
     tipp_node.publisherName == 'test Publisher'
     tipp_node?.identifiers?.identifier?.size() == 2
   }
@@ -280,7 +276,7 @@ class OaiSpec extends Specification {
       .path("/oai/packages")
       .queryParam('verb', 'GetRecord')
       .queryParam('metadataPrefix', 'gokb')
-      .queryParam('identifier', "org.gokb.cred.Package:$test_pkg.id")
+      .queryParam('identifier', "$test_pkg.uuid")
       .build()
 
     HttpRequest request = HttpRequest.GET(uri)

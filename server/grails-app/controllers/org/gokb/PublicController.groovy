@@ -24,7 +24,7 @@ class PublicController {
   def springSecurityService
   def concurrencyManagerService
   def TSVIngestionService
-  def PackageService
+  def packageCSVExportService
   def ESWrapperService
   def ESSearchService
   def dateFormatService
@@ -158,13 +158,13 @@ class PublicController {
 
   // @Transactional(readOnly = true)
   def kbart() {
-    def type = params.exportType == 'title' ? PackageService.ExportType.KBART_TITLE : PackageService.ExportType.KBART_TIPP
+    def type = params.exportType == 'title' ? PackageCSVExportService.ExportType.KBART_TITLE : PackageCSVExportService.ExportType.KBART_TIPP
     def pkg = Package.findByUuid(params.id) ?: (genericOIDService.oidToId(params.id) ? Package.get(genericOIDService.oidToId(params.id)) : null)
 
     def export_date = dateFormatService.formatDate(new Date())
 
     if (pkg) {
-      packageService.sendFile(pkg, type, response)
+      packageCSVExportService.sendFile(pkg, type, response)
     }
     else {
       log.debug("Unable to resolve package by ID ${params.id}!")
@@ -178,7 +178,7 @@ class PublicController {
     def pkg = genericOIDService.resolveOID(params.id)
 
     if (pkg) {
-      packageService.sendFile(pkg, PackageService.ExportType.TSV, response)
+      packageCSVExportService.sendFile(pkg, PackageCSVExportService.ExportType.TSV, response)
     }
     else {
       log.debug("Unable to resolve package by ID ${params.id}!")

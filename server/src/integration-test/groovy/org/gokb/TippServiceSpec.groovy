@@ -4,24 +4,13 @@ import com.k_int.ConcurrencyManagerService
 
 import gokbg3.DateFormatService
 
+import grails.converters.JSON
 import grails.testing.mixin.integration.Integration
 import grails.testing.services.ServiceUnitTest
 
 import java.time.LocalDateTime
 
-import org.gokb.*
-import org.gokb.cred.BookInstance
-import org.gokb.cred.Identifier
-import org.gokb.cred.IdentifierNamespace
-import org.gokb.cred.JournalInstance
-import org.gokb.cred.KBComponent
-import org.gokb.cred.Org
-import org.gokb.cred.Package
-import org.gokb.cred.Platform
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.ReviewRequest
-import org.gokb.cred.TitleInstancePackagePlatform
-import org.gokb.cred.Combo
+import org.gokb.cred.*
 import org.hibernate.SessionFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.annotation.Rollback
@@ -75,21 +64,98 @@ class TippServiceSpec extends Specification {
       book.save(flush: true)
     }
 
-    if (!JournalInstance.findByName("TippService Journal 1")) {
-      Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
-      Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338')
+    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
+    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338')
 
-      JournalInstance journal = new JournalInstance(name: "TippService Journal 1").save(flush:true)
+    JournalInstance journal = JournalInstance.findByName("TippService Journal 1")
+    JournalInstance journal2 = JournalInstance.findByName("TippService Journal 2")
+
+    if (!journal) {
+      journal = new JournalInstance(name: "TippService Journal 1").save(flush:true)
       journal.ids.addAll([issn, eissn])
       journal.save(flush: true)
+    }
+
+    if (!journal2) {
+      journal2 = new JournalInstance(name: "TippService Journal 2").save(flush:true)
+      journal2.ids.addAll([issn])
+      journal2.save(flush: true)
+    }
+
+    TitleInstancePackagePlatform rr_tipp = TitleInstancePackagePlatform.findByName("Test TIPP ambiguous review")
+
+    if (!rr_tipp) {
+      Package rr_pkg = Package.findByName("TippService Test reviewAmbiguousMatches Package") ?: new Package(name: "TippService Test reviewAmbiguousMatches Package").save(flush: true)
+
+      def tmap = [
+        pkg            : rr_pkg.id,
+        hostPlatform   : plt.id,
+        url            : "http://test-url.net/",
+        status         : "Current",
+        name           : "Test TIPP ambiguous review",
+        editStatus     : "Approved",
+        language       : "ger",
+        publicationType: "Serial"
+      ]
+
+      rr_tipp = tippUpsertService.upsertDTO(tmap)
+
+      rr_tipp.ids.addAll([issn, eissn])
+      rr_tipp.save(flush: true)
+    }
+
+    RefdataValue rr_type = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Title Matches')
+    RefdataValue rr_status_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
+    RefdataValue rr_status_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+    ReviewRequest ambiguous_rr = ReviewRequest.findByComponentToReviewAndStdDesc(rr_tipp, rr_type)
+
+    if (ambiguous_rr && ambiguous_rr.status == rr_status_closed) {
+      ambiguous_rr.status = rr_status_open
+      ambiguous_rr.save(flush: true)
+    } else {
+      Map additionalInfo = [
+        otherComponents: [
+          [
+            id: journal.id,
+            name: journal.name,
+            uuid: journal.uuid
+          ],
+          [
+            id: journal2.id,
+            name: journal2.name,
+            uuid: journal2.uuid
+          ]
+        ]
+      ]
+
+      ReviewRequest req = new ReviewRequest(
+        status: rr_status_open,
+        descriptionOfCause: "Ambiguous Title Matches",
+        reviewRequest: "Select reference title to link",
+        stdDesc: rr_type,
+        additionalInfo: (additionalInfo as JSON).toString(),
+        componentToReview: rr_tipp
+      ).save(flush:true)
     }
   }
 
   def cleanup() {
-    ["Test Title from full TIPP","Test Title from minimal TIPP","TippService Journal 1", "Test TIPP idmatch","TippService Update Journal", "TippService Book 1", "TippService Journal Conflict 1"].each {
+    [
+      "Test Title from full TIPP",
+      "Test Title from minimal TIPP",
+      "TippService Journal 1",
+      "TippService Journal 2",
+      "Test TIPP idmatch",
+      "TippService Update Journal",
+      "TippService Book 1",
+      "TippService Journal Conflict 1",
+      "TippService Journal Conflict 2",
+      "Test TIPP ambiguous review"
+    ].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
     Package.findByName("TippService Test Package")?.expunge()
+    Package.findByName("TippService Test reviewAmbiguousMatches Package")?.expunge()
     Platform.findByName("TippService Test Platform")?.expunge()
     Org.findByName("TippService Test Org")?.expunge()
     BookInstance.findByName("TippService Book 1")?.expunge()
@@ -117,10 +183,12 @@ class TippServiceSpec extends Specification {
 
     when:
     def tipp = tippUpsertService.upsertDTO(tmap)
-    sleep(100)
+    sleep(300)
     def result = tippService.matchTitle(tipp.id)
+    sleep(300)
 
     then:
+    result.status == 'created'
     tipp.title != null
   }
 
@@ -166,9 +234,13 @@ class TippServiceSpec extends Specification {
 
     when:
     def tipp = tippUpsertService.upsertDTO(tmap)
-    tippService.matchTitle(tipp.id)
+    tippService.updateCombos(tipp, [identifiers: [[type: 'isbn', value: '9783406730696'], [type: 'pisbn', value: '9783406718175']]])
+    sleep(300)
+    def result = tippService.matchTitle(tipp.id)
+    sleep(300)
 
     then:
+    result.status == 'created'
     tipp.title != null
     tipp.name == tipp.title.name
     tipp.firstEditor == tipp.title.firstEditor
@@ -271,6 +343,36 @@ class TippServiceSpec extends Specification {
     ReviewRequest.findByComponentToReviewAndStdDesc(tipp.title, rdv_desc) != null
   }
 
+  void "Test skip title linking due to ambiguous matches"() {
+    given:
+    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
+    def pkg_id = Package.findByName("TippService Test Package").id
+    def plt_id = Platform.findByName("TippService Test Platform").id
+
+    def tmap = [
+      pkg            : pkg_id,
+      hostPlatform   : plt_id,
+      'url'            : "http://test-url.net/",
+      'status'         : "Current",
+      'name'           : "TippService Journal Conflict 2",
+      'publicationType': "Serial",
+    ]
+
+    when:
+    def tipp = tippUpsertService.upsertDTO(tmap)
+    tipp.ids.addAll([issn])
+    tipp.save(flush: true)
+
+    def result = tippService.matchTitle(tipp.id)
+
+    then:
+    result?.status == 'unmatched'
+    result.reviewCreated == true
+    tipp.title == null
+    ReviewRequest.findByComponentToReviewAndStdDesc(tipp, RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Title Matches')) != null
+    ReviewRequest.findByComponentToReviewAndStdDesc(JournalInstance.findByName("TippService Journal 2"), RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')) != null
+  }
+
   void "Test Package Update from TIPPs"() {
     given:
     def updPack = Package.findByName("TippService Test Package")
@@ -294,5 +396,33 @@ class TippServiceSpec extends Specification {
     then:
     result.matched == 1
     result.created == 1
+  }
+
+  void "Test reviewAmbiguousMatches not closing review when multiple otherComponents are current" () {
+    given:
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findByName("Test TIPP ambiguous review")
+    ReviewRequest review = ReviewRequest.findByComponentToReview(tipp)
+    when:
+    tippService.reviewAmbiguousMatches(tipp, [review])
+    then:
+    review.refresh().status == RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+  }
+
+  void "Test reviewAmbiguousMatches closing review when only one otherComponent is current" () {
+    given:
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findByName("Test TIPP ambiguous review")
+    JournalInstance journal2 = JournalInstance.findByName("TippService Journal 2")
+    ReviewRequest review = ReviewRequest.findByComponentToReview(tipp)
+    when:
+    journal2.status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    journal2.save(flush: true)
+
+    tippService.reviewAmbiguousMatches(tipp, [review])
+    tipp.refresh()
+    review.refresh()
+    then:
+
+    review.status == RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
+    tipp.title != null
   }
 }

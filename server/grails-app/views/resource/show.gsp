@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: ${displayobj?.getNiceName() ?: 'Component'}
+<title>GOKB: ${displayobj?.getNiceName() ?: 'Component'}
 <g:if test="${displayobj}">
 &lt;${ displayobj?.isEditable() ? 'Editable' : ( response.status == 403 ? 'Not Accessible' : 'Read Only') }&gt;
 &lt;${ displayobj?.isCreatable() ? 'Creatable' : 'Not Creatable' }&gt;

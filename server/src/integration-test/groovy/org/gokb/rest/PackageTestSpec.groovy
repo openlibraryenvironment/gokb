@@ -15,7 +15,10 @@ import io.micronaut.http.client.BlockingHttpClient
 import io.micronaut.http.client.multipart.MultipartBody
 import io.micronaut.http.uri.UriBuilder
 
+import java.time.Duration
+
 import org.gokb.cred.*
+import org.gokb.TitleLookupService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
@@ -31,6 +34,9 @@ class PackageTestSpec extends AbstractAuthSpec {
   @Autowired
   WebApplicationContext ctx
 
+  @Autowired
+  TitleLookupService titleLookupService
+
   BlockingHttpClient http
 
   def setup() {
@@ -43,6 +49,8 @@ class PackageTestSpec extends AbstractAuthSpec {
     Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
     Identifier serial_issn = Identifier.findByValueAndNamespace('0020-0255', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '0020-0255', namespace: IdentifierNamespace.findByValue('issn'))
     Identifier serial_eissn = Identifier.findByValueAndNamespace('1872-6291', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '1872-6291', namespace: IdentifierNamespace.findByValue('eissn'))
+    IdentifierNamespace testJournalNs = IdentifierNamespace.findByValue('testj') ?: new IdentifierNamespace(value: 'testj').save(flush: true)
+    IdentifierNamespace testMonoNs = IdentifierNamespace.findByValue('testm') ?: new IdentifierNamespace(value: 'testm').save(flush: true)
     Platform handlePlt = Platform.findByName("dx.doi.org") ?: new Platform(name: "dx.doi.org", primaryUrl: "http://dx.doi.org/", status: RefdataCategory.lookup('KBComponent.Status', 'Deleted')).save(flush: true)
     Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
     Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
@@ -61,6 +69,11 @@ class PackageTestSpec extends AbstractAuthSpec {
         defaultDataFormat: kbart).save(flush: true)
 
     Package testPackage = Package.findByName("TestPack")
+    Package urlTestPackage = Package.findByName("TestPackHandleUrl")
+    Package testPackageError = Package.findByName("TestPackPartialError")
+    Package testPackageInitNoDates = Package.findByName("TestPackInitNoDates")
+    Package testPackageInitWithDates = Package.findByName("TestPackInitWithDates")
+    Package testPackageUpdateDates = Package.findByName("TestPackUpdateDates")
 
     if (!testPackage) {
       testPackage = new Package(name: "TestPack", source: testSource).save(flush: true)
@@ -69,15 +82,40 @@ class PackageTestSpec extends AbstractAuthSpec {
       testPackage.save(flush:true)
     }
 
-    Package urlTestPackage = new Package(name: "TestPackHandleUrl").save(flush: true)
-    urlTestPackage.nominalPlatform = testPlt
-    urlTestPackage.provider = testOrg
-    urlTestPackage.save(flush: true)
+    if (!urlTestPackage) {
+      urlTestPackage = new Package(name: "TestPackHandleUrl").save(flush: true)
+      urlTestPackage.nominalPlatform = testPlt
+      urlTestPackage.provider = testOrg
+      urlTestPackage.save(flush: true)
+    }
 
-    Package partialErrorPackage = new Package(name: "TestPackPartialError").save(flush: true)
-    partialErrorPackage.nominalPlatform = testPlt
-    partialErrorPackage.provider = testOrg
-    partialErrorPackage.save(flush: true)
+    if (!testPackageError) {
+      testPackageError = new Package(name: "TestPackPartialError").save(flush: true)
+      testPackageError.nominalPlatform = testPlt
+      testPackageError.provider = testOrg
+      testPackageError.save(flush: true)
+    }
+
+    if (!testPackageInitNoDates) {
+      testPackageInitNoDates = new Package(name: "TestPackInitNoDates").save(flush: true)
+      testPackageInitNoDates.nominalPlatform = testPlt
+      testPackageInitNoDates.provider = testOrg
+      testPackageInitNoDates.save(flush: true)
+    }
+
+    if (!testPackageInitWithDates) {
+      testPackageInitWithDates = new Package(name: "TestPackInitWithDates").save(flush: true)
+      testPackageInitWithDates.nominalPlatform = testPlt
+      testPackageInitWithDates.provider = testOrg
+      testPackageInitWithDates.save(flush: true)
+    }
+
+    if (!testPackageUpdateDates) {
+      testPackageUpdateDates = new Package(name: "TestPackUpdateDates").save(flush: true)
+      testPackageUpdateDates.nominalPlatform = testPlt
+      testPackageUpdateDates.provider = testOrg
+      testPackageUpdateDates.save(flush: true)
+    }
 
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle")
 
@@ -131,19 +169,63 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    ['TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TestJournalTIPPSkip', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
+    [
+      'TestPackJournalTIPP',
+      'TestJournalTIPPUpdate',
+      'TestJournalTIPPInit',
+      'TestJournalTIPPInitRetired',
+      'TestPackBookTIPP',
+      'TestPackMixedJournal',
+      'TestPackMixedBook',
+      'TestBookTIPPUpdate',
+      'TestBookTIPPInit',
+      'TestJournalTIPPSkip',
+      'TIPP Name',
+      'Journal of agricultural and food chemistry',
+      'Book of agricultural and food chemistry'
+    ].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
-    ["TestPack","UpdPack","TestPackageWithTipps","TestPackageWithProviderAndPlatform", "TestPackHandleUrl", "TestPackPartialError"].each {
+
+    [
+      "TestPack",
+      "UpdPack",
+      "TestPackageWithTipps",
+      "TestPackageWithProviderAndPlatform",
+      "TestPackHandleUrl",
+      "TestPackPartialError",
+      "TestPackInitNoDates",
+      "TestPackInitWithDates",
+      "TestPackUpdateDates"
+    ].each {
       Package.findByName(it)?.expunge()
     }
+
+    [
+      'PackTestTitle',
+      'PackTestBook',
+      'TestPackJournalTIPP',
+      'TestJournalTIPPUpdate',
+      'TestJournalTIPPInit',
+      'TestJournalTIPPInitRetired',
+      'TestPackBookTIPP',
+      'TestPackMixedJournal',
+      'TestPackMixedBook',
+      'TestBookTIPPUpdate',
+      'TestBookTIPPInit',
+      'TestJournalTIPPSkip',
+      'TIPP Name',
+      'Journal of agricultural and food chemistry',
+      'Book of agricultural and food chemistry'
+    ].each {
+      TitleInstance.findByName(it)?.expunge()
+    }
+
     CuratoryGroup.findByName("cgtest1")?.expunge()
-    JournalInstance.findByName("PackTestTitle")?.expunge()
     Platform.findByName("PackTestPlt")?.expunge()
     Platform.findByName("dx.doi.org")?.expunge()
     Org.findByName("PackTestOrg")?.expunge()
     Source.findByName("TestPack")?.expunge()
-    BookInstance.findByName('PackTestBook')?.expunge()
   }
 
   void "test /rest/packages/<id> without token"() {
@@ -434,5 +516,151 @@ class PackageTestSpec extends AbstractAuthSpec {
     then:
     resp.status == HttpStatus.OK
     resp.body().job_result?.report?.created == 1
+  }
+
+  void "test /rest/packages/<id>/ingest initial load without access_start_date"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_initial_no_access.txt")
+    Package pkg = Package.findByName("TestPackInitNoDates")
+
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_initial_no_access.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().job_result?.report?.created == 2
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInit')?.accessStartDate == null
+  }
+
+  void "test /rest/packages/<id>/ingest initial load with access_start_date"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_initial_access_dates.txt")
+    Package pkg = Package.findByName("TestPackInitWithDates")
+
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_initial_access_dates.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().job_result?.report?.created == 4
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInit')?.accessStartDate != null
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInitRetired')?.accessEndDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPInit')?.accessEndDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPInit')?.status?.value == 'Retired'
+  }
+
+  void "test /rest/packages/<id>/ingest update access dates"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_initial_no_access.txt")
+    Resource kbart_file_update = new ClassPathResource("/test_rest_initial_access_dates.txt")
+    Package pkg = Package.findByName("TestPackUpdateDates")
+
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_initial_no_access.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse respInit = http.exchange(request, Map)
+
+    MultipartBody requestBodyUpdate = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_initial_access_dates.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file_update.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+    HttpRequest updateRequest = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBodyUpdate)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(updateRequest, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().job_result?.report?.matched == 2
+    resp.body().job_result?.report?.created == 2
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInit')?.accessStartDate != null
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInitRetired')?.accessEndDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPUpdate')?.accessStartDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPInit')?.accessEndDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPInit')?.status?.value == 'Retired'
+  }
+
+
+  void "test /rest/packages/<id>/ingest with mixed package and separate namespaces"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_mixed_valid_separate_namespaces.txt")
+    Package pkg = Package.findByName("TestPack")
+    IdentifierNamespace testJournalNs = IdentifierNamespace.findByValue('testj')
+    IdentifierNamespace testMonoNs = IdentifierNamespace.findByValue('testm')
+
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_initial_no_access.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .addPart('titleIdSerial', "${testJournalNs.id}")
+      .addPart('titleIdMonograph', "${testMonoNs.id}")
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    TitleInstancePackagePlatform.findByName('TestPackMixedJournal')?.ids.find { it.namespace == testJournalNs }
+    TitleInstancePackagePlatform.findByName('TestPackMixedBook')?.ids.find { it.namespace == testMonoNs }
   }
 }

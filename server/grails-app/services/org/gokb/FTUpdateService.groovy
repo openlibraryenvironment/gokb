@@ -92,6 +92,10 @@ class FTUpdateService {
         result.global = kbc.global?.value ?: ""
         result.globalNote = kbc.globalNote
 
+        if (grailsApplication.config.getProperty('gokb.stableUriBase')) {
+          result.uri = "${grailsApplication.config.getProperty('gokb.stableUriBase')}/package/${kbc.uuid}".toString()
+        }
+
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -134,6 +138,8 @@ class FTUpdateService {
       case Org:
         result.updater = 'org'
         result.titleNamespace = kbc.titleNamespace?.value
+        result.titleNamespaceSerial = kbc.titleNamespaceSerial?.value
+        result.titleNamespaceMonograph = kbc.titleNamespaceMonograph?.value
         result.packageNamespace = kbc.packageNamespace?.value
         result.preferredShortname = kbc.preferredShortname ?: ""
 
@@ -249,6 +255,8 @@ class FTUpdateService {
         result.publisherUuid = current_pub?.uuid ?: ""
         result.editionStatement = kbc.editionStatement ?: ""
         result.volumeNumber = kbc.volumeNumber ?: ""
+        result.firstAuthor = kbc.firstAuthor ?: ""
+        result.firstEditor = kbc.firstEditor ?: ""
 
         if (kbc.publishedFrom) result.publishedFrom = dateFormatService.formatDate(kbc.publishedFrom)
         if (kbc.publishedTo) result.publishedTo = dateFormatService.formatDate(kbc.publishedTo)
@@ -589,7 +597,7 @@ class FTUpdateService {
           count++
           total++
 
-          if (count > 250) {
+          if (count > 50) {
             count = 0
             log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
             BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)

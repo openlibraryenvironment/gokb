@@ -14,6 +14,7 @@ import gokbg3.DateFormatService
 
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
@@ -59,6 +60,8 @@ class IngestKbartRun {
   def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
   def job = null
   IdentifierNamespace providerIdentifierNamespace
+  IdentifierNamespace serialNamespace
+  IdentifierNamespace monographNamespace
   Long ingest_systime
 
   DataFile datafile
@@ -78,7 +81,9 @@ class IngestKbartRun {
                         CuratoryGroup active_group = null,
                         Boolean dry_run = false,
                         Boolean skip_invalid = false,
-                        Boolean cleanup = false) {
+                        Boolean cleanup = false,
+                        IdentifierNamespace titleIdSerial = null,
+                        IdentifierNamespace titleIdMonograph = null) {
     pkg = pack
     addOnly = incremental
     user = u
@@ -89,6 +94,8 @@ class IngestKbartRun {
     providerIdentifierNamespace = titleIdNamespace
     skipInvalid = skip_invalid
     isCleanup = cleanup
+    serialNamespace = titleIdSerial
+    monographNamespace = titleIdMonograph
   }
 
   def start(nJob, session) {
@@ -118,12 +125,14 @@ class IngestKbartRun {
         'serial':[
           identifierMap: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
           defaultMedium: 'Serial',
-          defaultTypeName: 'org.gokb.cred.JournalInstance'
+          defaultTypeName: 'org.gokb.cred.JournalInstance',
+          providerIdentifierNamespace: (serialNamespace?.value ?: null)
         ],
         'monograph':[
           identifierMap: ['print_identifier': 'pisbn', 'online_identifier': 'isbn'],
           defaultMedium: 'Book',
-          defaultTypeName: 'org.gokb.cred.BookInstance'
+          defaultTypeName: 'org.gokb.cred.BookInstance',
+          providerIdentifierNamespace: (monographNamespace?.value ?: null)
         ]
       ]
     ]
@@ -147,7 +156,7 @@ class IngestKbartRun {
       log.debug("Set progress")
       job?.setProgress(0)
 
-      def file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false)
+      def file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false, serialNamespace, monographNamespace)
       result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, invalid: file_info.rows.error]
       result.validation = file_info
 
@@ -182,7 +191,17 @@ class IngestKbartRun {
                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
                             [pkg: pid, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
-        result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
+        result.report = [
+          numRows: file_info.rows.total,
+          skipped: file_info.rows.skipped,
+          matched: 0,
+          partial: 0,
+          created: 0,
+          retired: 0,
+          reviews: 0,
+          invalid: 0,
+          previous: old_tipp_count
+        ]
 
         if (old_tipp_count > 0) {
           isUpdate = true
@@ -368,27 +387,34 @@ class IngestKbartRun {
       job.endTime = new Date()
 
       JobResult.withNewTransaction {
-        def result_object = JobResult.findByUuid(job.uuid)
-
         if (result.titleMatch) {
           result.titleMatch.rowConflicts = titleMatchConflicts
         }
 
-        if (!result_object) {
-          def job_map = [
-              uuid        : (job.uuid),
-              description : (job.description),
-              resultObject: (result as JSON).toString(),
-              type        : (job.type),
-              statusText  : (result.result),
-              ownerId     : (job.ownerId),
-              groupId     : (job.groupId),
-              startTime   : (job.startTime),
-              endTime     : (job.endTime),
-              linkedItemId: (job.linkedItem?.id)
-          ]
+        def job_map = [
+            uuid        : (job.uuid),
+            description : (job.description),
+            resultObject: (result as JSON).toString(),
+            type        : (job.type),
+            statusText  : (result.result),
+            ownerId     : (job.ownerId),
+            groupId     : (job.groupId),
+            startTime   : (job.startTime),
+            endTime     : (job.endTime),
+            linkedItemId: (job.linkedItem?.id),
+            importFile  : (datafile)
+        ]
 
+        def result_object = JobResult.findByUuid(job.uuid)
+
+        if (!result_object) {
           def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+        }
+        else {
+          job_map.each { k, v ->
+            result_object[k] = v
+            result_object.save(flush: true)
+          }
         }
       }
     }
@@ -425,12 +451,25 @@ class IngestKbartRun {
 
     def removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
         set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
-        where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
-        and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
+        where exists (
+          select 1 from Combo as tc
+          where tc.fromComponent.id = :pkgid
+          and tc.toComponent.id = tipp.id
+        )
+        and (
+          tipp.lastSeen is null
+          or tipp.lastSeen < :dt
+        )
+        and tipp.status = :sc''', retire_pars)
 
     def closed_rrs_count = ReviewRequest.executeUpdate('''update ReviewRequest as rr
         set rr.status = :closed, rr.lastUpdated = :now
-        where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = rr.componentToReview.id and tc.toComponent.status = :nstatus)
+        where exists (
+          select 1 from Combo as tc
+          where tc.fromComponent.id = :pkgid
+          and tc.toComponent.id = rr.componentToReview.id
+          and tc.toComponent.status = :nstatus
+        )
         and rr.status = :open''', rr_pars)
 
     result.closedReviews = closed_rrs_count
@@ -510,7 +549,10 @@ class IngestKbartRun {
         if (the_kbart.title_id && the_kbart.title_id.trim()) {
           log.debug("title_id ${the_kbart.title_id}")
 
-          if (ingest_cfg.providerIdentifierNamespace) {
+          if (row_specific_config.providerIdentifierNamespace) {
+            identifiers << [type: row_specific_config.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
+          }
+          else if (ingest_cfg.providerIdentifierNamespace) {
             identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
           }
         }
@@ -615,51 +657,80 @@ class IngestKbartRun {
       series: (the_kbart.monograph_parent_collection_title ?: the_kbart.series?.trim()),
       language: the_kbart.language?.trim(),
       medium: the_kbart.medium?.trim(),
-      accessStartDate:the_kbart.access_start_date?.trim() ?: ingest_date,
+      accessStartDate:the_kbart.access_start_date?.trim(),
       accessEndDate: the_kbart.access_end_date?.trim(),
       lastSeen: ingest_systime,
       identifiers: identifiers,
-      pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-      hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name],
-      paymentType: the_kbart.access_type?.trim()
+      pkg: [
+        id: pkg.id,
+        uuid: pkg.uuid,
+        name: pkg.name
+      ],
+      hostPlatform: [
+        id: the_platform.id,
+        uuid: the_platform.uuid,
+        name: the_platform.name
+      ],
+      paymentType: the_kbart.access_type?.trim(),
+      status: the_kbart.status?.trim()
     ]
 
     if (isUpdate || !tipp_map.importId) {
       def match_result = tippService.restLookup(tipp_map)
 
       if (match_result.full_matches.size() > 0) {
+        LocalDateTime access_end_date_local
+        def current_matches = match_result.full_matches.findAll { it.status.value == 'Current' || it.status.value == 'Expected' }
         result.status = 'matched'
-        tipp = match_result.full_matches[0]
-        tipp.refresh()
 
-        if (tipp.accessStartDate) {
-          tipp_map.accessStartDate = null
+        if (tipp_map.accessEndDate) {
+          access_end_date_local = GOKbTextUtils.completeDateString(tipp_map.accessEndDate)
         }
 
-        if (match_result.full_matches.size() > 1) {
-          result.reviewCreated = true
+        if (tipp_map.status?.toLowerCase() == 'retired' || (access_end_date_local && access_end_date_local < LocalDate.now().atStartOfDay())) {
+          if (current_matches.size() > 0) {
+            tipp = current_matches[0]
+          } else if (match_result.full_matches.size() == 1) {
+            tipp = match_result.full_matches[0]
+          }
+        }
+        else {
+          tipp = match_result.full_matches[0]
+        }
 
-          if (!dryRun) {
-            log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
-            def additionalInfo = [otherComponents: []]
+        if (tipp) {
+          tipp.refresh()
 
-            match_result.full_matches.eachWithIndex { ct, idx ->
-              if (idx > 0) {
-                additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+          if (match_result.full_matches.size() > 1) {
+            result.reviewCreated = true
+
+            if (!dryRun) {
+              log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
+              def additionalInfo = [otherComponents: []]
+
+              match_result.full_matches.eachWithIndex { ct, idx ->
+                if (idx > 0) {
+                  additionalInfo.otherComponents << [
+                    oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id,
+                    uuid: ct.uuid,
+                    id: ct.id,
+                    name: ct.name
+                  ]
+                }
               }
-            }
 
-            // RR für Multimatch generieren
-            reviewRequestService.raise(
-                tipp,
-                "Ambiguous KBART Record Matches",
-                "A KBART record has been matched on multiple package titles.",
-                user,
-                null,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
-                componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
-            )
+              // RR für Multimatch generieren
+              reviewRequestService.raise(
+                  tipp,
+                  "Ambiguous KBART Record Matches",
+                  "A KBART record has been matched on multiple package titles.",
+                  user,
+                  null,
+                  (additionalInfo as JSON).toString(),
+                  RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
+                  componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
+              )
+            }
           }
         }
       }
@@ -680,39 +751,68 @@ class IngestKbartRun {
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
         }
 
+        if (!tipp_map.accessStartDate && isUpdate) {
+          tipp_map.accessStartDate = ingest_date
+        }
+
         if (match_result.failed_matches.size() > 0) {
           result.status = 'partial'
-          result.reviewCreated = true
 
           if (!dryRun) {
             def additionalInfo = [otherComponents: []]
+            boolean needs_review = false
 
             match_result.failed_matches.each { ct ->
-              additionalInfo.otherComponents << [
-                oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id,
-                uuid: ct.item.uuid,
-                id: ct.item.id,
-                name: ct.item.name,
-                matchResults: ct.matchResults
-              ]
+              boolean isEzbImportId = false
+              def matched_ns = []
+
+              ct.matchResults.each { mr ->
+                if (mr.match == 'OK') {
+                  matched_ns = mr.namespace
+                }
+              }
+
+              if (identifiers.find { it -> (it.type == 'ezb') }) {
+                isEzbImportId = true
+              }
+
+              if (matched_ns.size() == 1 && matched_ns[0] == 'title_id' && isEzbImportId) {
+                log.debug("Ignoring EZB-ID match ..")
+              }
+              else {
+                needs_review = true
+                additionalInfo.otherComponents << [
+                  oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id,
+                  uuid: ct.item.uuid,
+                  id: ct.item.id,
+                  name: ct.item.name,
+                  matchResults: ct.matchResults
+                ]
+              }
             }
 
             // RR für Multimatch generieren
-            reviewRequestService.raise(
-                tipp,
-                "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
-                "Check the package titles and merge them if necessary.",
-                user,
-                null,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
-                componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
-            )
+            if (needs_review) {
+              result.reviewCreated = true
+              reviewRequestService.raise(
+                  tipp,
+                  "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
+                  "Check the package titles and merge them if necessary.",
+                  user,
+                  null,
+                  (additionalInfo as JSON).toString(),
+                  RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
+                  componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
+              )
+            }
+          }
+          else {
+            result.reviewCreated = true
           }
         }
       }
 
-      if (!dryRun) {
+      if (!dryRun && tipp) {
         if (!matched_tipps[tipp.id]) {
           matched_tipps[tipp.id] = 1
 
@@ -788,12 +888,9 @@ class IngestKbartRun {
           ]
         }
       }
-      else if (tipp.accessStartDate) {
-        tipp_map.accessStartDate = null
-      }
     }
 
-    if (!dryRun) {
+    if (!dryRun && tipp) {
       tipp = tippService.updateTippFields(tipp, tipp_map, user, new_coverage)
       tipp.refresh()
 
@@ -827,7 +924,6 @@ class IngestKbartRun {
             log.error("${it}")
         }
       }
-
     }
 
     result
@@ -1000,7 +1096,10 @@ class IngestKbartRun {
     if (the_kbart.title_id && the_kbart.title_id.trim()) {
       log.debug("title_id ${the_kbart.title_id}")
 
-      if (ingest_cfg.providerIdentifierNamespace) {
+      if (row_specific_cfg.providerIdentifierNamespace) {
+        identifiers << [type: row_specific_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
+      }
+      else if (ingest_cfg.providerIdentifierNamespace) {
         identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
       }
     }
@@ -1024,7 +1123,7 @@ class IngestKbartRun {
       def matchConflicts = []
 
       title_lookup_result.matches.each { trm ->
-        if (trm.conflicts.size() > 0) {
+        if (trm.conflicts?.size() > 0) {
           partial = true
 
           def match = [
@@ -1034,7 +1133,7 @@ class IngestKbartRun {
           ]
           matchConflicts << match
 
-          if (trm.warnings.contains('duplicate')) {
+          if (trm.warnings?.contains('duplicate')) {
             hasConflicts = true
           }
         }

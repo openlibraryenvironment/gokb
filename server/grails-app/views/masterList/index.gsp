@@ -2,7 +2,7 @@
 <html>
 <head>
 	<meta name="layout" content="sb-admin" />
-	<title>GOKb: Master Lists</title>
+	<title>GOKB: Master Lists</title>
 </head>
 <body>
   <h1 class="page-header">Master Lists</h1>

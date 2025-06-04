@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb</title>
+<title>GOKB</title>
 </head>
 <body class="">
 	<div id="mainarea" class="container well">

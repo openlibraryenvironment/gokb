@@ -12,6 +12,7 @@ class PlatformService {
 
   def sessionFactory
   ComponentLookupService componentLookupService
+  def reviewRequestService
 
   def restLookup(platformDTO, def user = null) {
 
@@ -271,9 +272,16 @@ class PlatformService {
 
       if (!result && !skip) {
         log.debug("Creating new platform for: ${platformDTO}")
-        result = new Platform(name: platformDTO.name, normname: KBComponent.generateNormname(platformDTO.name), primaryUrl: (viable_url ? platformDTO.primaryUrl : null), uuid: platformDTO.uuid ?: null).save(flush: true, failOnError: true)
+        def platform_map = [
+          name: platformDTO.name,
+          normname: KBComponent.generateNormname(platformDTO.name),
+          primaryUrl: (viable_url ? platformDTO.primaryUrl : null),
+          uuid: platformDTO.uuid ?: null
+        ]
 
-        ReviewRequest.raise(
+        result = new Platform(platform_map).save(flush: true, failOnError: true)
+
+        reviewRequestService.raise(
           result,
           "The platform ${result} did not exist and was newly created.",
           "New platform created",

@@ -42,6 +42,18 @@
     <g:manyToOneReferenceTypedown owner="${d}" field="titleNamespace" baseClass="org.gokb.cred.IdentifierNamespace">${(d.titleNamespace?.name)?:d.titleNamespace?.value}</g:manyToOneReferenceTypedown>
   </dd>
   <dt>
+    <g:annotatedLabel owner="${d}" property="titleNamespaceSerial">Title Namespace (Serial)</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:manyToOneReferenceTypedown owner="${d}" field="titleNamespaceSerial" baseClass="org.gokb.cred.IdentifierNamespace">${(d.titleNamespaceSerial?.name)?:d.titleNamespaceSerial?.value}</g:manyToOneReferenceTypedown>
+  </dd>
+  <dt>
+    <g:annotatedLabel owner="${d}" property="titleNamespaceMonograph">Title Namespace (Monograph)</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:manyToOneReferenceTypedown owner="${d}" field="titleNamespaceMonograph" baseClass="org.gokb.cred.IdentifierNamespace">${(d.titleNamespaceMonograph?.name)?:d.titleNamespaceMonograph?.value}</g:manyToOneReferenceTypedown>
+  </dd>
+  <dt>
     <g:annotatedLabel owner="${d}" property="packageNamespace">Package Namespace</g:annotatedLabel>
   </dt>
   <dd>
@@ -130,10 +142,19 @@
             <dd>
               <g:if test="${d.id != null}">
                 <g:if test="${d.roles}">
-                  <ul>
+                  <ul style="margin-top:6px;">
                       <g:each in="${d.roles?.sort({"${it.value}"})}" var="t">
-                          <li>
-                              ${t.value}
+                          <li class="highlight-link"">
+                              ${t.value} -
+                              <g:link
+                                controller="ajaxSupport"
+                                action="unlinkManyToMany"
+                                class="confirm-click"
+                                data-confirm-message="Are you sure you wish to unlink this role?"
+                                params="${ ["__property":"roles", "__context":d.getClassName() + ":" + d.id, "__itemToRemove" : t.getClassName() + ":" + t.id, "propagate": "true"] }"
+                              >
+                                Unlink
+                              </g:link>
                           </li>
                       </g:each>
                   </ul>

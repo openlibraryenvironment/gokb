@@ -48,7 +48,7 @@ class BootStrap {
         log.info("Create manually with create index norm_id_value_idx on kbcomponent(kbc_normname(64),id_namespace_fk,class)");
 
         ContentItem.withTransaction() {
-            def appname = ContentItem.findByKeyAndLocale('gokb.appname', 'default') ?: new ContentItem(key: 'gokb.appname', locale: 'default', content: 'GOKb').save(flush: true, failOnError: true)
+            def appname = ContentItem.findByKeyAndLocale('gokb.appname', 'default') ?: new ContentItem(key: 'gokb.appname', locale: 'default', content: 'GOKB').save(flush: true, failOnError: true)
         }
 
         KBComponent.withTransaction() {
@@ -345,6 +345,37 @@ class BootStrap {
                     log.info("Ensured ${ns_obj}!")
             }
 
+            log.info("Looking for ISBN-10 normnames")
+
+            def isbns = [IdentifierNamespace.findByValue('isbn'), IdentifierNamespace.findByValue('pisbn')]
+            def candidates = Identifier.executeQuery("from Identifier where namespace IN (:isbns) and length(normname) < 13", [isbns: isbns])
+
+            log.info("Found ${candidates.size()} ..")
+
+            candidates.each { idc ->
+                def correct_norm = Identifier.normalizeIdentifier(idc.value)
+
+                if (correct_norm != idc.normname) {
+                    def existing = Identifier.findAllByNamespaceAndNormname(idc.namespace, correct_norm)
+
+                    if (existing?.size() == 1) {
+                        log.debug("Moving combos of ${idc} to ${existing[0]} ..")
+                        Combo.executeUpdate("update Combo set toComponent = :ex where toComponent = :old", [ex: existing[0], old: idc])
+                    }
+                    else if (existing?.size() > 1) {
+                        log.error("Found duplicate ID records: ${existing}")
+                    }
+                    else {
+                        log.debug("No existing ID with corrected normname for ${idc} ... updating normname!")
+                        idc.normname = correct_norm
+                        idc.save(flush: true, failOnError: true)
+                    }
+                }
+                else {
+                    log.info("Found ISBN-10 with value ${idc.value} ..")
+                }
+            }
+
             log.debug("Register users and override default admin password")
             registerUsers()
 
@@ -352,6 +383,8 @@ class BootStrap {
                 log.debug("Ensuring Package cache dates")
                 registerPkgCache()
             }
+
+            cleanupOrgNamespaces()
 
             log.debug("Ensuring ElasticSearch index")
             ensureEsIndices()
@@ -512,6 +545,20 @@ class BootStrap {
             p = new Org(name: name)
             p.tags.add(content_provider_role);
             p.save(flush: true);
+        }
+    }
+
+    def cleanupOrgNamespaces() {
+        def orgs_with_title_ns = Org.executeQuery("from Org as o where o.titleNamespace is not null")
+
+        orgs_with_title_ns.each { org ->
+            if (!org.titleNamespaceSerial && !org.titleNamespaceMonograph) {
+                org.titleNamespaceSerial = org.titleNamespace
+                org.titleNamespaceMonograph = org.titleNamespace
+            }
+
+            org.titleNamespace = null
+            org.save(flush: true)
         }
     }
 
@@ -1001,7 +1048,8 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Invalid Name").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Manual Request").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Invalid Indentifiers").save(flush: true, failOnError: true)
-
+        RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Duplicate Title Info").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Matching Conflict").save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Activity.Status', 'Complete').save(flush: true, failOnError: true)
@@ -1148,6 +1196,9 @@ class BootStrap {
         RefdataCategory.lookupOrCreate(CuratoryGroup.RDC_ORGA_TYPE, 'Provider').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('Subject.Scheme', 'DDC').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate('Source.ImportConfig', 'WEKB').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Source.ImportConfig', 'EZB').save(flush: true, failOnError: true)
 
         lookupOrCreateCuratoryGroupTypes()
 

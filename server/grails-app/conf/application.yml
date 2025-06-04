@@ -13,6 +13,8 @@ grails:
             '[/rest/**]': inherit
             '[/validation/**]': inherit
             '[/api/**]': inherit
+            '[/externalSource/**]': inherit
+            '[/packages/**]': inherit
 
     profile: web
     codegen:
@@ -350,7 +352,7 @@ gokb:
     baseTempDirectory: '/tmp/gokb/'
     tsvExportTempDirectory: '/tmp/gokb/export'
     packageXmlCacheDirectory: '/tmp/gokb/oai/'
-
+    themeColor: '#333'
 quartz:
     autoStartup: true
     waitForJobsToCompleteOnShutdown: false

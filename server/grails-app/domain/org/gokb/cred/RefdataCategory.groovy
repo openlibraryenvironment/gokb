@@ -37,6 +37,8 @@ class RefdataCategory {
     label(nullable: true, blank: true)
   }
 
+  public static final String jsonLabel = 'label'
+
   String getLogEntityId() {
     "${this.class.name}:${id}"
   }

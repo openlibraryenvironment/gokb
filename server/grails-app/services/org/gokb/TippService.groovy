@@ -26,6 +26,7 @@ class TippService {
   def validationService
   def restMappingService
   def FTUpdateService
+  def dateFormatService
 
   def validateDTO(tipp_dto) {
     def result = [valid: true]
@@ -36,7 +37,12 @@ class TippService {
 
     if (!pkgLink) {
       result.valid = false
-      errors.pkg = [[message: "Missing package link!", baddata: pkgLink]]
+      errors.pkg = [
+        [
+          message: "Missing package link!",
+          baddata: pkgLink
+        ]
+      ]
     }
     else {
       def pkg = null
@@ -50,13 +56,24 @@ class TippService {
 
       if (!pkg) {
         result.valid = false
-        errors.pkg = [[message: "Could not resolve package id!", baddata: pkgLink, code: 404]]
+        errors.pkg = [
+          [
+            message: "Could not resolve package id!",
+            baddata: pkgLink,
+            code: 404
+          ]
+        ]
       }
     }
 
     if (!pltLink) {
       result.valid = false
-      errors.hostPlatform = [[message: "Missing platform link!", baddata: pltLink]]
+      errors.hostPlatform = [
+        [
+          message: "Missing platform link!",
+          baddata: pltLink
+        ]
+      ]
     }
     else {
       def plt = null
@@ -70,7 +87,13 @@ class TippService {
 
       if (!plt) {
         result.valid = false
-        errors.hostPlatform = [[message: "Could not resolve platform id!", baddata: pltLink, code: 404]]
+        errors.hostPlatform = [
+          [
+            message: "Could not resolve platform id!",
+            baddata: pltLink,
+            code: 404
+          ]
+        ]
       }
     }
 
@@ -159,59 +182,125 @@ class TippService {
       }
     }
 
+    LocalDateTime parsedAccessStart = GOKbTextUtils.completeDateString(tipp_dto.accessStartDate)
+    LocalDateTime parsedAccessEnd = GOKbTextUtils.completeDateString(tipp_dto.accessEndDate)
+
+    if (tipp_dto.accessStartDate && !parsedAccessStart) {
+      if (!errors.accessStartDate) {
+        errors.accessStartDate = []
+      }
+
+      result.valid = false
+      errors.accessStartDate << [
+        message: "Unable to parse access start date ${tipp_dto.accessStartDate}!",
+        messageCode: 'validation.dateFormat',
+        baddata: tipp_dto.accessStartDate
+      ]
+    }
+
+    if (tipp_dto.accessEndDate && !parsedAccessEnd) {
+      if (!errors.accessEndDate) {
+        errors.accessEndDate = []
+      }
+
+      result.valid = false
+      errors.accessEndDate << [
+        message: "Unable to parse access end date ${tipp_dto.accessEndDate}!",
+        messageCode: 'validation.dateFormat',
+        baddata: tipp_dto.accessEndDate
+      ]
+    }
+
     if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
       tipp_dto.coverage = tipp_dto.coverageStatements
     }
 
-    for (def coverage : tipp_dto.coverage) {
+    if (parsedAccessStart && parsedAccessEnd && (parsedAccessEnd < parsedAccessStart)) {
+      result.valid = false
+
+      if (!errors.accessEndDate) {
+        errors.accessEndDate = []
+      }
+
+      errors.accessEndDate << [
+        message: "Access end date must not be prior to its start date!",
+        messageCode: 'validation.dateRange',
+        baddata: tipp_dto.accessEndDate
+      ]
+    }
+
+    tipp_dto.coverage?.eachWithIndex { coverage, idx ->
       LocalDateTime parsedStart = GOKbTextUtils.completeDateString(coverage.startDate)
       LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(coverage.endDate, false)
+      def statement_errors = [:]
+
 
       if (coverage.startDate && !parsedStart) {
-        if (!errors.startDate) {
-          errors.startDate = []
+        if (!statement_errors.startDate) {
+          statement_errors.startDate = []
         }
 
         result.valid = false
-        errors.startDate << [message: "Unable to parse coverage start date ${coverage.startDate}!", baddata: coverage.startDate]
+        statement_errors.startDate << [
+          message: "Unable to parse coverage start date ${coverage.startDate}!",
+          messageCode: 'validation.dateFormat',
+          baddata: coverage.startDate
+        ]
       }
 
       if (coverage.endDate && !parsedEnd) {
-        if (!errors.endDate) {
-          errors.endDate = []
+        if (!statement_errors.endDate) {
+          statement_errors.endDate = []
         }
 
         result.valid = false
-        errors.endDate << [message: "Unable to parse coverage end date ${coverage.endDate}!", baddata: coverage.endDate]
+        statement_errors.endDate << [
+          message: "Unable to parse coverage end date ${coverage.endDate}!",
+          messageCode: 'validation.dateFormat',
+          baddata: coverage.endDate
+        ]
       }
 
       if (!coverage.coverageDepth) {
-        if (!errors.coverageDepth) {
-          errors.coverageDepth = []
+        if (!statement_errors.coverageDepth) {
+          statement_errors.coverageDepth = []
         }
+
         coverage.coverageDepth = "fulltext"
-        errors.coverageDepth << [message: "Missing value for coverage depth: set to fulltext", baddata: coverage.coverageDepth]
+        statement_errors.coverageDepth << [
+          message: "Missing value for coverage depth: set to fulltext",
+          baddata: coverage.coverageDepth,
+          messageCode: 'validation.missingValue'
+        ]
       }
       else {
         if (coverage.coverageDepth instanceof String && !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
-          if (!errors.coverageDepth) {
-            errors.coverageDepth = []
+          if (!statement_errors.coverageDepth) {
+            statement_errors.coverageDepth = []
           }
 
           result.valid = false
-          errors.coverageDepth << [message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+          statement_errors.coverageDepth << [
+            message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth",
+            baddata: coverage.coverageDepth,
+            messageCode: 'validation.refdataLookup'
+          ]
         }
         else if (coverage.coverageDepth instanceof Integer) {
           try {
             def candidate = RefdataValue.get(coverage.coverageDepth)
 
             if (!candidate && candidate.owner.label == "TIPPCoverageStatement.CoverageDepth") {
-              if (!errors.coverageDepth) {
-                errors.coverageDepth = []
+              if (!statement_errors.coverageDepth) {
+                statement_errors.coverageDepth = []
               }
 
               result.valid = false
-              errors.coverageDepth << [message: "Illegal value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+              statement_errors.coverageDepth << [
+                message: "Illegal value '${coverage.coverageDepth}' for coverage depth",
+                baddata: coverage.coverageDepth,
+                messageCode: 'validation.refdataLookup'
+              ]
             }
           } catch (Exception e) {
             log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Integer")
@@ -223,12 +312,16 @@ class TippService {
               def candidate = RefdataValue.get(coverage.coverageDepth.id)
 
               if (!candidate && candidate.owner.label == "TIPPCoverageStatement.CoverageDepth") {
-                if (!errors.coverageDepth) {
-                  errors.coverageDepth = []
+                if (!statement_errors.coverageDepth) {
+                  statement_errors.coverageDepth = []
                 }
 
                 result.valid = false
-                errors.coverageDepth << [message: "Illegal ID value '${coverage.coverageDepth.id}' for coverage depth", baddata: coverage.coverageDepth]
+                statement_errors.coverageDepth << [
+                  message: "Illegal ID value '${coverage.coverageDepth.id}' for coverage depth",
+                  baddata: coverage.coverageDepth,
+                  messageCode: 'validation.refdataLookup'
+                ]
               }
             } catch (Exception e) {
               log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Map")
@@ -236,12 +329,16 @@ class TippService {
           }
           else if (coverage.coverageDepth.value || coverage.coverageDepth.name) {
             if (!['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
-              if (!errors.coverageDepth) {
-                errors.coverageDepth = []
+              if (!statement_errors.coverageDepth) {
+                statement_errors.coverageDepth = []
               }
 
               result.valid = false
-              errors.coverageDepth << [message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+              statement_errors.coverageDepth << [
+                message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth",
+                baddata: coverage.coverageDepth,
+                messageCode: 'validation.refdataLookup'
+              ]
             }
           }
         }
@@ -249,44 +346,88 @@ class TippService {
 
       if (parsedStart && parsedEnd && (parsedEnd < parsedStart)) {
         result.valid = false
-        errors.endDate = [[message: "Coverage end date must not be prior to its start date!", baddata: coverage.endDate]]
+
+        if (!statement_errors.endDate) {
+          statement_errors.endDate = []
+        }
+
+        statement_errors.endDate << [
+          message: "Coverage end date must not be prior to its start date!",
+          messageCode: 'validation.dateRange',
+          baddata: coverage.endDate
+        ]
+      }
+
+      if (statement_errors.size() > 0) {
+        if (!errors.coverageStatements) {
+          errors.coverageStatements = [:]
+        }
+
+        errors.coverageStatements["${idx}"] = statement_errors
       }
     }
 
     if (tipp_dto.medium) {
       def ref = determineMediumRef(tipp_dto.medium)
-      if (ref == null)
-        errors.put('medium', [message: "unknown", baddata: tipp_dto.remove('medium')])
+
+      if (ref == null) {
+        errors.put('medium', [
+          message: "unknown",
+          baddata: tipp_dto.remove('medium'),
+          messageCode: 'validation.refdataLookup'
+        ])
+      }
       else
         tipp_dto.medium = ref.value
     }
 
     if (tipp_dto.publicationType) {
       def type = determinePubTypeRef(tipp_dto.publicationType)
-      if (type == null)
-        errors.put('publicationType', [message: "unknown", baddata: tipp_dto.remove('publicationType')])
+
+      if (type == null) {
+        errors.put('publicationType', [
+          message: "unknown",
+          baddata: tipp_dto.remove('publicationType'),
+          messageCode: 'validation.refdataLookup'
+        ])
+      }
       else
         tipp_dto.publicationType = type.value
     }
 
     if (tipp_dto.dateFirstInPrint) {
       LocalDateTime dfip = GOKbTextUtils.completeDateString(tipp_dto.dateFirstInPrint, false)
+
       if (!dfip) {
-        errors.put('dateFirstInPrint', [message: "Unable to parse", baddata: tipp_dto.remove('dateFirstInPrint')])
+        errors.put('dateFirstInPrint', [
+          message: "Unable to parse date!",
+          messageCode: 'validation.dateFormat',
+          baddata: tipp_dto.remove('dateFirstInPrint')
+        ])
       }
     }
 
     if (tipp_dto.dateFirstOnline) {
       LocalDateTime dfo = GOKbTextUtils.completeDateString(tipp_dto.dateFirstOnline, false)
+
       if (!dfo) {
-        errors.put('dateFirstOnline', [message: "Unable to parse", baddata: tipp_dto.remove('dateFirstOnline')])
+        errors.put('dateFirstOnline', [
+          message: "Unable to parse date!",
+          messageCode: 'validation.dateFormat',
+          baddata: tipp_dto.remove('dateFirstOnline')
+        ])
       }
     }
 
     if (tipp_dto.lastChangedExternal) {
       LocalDateTime lce = GOKbTextUtils.completeDateString(tipp_dto.lastChangedExternal, false)
+
       if (!lce) {
-        errors.put('lastChangedExternal', [message: "Unable to parse", baddata: tipp_dto.remove('lastChangedExternal')])
+        errors.put('lastChangedExternal', [
+          message: "Unable to parse date!",
+          messageCode: 'validation.dateFormat',
+          baddata: tipp_dto.remove('lastChangedExternal')
+        ])
       }
     }
 
@@ -511,9 +652,14 @@ class TippService {
   }
 
   def matchUnlinkedTipps(def job = null) {
-    def startTime = LocalDateTime.now()
-    def count = 0
-    def result = [matched: 0, created: 0, unmatched: 0, reviews: 0, error: 0]
+    def result = [
+      matched: 0,
+      created: 0,
+      unmatched: 0,
+      reviews: 0,
+      error: 0
+    ]
+    Integer count = 0
 
     TitleInstancePackagePlatform.withNewSession { session ->
       def tippIDs = TitleInstancePackagePlatform.executeQuery(
@@ -525,18 +671,18 @@ class TippService {
       log.info("${result.total} detached TIPPs to check")
 
       for (Long tippID : tippIDs) {
-        log.debug("begin tipp")
+        log.debug("Begin ti match for tipp ${tippID}")
         count++
         TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippID)
-        // ignore Tipp if RR.Date > Tipp.Date
+
         if (tipp) {
-          def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-          def rr_type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
+          RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+          RefdataValue rr_type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
           def rrList = ReviewRequest.findAllByComponentToReviewAndStatusAndStdDesc(tipp, status_open, rr_type_atm)
 
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
-            def tipp_pkg = Package.get(tipp.pkg.id)
+            Package tipp_pkg = Package.get(tipp.pkg.id)
             def groupId = tipp_pkg.curatoryGroups?.size() > 0 ? tipp_pkg.curatoryGroups[0].id : null
             def match_result = matchTitle(tipp.id, groupId)
 
@@ -547,10 +693,11 @@ class TippService {
             }
           }
           else {
-            log.debug("tipp $tipp has ${rrList.size()} recent Review Requests and is ignored.")
+            log.debug("Checking for resolved ambiguous matches in ${rrList.size()} reviews for TIPP $tipp ..")
+            reviewAmbiguousMatches(tipp, rrList)
           }
-          log.debug("end tipp")
         }
+        log.debug("End ti match for tipp ${tippID}")
 
         if (count % 50 == 0) {
           session.flush()
@@ -568,10 +715,55 @@ class TippService {
   }
 
   @Transactional
+  private void reviewAmbiguousMatches(tipp, reviews) {
+    RefdataValue rr_status_closed = RefdataCategory.lookup("ReviewRequest.Status", "Closed")
+    RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+    RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+
+    for (rr_atm in reviews) {
+      if (!tipp.title) {
+        def additionalInfo = rr_atm.getAdditional()
+        List total_matches = additionalInfo instanceof Map ? (additionalInfo?.otherComponents ?: []) : []
+        def current_matches = []
+
+        for (ttl in total_matches) {
+          def matched_ti = TitleInstance.get(ttl.id)
+
+          if (matched_ti && matched_ti.status == status_current) {
+            current_matches << matched_ti
+          }
+        }
+
+        if (current_matches.size() <= 1) {
+          rr_atm.status = rr_status_closed
+          rr_atm.save(flush: true)
+          Combo new_combo = Combo.findByToComponentAndType(tipp, combo_type)
+
+          if (!new_combo && current_matches.size() == 1) {
+            new Combo(fromComponent: current_matches[0], toComponent: tipp, type: combo_type).save(flush: true)
+            touchPackage(tipp)
+          }
+        }
+      }
+      else {
+        rr_atm.status = rr_status_closed
+        rr_atm.save(flush: true)
+      }
+    }
+  }
+
+  @Transactional
   def matchPackage(pkgId, def job = null) {
     log.debug("Matching titles for package ${pkgId}")
-    def result = [matched: 0, created: 0, unmatched: 0, error: 0, reviews: 0, result: 'OK']
-    def more = true
+    def result = [
+      result: 'OK',
+      matched: 0,
+      created: 0,
+      unmatched: 0,
+      error: 0,
+      reviews: 0
+    ]
+    Boolean more = true
     int offset = 0
     int total = 0
     def tippIDs = []
@@ -649,32 +841,31 @@ class TippService {
   @Transactional
   def matchTitle(tippId, def groupId = null) {
     def result = [status: 'matched', reviewCreated: false]
+    RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
 
     def tipp = TitleInstancePackagePlatform.findById(tippId)
 
     if (tipp) {
       CuratoryGroup group = groupId ? CuratoryGroup.findById(groupId) : null
-      def found
       final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
-      def pkg = Package.executeQuery("from Package as pkg where exists (select 1 from Combo where fromComponent = pkg and toComponent = :tipp)", [tipp: tipp])[0]
+      Package pkg = Package.deproxy(tipp.pkg)
 
       if (pkg && !group) {
         group = CuratoryGroup.deproxy(pkg.curatoryGroups[0])
       }
 
       // remap Identifiers
-      def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i)", [tipp: tipp])
-      def my_ids = tipp_ids.collect { [value: it.value, type: it.namespace.value] }
+      def tipp_ids = tipp.activeIdInfo.collect { [type: it.namespace, value: it.value] }
       def pubType = tipp.publicationType?.value ?: null
 
-      log.debug("TIPP Ids: ${my_ids} (by query: tipp_ids.size())")
+      log.debug("TIPP Ids: ${tipp_ids} (by query: tipp_ids.size())")
 
-      if (!pubType && my_ids.find { it.type == 'issn' || it.type == 'eissn' }) {
+      if (!pubType && tipp_ids.find { it.type == 'issn' || it.type == 'eissn' }) {
         pubType = 'Serial'
         tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, pubType)
         tipp.save(flush: true)
       }
-      else if (!pubType && my_ids.find { it.type == 'isbn' || it.type == 'isbn' }) {
+      else if (!pubType && tipp_ids.find { it.type == 'isbn' || it.type == 'pisbn' }) {
         pubType = 'Monograph'
         tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, pubType)
         tipp.save(flush: true)
@@ -685,10 +876,12 @@ class TippService {
       if (title_class_name) {
         TitleInstance ti = null
 
-        found = titleLookupService.find(
+        log.debug("TI Lookup ..")
+
+        def found = titleLookupService.find(
             tipp.name,
             tipp.getPublisherName(),
-            my_ids,
+            tipp_ids,
             title_class_name
         )
 
@@ -704,37 +897,63 @@ class TippService {
         }
         else if (found.matches.size() == 1) {
           // exactly one match
+          log.debug("Matched title ${found.matches[0]} for ${tipp}!")
           ti = found.matches[0].object
-          log.debug("Matched title ${ti} for ${tipp}!")
-          TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
+          // TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
 
-          if (currentCov && (
-              (ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) ||
-              (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo)
-          )) {
-            result.reviewCreated = true
-            reviewRequestService.raise(
-                tipp,
-                "TIPP coverage conflicts title publishing data",
-                "TIPP ${tipp.name} was linked, check coverage",
-                null,
-                null,
-                [otherComponents: ti] as JSON,
-                RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
-                componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
-            )
-          }
+          // if (currentCov && (!ti.publishedFrom ||
+          //     (ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) ||
+          //     (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo)
+          // )) {
+          //   result.reviewCreated = true
+
+          //   def coverage_dates = "${dateFormatService.formatDate(currentCov.startDate)} - ${dateFormatService.formatDate(currentCov.endDate)}"
+          //   def ti_pub_dates = "${dateFormatService.formatDate(ti.publishedFrom)} - ${dateFormatService.formatDate(ti.publishedTo)}"
+
+          //   RefdataValue type_cmc = RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Matching Conflict")
+          //   RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+
+          //   def additionalInfo = [
+          //     vars: [coverage_dates, ti_pub_dates],
+          //     coverageMismatch: true,
+          //     otherComponents: [
+          //       [
+          //         oid: "${tipp.class.name}:${ti.id}",
+          //         name: tipp.name,
+          //         id: tipp.id,
+          //         uuid: tipp.uuid,
+          //         conflicts: found.matches[0].conflicts
+          //       ]
+          //     ]
+          //   ]
+
+          //   def existing_cmc = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: tipp, type: type_cmc, so: status_open])
+
+          //   if (!existing_cmc) {
+          //     reviewRequestService.raise(
+          //         ti,
+          //         "TIPP coverage is in conflict with linked title publishing data.",
+          //         "Title publishing dates and correct them if necessary.",
+          //         null,
+          //         null,
+          //         (additionalInfo as JSON).toString(),
+          //         type_cmc,
+          //         componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
+          //     )
+          //   }
+          // }
         }
         else if (found.matches.size() > 1 && tipp.coverageStatements?.size() > 0) {
-          coverageCheck(tipp, found)
+          def coverage_match = coverageCheck(tipp, found)
 
-          if (found.matches.size() == 1) {
-            ti = found.matches[0].object
+          if (coverage_match.size() == 1) {
+            ti = coverage_match[0].object
           }
-          else if (found.matches.size() == 0) {
-            log.debug("No matches after coverage check.. creating new title ${tipp.name}")
-            ti = createTitleFromTippData(tipp, tipp_ids)
-            result.status = 'created'
+          else if (coverage_match.size() == 0) {
+            log.debug("No match via coverage info ..")
+          }
+          else {
+            log.debug("Multiple matches on coverage ..")
           }
         }
         else {
@@ -745,30 +964,37 @@ class TippService {
           new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
 
           if (result.status == 'matched') {
-            titleAugmentService.addIdentifiers(tipp_ids, ti)
+            boolean ti_changed = componentUpdateService.updateIdentifiers(ti, tipp_ids)
+
+            if (ti_changed) {
+              ti.lastSeen = new Date().getTime()
+              ti.save(flush: true)
+            }
+
             titleAugmentService.addPublisher(tipp.publisherName, ti)
           }
 
           tipp.lastSeen = System.currentTimeMillis()
           tipp.save(flush: true)
 
+          touchPackage(tipp)
+
           log.debug("linked TIPP $tipp with TitleInstance $ti")
         }
         else {
           log.debug("Unable to match title!")
 
-          Package p = Package.get(pkg.id)
-
-          if (p.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
-            p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
-            p.save(flush: true)
-          }
-
           result.status = 'unmatched'
         }
 
-        if (found.matches?.size() > 0 || found.conflicts?.size() > 0)
+        if (found.matches?.size() > 0 || found.conflicts?.size() > 0) {
           result.reviewCreated = handleFindConflicts(tipp, found, group)
+
+          if (result.reviewCreated && pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
+            pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+            pkg.save(flush: true)
+          }
+        }
 
         result
       }
@@ -785,8 +1011,15 @@ class TippService {
     }
   }
 
-  private def createTitleFromTippData(tipp, tipp_ids) {
+  public boolean revertCheckedListStatusFor(pkgId) {
+    boolean changed = false
 
+
+
+    changed
+  }
+
+  private def createTitleFromTippData(tipp, tipp_ids) {
     def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
     def ti = Class.forName(title_class_name).newInstance()
     def title_changed = false
@@ -796,14 +1029,14 @@ class TippService {
     ti.save(flush: true)
     titleAugmentService.addPublisher(tipp.publisherName, ti)
     log.debug("Transfering new ti ids: ${tipp_ids}")
-    titleAugmentService.addIdentifiers(tipp_ids, ti)
+    componentUpdateService.updateIdentifiers(ti, tipp_ids)
 
     title_changed |= componentUpdateService.setAllRefdata([
         'medium', 'language'
     ], tipp, ti)
 
-    def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format('yyyy-MM-dd')) : null
-    def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format('yyyy-MM-dd')) : null
+    def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(dateFormatService.formatDate(tipp.dateFirstInPrint)) : null
+    def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(dateFormatService.formatDate(tipp.dateFirstOnline)) : null
 
     title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
     title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
@@ -819,6 +1052,7 @@ class TippService {
 
       title_changed |= titleAugmentService.editMonographFields(ti, mono_string_info)
     }
+
     ti.save(flush: true)
     ti
   }
@@ -949,12 +1183,14 @@ class TippService {
     result
   }
 
-  private void coverageCheck(tipp, found) {
+  private def coverageCheck(tipp, found) {
     // find the latest coverage
+    def result = []
     TIPPCoverageStatement latest = latest(tipp.coverageStatements)
+
     if (latest && found.matches.size > 1) {
+      def matches = []
       // too many identifier matches
-      def covMatch = []
       for (def comp : found.matches) {
         if (JournalInstance.isInstance(comp.object)) {
           if (// starts too early OR
@@ -966,16 +1202,16 @@ class TippService {
             break
           }
           else {
-            covMatch << comp
+            result << comp
           }
         }
         else {
           log.debug("Skipping title match with class ${comp?.object?.class}")
         }
       }
-      if (covMatch.size() == 1)
-        found.matches = covMatch
     }
+
+    result
   }
 
   private TIPPCoverageStatement latest(def covStmts) {
@@ -998,7 +1234,8 @@ class TippService {
 
   private boolean handleFindConflicts(tipp, def found, CuratoryGroup activeCg = null) {
     def result = false
-    def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+    RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+    RefdataValue type_cic = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
 
     if (found.invalid) {
       result = true
@@ -1019,15 +1256,21 @@ class TippService {
         )
       }
     }
-    else if (found.matches.size > 1 && !tipp.title) {
+    else if (found.matches.size() > 1 && !tipp.title) {
       result = true
-      def type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
+      RefdataValue type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
       def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: tipp, type: type_atm, so: status_open])[0]
 
       if (num_existing == 0) {
-        def additionalInfo = [otherComponents: []]
+        Map additionalInfo = [otherComponents: []]
         found.matches.each { comp ->
-          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
+          additionalInfo.otherComponents << [
+            oid: "${comp.object.class.name}:${comp.object.id}",
+            name: comp.object.name,
+            id: comp.object.id,
+            uuid: comp.object.uuid,
+            conflicts: comp.conflicts
+          ]
         }
         reviewRequestService.raise(
             tipp,
@@ -1040,8 +1283,48 @@ class TippService {
             componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
         )
       }
+
+      log.debug("Creating RR on existing title for id conflicts")
+      def tipp_id_list = tipp.ids.collect { "${it.namespace.value}:${it.value}" }
+      def component_to_review = found.matches.removeLast().object
+
+      def ctc_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: component_to_review, type: type_cic, so: status_open])[0]
+
+      if (ctc_existing == 0) {
+        def other_objects = found.matches.collect {
+                              [
+                                oid: "${it.object.class.name}:${it.object.id}",
+                                name: it.object.name,
+                                id: it.object.id,
+                                uuid: it.object.uuid,
+                                conflicts: it.conflicts
+                              ]
+                            }
+
+        result = true
+        def additionalInfo = [
+          otherComponents: other_objects,
+          referenceIds: tipp_id_list,
+          vars: [component_to_review.name, ""]
+        ]
+
+        reviewRequestService.raise(
+          component_to_review,
+          "Multiple titles have been matched by identifiers ${tipp_id_list}!".toString(),
+          "Check Titles for duplicates!",
+          null,
+          null,
+          (additionalInfo as JSON).toString(),
+          type_cic,
+          componentLookupService.findCuratoryGroupOfInterest(component_to_review, null, activeCg)
+        )
+      }
     }
-    else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
+    else if (found.matches.size() > 0 && found.matches[0].conflicts?.size() > 0) {
+      boolean rt_review_created = false
+      RefdataValue type_nc = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict')
+      RefdataValue type_sic = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict')
+
       found.matches.each { comp ->
         def otherComponent = [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
         def mismatches = []
@@ -1059,7 +1342,7 @@ class TippService {
               null,
               null,
               (additionalInfo as JSON).toString(),
-              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
+              type_nc,
               componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
             )
           }
@@ -1071,8 +1354,9 @@ class TippService {
           }
         }
 
-        if (mismatches.size() > 0 && found.to_create) {
+        if (mismatches.size() > 0 && found.to_create && !rt_review_created) {
           log.debug("Creating RR on new title ${tipp.title} for id conflicts ${mismatches}")
+          rt_review_created = true
           result = true
           def additionalInfo = [
             otherComponents: [otherComponent],
@@ -1087,7 +1371,7 @@ class TippService {
             null,
             null,
             (additionalInfo as JSON).toString(),
-            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
+            type_cic,
             componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
           )
         }
@@ -1108,7 +1392,7 @@ class TippService {
             null,
             null,
             (additionalInfo as JSON).toString(),
-            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
+            type_sic,
             componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
           )
         }
@@ -1133,7 +1417,7 @@ class TippService {
       )
     }
 
-    if (found?.conflicts?.size > 0) {
+    if (found?.conflicts?.size() > 0) {
       def additionalInfo = [otherComponents: []]
       result = true
 
@@ -1182,7 +1466,7 @@ class TippService {
       def tipp_id_match_results = []
       boolean has_conflicts = false
 
-      if (tippInfo.titleId == ctipp.importId) {
+      if (tippInfo.importId == ctipp.importId) {
         tipp_id_match_results << [namespace: 'title_id', value: tippInfo.titleId, match: 'OK']
       }
 
@@ -1242,7 +1526,9 @@ class TippService {
   }
 
   public void updateLastSeen(tipp, Long systime) {
-    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set lastSeen = :ts where id = :tid", [ts: systime, tid: tipp.id])
+    if (!tipp.lastSeen || systime > tipp.lastSeen) {
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set lastSeen = :ts where id = :tid", [ts: systime, tid: tipp.id])
+    }
   }
 
   def restLookup(tippInfo) {
@@ -1254,7 +1540,12 @@ class TippService {
     if (pkgInfo?.id && tippInfo.hostPlatform?.id) {
       RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       RefdataValue status_expected = RefdataCategory.lookup("KBComponent.Status", "Expected")
+      RefdataValue status_retired = RefdataCategory.lookup("KBComponent.Status", "Retired")
       def status_valid = [status_current, status_expected]
+
+      if (tippInfo.status?.toLowerCase() == 'retired' || (tippInfo.access_end_date && GOKbTextUtils.completeDateString(tippInfo.access_end_date) < LocalDate.now().atStartOfDay())) {
+        status_valid << status_retired
+      }
 
       // remap JSON Identifiers to [type: value]
       def jsonIdMap = [:]
@@ -1530,8 +1821,13 @@ class TippService {
     if (tipp.accessEndDate && tipp.accessEndDate < new Date() && tipp.status != status_retired) {
       tipp.status = status_retired
     }
-    else if (tipp.accessStartDate && tipp.accessStartDate > new Date() && tipp.status != status_expected) {
-      tipp.status = status_expected
+    else if (tippInfo.status?.toLowerCase() == 'retired' && tipp.status.value != 'Retired') {
+      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+      tipp.accessEndDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
+    }
+    else if (date_first_online && date_first_online > LocalDateTime.now()) {
+      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+      ClassUtils.setDateIfPresent(date_first_online, tipp, 'accessStartDate')
     }
     else if (tipp.accessStartDate
           && tipp.accessStartDate < new Date()
@@ -1608,6 +1904,78 @@ class TippService {
     }
 
     errors
+  }
+
+  public def reactivateOldestTitleTipp(TitleInstancePackagePlatform obj, User user = null, CuratoryGroup activeGroup = null) {
+    def result = [result: 'OK', additionalDeletes: 0]
+    RefdataValue combo_title = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    RefdataValue combo_pkg = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+    RefdataValue status_retired = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+    RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    def qry_str = '''from TitleInstancePackagePlatform as t
+                      where exists (
+                        select 1 from Combo
+                        where toComponent = t
+                        and fromComponent = :ti
+                        and type = :ct
+                      )
+                      and exists (
+                        select 1 from Combo
+                        where toComponent = t
+                        and fromComponent = :pkg
+                        and type = :cp
+                      )
+                      order by id'''
+    def ti = obj.title ? TitleInstance.get(obj.title.id) : null
+
+    if (ti) {
+      def current_tipps = []
+      def retired_tipps = []
+      def ti_pkg_tipps = TitleInstancePackagePlatform.executeQuery(qry_str, [cp: combo_pkg, ct: combo_title, pkg: obj.pkg, ti: ti])
+
+      ti_pkg_tipps.each { tipp ->
+        if (tipp.status == status_current) {
+          current_tipps << tipp
+        }
+        else if (tipp.status == status_retired) {
+          retired_tipps << tipp
+        }
+      }
+
+      if (current_tipps.size() == 1 && retired_tipps.size() > 0) {
+        if (current_tipps[0].dateCreated > retired_tipps[0].dateCreated) {
+          def duplicate = current_tipps[0]
+          def to_reactivate = retired_tipps[0]
+          retired_tipps.drop(1)
+
+          if (retired_tipps.size() > 0) {
+            retired_tipps.each { ttd ->
+              ttd.status = status_deleted
+              ttd.save()
+              result.additionalDeletes++
+            }
+          }
+
+          mergeDuplicate(duplicate, to_reactivate, user, activeGroup)
+        }
+        else {
+          result.result = 'SKIPPED'
+          result.info = "Skipped processing due to date rules (current > retired)"
+        }
+      }
+      else {
+        result.result = 'SKIPPED'
+        result.info = "Skipped due to missing candidates (current: ${current_tipps.size()}, retired: ${retired_tipps.size()})"
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      result.code = 400
+      result.message = 'Unable to reference TIPP title!'
+    }
+
+    result
   }
 
   public void mergeDuplicate(TitleInstancePackagePlatform duplicate, TitleInstancePackagePlatform target, User user = null, CuratoryGroup activeGroup = null, boolean keepOld = false) {

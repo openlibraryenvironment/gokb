@@ -23,17 +23,17 @@ class PackageCachingService {
   def concurrencyManagerService
   def dateFormatService
   def grailsApplication
-  def packageService
+  def packageCSVExportService
   def jobManagerService
   def sessionFactory
 
   static boolean activeCaching = false
 
-  def synchronized cachePackageXml(boolean force = false, Job job = null) {
+  def synchronized cachePackages(boolean force = false, Job job = null) {
     def result = null
 
     if (activeCaching == false) {
-      log.debug("CachePackageXml started ..")
+      log.debug("CachePackages started ..")
       activeCaching = true
 
       result = updatePackageCaches(force, job)
@@ -58,12 +58,12 @@ class PackageCachingService {
       def ids = Package.executeQuery("select id from Package")
 
       for (id in ids) {
+        def single_result = cacheSinglePackage(id, force)
 
-        cacheSinglePackage(id, force)
         session.flush()
         session.clear()
 
-        if (Thread.currentThread().isInterrupted()) {
+        if (single_result == 'CANCELLED' || Thread.currentThread().isInterrupted()) {
           log.debug("Job was cancelled..")
           cancelled = true
           result = 'CANCELLED'
@@ -80,13 +80,14 @@ class PackageCachingService {
     String result = 'OK'
     File tempDir = new File(grailsApplication.config.getProperty('gokb.baseTempDirectory'))
     File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
+    RefdataValue status_checked = RefdataCategory.lookup('Package.ListStatus', 'Checked')
     Package item = Package.get(id)
     def session = sessionFactory.currentSession
-    def activeComponentJobs = concurrencyManagerService.getComponentJobs(id)
+    boolean activeComponentJobs = concurrencyManagerService.getComponentJobs(id)?.data?.size() > 0
     def activeScheduledJobs = jobManagerService.runningJobs?.findAll { it.jobDetail.key.name == 'org.gokb.AutoCachePackagesJob'} ?: null
     boolean cancelled = false
 
-    if (item && (!force || !activeScheduledJobs) && activeComponentJobs?.data?.size() == 0) {
+    if (item && (!force || !activeScheduledJobs) && !activeComponentJobs && (force || item.listStatus == status_checked)) {
       try {
         if (!dir.exists()) {
           dir.mkdirs()
@@ -344,10 +345,6 @@ class PackageCachingService {
             if (!force || !currentCacheFile || item.lastUpdated > currentCacheDate) {
               Package.executeUpdate("update Package p set p.lastCachedDate = :lcd where p.id = :pid", [lcd: new Date(cachedRecord.lastModified()), pid: item.id])
             }
-
-            log.info("Caching KBART ..")
-            packageService.updateKbartExport(item)
-            log.info("Finished caching KBART file")
           }
           else {
             result = 'CANCELLED'
@@ -366,6 +363,10 @@ class PackageCachingService {
       catch (Exception e) {
         log.error("Exception in Package Caching for ID ${id}!", e)
       }
+
+      if (result != 'CANCELLED' && (force || result != 'SKIPPED_CURRENTLY_CHANGING')) {
+        result = packageCSVExportService.updateExportFiles(item, force)
+      }
     }
     else if (!item) {
       result = 'ERROR'
@@ -374,8 +375,11 @@ class PackageCachingService {
     else if (activeScheduledJobs) {
       result = 'SKIPPED_ACTIVE_JOB'
     }
-     else {
+    else if (activeComponentJobs) {
       result = 'SKIPPED_CURRENTLY_CHANGING'
+    }
+    else {
+      result = 'SKIPPED_LISTSTATUS'
     }
 
     result

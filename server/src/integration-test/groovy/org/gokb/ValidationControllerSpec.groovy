@@ -195,4 +195,17 @@ class ValidationControllerSpec extends Specification {
     resp.status == HttpStatus.OK
     resp.body().result == 'ERROR'
   }
+
+  void "test /validation/url with invalid URL - blank space"() {
+    when:
+    def request_body = [
+      "value": "http://invalid-url.com/ test"
+    ]
+
+    HttpRequest request = HttpRequest.POST(baseUrl + "/validation/url?replaceDate=false", request_body)
+    def resp = http.exchange(request, Map)
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().result == 'OK'
+  }
 }

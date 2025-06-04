@@ -156,7 +156,18 @@ class ComponentLookupService {
       def isValid = grails.util.Holders.applicationContext.getBean('validationService').checkIdForNamespace(value, namespace)
 
       if (isValid) {
-        def norm_id = Identifier.normalizeIdentifier(value)
+        def final_val = value
+
+        if (namespace.family == 'isxn') {
+          final_val = final_val.replaceAll("x","X")
+        }
+
+        if (namespace.value in ['isbn', 'pisbn']) {
+          final_val = ISBN.parseIsbn(final_val).getIsbn13()
+        }
+
+        def norm_id = Identifier.normalizeIdentifier(final_val)
+
         def existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
         log.debug("Found ID: ${existing}")
 
@@ -165,21 +176,12 @@ class ComponentLookupService {
         }
         else if ( existing?.size() > 1 ) {
           log.error("Conflicting identifiers found: ${existing}")
-          throw new RuntimeException("Found duplicates for Identifier: ${existing}");
+          throw new RuntimeException("Found duplicates for Identifier: ${existing}")
         }
         else {
           log.debug("No matches: ${existing}")
-          def final_val = value
 
           if (!identifier) {
-            if (namespace.family == 'isxn') {
-              final_val = final_val.replaceAll("x","X")
-            }
-
-            if (namespace.value in ['isbn', 'pisbn']) {
-              final_val = ISBN.parseIsbn(final_val).getIsbn13()
-            }
-
             log.debug("Creating new Identifier ${namespace}:${value} ..")
 
             try {
@@ -208,7 +210,7 @@ class ComponentLookupService {
         }
       }
       else {
-        log.debug("Validation failed for ${namespace.vaue}:${value}!")
+        log.debug("Validation failed for ${namespace.value}:${value}!")
       }
     }
 
@@ -413,47 +415,50 @@ class ComponentLookupService {
             if (validLong.size() == 1 && p.name == 'componentToReview') {
               def ctr = KBComponent.get(validLong[0])
               def ctr_ids = [ctr.id]
+              RefdataValue combo_package_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+              RefdataValue combo_title_tipp = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
               if (ctr?.class == Package) {
-                def tipp_ids = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
+                def linked_select = '''select tipp.id from TitleInstancePackagePlatform as tipp
                     where exists (
                       select 1 from Combo
                       where fromComponent = :ctr
                       and toComponent = tipp
+                      and type = :combo_package_tipp
                     )
                     and exists (
                       select 1 from ReviewRequest
-                      where componentToReview = tipp
+                      where id = p.id
+                      and componentToReview = tipp
 
-                    )''',[ctr: ctr])
+                    )'''
+
+                qryParams['ctr'] = ctr
+                qryParams['combo_package_tipp'] = combo_package_tipp
 
                 if (params.titlereviews) {
-                  if (tipp_ids.size() > 0) {
-                    def ti_ids = TitleInstance.executeQuery('''select ti.id from TitleInstance as ti
+                  linked_select = '''select ti.id from TitleInstance as ti
                       where exists (
-                        select 1 from Combo
+                        select 1 from Combo as ct
                         where fromComponent = ti
-                        and toComponent.id IN (:tippids)
+                        and type = :combo_title_tipp
+                        and exists (
+                          select 1 from Combo
+                          where toComponent = ct.toComponent
+                          and type = :combo_package_tipp
+                          and fromComponent = :ctr
+                        )
                       )
                       and exists (
                         select 1 from ReviewRequest
-                        where componentToReview = ti
-                      )''', [tippids: tipp_ids])
+                        where id = p.id
+                        and componentToReview = ti
+                      )'''
 
-                    ctr_ids.addAll(ti_ids)
-                  }
-
-                  if (params.combinedreviews) {
-                    ctr_ids.addAll(tipp_ids)
-                  }
-                }
-                else {
-                  ctr_ids.addAll(tipp_ids)
+                  qryParams['combo_title_tipp'] = combo_title_tipp
                 }
 
-                qryParams['ctrids'] = ctr_ids
-                paramStr += "(p.componentToReview.id IN :ctrids)"
-                log.debug("${qryParams['ctrids'].size()}")
+                paramStr += "(p.componentToReview = :ctr OR EXISTS (${linked_select}))"
                 pkg_qry = true
               }
             }
@@ -721,6 +726,45 @@ class ComponentLookupService {
         hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg and ag.status != :inactive)"
         qryParams['alg'] = validCgs
         qryParams['inactive'] = inactive
+      }
+    }
+
+    if (cls == ReviewRequest && params['linkedComponentType']) {
+      def lct = params['linkedComponentType']
+
+      if (['Package', 'ReferenceTitle', 'PackageTitle', 'Journal', 'Monograph', 'Database'].contains(lct)) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+
+        if (lct == 'Package') {
+          hqlQry += "exists (select 1 from Package where id = p.componentToReview.id)"
+        }
+        else if (lct == 'ReferenceTitle') {
+          hqlQry += "exists (select 1 from TitleInstance where id = p.componentToReview.id)"
+        }
+        else if (lct == 'PackageTitle') {
+          hqlQry += "exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id)"
+        }
+        else if (lct == 'Journal') {
+          hqlQry += "(exists (select 1 from JournalInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Serial')
+        }
+        else if (lct == 'Monograph') {
+          hqlQry += "(exists (select 1 from BookInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Monograph')
+        }
+        else if (lct == 'Database') {
+          hqlQry += "(exists (select 1 from DatabaseInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Database')
+        }
+      }
+      else {
+        log.debug("Skipping linkedCOmponentType ${lct}!")
       }
     }
 

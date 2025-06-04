@@ -267,12 +267,12 @@ class TitleInstance extends KBComponent {
   def toGoKBXml(builder, attr) {
 
     try {
-      def tipps = getTipps()
       Org theIssuer = getIssuer()
       def publisher_combos = getCombosByPropertyName('publisher')
-      def people_combos = this.people ?: []
-
       def history = getTitleHistory()
+      def tipps = getTipps()
+      RefdataValue type_pkg_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+      RefdataValue type_plt_tipp = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
 
       builder.'gokb'(attr) {
         builder.'title'(['id': (id), 'uuid': (uuid)]) {
@@ -300,32 +300,29 @@ class TitleInstance extends KBComponent {
 
           builder.'publishers' {
             publisher_combos?.each { Combo pc ->
-              def pub_org = null
+              def pub_info = null
+
               if (isComboReverse('publisher')) {
-                pub_org = pc.fromComponent
+                pub_info = Org.executeQuery("select id, uuid, name from Org where id = :fc", [fc: pc.fromComponent.id])
               }
               else {
-                pub_org = pc.toComponent
+                pub_info = Org.executeQuery("select id, uuid, name from Org where id = :fc", [fc: pc.toComponent.id])
               }
 
-              if (pub_org) {
-                def org_ids = pub_org.activeIdInfo
+              if (pub_info) {
+                builder."publisher"(['id': pub_info[0], 'uuid': pub_info[1]]) {
+                  "name"(pub_info[2])
 
-                builder."publisher"(['id': pub_org.id, 'uuid': pub_org.uuid]) {
-                  "name"(pub_org.name)
                   if (pc.startDate) {
                     "startDate"(pc.startDate ? DateFormatService.formatDate(pc.startDate) : null)
                   }
+
                   if (pc.endDate) {
                     "endDate"(pc.endDate ? DateFormatService.formatDate(pc.endDate) : null)
                   }
+
                   if (pc.status) {
                     "status"(pc.status.value)
-                  }
-                  builder."identifiers" {
-                    org_ids?.each { org_id ->
-                      builder.'identifier'(org_id)
-                    }
                   }
                 }
               }
@@ -338,8 +335,8 @@ class TitleInstance extends KBComponent {
             }
           }
 
-          else {
-            builder.history() {
+          if (this.class.name == 'org.gokb.cred.JournalInstance') {
+            builder.'history' {
               history.each { he ->
                 builder.historyEvent(['id': he.id]) {
                   builder."date"(he.date ? DateFormatService.formatDate(he.date) : null)
@@ -381,48 +378,36 @@ class TitleInstance extends KBComponent {
           builder.'TIPPs'(count: tipps?.size()) {
             tipps?.each { tipp ->
               builder.'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
-
+                builder.'name'(tipp.name)
                 builder.'status'(tipp.status.value)
 
-                def pkg = tipp.pkg
-                builder.'package'(['id': pkg?.id, 'uuid': pkg?.uuid]) {
-                  builder.'name'(pkg?.name)
+                def pkg_info = tipp.getResolvedCombosByPropertyNameAndStatus('pkg', 'Active')[0]
+
+                builder.'package'(['id': pkg_info[0], 'uuid': pkg_info[1]]) {
+                  builder.'name'(pkg_info[2])
                 }
 
-                def platform = tipp.hostPlatform
-                builder.'platform'(['id': platform?.id, 'uuid': platform?.uuid]) {
-                  builder.'name'(platform?.name)
+                def plt_info = tipp.getResolvedCombosByPropertyNameAndStatus('hostPlatform', 'Active')[0]
+
+                builder.'platform'(['id': plt_info[0], 'uuid': plt_info[1]]) {
+                  builder.'name'(plt_info[2])
                 }
+
+                builder.'url'(tipp.url)
 
                 builder.'accessStartDate'(tipp.accessStartDate ? DateFormatService.formatDate(tipp.accessStartDate) : null)
                 builder.'accessEndDate'(tipp.accessEndDate ? DateFormatService.formatDate(tipp.accessEndDate) : null)
 
-                builder.'subjectArea'(tipp.subjectArea?.trim())
-                builder.'series'(tipp.series?.trim())
-
-                if (tipp.prices && tipp.prices.size() > 0) {
-                  builder.'prices'() {
-                    tipp.prices.each { price ->
-                      builder.'price' {
-                        builder.'type'(price.priceType?.value)
-                        builder.'amount'(price.price)
-                        builder.'currency'(price.currency)
-                        builder.'startDate'(price.startDate ? DateFormatService.formatDate(price.startDate) : null)
-                        if (price.endDate) {
-                          builder.'endDate'(price.endDate ? DateFormatService.formatDate(price.endDate) : null)
-                        }
-                      }
-                    }
-                  }
-                }
-
                 builder."identifiers" {
-                  tipp.activeIdInfo.each { tid ->
+                  def tipp_id_list = tipp.activeIdInfo
+
+                  tipp_id_list.each { tid ->
                     builder.'identifier'(tid)
                   }
                 }
 
                 def cov_statements = tipp.coverageStatements
+
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
                     'coverage'(
@@ -439,19 +424,7 @@ class TitleInstance extends KBComponent {
                   }
                 }
                 else {
-                  builder.'coverage'(
-                    startDate: (tipp.startDate ? DateFormatService.formatDate(tipp.startDate) : null),
-                    startVolume: tipp.startVolume,
-                    startIssue: tipp.startIssue,
-                    endDate: (tipp.endDate ? DateFormatService.formatDate(tipp.endDate) : null),
-                    endVolume: tipp.endVolume,
-                    endIssue: tipp.endIssue,
-                    coverageDepth: tipp.coverageDepth?.value,
-                    coverageNote: tipp.coverageNote,
-                    embargo: tipp.embargo)
-                }
-                if (tipp.url != null) {
-                  'url'(tipp.url)
+                  builder.'coverage'()
                 }
               }
             }
@@ -460,7 +433,7 @@ class TitleInstance extends KBComponent {
       }
     }
     catch (Exception e) {
-      log.error("problem creating record", e);
+      log.error("problem creating record", e)
     }
   }
 

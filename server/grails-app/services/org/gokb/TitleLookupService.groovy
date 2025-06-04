@@ -97,7 +97,7 @@ class TitleLookupService {
           boolean title_match = false
 
           // If we find an ID then lookup the components.
-          Set<KBComponent> comp = getComponentsForIdentifier(the_id)
+          Set<KBComponent> comp = getTitlesForIdentifier(the_id, ti_class)
 
           log.debug("Scanning ${comp.size()} components attached to identifier");
           comp.each { KBComponent c ->
@@ -258,18 +258,30 @@ class TitleLookupService {
               result.matches.add([object: the_title, conflicts: [], warnings: ['secondary']])
             } else if (results['other_matches'].size() > 1) {
               log.debug("Multiple matches by secondary ID!")
-              results.other_matches.each { om ->
-                result.matches.add([object: om, conflicts: [], warnings: ['secondary', 'other_matches']])
+              def string_matched = attemptComponentMatch([title: title], newTitleClassName)
+
+              if (string_matched && results.other_matches.contains(string_matched)) {
+                result.matches << [object: string_matched, warnings: ['bucket', 'secondary']]
+              }
+              else {
+                results.other_matches.each { om ->
+                  def match_object = [
+                    object: om,
+                    conflicts: [],
+                    warnings: ['secondary', 'other_matches']
+                  ]
+
+                  result.matches.add(match_object)
+                }
               }
             }
           }
-
-          if (!the_title) {
+          else {
             log.debug("No class 1 ids supplied. attempting string match")
 
             // The hash we use is constructed differently based on the type of items.
             // Serial hashes are based soley on the title, Monographs are based currently on title+primary author surname
-            def target_hash = null;
+            def target_hash = null
 
             // Lookup using title string match only.
             def string_matched = attemptComponentMatch([title: title], newTitleClassName)
@@ -281,10 +293,12 @@ class TitleLookupService {
               // this seems odd, as the_title is null and therefore has no field 'name'
               /* if (title != the_title.name) {
                 title_match.conflicts.add([message: "Found a title with a different primary name!", field: "name", value: title, matched: the_title.name])
-               }
+              }
               */
 
-              result.matches.add(title_match)
+              if (!result.matches.contains(string_matched)) {
+                result.matches.add(title_match)
+              }
             }
 
             result.to_create = true
@@ -338,9 +352,9 @@ class TitleLookupService {
             title_match.warnings.add('title_placeholder')
           } else {
             if (matches[0].name.equals(title) || matches[0].normname?.equals(KBComponent.generateNormname(title))) {
-
+              log.debug("Matched title has a similar name.")
             } else {
-              title_match.conflicts << [
+              title_match.warnings << [
                 message: "Ingest name differs from that of the matched title!",
                 field  : "name",
                 value  : title,
@@ -943,9 +957,6 @@ class TitleLookupService {
 
         // Make sure we're all saved before looking up the publisher
         if (the_title.validate()) {
-
-          // addIdentifiers(results.ids, the_title)
-
           // addPublisher(metadata.publisher_name, the_title)
 
           if (the_title.name.startsWith("Unknown Title")) {
@@ -1172,22 +1183,6 @@ class TitleLookupService {
     ti
   }
 
-  private TitleInstance addIdentifiers(ids, ti) {
-    TitleInstance.withTransaction {
-      ids.each { new_id ->
-
-        def existing_combo = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :ido", [ti: ti, ido: new_id])
-        if (existing_combo.size() == 0) {
-          ti.ids.add(new_id)
-        } else {
-          log.debug("Not adding duplicate ID ${new_id}..")
-        }
-      }
-      ti.save(flush: true)
-    }
-    ti
-  }
-
   private TitleInstance attemptBucketMatch(String title) {
     def t = null;
     if (title && (title.length() > 0)) {
@@ -1246,7 +1241,7 @@ class TitleLookupService {
     String comparable_title = GOKbTextUtils.generateComparableKey(title)
 
     // The threshold for a good match.
-    double threshold = grailsApplication.config.getProperty('cosine.good_threshold')
+    double threshold = grailsApplication.config.getProperty('cosine.good_threshold', Double, 0.75)
 
     // Work out the distance between the 2 title strings.
     double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.name), comparable_title)
@@ -1459,18 +1454,18 @@ class TitleLookupService {
     }
   }
 
-  def getComponentsForIdentifier(identifier) {
-
+  def getTitlesForIdentifier(identifier, ti_class) {
+    log.debug("Get components for ${identifier}")
+    Set result = []
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    def status_active = DomainClassExtender.comboStatusActive
-    def combo_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
-    // was identifier.identifiedComponents
-    KBComponent.executeQuery('''select DISTINCT c.fromComponent from Combo as c
-                                where c.toComponent = :id
-                                and c.type = :tp
-                                and c.fromComponent.status <> :del
-                                and c.status = :act''',
-                                [id: identifier, tp: combo_type, del: status_deleted, act: status_active])
+
+    identifier.activeIdentifiedComponents.each { idc ->
+      if (ti_class.isInstance(ClassUtils.deproxy(idc)) && idc.status != status_deleted) {
+        result << idc
+      }
+    }
+
+    result
   }
 
   def compareIdentifierMaps(ids_one, ids_two) {

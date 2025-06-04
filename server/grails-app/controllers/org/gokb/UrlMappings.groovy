@@ -13,6 +13,12 @@ class UrlMappings {
     "/resource/show/$type/$id"(controller: 'resource', action: 'show')
     "/package"(controller: 'packages')
     "/validate"(controller: 'validation')
+    get "/externalSource"(controller: 'externalSourceImport')
+    get "/externalSource/package?"(controller: 'externalSourceImport', action: 'getPackageMetaData')
+    get "/externalSource/platform?"(controller: 'externalSourceImport', action: 'getPlatformMetaData')
+    get "/externalSource/tipps?"(controller: 'externalSourceImport', action: 'getTitleData')
+    get "/externalSource/provider?"(controller: 'externalSourceImport', action: 'getProviderData')
+    post "/externalSource/providerExists"(controller: 'externalSourceImport', action: 'checkProviderExists')
 
     group "/rest", {
       post "/packages/$id/retire"(controller: 'package', namespace: 'rest', action:'retire')

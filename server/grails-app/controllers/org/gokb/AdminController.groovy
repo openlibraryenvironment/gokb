@@ -9,6 +9,7 @@ import org.hibernate.criterion.CriteriaSpecification
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.acls.domain.BasePermission
 
+import java.time.LocalDateTime
 import java.util.concurrent.CancellationException
 
 import grails.gorm.transactions.*
@@ -247,7 +248,7 @@ class AdminController {
     log.debug("Call to recache all packages")
 
     Job j = concurrencyManagerService.createJob { Job job ->
-      packageCachingService.cachePackageXml(true, job)
+      packageCachingService.cachePackages(true, job)
     }.startOrQueue()
 
     j.description = "Recache packages (manual/forced)"
@@ -404,10 +405,10 @@ class AdminController {
       }
     })?.each { CuratoryGroup group ->
       result["${group.name}"] = [
-          users     : group.users.collect { it.username },
-          owner     : group.owner?.username,
-          status    : group.status?.value,
-          editStatus: group.editStatus?.value
+              users     : group.users.collect { it.username },
+              owner     : group.owner?.username,
+              status    : group.status?.value,
+              editStatus: group.editStatus?.value
       ]
     }
 
@@ -428,8 +429,21 @@ class AdminController {
   }
 
   def zdbSync() {
+    boolean unlinked_only = params.boolean('unlinkedOnly') ?: false
+    LocalDateTime date
+
+    if (params.createdSince) {
+      date = GOKbTextUtils.completeDateString(params.createdSince)
+
+      if (!date) {
+        def result = [result: 'ERROR', message: "Unable to parse date for parameter 'createdSince'!"]
+        response.status = 400
+        render result as JSON
+      }
+    }
+
     Job j = concurrencyManagerService.createJob { job ->
-      titleAugmentService.syncZdbInfo(job)
+      titleAugmentService.syncZdbInfo(job, unlinked_only, date)
     }.startOrQueue()
 
     log.debug "Triggering ZDB sync, job #${j.uuid}"
@@ -502,6 +516,14 @@ class AdminController {
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
+  }
+
+  def closeAllOrphanedReviews() {
+    def result = [result: 'OK']
+
+    result.total = cleanupService.closeOrphanedReviews()
+
+    render result as JSON
   }
 
   def setupAcl() {

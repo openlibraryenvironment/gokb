@@ -153,13 +153,53 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
       service.checkUrl('http://test.localhost') == null
   }
 
-  void "test checkUrl with valid date wildcard"() {
+  void "test checkUrl with new tld"() {
     expect:
-      service.checkUrl('https://test.com/kbart/provider_Global_TestPackage_{YYYY-MM-DD}.txt') != null
+      service.checkUrl('http://test.academy/') != null
   }
 
-  void "test checkUrl with ignored date wildcard"() {
+  void "test checkUrl with valid date wildcard"() {
     expect:
-      service.checkUrl('https://test.com/kbart/provider_Global_TestPackage_{YYYY-MM-DD}.txt', false) == null
+      service.checkUrl('https://test.com/kbart/provider_Global_TestPackage_{YYYY-MM-DD}.txt', true) != null
+  }
+
+  void "test checkUrl with unescaped URL query part"() {
+    expect:
+      service.checkUrl('https://test.com/view/work/bibliographic_entity?test=|comic_book|2530121') != null
+  }
+
+  void "test checkUrl with unescaped URL file part"() {
+    expect:
+      service.checkUrl('https://test.com/view/work/bibliographic_entity|comic_book|2530121') != null
+  }
+
+  void "test checkUrl with invalid blank space"() {
+    expect:
+      service.checkUrl('https://test.com/view/work/bibliographic_entity|comic_book |2530121') != null
+  }
+
+  void "test checkUrl with escaped URL query part"() {
+    expect:
+      service.checkUrl('https://test.com/view/work/bibliographic_entity%7Ccomic_book%7C2530121') != null
+  }
+
+  void "test checkUrl with missing slash before query part"() {
+    expect:
+      service.checkUrl('https://test.com?check=true') != null
+  }
+
+  void "test checkUrl with non-ASCII domain name"() {
+    expect:
+      service.checkUrl('https://www.check-täst.com/de/testing.html') != null
+  }
+
+  void "test checkUrl with multiple unencoded params"() {
+    expect:
+      service.checkUrl('https://www.test.com/path/one/test?one=|test&two= check_this') != null
+  }
+
+  void "test checkUrl with unencoded param keys"() {
+    expect:
+      service.checkUrl('https://test.de/search?facet[series_title]=E.T.A.+Hoffmann-Jahrbuch') != null
   }
 }

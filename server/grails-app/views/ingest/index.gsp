@@ -1,7 +1,7 @@
 <html>
   <head>
     <meta name="layout" content="sb-admin" />
-    <title>GOKb Direct Ingest Service</title>
+    <title>GOKB Direct Ingest Service</title>
   </head>
   <body>
     <h1 class="page-header">Direct File Ingest</h1>
@@ -61,6 +61,14 @@
             <div class="form-group">
               <label class="control-label" for='providerNamespace'>Provider Namespace:</label>
               <g:simpleReferenceTypedown class="form-control" name="providerNamespace" baseClass="org.gokb.cred.IdentifierNamespace" />
+            </div>
+            <div class="form-group">
+              <label class="control-label" for='providerNamespaceSerial'>Provider Namespace (Serial):</label>
+              <g:simpleReferenceTypedown class="form-control" name="providerNamespaceSerial" baseClass="org.gokb.cred.IdentifierNamespace" />
+            </div>
+            <div class="form-group">
+              <label class="control-label" for='providerNamespaceMonograph'>Provider Namespace (Monograph):</label>
+              <g:simpleReferenceTypedown class="form-control" name="providerNamespaceMonograph" baseClass="org.gokb.cred.IdentifierNamespace" />
             </div>
             <div class="form-group">
               <label class="control-label" for='platformUrl'>Url:</label>
