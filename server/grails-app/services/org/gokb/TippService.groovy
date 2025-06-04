@@ -823,7 +823,7 @@ class TippService {
       session.flush()
       session.clear()
 
-      if (job?.ownerId && !hasOpenTippReviews(pkgId)) {
+      if (job?.ownerId && !hasOpenReviews(pkgId)) {
         Package pkg = Package.get(pkgId)
         pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
         pkg.save(flush: true)
@@ -844,24 +844,31 @@ class TippService {
     result
   }
 
-  public Boolean hasOpenTippReviews(pid) {
+  public Boolean hasOpenReviews(pid) {
     ReviewRequest.withNewSession {
       RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
       RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
+      RafdataValue manual_review_type = RefdataCategory.lookup("ReviewRequest.StdDesc", 'Manual Request')
 
       def qry = '''select count(*) from ReviewRequest as rr
-                    where rr.componentToReview in (
-                      select t from TitleInstancePackagePlatform as t
-                      where exists (
-                        select 1 from Combo
-                        where fromComponent.id = :pid
-                        and toComponent = t
-                        and type = :ct
+                    where (
+                      rr.componentToReview.id = :pid
+                      and rr.stdDesc != :mr
+                    )
+                    or (
+                      rr.componentToReview in (
+                        select t from TitleInstancePackagePlatform as t
+                        where exists (
+                          select 1 from Combo
+                          where fromComponent.id = :pid
+                          and toComponent = t
+                          and type = :ct
+                        )
                       )
                     )
                     and rr.status = :so'''
 
-      def total = ReviewRequest.executeQuery(qry, [pid: pid, ct: combo_tipps, so: status_open])[0]
+      def total = ReviewRequest.executeQuery(qry, [pid: pid, mr: manual_review_type, ct: combo_tipps, so: status_open])[0]
 
       return total > 0
     }
