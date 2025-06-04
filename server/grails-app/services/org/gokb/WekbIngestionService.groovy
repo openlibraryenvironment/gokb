@@ -281,7 +281,13 @@ class WekbIngestionService {
                     }
 
                     def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
-                    importedTipp.setStatus(actualTippStatus)
+
+                    if (actualTippStatus) {
+                        importedTipp.setStatus(actualTippStatus)
+                    }
+                    else {
+                      log.error("Unable to process wekb TIPP status value ${tipp.status} for TIPP ${tipp.uuid}!")
+                    }
 
                     //result.report[tipp.status.toString().toLowerCase()]++
                     //importedTipp.setStatus(status_map.get(tipp.status))
