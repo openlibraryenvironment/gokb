@@ -90,26 +90,24 @@ class CuratoryGroupAlertingService {
 
   def triggerDailyJobsAlert(groupId, jobs) {
     def result = [result: 'OK']
+    def obj = CuratoryGroup.get(groupId)
 
-    CuratoryGroup.withNewSession {
-      def obj = CuratoryGroup.get(groupId)
+    if (obj) {
+      Locale locale = new Locale(obj.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
+      String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'package/' : null
+      def jobs_table = jobs.collect { job -> [
+                                      packageName: job.linkedItemName,
+                                      packageId: job.linkedItemId,
+                                      editLink: edit_base ? edit_base + "${job.linkedItemId}" : null,
+                                      messageCode: job.messageCode
+                                    ] }
 
-      if (obj) {
-        Locale locale = new Locale(obj.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
-        String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'package/' : null
-        def jobs_table = jobs.collect { [
-                                        packageName: it.linkedItemName,
-                                        packageId: it.linkedItemId,
-                                        editLink: edit_base ? edit_base + "${it.linkedItemId}" : null,
-                                        messageCode: it.messageCode
-                                      ] }
-
-        result = sendDailyAlertsForGroup(obj, locale, 'jobs', jobs_table)
-      }
-      else {
-        result.result = 'ERROR'
-        result.message = 'Unable to resolve group from ID ${groupId}!'
-      }
+      result = sendDailyAlertsForGroup(obj, locale, 'jobs', jobs_table)
+    }
+    else {
+      log.error("Unable to resolve group from ID ${groupId}!")
+      result.result = 'ERROR'
+      result.message = "Unable to resolve group from ID ${groupId}!"
     }
 
     result
@@ -140,7 +138,7 @@ class CuratoryGroupAlertingService {
 
     groups_list.each { groupId, packageIdList ->
       CuratoryGroup cg = CuratoryGroup.get(groupId)
-      Locale locale = new Locale(obj.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
+      Locale locale = new Locale(cg.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
       def table_items = []
 
       if (cg.newReviewsAlerts) {

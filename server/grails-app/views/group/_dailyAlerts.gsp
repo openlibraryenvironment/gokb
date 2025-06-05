@@ -16,7 +16,7 @@
       </tr>
     <thead>
     <tbody>
-      <g:each in="jobs" var="job">
+      <g:each in="${jobs}" var="job">
         <tr>
           <td>
             <a href="${job.editLink}">${job.packageName}</a>
@@ -46,7 +46,7 @@
       </tr>
     <thead>
     <tbody>
-      <g:each in="reviews" var="pkg">
+      <g:each in="${reviews}" var="pkg">
         <tr>
           <td>
             <a href="${pkg.editLink}">${pkg.packageName}</a>
