@@ -19,6 +19,12 @@
 	<dd>
 		<g:xEditableBoolean owner="${d}" field="cancelledImportAlerts" />
 	</dd>
+	<dt>
+		<g:annotatedLabel owner="${d}" property="newReviewsAlerts">Alerts for new reviews on curated packages</g:annotatedLabel>
+	</dt>
+	<dd>
+		<g:xEditableBoolean owner="${d}" field="newReviewsAlerts" />
+	</dd>
 
 	<g:if test="${d.id != null}">
 
