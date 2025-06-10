@@ -26,15 +26,16 @@ class TippUpsertService {
     def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
     def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
     def tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
+    def tipp_pubtype = tipp_fields.publicationType ? RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', tipp_fields.publicationType) : null
     def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid,
                                                   status: tipp_status,
                                                   editStatus: tipp_editstatus,
+                                                  publicationType: tipp_pubtype,
                                                   name: tipp_fields.name,
                                                   language: tipp_language,
                                                   url: tipp_fields.url).save(failOnError: true, flush:true)
 
     if (result) {
-
       RefdataValue pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
       new Combo(toComponent: result, fromComponent: tipp_fields.pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
 
