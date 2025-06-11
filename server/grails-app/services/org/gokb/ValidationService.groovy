@@ -220,12 +220,17 @@ class ValidationService {
 
     def result = [
         valid: true,
+        mixed: false,
         message: "",
         rows: [
             total: 0,
             error: 0,
             warning: 0,
-            skipped: 0
+            skipped: 0,
+            type: [
+              serial: 0,
+              monograph: 0
+            ]
         ],
         errors: [
             missingColumns: [],
@@ -241,7 +246,8 @@ class ValidationService {
 
     CSVReader csv = initReader(kbart)
 
-    Boolean title_id_doi = null
+    Boolean serial_title_id_doi = null
+    Boolean mono_title_id_doi = null
 
     Map col_positions = [:]
     String[] header = csv.readNext()
@@ -290,15 +296,36 @@ class ValidationService {
           def pubType = checkPubType(pubTypeVal)
           IdentifierNamespace row_namespace = titleIdNamespace
 
-          if (pubType == 'Serial' && titleIdNamespaceSerial) {
-            row_namespace = titleIdNamespaceSerial
-          }
-          else if (pubType == 'Monograph' && titleIdNamespaceMonograph) {
-            row_namespace = titleIdNamespaceMonograph
-          }
+          if (pubType == 'Serial') {
+            if (titleIdNamespaceSerial) {
+              row_namespace = titleIdNamespaceSerial
+            }
 
-          if (titleIdVal && title_id_doi == null) {
-            title_id_doi = checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi')) != null
+
+            if (titleIdVal && serial_title_id_doi == null) {
+              serial_title_id_doi = checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi')) != null
+            }
+
+            if (result.rows.type.serial == 0 && result.rows.type.monograph > 0) {
+              result.mixed = true
+            }
+
+            result.rows.type.serial++
+          }
+          else if (pubType == 'Monograph') {
+            if (titleIdNamespaceMonograph) {
+              row_namespace = titleIdNamespaceMonograph
+            }
+
+            if (titleIdVal && mono_title_id_doi == null) {
+              mono_title_id_doi = checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi')) != null
+            }
+
+            if (result.rows.type.monograph == 0 && result.rows.type.serial > 0) {
+              result.mixed = true
+            }
+
+            result.rows.type.monograph++
           }
 
           result.rows.total++
@@ -342,8 +369,11 @@ class ValidationService {
       }
       result.message = "File processing finished after ${result.rows.total} (${result.rows.error} errors)."
 
-      if (title_id_doi) {
-        result.doi_ns_detected = true
+      if (serial_title_id_doi) {
+        result.doi_ns_detected_serial = true
+      }
+      if (mono_title_id_doi) {
+        result.doi_ns_detected_monograph = true
       }
     }
     else {
