@@ -297,7 +297,7 @@ class ValidationService {
             row_namespace = titleIdNamespaceMonograph
           }
 
-          if (title_id_doi && !row_namespace && titleIdVal && !checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi'))) {
+          if (title_id_doi && titleIdVal && !checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi'))) {
             title_id_doi = false
           }
 
