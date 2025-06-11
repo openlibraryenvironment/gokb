@@ -241,6 +241,8 @@ class ValidationService {
 
     CSVReader csv = initReader(kbart)
 
+    Boolean title_id_doi = true
+
     Map col_positions = [:]
     String[] header = csv.readNext()
 
@@ -284,6 +286,7 @@ class ValidationService {
         }
         else if (nl.size() >= MANDATORY_COLS.size()) {
           def pubTypeVal = nl[col_positions['publication_type']].trim()
+          def titleIdVal = nl[col_positions['title_id']].trim()
           def pubType = checkPubType(pubTypeVal)
           IdentifierNamespace row_namespace = titleIdNamespace
 
@@ -292,6 +295,10 @@ class ValidationService {
           }
           else if (pubType == 'Monograph' && titleIdNamespaceMonograph) {
             row_namespace = titleIdNamespaceMonograph
+          }
+
+          if (title_id_doi && !row_namespace && titleIdVal && !checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi'))) {
+            title_id_doi = false
           }
 
           result.rows.total++
@@ -334,6 +341,10 @@ class ValidationService {
         nl = csv.readNext()
       }
       result.message = "File processing finished after ${result.rows.total} (${result.rows.error} errors)."
+
+      if (!titleIdNamespace && !titleIdNamespaceSerial && !titleIdNamespaceSerial && title_id_doi) {
+        result.doi_ns_detected = true
+      }
     }
     else {
       log.debug("Missing mandatory columns... skipping file processing!")
