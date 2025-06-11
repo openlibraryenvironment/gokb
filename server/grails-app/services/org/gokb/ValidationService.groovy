@@ -241,7 +241,7 @@ class ValidationService {
 
     CSVReader csv = initReader(kbart)
 
-    Boolean title_id_doi = true
+    Boolean title_id_doi = null
 
     Map col_positions = [:]
     String[] header = csv.readNext()
@@ -297,8 +297,8 @@ class ValidationService {
             row_namespace = titleIdNamespaceMonograph
           }
 
-          if (title_id_doi && titleIdVal && !checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi'))) {
-            title_id_doi = false
+          if (titleIdVal && title_id_doi == null) {
+            title_id_doi = checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi')) != null
           }
 
           result.rows.total++
@@ -342,7 +342,7 @@ class ValidationService {
       }
       result.message = "File processing finished after ${result.rows.total} (${result.rows.error} errors)."
 
-      if (!titleIdNamespace && !titleIdNamespaceSerial && !titleIdNamespaceSerial && title_id_doi) {
+      if (title_id_doi) {
         result.doi_ns_detected = true
       }
     }
