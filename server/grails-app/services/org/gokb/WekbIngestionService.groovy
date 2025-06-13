@@ -295,6 +295,9 @@ class WekbIngestionService {
           if (actualTippStatus) {
             importedTipp.setStatus(actualTippStatus)
           }
+          else if (tipp.status == "Removed") {
+            importedTipp.setStatus(RefdataCategory.lookup('KBComponent.Status', 'Retired'))
+          }
           else {
             log.error("Unable to process wekb TIPP status value ${tipp.status} for TIPP ${tipp.uuid}!")
           }
