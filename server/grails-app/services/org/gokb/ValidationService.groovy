@@ -180,22 +180,33 @@ class ValidationService {
         ]
     ],
     zdb_id: [
-        mandatory: false,
-        pubType: "Serial",
-        namespaces: [
-            'Serial': 'zdb',
-        ],
-        validator: [
-            name: "checkKbartIdentifier",
-            args: ["_colName", "publication_type"]
-        ]
+      mandatory: false,
+      pubType: "Serial",
+      namespaces: [
+        'Serial': 'zdb',
+      ],
+      validator: [
+        name: "checkKbartIdentifier",
+        args: ["_colName", "publication_type"]
+      ]
     ],
     ddc: [
-        mandatory: false,
-        validator: [
-          name: "checkDDCList",
-          args: []
-        ]
+      mandatory: false,
+      validator: [
+        name: "checkDDCList",
+        args: []
+      ]
+    ],
+    doi_identifier: [
+      mandatory: false,
+      namespaces: [
+        'Serial': 'doi',
+        'Monograph': 'doi'
+      ],
+      validator: [
+        name: "checkKbartIdentifier",
+        args: ["_colName", "publication_type"]
+      ]
     ]
   ]
 
@@ -210,7 +221,8 @@ class ValidationService {
   static final String[] PROPRIETARY_COLS = [
       'zdb_id',
       'ddc',
-      'series'
+      'series',
+      'doi_identifier'
   ]
 
   static ISSNValidator ISSN_VAL = new ISSNValidator()
