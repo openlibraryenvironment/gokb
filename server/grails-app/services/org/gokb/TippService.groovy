@@ -848,7 +848,7 @@ class TippService {
     ReviewRequest.withNewSession {
       RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
       RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
-      RafdataValue manual_review_type = RefdataCategory.lookup("ReviewRequest.StdDesc", 'Manual Request')
+      RefdataValue manual_review_type = RefdataCategory.lookup("ReviewRequest.StdDesc", 'Manual Request')
 
       def qry = '''select count(*) from ReviewRequest as rr
                     where (
@@ -1754,6 +1754,16 @@ class TippService {
     coverage_item
   }
 
+  public void deleteExistingCoverage(tipp) {
+    def tcs_ids = tipp.coverageStatements*.id
+
+    tcs_ids.each {
+      def tcs_obj = TIPPCoverageStatement.get(it)
+      tipp.removeFromCoverageStatements(tcs_obj)
+    }
+    tipp.save(flush: true)
+  }
+
   public Boolean existsCoverage(tipp, coverage) {
     Boolean result = false
     def mapped_statement = convertCoverageItem(coverage)
@@ -1787,12 +1797,16 @@ class TippService {
   public boolean updateTippFields(tipp, tippInfo, User user = null, boolean create_coverage = true) {
     boolean hasChanged = componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
 
+    log.debug("updateTippFields hasChanged after ids: ${hasChanged}")
+
     if (create_coverage) {
       def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
 
       cov_list.each { c ->
-        tipp.addToCoverageStatements(convertCoverageItem(c))
-        hasChanged = true
+        if (!existsCoverage(tipp, c)) {
+          tipp.addToCoverageStatements(convertCoverageItem(c))
+          hasChanged = true
+        }
       }
 
       if (hasChanged) {
@@ -1810,7 +1824,7 @@ class TippService {
       }
     }
 
-    if (!tipp.importId) {
+    if (!tipp.importId && (tippInfo.importId || tippInfo.titleId)) {
       tipp.importId = tippInfo.importId ?: tippInfo.titleId
       hasChanged = true
     }

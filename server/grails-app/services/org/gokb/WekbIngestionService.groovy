@@ -456,6 +456,25 @@ class WekbIngestionService {
 
         }
 
+        if (tipp.coverageStatements.size() != tipp_map.coverageStatements.size()) {
+          tippService.deleteExistingCoverage(tipp)
+        } else {
+          boolean mismatched_coverage = false
+
+          tipp_map.coverageStatements.each { ntcs ->
+            if (!tippService.existsCoverage(ntcs)) {
+              mismatched_coverage = true
+            }
+          }
+
+          if (mismatched_coverage) {
+            tippService.deleteExistingCoverage(tipp)
+          }
+          else {
+            new_coverage = false
+          }
+        }
+
         tipp = tippService.updateTippFields(tipp, tipp_map, null, new_coverage)
         tipp.refresh()
 
@@ -484,7 +503,6 @@ class WekbIngestionService {
 
         result
     }
-
 
     def deleteDeletedTippsIfNeeded ( newTipps, isUpdate ) {
         def result = [status: null, expunged: 0]

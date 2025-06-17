@@ -230,7 +230,7 @@ class ComponentUpdateService {
 
     component.ids.each {
       Identifier ido = Identifier.get(it.id)
-      existing_ids << "${ido.namespace?.value}|${Identifier.normalizeIdentifier(ido.value)}".toString()
+      existing_ids << [ido: ido, testKey: "${ido.namespace?.value}|${Identifier.normalizeIdentifier(ido.value)}".toString()]
     }
 
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
@@ -238,10 +238,10 @@ class ComponentUpdateService {
 
     new_ids.each { ci ->
       def namespace_val = ci.namespace ?: ci.type
-      String testKey = "${namespace_val}|${Identifier.normalizeIdentifier(ci.value)}".toString()
+      ci.testKey = "${namespace_val.toLowerCase()}|${Identifier.normalizeIdentifier(ci.value)}".toString()
 
       if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
-        if (!existing_ids.contains(testKey)) {
+        if (!existing_ids.testKey*.contains(ci.testKey)) {
           def canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
 
           if (canonical_identifier) {
@@ -272,7 +272,7 @@ class ComponentUpdateService {
             }
 
             // Add the value for comparison.
-            existing_ids << testKey
+            existing_ids << [obj: canonical_identifier, testKey: ci.testKey]
           } else {
             log.debug("Could not find or create Identifier!")
           }
@@ -282,17 +282,14 @@ class ComponentUpdateService {
 
     if (remove) {
       log.debug("Cleaning up deprecated IDs ..")
-      component.ids.each { ci ->
-        Identifier ido = Identifier.get(ci.id)
-        String ido_testkey = "${ido.namespace?.value}|${Identifier.normalizeIdentifier(ido.value)}".toString()
-        def new_id_short = new_ids.collect { "${it.namespace ? it.namespace.toLowerCase() : it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }
 
-        if (!new_id_short.contains(ido_testkey)) {
-          def ctr = Combo.executeQuery("select id from Combo as c where c.toComponent = :ci and c.fromComponent = :comp", [ci: ido, comp: component])
+      existing_ids.each { eid ->
+        if (!new_ids.testKey*.contains(eid.testKey)) {
+          def ctr = Combo.findByFromComponentAndToComponentAndType(component, eid.obj, combo_type_id)
 
-          if (ctr.size() == 1) {
-            log.debug("Removing stale ID ${ido} from ${component}")
-            Combo.get(ctr[0]).delete()
+          if (ctr) {
+            log.debug("Removing stale ID ${eid.obj} from ${component}")
+            ctr.delete(flush: true)
             hasChanged = true
           }
         }

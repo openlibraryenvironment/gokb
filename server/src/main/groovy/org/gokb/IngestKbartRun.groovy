@@ -818,13 +818,7 @@ class IngestKbartRun {
 
           if (result.status != 'created' && result.status != 'partial') {
             if (tipp.coverageStatements?.size() > 1 || (tipp.coverageStatements?.size() == 1 && !tippService.existsCoverage(tipp, tipp_map.coverageStatements[0]))) {
-              def tcs_ids = tipp.coverageStatements*.id
-
-              tcs_ids.each {
-                def tcs_obj = TIPPCoverageStatement.get(it)
-                tipp.removeFromCoverageStatements(tcs_obj)
-              }
-              tipp.save(flush: true)
+              tippService.deleteExistingCoverage(tipp)
             }
             else if (tipp.coverageStatements?.size() > 0) {
               new_coverage = false
