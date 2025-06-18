@@ -823,7 +823,7 @@ class TippService {
       session.flush()
       session.clear()
 
-      if (job?.ownerId && !hasOpenReviews(pkgId)) {
+      if (job && !job.ownerId && !hasOpenReviews(pkgId)) {
         Package pkg = Package.get(pkgId)
         pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
         pkg.save(flush: true)
