@@ -298,8 +298,7 @@ class ComponentUpdateService {
           Combo ctr = Combo.findByFromComponentAndToComponent(component, eid.obj)
 
           if (ctr.status != combo_deleted) {
-            Identifier obj = Identifier.get(eid.iid)
-            component.ids.remove(obj)
+            Combo.executeUpdate("delete from Combo where id = :cid", [cid: ctr.id])
             // ctr.delete(flush: true)
             hasChanged = true
           }
