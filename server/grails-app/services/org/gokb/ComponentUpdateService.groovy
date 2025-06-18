@@ -227,10 +227,14 @@ class ComponentUpdateService {
   def updateIdentifiers(component, new_ids, User user = null, CuratoryGroup group = null, boolean remove = false) {
     boolean hasChanged = false
     def existing_ids = []
+    def session = sessionFactory.currentSession
 
     component.ids.each {
       Identifier ido = Identifier.get(it.id)
-      existing_ids << [ido: ido, testKey: "${ido.namespace?.value}|${Identifier.normalizeIdentifier(ido.value)}".toString()]
+      existing_ids << [
+        obj: ido,
+        testKey: "${ido.namespace?.value}|${Identifier.normalizeIdentifier(ido.value)}".toString()
+      ]
     }
 
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
@@ -241,7 +245,7 @@ class ComponentUpdateService {
       ci.testKey = "${namespace_val.toLowerCase()}|${Identifier.normalizeIdentifier(ci.value)}".toString()
 
       if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
-        if (!existing_ids.testKey*.contains(ci.testKey)) {
+        if (!existing_ids*.testKey.contains(ci.testKey)) {
           def canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
 
           if (canonical_identifier) {
@@ -251,6 +255,9 @@ class ComponentUpdateService {
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
               new Combo(fromComponent: component, toComponent: canonical_identifier, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
+
+              // Add the value for comparison.
+              existing_ids << [obj: canonical_identifier, testKey: ci.testKey]
             } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
 
@@ -270,27 +277,34 @@ class ComponentUpdateService {
             } else {
               log.debug("Identifier combo is already present.")
             }
-
-            // Add the value for comparison.
-            existing_ids << [obj: canonical_identifier, testKey: ci.testKey]
           } else {
             log.debug("Could not find or create Identifier!")
           }
         }
+        else {
+          log.debug("Skipping existing ID ${ci}")
+        }
       }
     }
+
+    log.debug("New ids: ${new_ids}, existing: ${existing_ids}")
 
     if (remove) {
       log.debug("Cleaning up deprecated IDs ..")
 
       existing_ids.each { eid ->
-        if (!new_ids.testKey*.contains(eid.testKey)) {
-          def ctr = Combo.findByFromComponentAndToComponentAndType(component, eid.obj, combo_type_id)
+        if (!new_ids*.testKey.contains(eid.testKey)) {
+          log.debug("Removing stale ID ${eid} from ${component}")
+          Combo ctr = Combo.findByFromComponentAndToComponent(component, eid.obj)
 
-          if (ctr) {
-            log.debug("Removing stale ID ${eid.obj} from ${component}")
-            ctr.delete(flush: true)
+          if (ctr.status != combo_deleted) {
+            Identifier obj = Identifier.get(eid.iid)
+            component.ids.remove(obj)
+            // ctr.delete(flush: true)
             hasChanged = true
+          }
+          else {
+            log.debug("Not removing combo marked as deleted ..")
           }
         }
       }

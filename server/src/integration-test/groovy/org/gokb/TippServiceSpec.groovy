@@ -541,6 +541,6 @@ class TippServiceSpec extends Specification {
     def result = tippService.updateTippFields(tipp_to_update, update_info)
     then:
     result == true
-    tipp_to_update.refresh().lastUpdated != old_update
+    tipp_to_update.lastUpdated != old_update
   }
 }

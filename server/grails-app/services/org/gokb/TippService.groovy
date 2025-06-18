@@ -1843,6 +1843,10 @@ class TippService {
 
     if (access_start_ldt) {
       hasChanged |= ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
+
+      if (tipp.accessEndDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessEndDate = null
+      }
     }
 
     if (date_first_online) {
@@ -1851,6 +1855,10 @@ class TippService {
 
     if (tippInfo.accessEndDate) {
       hasChanged |= ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
+
+      if (tipp.accessStartDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessStartDate = null
+      }
     }
 
     if (tipp.accessEndDate && tipp.accessEndDate < new Date()) {
@@ -1858,14 +1866,26 @@ class TippService {
     }
     else if (tippInfo.status?.toLowerCase() == 'retired' && tipp.status.value != 'Retired') {
       hasChanged |= ClassUtils.setRefdataIfPresent('Retired', tipp, 'status')
-      hasChanged |= updateDateField(LocalDate.now(), tipp, 'accessEndDate')
+      hasChanged |= ClassUtils.updateDateField(LocalDate.now(), tipp, 'accessEndDate')
+
+      if (tipp.accessStartDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessStartDate = null
+      }
     }
     else if (date_first_online && date_first_online > LocalDateTime.now()) {
       hasChanged |= ClassUtils.setRefdataIfPresent('Expected', tipp, 'status')
       hasChanged |= ClassUtils.setDateIfPresent(date_first_online, tipp, 'accessStartDate')
+
+      if (tipp.accessEndDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessEndDate = null
+      }
     }
     else if (access_start_ldt && access_start_ldt > LocalDateTime.now()) {
       hasChanged |= ClassUtils.setRefdataIfPresent('Expected', tipp, 'status')
+
+      if (tipp.accessEndDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessEndDate = null
+      }
     }
 
     hasChanged |= ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
