@@ -469,7 +469,7 @@ class WekbIngestionService {
       boolean mismatched_coverage = false
 
       tipp_map.coverageStatements.each { ntcs ->
-        if (!tippService.existsCoverage(ntcs)) {
+        if (!tippService.existsCoverage(tipp, ntcs)) {
           mismatched_coverage = true
         }
       }
