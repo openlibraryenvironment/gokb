@@ -829,7 +829,7 @@ class PackageController {
   def triggerSourceUpdate() {
     def result = ['result': 'OK']
     User user = User.get(springSecurityService.principal.id)
-    CuratoryGroup active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
+    CuratoryGroup active_group = params.long('activeGroup') ? CuratoryGroup.get(params.long('activeGroup')) : null
     Boolean async = params.boolean('async') ?: true
     Boolean dry_run = params.boolean('dryRun') ?: false
     Boolean restrictSize = (params.boolean('ignoreFileSize') && user.isAdmin) ? false : true

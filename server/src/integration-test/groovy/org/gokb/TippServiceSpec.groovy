@@ -137,6 +137,41 @@ class TippServiceSpec extends Specification {
         componentToReview: rr_tipp
       ).save(flush:true)
     }
+
+    TitleInstancePackagePlatform update_tipp = TitleInstancePackagePlatform.findByName("Test TIPP updateTippFields")
+
+    if (!update_tipp) {
+
+      def tmap = [
+        pkg            : pkg.id,
+        hostPlatform   : plt.id,
+        url            : "http://test-url.net/",
+        status         : "Current",
+        name           : "Test TIPP updateTippFields",
+        editStatus     : "Approved",
+        language       : "ger",
+        publicationType: "Serial",
+        paymentType    : "Paid",
+        coverage: [
+          [
+            startDate: '2012-01',
+            startVolume: '1',
+            startIssue: '1',
+            endDate: null,
+            endVolume: null,
+            endIssue: null,
+            coverageDepth: 'Fulltext',
+            coverageNote: 'No Embargo',
+            embargo: null
+          ]
+        ]
+      ]
+
+      update_tipp = tippUpsertService.upsertDTO(tmap)
+
+      update_tipp.ids.addAll([issn, eissn])
+      update_tipp.save(flush: true)
+    }
   }
 
   def cleanup() {
@@ -150,7 +185,8 @@ class TippServiceSpec extends Specification {
       "TippService Book 1",
       "TippService Journal Conflict 1",
       "TippService Journal Conflict 2",
-      "Test TIPP ambiguous review"
+      "Test TIPP ambiguous review",
+      "Test TIPP updateTippFields"
     ].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
@@ -424,5 +460,87 @@ class TippServiceSpec extends Specification {
 
     review.status == RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
     tipp.title != null
+  }
+
+  void "Test updateTippFields without changes"() {
+    given:
+    def tipp_to_update = TitleInstancePackagePlatform.findByName("Test TIPP updateTippFields")
+    def old_update = tipp_to_update.lastUpdated
+    def update_info = [
+        url            : "http://test-url.net/",
+        status         : "Current",
+        name           : "Test TIPP updateTippFields",
+        editStatus     : "Approved",
+        language       : "ger",
+        publicationType: "Serial",
+        paymentType    : "Paid",
+        identifiers: [
+          [
+            type: 'issn',
+            value: '0128-5483'
+          ],
+          [
+            type: 'eissn',
+            value: '2180-4338'
+          ]
+        ]
+      ]
+    when:
+    def result = tippService.updateTippFields(tipp_to_update, update_info)
+    then:
+    result == false
+    tipp_to_update.refresh().lastUpdated == old_update
+  }
+
+  void "Test updateTippFields with changes in simple fields"() {
+    given:
+    def tipp_to_update = TitleInstancePackagePlatform.findByName("Test TIPP updateTippFields")
+    def old_update = tipp_to_update.lastUpdated
+    def update_info = [
+        url            : "http://test-url.net/update",
+        name           : "Test TIPP updateTippFields",
+        language       : "ger",
+        publicationType: "Serial",
+        paymentType    : "Paid",
+        identifiers: [
+          [
+            type: 'issn',
+            value: '0128-5483'
+          ],
+          [
+            type: 'eissn',
+            value: '2180-4338'
+          ]
+        ]
+      ]
+    when:
+    def result = tippService.updateTippFields(tipp_to_update, update_info)
+    then:
+    result == true
+    tipp_to_update.refresh().lastUpdated != old_update
+  }
+
+  void "Test updateTippFields with removed identifier"() {
+    given:
+    def tipp_to_update = TitleInstancePackagePlatform.findByName("Test TIPP updateTippFields")
+    def old_update = tipp_to_update.lastUpdated
+    def update_info = [
+        url            : "http://test-url.net/update",
+        name           : "Test TIPP updateTippFields",
+        language       : "ger",
+        publicationType: "Serial",
+        paymentType    : "Paid",
+        identifiers: [
+          [
+            type: 'eissn',
+            value: '2180-4338'
+          ]
+        ]
+      ]
+    when:
+    def result = tippService.updateTippFields(tipp_to_update, update_info)
+    then:
+    result == true
+    tipp_to_update.lastUpdated != old_update
   }
 }

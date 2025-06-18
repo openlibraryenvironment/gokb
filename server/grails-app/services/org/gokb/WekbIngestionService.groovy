@@ -415,6 +415,7 @@ class WekbIngestionService {
     def result = [status: null, reviewCreated: false]
     TitleInstancePackagePlatform tipp = null
     boolean new_coverage = true
+    boolean hasChanged = false
 
     log.debug("upsertTipp " + tipp)
 
@@ -462,7 +463,29 @@ class WekbIngestionService {
       result.status = 'created'
     }
 
-    tipp = tippService.updateTippFields(tipp, tipp_map, null, new_coverage)
+    if (!tipp.coverageStatements) {
+      // log.debug("Create new statement")
+    }
+    else if (tipp.coverageStatements.size() != tipp_map.coverageStatements.size()) {
+      tippService.deleteExistingCoverage(tipp)
+    } else {
+      boolean mismatched_coverage = false
+
+      tipp_map.coverageStatements.each { ntcs ->
+        if (!tippService.existsCoverage(tipp, ntcs)) {
+          mismatched_coverage = true
+        }
+      }
+
+      if (mismatched_coverage) {
+        tippService.deleteExistingCoverage(tipp)
+      }
+      else {
+        new_coverage = false
+      }
+    }
+
+    hasChanged |= tippService.updateTippFields(tipp, tipp_map, null, new_coverage)
     tipp.refresh()
 
 

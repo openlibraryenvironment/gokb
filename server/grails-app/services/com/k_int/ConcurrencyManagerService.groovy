@@ -55,8 +55,8 @@ class ConcurrencyManagerService {
     List messages = []
     Map linkedItem
     RefdataValue type
-    int ownerId
-    int groupId
+    Long ownerId
+    Long groupId
 
     public message(String message) {
       log.debug(message);
