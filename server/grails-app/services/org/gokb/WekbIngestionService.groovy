@@ -463,7 +463,10 @@ class WekbIngestionService {
       result.status = 'created'
     }
 
-    if (tipp.coverageStatements.size() != tipp_map.coverageStatements.size()) {
+    if (!tipp.coverageStatements) {
+      // log.debug("Create new statement")
+    }
+    else if (tipp.coverageStatements.size() != tipp_map.coverageStatements.size()) {
       tippService.deleteExistingCoverage(tipp)
     } else {
       boolean mismatched_coverage = false
