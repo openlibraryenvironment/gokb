@@ -1768,7 +1768,7 @@ class TippService {
     Boolean result = false
     def mapped_statement = convertCoverageItem(coverage)
 
-    tipp.coverageStatements.each { cs ->
+    tipp.coverageStatements?.each { cs ->
       boolean matching = true
 
       mapped_statement.each { k, v ->
