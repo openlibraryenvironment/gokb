@@ -28,7 +28,30 @@ class ProfileController {
     def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
 
     user.curatoryGroups?.each { cg ->
-      cur_groups.add([name: cg.name, id: cg.id, uuid: cg.uuid])
+      def cg_info = [
+        name: cg.name,
+        id: cg.id,
+        uuid: cg.uuid,
+        email: cg.email,
+        _links: [
+          self: [
+            href: base + "/curatoryGroups/$cg.id",
+          ],
+          update: [
+            href: (cg.owner == user || user.isAdmin()) ? base + "/curatoryGroups/$cg.id" : null
+          ],
+          delete: [
+            href: (user.superUserStatus) ? base + "/curatoryGroups/$cg.id" : null
+          ]
+        ]
+      ]
+
+      if (cg.owner == user || user.isAdmin()) {
+        cg_info.cancelledImportAlerts = cg.cancelledImportAlerts
+        cg_info.newReviewsAlerts = cg.newReviewsAlerts
+      }
+
+      cur_groups << cg_info
     }
 
     def roles = []
