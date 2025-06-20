@@ -753,7 +753,7 @@ class TippService {
   }
 
   @Transactional
-  def matchPackage(pkgId, def job = null) {
+  def matchPackage(pkgId, def job = null, def parentJob = null) {
     log.debug("Matching titles for package ${pkgId}")
     def result = [
       result: 'OK',
@@ -823,6 +823,12 @@ class TippService {
       session.flush()
       session.clear()
 
+      if (job && !job.ownerId && !hasOpenReviews(pkgId)) {
+        Package pkg = Package.get(pkgId)
+        pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
+        pkg.save(flush: true)
+      }
+
       if (job) {
         job.setProgress(100)
         job.message("Finished package title matching.")
@@ -836,6 +842,36 @@ class TippService {
     }
 
     result
+  }
+
+  public Boolean hasOpenReviews(pid) {
+    ReviewRequest.withNewSession {
+      RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+      RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
+      RefdataValue manual_review_type = RefdataCategory.lookup("ReviewRequest.StdDesc", 'Manual Request')
+
+      def qry = '''select count(*) from ReviewRequest as rr
+                    where (
+                      rr.componentToReview.id = :pid
+                      and rr.stdDesc != :mr
+                    )
+                    or (
+                      rr.componentToReview in (
+                        select t from TitleInstancePackagePlatform as t
+                        where exists (
+                          select 1 from Combo
+                          where fromComponent.id = :pid
+                          and toComponent = t
+                          and type = :ct
+                        )
+                      )
+                    )
+                    and rr.status = :so'''
+
+      def total = ReviewRequest.executeQuery(qry, [pid: pid, mr: manual_review_type, ct: combo_tipps, so: status_open])[0]
+
+      return total > 0
+    }
   }
 
   @Transactional
@@ -1718,6 +1754,16 @@ class TippService {
     coverage_item
   }
 
+  public void deleteExistingCoverage(tipp) {
+    def tcs_ids = tipp.coverageStatements*.id
+
+    tcs_ids.each {
+      def tcs_obj = TIPPCoverageStatement.get(it)
+      tipp.removeFromCoverageStatements(tcs_obj)
+    }
+    tipp.save(flush: true)
+  }
+
   public Boolean existsCoverage(tipp, coverage) {
     Boolean result = false
     def mapped_statement = convertCoverageItem(coverage)
@@ -1748,17 +1794,24 @@ class TippService {
     pkg_obj?.save(flush:true)
   }
 
-  public TitleInstancePackagePlatform updateTippFields(tipp, tippInfo, User user = null, boolean create_coverage = true) {
-    componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
+  public boolean updateTippFields(tipp, tippInfo, User user = null, boolean create_coverage = true) {
+    boolean hasChanged = componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
+
+    log.debug("updateTippFields hasChanged after ids: ${hasChanged}")
 
     if (create_coverage) {
       def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
 
       cov_list.each { c ->
-        tipp.addToCoverageStatements(convertCoverageItem(c))
+        if (!existsCoverage(tipp, c)) {
+          tipp.addToCoverageStatements(convertCoverageItem(c))
+          hasChanged = true
+        }
       }
 
-      tipp.save(flush: true)
+      if (hasChanged) {
+        tipp.save(flush: true, failOnError: true)
+      }
     }
 
     log.debug("Update simple fields: ${tippInfo}")
@@ -1767,17 +1820,19 @@ class TippService {
     'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
       if (tippInfo[propName] && tippInfo[propName].trim() != tipp[propName]) {
         tipp[propName] = tippInfo[propName].trim()
+        hasChanged = true
       }
     }
 
-    if (!tipp.importId) {
+    if (!tipp.importId && (tippInfo.importId || tippInfo.titleId)) {
       tipp.importId = tippInfo.importId ?: tippInfo.titleId
+      hasChanged = true
     }
 
     log.debug("Updated info (${tipp.id}): ${tipp.url} ${tipp.name}")
 
     if (tippInfo.dateFirstInPrint) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstInPrint), tipp, 'dateFirstInPrint')
+      hasChanged |= ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstInPrint), tipp, 'dateFirstInPrint')
     }
     else {
       log.debug("No dateFirstInPrint -> ${tippInfo.dateFirstInPrint}")
@@ -1787,46 +1842,68 @@ class TippService {
     LocalDateTime date_first_online = GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline)
 
     if (access_start_ldt) {
-      ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
+      hasChanged |= ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
+
+      if (tipp.accessEndDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessEndDate = null
+      }
     }
 
     if (date_first_online) {
-      ClassUtils.setDateIfPresent(date_first_online, tipp, 'dateFirstOnline')
+      hasChanged |= ClassUtils.setDateIfPresent(date_first_online, tipp, 'dateFirstOnline')
     }
 
     if (tippInfo.accessEndDate) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
+      hasChanged |= ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
+
+      if (tipp.accessStartDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessStartDate = null
+      }
     }
 
     if (tipp.accessEndDate && tipp.accessEndDate < new Date()) {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+      hasChanged |= ClassUtils.setRefdataIfPresent('Retired', tipp, 'status')
     }
     else if (tippInfo.status?.toLowerCase() == 'retired' && tipp.status.value != 'Retired') {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-      tipp.accessEndDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
+      hasChanged |= ClassUtils.setRefdataIfPresent('Retired', tipp, 'status')
+      hasChanged |= ClassUtils.updateDateField(LocalDate.now(), tipp, 'accessEndDate')
+
+      if (tipp.accessStartDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessStartDate = null
+      }
     }
     else if (date_first_online && date_first_online > LocalDateTime.now()) {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-      ClassUtils.setDateIfPresent(date_first_online, tipp, 'accessStartDate')
+      hasChanged |= ClassUtils.setRefdataIfPresent('Expected', tipp, 'status')
+      hasChanged |= ClassUtils.setDateIfPresent(date_first_online, tipp, 'accessStartDate')
+
+      if (tipp.accessEndDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessEndDate = null
+      }
     }
     else if (access_start_ldt && access_start_ldt > LocalDateTime.now()) {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+      hasChanged |= ClassUtils.setRefdataIfPresent('Expected', tipp, 'status')
+
+      if (tipp.accessEndDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessEndDate = null
+      }
     }
 
-    ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
-    ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
+    hasChanged |= ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
+    hasChanged |= ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
 
     if (tippInfo.paymentType in ['F', 'f']) {
-      ClassUtils.setRefdataIfPresent('OA', tipp, 'paymentType')
+      hasChanged |= ClassUtils.setRefdataIfPresent('OA', tipp, 'paymentType')
     } else if (tippInfo.paymentType in ['P', 'p']) {
-      ClassUtils.setRefdataIfPresent('Paid', tipp, 'paymentType')
+      hasChanged |= ClassUtils.setRefdataIfPresent('Paid', tipp, 'paymentType')
     }
 
-    ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
+    hasChanged |= ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
 
-    tipp.save(flush:true)
+    if (hasChanged) {
+      tipp.save(flush:true, failOnError: true)
+    }
 
-    tipp
+    hasChanged
   }
 
   def updateCombos(obj, reqBody, boolean remove = true) {

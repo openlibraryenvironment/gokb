@@ -68,6 +68,7 @@ class TippTestSpec extends AbstractAuthSpec {
         name: "merge target TIPP",
         pkg: testPackage,
         hostPlatform: testPlatform,
+        title: testTitle,
         url: "http://some.old.net/",
         status: status_deleted,
         accessEndDate: new Date()
@@ -85,6 +86,7 @@ class TippTestSpec extends AbstractAuthSpec {
         name: "merge victim TIPP",
         pkg: testPackage,
         hostPlatform: testPlatform,
+        title: testTitle,
         url: "http://some.new.net/"
       ]
 
