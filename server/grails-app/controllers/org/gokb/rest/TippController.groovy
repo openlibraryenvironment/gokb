@@ -129,6 +129,8 @@ class TippController {
 
             errors << tippService.updateCombos(obj, reqBody)
 
+            tippService.touchPackage(obj)
+
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
