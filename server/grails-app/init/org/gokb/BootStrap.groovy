@@ -1442,9 +1442,8 @@ class BootStrap {
 
     def ensureEsIndex(String indexName, def esClient) {
         log.debug("ensureESIndex for ${indexName}");
-        def request = new GetIndexRequest(indexName)
 
-        if (!esClient.indices().exists(request, RequestOptions.DEFAULT)) {
+        if (!esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT)) {
             log.debug("ES index ${indexName} did not exist, creating..")
             CreateIndexRequest createRequest = new CreateIndexRequest(indexName)
             log.debug("Adding index settings..")
@@ -1470,7 +1469,40 @@ class BootStrap {
         }
         else {
             log.debug("ES index ${indexName} already exists..")
+            verifyMapping(indexName, esClient)
             // Validate settings & mappings
+        }
+    }
+
+    private void verifyMapping(String indexName, def esClient) {
+        def existingMappings = esClient.indices().get(new GetIndexRequest(indexName), RequestOptions.DEFAULT).getMappings()[indexName].sourceAsMap()
+
+        log.debug("Got existing mapping: ${existingMappings}")
+
+        def new_mapping = ESWrapperService.mapping
+        def new_props = [properties: [:]]
+
+        log.debug("handling new mapping: ${new_mapping}")
+
+        new_mapping.properties.each { key, val ->
+            if (existingMappings['properties'][key]) {
+                log.debug("Property for $key already exists!")
+            }
+            else {
+                new_props.properties[key] = val
+            }
+        }
+
+        if (new_props.properties) {
+            PutMappingRequest mr = new PutMappingRequest(indexName).source(new_props)
+            def mappingResponse = esClient.indices().putMapping(mr, RequestOptions.DEFAULT)
+
+            if (mappingResponse.isAcknowledged()) {
+                log.debug("Added new mapping properties for index $indexName")
+            }
+            else {
+                log.error("Unable to add new mapping fields to index $indexName")
+            }
         }
     }
 

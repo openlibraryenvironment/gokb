@@ -111,6 +111,8 @@ class FTUpdateService {
         result.nominalPlatformName = kbc.nominalPlatform?.name ?: ""
         result.nominalPlatformUrl = kbc.nominalPlatform?.primaryUrl ?: ""
         result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
+        result.startYear = kbc.startYear
+        result.endYear = kbc.endYear
 
         if (kbc.listVerifiedDate)
           result.listVerifiedDate = dateFormatService.formatIsoTimestamp(kbc.listVerifiedDate)

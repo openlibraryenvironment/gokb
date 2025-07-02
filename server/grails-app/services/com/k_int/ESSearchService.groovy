@@ -114,6 +114,9 @@ class ESSearchService{
           "_embed",
           "_include",
           "_exclude"
+      ],
+      number: [
+        ["startYear", "endYear"]
       ]
   ]
 
@@ -346,6 +349,24 @@ class ESSearchService{
       dateQuery.format("yyyy-MM-dd'T'HH:mm:ss'Z'||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
 
       query.must(dateQuery)
+    }
+  }
+
+  private void processNumberRange(query, errors, fields, qpars) {
+
+    if (fields.size() == 1) {
+      QueryBuilder rangeQuery = QueryBuilders.rangeQuery(fields[0])
+
+      if (qpars[fields[0]]) {
+        rangeQuery.gte(qpars[fields[0]])
+      }
+
+      if (qpars[fields[1]]) {
+        rangeQuery.lte(qpars[fields[1]])
+      }
+    }
+    else if (fields.size() == 2) {
+
     }
   }
 
