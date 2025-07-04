@@ -435,7 +435,12 @@ class EzbCollectionService {
             hasChanged = true
           }
 
-          if (obj.provider != provider) {
+          if (platform.provider != provider && obj.provider != platform.provider) {
+            log.info("Adjusted provider for $obj to platform selection!")
+            obj.provider = platform.provider
+            hasChanged = true
+          }
+          else if (platform.provider == provider && obj.provider != provider) {
             obj.provider = provider
             hasChanged = true
           }

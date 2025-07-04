@@ -1013,6 +1013,8 @@ class TippService {
           tipp.lastSeen = System.currentTimeMillis()
           tipp.save(flush: true)
 
+          TitleInstancePlatform.ensure(ti, tipp.hostPlatform, tipp.url)
+
           touchPackage(tipp)
 
           log.debug("linked TIPP $tipp with TitleInstance $ti")

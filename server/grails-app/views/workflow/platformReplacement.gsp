@@ -8,7 +8,7 @@
 </head>
 <body>
 
-	<g:form controller="workflow" action="processPackageReplacement"
+	<g:form controller="workflow" action="processPlatformReplacement"
 		method="get">
 		<h1 class="page-header">Replace Platform</h1>
 		<div id="mainarea" class="panel panel-default">
@@ -47,7 +47,7 @@
 					<dd>
 						<ul>
 						<li>Replace the platform for all TIPPs currently associated with the selected platforms</li>
-						<li>Set the status of selected platforms to "Retired." </li>
+						<li>Set the status of selected platforms to "Deleted." </li>
 						</ul>
 					</dd>
 				</dl>
@@ -56,4 +56,3 @@
 	</g:form>
 </body>
 </html>
-

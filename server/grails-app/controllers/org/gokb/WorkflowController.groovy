@@ -24,6 +24,7 @@ class WorkflowController{
   def dateFormatService
   def concurrencyManagerService
   def titleAugmentService
+  def platformService
 
   def actionConfig = [
       'method::deleteSoft'     : [actionType: 'simple'],
@@ -1186,33 +1187,25 @@ class WorkflowController{
 
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def processPackageReplacement(){
-    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
-    def result = [:]
-    result['old'] = []
-    result['new'] = ''
-    result['count'] = 0
+  def processPlatformReplacement(){
+    def result = [
+      result: 'OK',
+      old: [],
+      'new': '',
+      count: 0
+    ]
 
     params.each{ p ->
       log.debug("Testing ${p.key}")
+
       if ((p.key.startsWith('tt')) && (p.value) && (p.value instanceof String)){
         def tt = p.key.substring(3)
-        log.debug("Platform to replace: \"${tt}\"")
+        log.debug("Platform to replace: '${tt}'")
         def old_platform = Platform.get(tt)
         def new_platform = genericOIDService.resolveOID2(params.newplatform)
         log.debug("old: ${old_platform} new: ${new_platform}")
-        try{
-          def updates_count = Combo.executeQuery("select count(combo) from Combo combo where combo.fromComponent = :plt", [plt: old_platform])
-          Combo.executeUpdate("update Combo combo set combo.fromComponent = :np where combo.fromComponent = :op", [np: new_platform, op: old_platform])
-          result['count'] += updates_count
-          result['old'] += old_platform.name
-          result['new'] = new_platform.name
-          old_platform.status = retired_status
-          old_platform.save(flush: true)
-        }
-        catch (Exception e){
-          log.debug("Problem executing update")
-        }
+
+        def service_result = platformService.merge(old_platform, new_platform)
       }
     }
     render view: 'platformReplacementResult', model: [result: result]
