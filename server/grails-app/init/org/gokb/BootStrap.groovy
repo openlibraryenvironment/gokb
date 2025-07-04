@@ -401,6 +401,14 @@ class BootStrap {
                 }
             }
 
+            log.info("Cleanup DOI urls")
+
+            def doi_ctr = cleanupService.fixDoiUrlIds()
+
+            if (doi_ctr > 0) {
+                log.info("${doi_ctr} DOI-Ids updated")
+            }
+
             log.debug("Register users and override default admin password")
             registerUsers()
 

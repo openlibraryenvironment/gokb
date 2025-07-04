@@ -19,6 +19,7 @@ class CleanupService {
   def validationService
   def autoTimestampEventListener
   def titleAugmentService
+  def tippService
 
   def tidyMissnamedPublishers () {
 
@@ -151,7 +152,12 @@ class CleanupService {
     log.debug("Expunging TIPPs with missing links")
 
     TitleInstancePackagePlatform.withNewSession {
-      def delete_candidates = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where not exists (from Combo as c where c.toComponent = tipp AND c.type.value = 'TitleInstance.Tipps')")
+      def delete_candidates = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
+                                                                            where not exists (
+                                                                              from Combo as c
+                                                                              where c.toComponent = tipp
+                                                                              AND c.type.value = 'TitleInstance.Tipps'
+                                                                            )''')
 
       log.debug("Found ${delete_candidates.size()} erroneous TIPPs..")
 
@@ -171,7 +177,13 @@ class CleanupService {
       RefdataValue status_rejected = RefdataCategory.lookup('KBComponent.EditStatus', 'Rejected')
       RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
-      def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.editStatus=:rejectedStatus and kbc.status=:deletedStatus',[rejectedStatus: status_rejected, deletedStatus: status_deleted])
+      def delete_candidates = KBComponent.executeQuery('''select kbc.id from KBComponent as kbc
+                                                          where kbc.editStatus = :rejectedStatus
+                                                          and kbc.status = :deletedStatus''',
+                                                        [
+                                                          rejectedStatus: status_rejected,
+                                                          deletedStatus: status_deleted
+                                                        ])
 
       result = expungeByIds(delete_candidates, j)
 
@@ -190,7 +202,12 @@ class CleanupService {
       RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
-      def delete_candidates = Platform.executeQuery('from Platform as plt where plt.primaryUrl IS NULL and plt.status <> :sd', [sd: status_deleted])
+      def delete_candidates = Platform.executeQuery('''from Platform as plt
+                                                        where plt.primaryUrl IS NULL
+                                                        and plt.status <> :sd''',
+                                                    [
+                                                      sd: status_deleted
+                                                    ])
 
       delete_candidates.each { ptr ->
         Platform.withNewTransaction {
@@ -209,7 +226,15 @@ class CleanupService {
             def old_to_combos = Combo.executeQuery("from Combo where toComponent = :op", [op: ptr])
 
             old_from_combos.each { oc ->
-              def existing_new = Combo.executeQuery("from Combo where type = :ct and fromComponent = :plt and toComponent = :op",[ct: oc.type, plt: new_plt, op: oc.toComponent])
+              def existing_new = Combo.executeQuery('''from Combo
+                                                        where type = :ct
+                                                        and fromComponent = :plt
+                                                        and toComponent = :op''',
+                                                    [
+                                                      ct: oc.type,
+                                                      plt: new_plt,
+                                                      op: oc.toComponent
+                                                    ])
 
               if (existing_new?.size() == 0 && oc.toComponent != new_plt) {
                 oc.fromComponent = new_plt
@@ -255,7 +280,10 @@ class CleanupService {
     def skipped = []
 
     KBComponent.withNewSession {
-      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").each { kbc_id ->
+      KBComponent.executeQuery('''select kbc.id from KBComponent as kbc
+                                  where kbc.id is not null
+                                  and kbc.uuid is null''')
+      .each { kbc_id ->
         try {
           KBComponent comp = KBComponent.get(kbc_id)
           log.debug("Repair component with no uuid.. ${comp.class.name} ${comp.id} ${comp.name}")
@@ -304,7 +332,11 @@ class CleanupService {
       try {
 
         log.debug("Getting count..")
-        def count = TitleInstancePackagePlatform.executeQuery("select count(tipp.id) from TitleInstancePackagePlatform as tipp where tipp.status != :sd",[sd: status_deleted])[0]
+        def count = TitleInstancePackagePlatform.executeQuery('''select count(tipp.id) from TitleInstancePackagePlatform as tipp
+                                                                  where tipp.status != :sd''',
+                                                              [
+                                                                sd: status_deleted
+                                                              ])[0]
         def tipp_crit = new DetachedCriteria(TitleInstancePackagePlatform).build{
           ne('status', status_deleted)
         }
@@ -377,15 +409,21 @@ class CleanupService {
     if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
       def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       def result = TitleInstancePlatform.executeQuery('''select tipl
-              from TitleInstancePlatform as tipl,
-              Combo as titleCombo,
-              Combo as platformCombo
-              where titleCombo.toComponent=tipl
-              and titleCombo.fromComponent=:ti
-              and platformCombo.toComponent=tipl
-              and platformCombo.fromComponent=:plt
-              and tipl.status=:sc
-              ''',[ti: title, plt: platform, sc: status_current])
+                                                          from TitleInstancePlatform as tipl,
+                                                          Combo as titleCombo,
+                                                          Combo as platformCombo
+                                                          where titleCombo.toComponent = tipl
+                                                          and titleCombo.fromComponent = :ti
+                                                          and platformCombo.toComponent = tipl
+                                                          and platformCombo.fromComponent = :plt
+                                                          and tipl.status = :sc
+                                                          ''',
+                                                      [
+                                                        ti: title,
+                                                        plt: platform,
+                                                        sc: status_current
+                                                      ])
+
       result
     }
   }
@@ -394,22 +432,50 @@ class CleanupService {
     log.debug("Housekeeping")
     Identifier.withNewSession {
       try {
-        def unused = Identifier.executeQuery("select i.id from Identifier as i where not exists (select c from Combo as c where c.toComponent = i)")
+        def unused = Identifier.executeQuery('''select i.id from Identifier as i
+                                                where not exists (
+                                                  select c from Combo as c
+                                                  where c.toComponent = i
+                                                )''')
+
         def rem_unused = expungeAll(unused, j)
 
         log.debug("Removed ${rem_unused.num_expunged} unused identifiers")
         j?.message("Removed ${rem_unused.num_expunged} unused identifiers".toString())
 
-        def dupes_vals = Identifier.executeQuery("select count(*), i.normname, i.namespace.id from Identifier as i group by i.normname, i.namespace.id having count(*) > 1")
+        def dupes_vals = Identifier.executeQuery('''select count(*),
+                                                    i.normname,
+                                                    i.namespace.id
+                                                    from Identifier as i
+                                                    group by i.normname,
+                                                    i.namespace.id
+                                                    having count(*) > 1''')
         def dupes_to_remove = []
 
         dupes_vals?.each { d ->
-          def duplicates = Identifier.executeQuery("from Identifier as i where i.normname = :val and i.namespace.id = :ns", [val: d[1], ns: d[2]])
+          def duplicates = Identifier.executeQuery('''from Identifier as i
+                                                      where i.normname = :val
+                                                      and i.namespace.id = :ns''',
+                                                    [
+                                                      val: d[1],
+                                                      ns: d[2]
+                                                    ])
           def first = duplicates[0]
 
           duplicates.eachWithIndex { dui, idx ->
             if (idx > 0) {
-              Combo.executeUpdate("update Combo as c set c.toComponent = :firstID where c.toComponent = :idc and not exists (select ci from Combo as ci where ci.toComponent.id = :firstID and ci.fromComponent = c.fromComponent)", [firstID: first, idc: dui])
+              Combo.executeUpdate('''update Combo as c
+                                      set c.toComponent = :firstID
+                                      where c.toComponent = :idc
+                                      and not exists (
+                                        select ci from Combo as ci
+                                        where ci.toComponent.id = :firstID
+                                        and ci.fromComponent = c.fromComponent
+                                      )''',
+                                  [
+                                    firstID: first,
+                                    idc: dui
+                                  ])
               dupes_to_remove.add(dui.id)
             }
           }
@@ -443,9 +509,22 @@ class CleanupService {
     final session = sessionFactory.currentSession
 
     // Query string with :startId as parameter placeholder.
-    String query = 'SELECT c.combo_id, dups.combo_from_fk, dups.combo_to_fk, dups.occurances FROM combo c join ' +
-      '(SELECT combo_from_fk, combo_to_fk, count(*) as occurances FROM combo WHERE combo_type_rv_fk=:rdvId GROUP BY combo_from_fk, combo_to_fk HAVING count(*) > 1) dups ' +
-      'on c.combo_from_fk = dups.combo_from_fk AND c.combo_to_fk = dups.combo_to_fk;'
+    String query = '''SELECT c.combo_id,
+                      dups.combo_from_fk,
+                      dups.combo_to_fk,
+                      dups.occurances
+                      FROM combo c
+                      join (
+                        SELECT combo_from_fk,
+                        combo_to_fk,
+                        count(*) as occurances
+                        FROM combo
+                        WHERE combo_type_rv_fk = :rdvId
+                        GROUP BY combo_from_fk,
+                        combo_to_fk HAVING count(*) > 1
+                      )
+                      dups on c.combo_from_fk = dups.combo_from_fk
+                      AND c.combo_to_fk = dups.combo_to_fk;'''
 
     // Create native SQL query.
     def sqlQuery = session.createSQLQuery(query)
@@ -526,41 +605,39 @@ class CleanupService {
   def cleanupIssnConflictTitles(Job j = null) {
     def result = [result: 'OK']
     log.debug("Cleanup journal namespace conflicts..")
-    def qryString = '''
-      from Combo as cj
-      where cj.type = :cti
-      and cj.status = :csa
-      and cj.toComponent.id in (
-        select id from Identifier
-        where namespace = :nse
-      )
-      and cj.fromComponent.id in (
-        select ji.id from JournalInstance as ji
-        where ji.status = :sc
-        and exists (
-          select 1 from Combo as cc
-          where cc.type = :cti
-          and cc.status = :csa
-          and cc.fromComponent = ji
-          and cc.toComponent.id in (
-            select id from Identifier
-            where namespace = :nsp
-            and value = cj.toComponent.value
-          )
-        )
-        and exists (
-          select 1 from Combo as cp
-          where fromComponent = ji
-          and cp.type = :cti
-          and cp.status = :csa
-          and cp.toComponent.id in (
-            select id from Identifier
-            where namespace = :nse
-            and id != cj.toComponent.id
-          )
-        )
-      )
-    '''
+    def qryString = '''from Combo as cj
+                        where cj.type = :cti
+                        and cj.status = :csa
+                        and cj.toComponent.id in (
+                          select id from Identifier
+                          where namespace = :nse
+                        )
+                        and cj.fromComponent.id in (
+                          select ji.id from JournalInstance as ji
+                          where ji.status = :sc
+                          and exists (
+                            select 1 from Combo as cc
+                            where cc.type = :cti
+                            and cc.status = :csa
+                            and cc.fromComponent = ji
+                            and cc.toComponent.id in (
+                              select id from Identifier
+                              where namespace = :nsp
+                              and value = cj.toComponent.value
+                            )
+                          )
+                          and exists (
+                            select 1 from Combo as cp
+                            where fromComponent = ji
+                            and cp.type = :cti
+                            and cp.status = :csa
+                            and cp.toComponent.id in (
+                              select id from Identifier
+                              where namespace = :nse
+                              and id != cj.toComponent.id
+                            )
+                          )
+                        )'''
 
     TitleInstance.withNewSession { session ->
       boolean more = true
@@ -629,12 +706,14 @@ class CleanupService {
       TitleInstancePackagePlatform.withNewSession {
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def tippIds = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
-            where status != :sd
-            and not exists (
-              select 1 from TIPPCoverageStatement
-              where owner = tipp
-            )''',
-            [sd: status_deleted])
+                                                                    where status != :sd
+                                                                    and not exists (
+                                                                      select 1 from TIPPCoverageStatement
+                                                                      where owner = tipp
+                                                                    )''',
+                                                                [
+                                                                  sd: status_deleted
+                                                                ])
 
         int total_count = tippIds.size()
 
@@ -687,7 +766,11 @@ class CleanupService {
   def reviewDates(Job j = null) {
     log.debug("Adding Reviews to components with inconsistent dates")
     TitleInstancePackagePlatform.withNewSession {
-      def tippCoverageDates = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement where endDate < startDate",[readOnly: true])
+      def tippCoverageDates = TIPPCoverageStatement.executeQuery('''from TIPPCoverageStatement
+                                                                    where endDate < startDate''',
+                                                                  [
+                                                                    readOnly: true
+                                                                  ])
 
       log.debug("Found ${tippCoverageDates.size()} offending coverageStatements")
       j.message("Found ${tippCoverageDates.size()} offending coverageStatements".toString())
@@ -709,7 +792,11 @@ class CleanupService {
         }
       }
 
-      def tippAccessDates = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform where accessEndDate < accessStartDate",[readOnly: true])
+      def tippAccessDates = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform
+                                                                          where accessEndDate < accessStartDate''',
+                                                                      [
+                                                                        readOnly: true
+                                                                      ])
 
       log.debug("Found ${tippAccessDates.size()} offending tipp access dates")
       j.message("Found ${tippAccessDates.size()} offending tipp access dates".toString())
@@ -769,12 +856,30 @@ class CleanupService {
       def deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
       def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
-      def res = TitleInstance.executeUpdate("update TitleInstance as title set title.status = :ds, lastUpdateComment = 'Deleted via title cleanup', lastUpdated = :now where status <> :ds and (title.id not in " +
-              "(select fromComponent.id from Combo where type = :tc)" +
-              " or title.id not in " +
-              "(select fromComponent.id from Combo where type = :tc and toComponent.status <> :ds))" +
-              " and title.id not in " +
-              "(select participant.id from ComponentHistoryEventParticipant)",[ds: deleted_status, tc: tipps_combo, now: now])
+      def res = TitleInstance.executeUpdate('''update TitleInstance as title
+                                                set title.status = :ds,
+                                                lastUpdateComment = 'Deleted via title cleanup',
+                                                lastUpdated = :now
+                                                where status <> :ds
+                                                and (
+                                                  title.id not in (
+                                                    select fromComponent.id from Combo
+                                                    where type = :tc
+                                                  )
+                                                  or title.id not in (
+                                                    select fromComponent.id from Combo
+                                                    where type = :tc
+                                                    and toComponent.status <> :ds
+                                                  )
+                                                )
+                                                and title.id not in (
+                                                  select participant.id from ComponentHistoryEventParticipant
+                                                )''',
+                                            [
+                                              ds: deleted_status,
+                                              tc: tipps_combo,
+                                              now: now
+                                            ])
 
       job.message("${res} titles set to status 'Deleted'")
     }
@@ -790,10 +895,22 @@ class CleanupService {
       def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
       def ids_combo = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
-      def res = TitleInstance.executeUpdate("update TitleInstance as title set title.editStatus = :ds where title.editStatus <> :ds and title.id not in " +
-              "(select fromComponent.id from Combo where type = :tc)" +
-              " and title.id not in " +
-              "(select fromComponent.id from Combo where type = :ic)",[ds: rejected_status, tc: tipps_combo, ic:ids_combo])
+      def res = TitleInstance.executeUpdate('''update TitleInstance as title
+                                                set title.editStatus = :ds
+                                                where title.editStatus <> :ds
+                                                and title.id not in (
+                                                  select fromComponent.id from Combo
+                                                  where type = :tc
+                                                )
+                                                and title.id not in (
+                                                  select fromComponent.id from Combo
+                                                  where type = :ic
+                                                )''',
+                                            [
+                                              ds: rejected_status,
+                                              tc: tipps_combo,
+                                              ic: ids_combo
+                                            ])
 
       job.message("${res} titles set to editStatus 'Rejected'")
     }
@@ -814,13 +931,45 @@ class CleanupService {
         def batch = remaining.take(50)
         remaining = remaining.drop(50)
 
-        Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)", [component: batch])
-        ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)", [component: batch])
-        KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)", [component: batch])
-        KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)", [component: batch])
+        Combo.executeUpdate('''delete from Combo as c
+                                where c.fromComponent.id IN (:component)
+                                or c.toComponent.id IN (:component)''',
+                            [
+                              component: batch
+                            ])
 
-        ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))", [component: batch])
-        def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant.id IN (:component)", [component: batch])
+        ComponentWatch.executeUpdate('''delete from ComponentWatch as cw
+                                        where cw.component.id IN (:component)''',
+                                      [
+                                        component: batch
+                                      ])
+
+        KBComponentAdditionalProperty.executeUpdate('''delete from KBComponentAdditionalProperty as c
+                                                        where c.fromComponent.id IN (:component)''',
+                                                    [
+                                                      component: batch
+                                                    ])
+
+        KBComponentVariantName.executeUpdate('''delete from KBComponentVariantName as c
+                                                where c.owner.id IN (:component)''',
+                                              [
+                                                component: batch
+                                              ])
+
+        ReviewRequestAllocationLog.executeUpdate('''delete from ReviewRequestAllocationLog as c
+                                                    where c.rr in (
+                                                      select r from ReviewRequest as r
+                                                      where r.componentToReview.id IN (:component)
+                                                    )''',
+                                                  [
+                                                    component: batch
+                                                  ])
+
+        def events_to_delete = ComponentHistoryEventParticipant.executeQuery('''select c.event from ComponentHistoryEventParticipant as c
+                                                                                where c.participant.id IN (:component)''',
+                                                                              [
+                                                                                component: batch
+                                                                              ])
 
         events_to_delete.each {
           ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
@@ -868,7 +1017,23 @@ class CleanupService {
       RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
 
       while (more) {
-        def batch = KBComponent.executeQuery("from KBComponent as kbc where name like '%�%' and status != :del and not exists (select 1 from ReviewRequest where componentToReview = kbc and stdDesc = :type and status = :status)", [type: rr_type, status: status_open, del: deleted_status], [max: 50])
+        def batch = KBComponent.executeQuery('''from KBComponent as kbc
+                                                where name like '%�%'
+                                                and status != :del
+                                                and not exists (
+                                                  select 1 from ReviewRequest
+                                                  where componentToReview = kbc
+                                                  and stdDesc = :type
+                                                  and status = :status
+                                                )''',
+                                            [
+                                              type: rr_type,
+                                              status: status_open,
+                                              del: deleted_status
+                                            ],
+                                            [
+                                              max: 50
+                                            ])
 
         batch.each { kbc ->
           reviewRequestService.raise(
@@ -906,7 +1071,11 @@ class CleanupService {
 
   def markInvalidIdentifiers(Job j = null) {
     log.debug("Checking for invalid identifiers")
-    def result = [occurrences: 0, components: [:], namespaces: [:]]
+    def result = [
+      occurrences: 0,
+      components: [:],
+      namespaces: [:]
+    ]
 
     Identifier.withNewSession { tsession ->
       boolean more = true
@@ -914,13 +1083,28 @@ class CleanupService {
       RefdataValue combo_ids = RefdataCategory.lookup('Combo.Type', "KBComponent.Ids")
       int offset = 0
       int batchSize = 50
-      int total = Identifier.executeQuery("select count(i.id) from Identifier as i where exists (select 1 from Combo where toComponent = i)")[0]
+      int total = Identifier.executeQuery('''select count(i.id) from Identifier as i
+                                              where exists (
+                                                select 1 from Combo
+                                                where toComponent = i
+                                              )'''
+                                          )[0]
       j.message("Processing $total identifiers..")
 
       Long highest_id = 0
 
       while (more) {
-        def batch = Identifier.executeQuery("from Identifier as i where id > :hid and exists (select 1 from Combo where toComponent = i) order by id", [max: batchSize, hid: highest_id])
+        def batch = Identifier.executeQuery('''from Identifier as i
+                                               where id > :hid
+                                               and exists (
+                                                 select 1 from Combo
+                                                 where toComponent = i
+                                               )
+                                               order by id''',
+                                            [
+                                              max: batchSize,
+                                              hid: highest_id
+                                            ])
 
         batch.each { idc ->
           def isValid = validationService.checkIdForNamespace(idc.value, idc.namespace)
@@ -929,7 +1113,12 @@ class CleanupService {
             result.occurrences++
             idc.identifiedComponents.each { kbc ->
               if (!result.components[kbc.id]) {
-                result.components[kbc.id] = [name: kbc.name, uuid: kbc.uuid, type: kbc.niceName , invalid: []]
+                result.components[kbc.id] = [
+                                              name: kbc.name,
+                                              uuid: kbc.uuid,
+                                              type: kbc.niceName ,
+                                              invalid: []
+                                            ]
               }
 
               if (!result.namespaces[idc.namespace.value]) {
@@ -1001,7 +1190,14 @@ class CleanupService {
 
     while (more) {
 
-      def batch = ComponentHistoryEventParticipant.executeQuery("select event.id from ComponentHistoryEventParticipant where participant.status = :sd", [sd: deleted_status], [max: 50])
+      def batch = ComponentHistoryEventParticipant.executeQuery('''select event.id from ComponentHistoryEventParticipant
+                                                                   where participant.status = :sd''',
+                                                                [
+                                                                  sd: deleted_status
+                                                                ],
+                                                                [
+                                                                  max: 50
+                                                                ])
 
       batch.each { eid ->
         def event = ComponentHistoryEvent.get(eid)
@@ -1049,9 +1245,56 @@ class CleanupService {
                                               set status = :closed,
                                               lastUpdated = :now
                                               where status = :open
-                                              and componentToReview.status = :deleted
-                                          ''', [closed: status_closed, now: now, open: status_open, deleted: status_deleted])
+                                              and componentToReview.status = :deleted''',
+                                          [
+                                            closed: status_closed,
+                                            now: now,
+                                            open: status_open,
+                                            deleted: status_deleted
+                                          ])
 
     result
+  }
+
+  def fixDoiUrlIds() {
+    def doi_ctr = 0
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+    def doi_candidates = Identifier.executeQuery('''select id.id from Identifier as id
+                                                    where id.namespace = :doi
+                                                    and id.value like :ptn''',
+                                                  [
+                                                    doi: IdentifierNamespace.findByValue('doi'),
+                                                    ptn: 'http%'
+                                                  ])
+
+    doi_candidates.each { doi_id ->
+      def ido = Identifier.get(doi_id)
+      def parts = ido.value.split('org/')
+
+      log.debug("DOI parts: ${parts}")
+
+      if (parts.size() == 2) {
+        doi_ctr++
+        ido.value = parts[1]
+        ido.save(flush: true)
+
+        ido.activeIdentifiedComponents.each { cc ->
+          if (cc.status != status_deleted) {
+            cc.lastUpdateComment = "Fixed DOI identifier value"
+            cc.save(flush: true)
+
+            if (cc.class == TitleInstancePackagePlatform) {
+              tippService.touchPackage(cc)
+            }
+          }
+        }
+      }
+
+      if (doi_ctr % 50 == 0) {
+        sessionFactory.currentSession.clear()
+      }
+    }
+
+    doi_ctr
   }
 }
