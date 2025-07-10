@@ -456,8 +456,11 @@ class PackageSourceUpdateService {
 
       def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
 
-      if (file_name) {
+      if (file_name?.contains('filename=')) {
         file_name = file_name.split('filename=')[1]
+      }
+      else if (file_name?.contains('filename*=')) {
+        file_name = file_name.split('filename*=')[1].split("'")[2]
       }
 
       result.content_mime_type = headers.firstValue('Content-Type').isPresent() ? headers.firstValue('Content-Type').get() : null
