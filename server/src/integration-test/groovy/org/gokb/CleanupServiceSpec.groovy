@@ -87,4 +87,11 @@ class CleanupServiceSpec extends Specification {
     result == 1
     Identifier.findByValue('10.23242/354-234234-233-23') != null
   }
+
+  void "test ensureTipls"() {
+    when:
+    def result = cleanupService.ensureTipls()
+    then:
+    result.new_tipls == 1
+  }
 }

@@ -305,10 +305,13 @@ class PlatformService {
   def merge(old_platform, new_platform) {
     def result = [result: 'OK', tipps: 0, tipls: 0, pkgs: 0]
     RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue current_status = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue combo_type_plt_pkg = RefdataCategory.lookup('Combo.Type', 'Package.NominalPlatform')
     RefdataValue combo_type_pkg_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     RefdataValue combo_type_plt_tipp = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
     RefdataValue combo_type_plt_tipl = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTitles')
+    RefdataValue combo_type_ti_tipl = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipls')
+    RefdataValue combo_type_ti_tipp = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
     try {
       def affected_pkgs_ids = Package.executeQuery('''select p.id from Package as p
@@ -322,18 +325,21 @@ class PlatformService {
                                                     select 1 from Combo as pkg_to_tipp
                                                     where fromComponent = p
                                                     and type = :ctpkg
+                                                    and toComponent.status != :sd
                                                     and exists (
-                                                      select 1 from combo as plt_to_tipp
+                                                      select 1 from Combo as plt_to_tipp
                                                       where fromComponent = :op
                                                       and plt_to_tipp.toComponent = pkg_to_tipp.toComponent
                                                       and type = :cttplt
                                                     )
-                                                  )''',
+                                                  )
+                                                  and status != :sd''',
                                                   [
                                                     op: old_platform,
                                                     ctpplt: combo_type_plt_pkg,
                                                     ctpkg: combo_type_pkg_tipp,
-                                                    cttplt: combo_type_plt_tipp
+                                                    cttplt: combo_type_plt_tipp,
+                                                    sd: deleted_status
                                                   ])
 
       for (pid in affected_pkgs_ids) {
@@ -341,12 +347,13 @@ class PlatformService {
         boolean more_tipps = true
 
         while (more_tipps) {
-          def affected_tipps_batch = Combo.executeQuery('''from Combo as c
+          def affected_tipp_combos_batch = Combo.executeQuery('''from Combo as c
                                             where c.fromComponent.id = :pid
                                             and c.type = :ctt
+                                            and c.toComponent.status != :sd
                                             and exists (
                                               select 1 from Combo
-                                              where fromComponent.id = :op
+                                              where fromComponent = :op
                                               and type = :ctp
                                               and toComponent = c.toComponent
                                             )''',
@@ -354,24 +361,61 @@ class PlatformService {
                                             op: old_platform,
                                             ctt: combo_type_pkg_tipp,
                                             ctp: combo_type_plt_tipp,
-                                            pid: pid
+                                            pid: pid,
+                                            sd: deleted_status
                                           ],
                                           [max: 50]
                                         )
-          result.tipps += affected_tipps_batch.size()
+          result.tipps += affected_tipp_combos_batch.size()
 
-          affected_tipps_batch.each { ctp ->
+          affected_tipp_combos_batch.each { ctp ->
             def connected_item = ClassUtils.deproxy(ctp.toComponent)
+            def dupes = TitleInstancePackagePlatform.executeQuery('''select count(tipp.id) from TitleInstancePackagePlatform as tipp
+                                                                      where exists (
+                                                                        select 1 from Combo
+                                                                        where toComponent = tipp
+                                                                        and fromComponent.id = :pid
+                                                                        and type = :ctpkg
+                                                                      )
+                                                                      and exists (
+                                                                        select 1 from Combo
+                                                                        where toComponent = tipp
+                                                                        and fromComponent = :ti
+                                                                        and type = :ctti
+                                                                      )
+                                                                      and exists (
+                                                                        select 1 from Combo
+                                                                        where toComponent = tipp
+                                                                        and fromComponent = :np
+                                                                        and type = :ctplt
+                                                                      )
+                                                                      and status != :sd''',
+                                                                    [
+                                                                      ctpkg: combo_type_pkg_tipp,
+                                                                      ctti: combo_type_ti_tipp,
+                                                                      ctplt: combo_type_plt_tipp,
+                                                                      ti: connected_item.title,
+                                                                      pid: pid,
+                                                                      np: new_platform,
+                                                                      sd: deleted_status
+                                                                    ]
+                                                                  )[0]
+            if (dupes == 0) {
+              ctp.fromComponent = new_platform
+              ctp.save(flush: true)
 
-            ctp.toComponent = new_platform
-            ctp.save()
-
-            connected_item.lastUpdateComment = "Platform cleanup"
-            connected_item.save()
+              connected_item.lastUpdateComment = "Platform cleanup"
+              connected_item.save(flush: true)
+            }
+            else {
+              log.debug("Not creating duplicate TIPP!")
+              connected_tipl.status = deleted_status
+              connected_tipl.save(flush: true)
+            }
           }
 
-          if (affected_tipps_batch < 50) {
-            more = false
+          if (affected_tipp_combos_batch.size() < 50) {
+            more_tipps = false
           }
 
           sessionFactory.currentSession.flush()
@@ -391,7 +435,7 @@ class PlatformService {
       boolean more_tipls = true
 
       while (more_tipls) {
-        def affected_tipls_batch = Combo.executeQuery('''from Combo as c
+        def affected_tipl_combos_batch = Combo.executeQuery('''from Combo as c
                                           where c.fromComponent = :op
                                           and c.type = :ctp''',
                                         [
@@ -400,26 +444,50 @@ class PlatformService {
                                         ],
                                         [max: 50]
                                       )
-        result.tipls += affected_tipls_batch.size()
+        result.tipls += affected_tipl_combos_batch.size()
 
-        affected_tipls_batch.each { ctp ->
-          def connected_item = ClassUtils.deproxy(ctp.toComponent)
+        affected_tipl_combos_batch.each { ctp ->
+          def connected_tipl = ClassUtils.deproxy(ctp.toComponent)
+          def dupes = TitleInstancePlatform.executeQuery('''select count(*) from TitleInstancePlatform as tipl,
+                                                            Combo as cti
+                                                            where cti.type = :ctti
+                                                            and cti.fromComponent = :ti
+                                                            and cti.toComponent = tipl
+                                                            and exists (
+                                                              select 1 from Combo
+                                                              where toComponent = tipl
+                                                              and fromComponent = :np
+                                                            )''',
+                                                          [
+                                                            ctti: combo_type_ti_tipl,
+                                                            ti: connected_tipl.tiplTitle,
+                                                            np: new_platform
+                                                          ]
+                                                        )[0]
 
-          ctp.toComponent = new_platform
-          ctp.save()
+          if (dupes == 0) {
+            ctp.fromComponent = new_platform
+            ctp.save(flush:true)
 
-          connected_item.lastUpdateComment = "Platform cleanup"
-          connected_item.save()
+            connected_tipl.lastUpdateComment = "Platform cleanup"
+            connected_tipl.save(flush: true)
+          }
+          else {
+            log.debug("Not creating duplicate TIPL for ${connected_tipl.tiplTitle}")
+            connected_tipl.status = deleted_status
+            connected_tipl.save(flush: true)
+          }
         }
 
-        if (affected_tipls_batch < 50) {
-          more = false
+        if (affected_tipl_combos_batch.size() < 50) {
+          more_tipls = false
         }
 
         sessionFactory.currentSession.flush()
         sessionFactory.currentSession.clear()
       }
 
+      old_platform.refresh()
       old_platform.status = deleted_status
       old_platform.save(flush: true)
     }

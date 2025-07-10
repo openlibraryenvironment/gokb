@@ -4,22 +4,23 @@
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-<title>GOKB: Merge Duplicate Orgs</title>
+<title>GOKB: Transfer Org Packages</title>
 </head>
 <body>
 
-  <h1 class="page-header">Merge Duplicate Orgs</h1>
+  <h1 class="page-header">Transfer Org Packages</h1>
 
 
   <div id="mainarea" class="panel panel-default">
     <div class="panel-heading">
       <h3 class="panel-title">Step 1 of 1</h3>
       <p>
-        This action will move all existing links from one Org to Packages, Titles and Platforms unto another Org (avoiding duplicates)
+        This action will replace the existing Provider in all associated packages with the new Provider selection
       </p>
     </div>
     <div class="panel-body">
-      <g:form name="DeprecateOrg" controller="workflow" action="deprecateOrg" method="post">
+      <g:form name="DeprecateOrg" controller="workflow" action="transferPackages" method="post">
+        <input type="hidden" name="merge" value="true"/>
         <div class="row">
           <div class="col-md-6">
             <dt>Orgs To Deprecate:</dt>
@@ -37,12 +38,12 @@
 
           <div class="col-md-6">
             <dl>
-              <dt>Org to Use:</dt>
+              <dt>New Provider:</dt>
               <dd>
                  <g:simpleReferenceTypedown class="form-control" name="neworg" baseClass="org.gokb.cred.Org" />
               </dd>
             </dl>
-            <button class="btn btn-success" type="submit">Deprecate selected titles in favour of this one</button>
+            <button class="btn btn-success" type="submit">Transfer Packages</button>
           </div>
         </div>
 

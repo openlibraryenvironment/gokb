@@ -13,6 +13,7 @@ class OrgService {
   def FTUpdateService
   def restMappingService
   def componentUpdateService
+  def titleAugmentService
 
   def restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}");
@@ -512,6 +513,176 @@ class OrgService {
 
     if (result.changed) {
       org.save(flush: true, failOnError: true)
+    }
+
+    result
+  }
+
+  def transferPackages(old_provider, new_provider, boolean createNewCombos = true) {
+    def result = [result: 'OK', transferred: 0]
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue combo_type_pkg_provider = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
+
+    if (createNewCombos) {
+      def affected_pkgs = Package.executeQuery('''from Package as p
+                                                  where exists (
+                                                    select 1 from Combo as c
+                                                    where fromComponent = p
+                                                    and fromComponent.status != :sd
+                                                    and toComponent = :op
+                                                  )''',
+                                                  [
+                                                    sd: status_deleted,
+                                                    op: old_provider
+                                                  ])
+
+      affected_pkgs.each { pobj ->
+        if (pobj.provider == old_provider) {
+          pobj.provider = new_provider
+        }
+
+        if (pobj.broker == old_provider) {
+          pobj.broker = new_provider
+        }
+
+        if (pobj.licensor == old_provider) {
+          pobj.licensor = new_provider
+        }
+
+        if (pobj.vendor == old_provider) {
+          pobj.vendor = new_provider
+        }
+
+        result.transferred++
+
+        pobj.save(flush: true)
+      }
+    }
+    else {
+      def affected_pkg_combos = Combo.executeQuery('''select id from Combo as c
+                                                      where exists (
+                                                        select 1 from Package as p
+                                                        where p.id = c.fromComponent.id
+                                                        and p.status != :sd
+                                                      )
+                                                      and toComponent = :op''',
+                                                      [
+                                                        sd: status_deleted,
+                                                        op: old_provider
+                                                      ])
+
+
+      affected_pkg_combos.each { cttid ->
+        Combo cobj = Combo.get(cttid)
+        def pkg_obj = cobj.fromComponent
+
+        cobj.toComponent = new_provider
+        cobj.save(flush: true)
+
+        pkg_obj.lastUpdateComment = "Link Transfer for '${cobj.type.value}'"
+        pkg_obj.save(flush: true)
+
+        result.transferred++
+      }
+    }
+
+    result
+  }
+
+  def mergeDuplicate(old_org, new_org) {
+    def result = [result: 'OK', ti: 0, pkgs: 0, plts: 0]
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue combo_type_ti_org = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+    RefdataValue combo_type_plt_org = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
+
+    try {
+      // transfer publishers & update TIPPs + Packages
+
+      def affected_ti_ids = TitleInstance.executeQuery('''select ti.id from TitleInstance as ti
+                                                          where exists (
+                                                            select 1 from Combo
+                                                            where fromComponent = ti
+                                                            and toComponent = :op
+                                                            and type = :cttp
+                                                          )
+                                                          and status != :sd''',
+                                                          [
+                                                            op: old_org,
+                                                            cttp: combo_type_ti_org,
+                                                            sd: status_deleted
+                                                          ])
+
+      affected_ti_ids.each { tid ->
+        def ti_obj = TitleInstance.get(tid)
+
+        def dupes = Combo.executeQuery("select count(*) from Combo where fromComponent = :ti and toComponent = :np", [ti: ti_obj, np: new_org])[0]
+
+        if (dupes == 0) {
+          def combos_to_update = Combo.findAllByFromComponentAndToComponentAndType(ti_obj, old_org, combo_type_ti_org)
+
+          combos_to_update.each { ctu ->
+            ctu.toComponent = new_org
+            ctu.save(flush: true)
+          }
+        }
+        else {
+          log.debug("Found dupes, deleting old combos ..")
+
+          def combos_deleted = Combo.executeUpdate('''delete from Combo
+                                                      where fromComponent = :ti
+                                                      and toComponent = :op
+                                                      and type = :cttp
+                                                    ''',
+                                                    [
+                                                      ti: ti_obj,
+                                                      op: old_org,
+                                                      cttp: combo_type_ti_org,
+                                                      sd: status_deleted
+                                                    ])
+        }
+
+        result.ti++
+
+        ti_obj.lastUpdateComment = "Org cleanup"
+        ti_obj.save(flush: true)
+
+        titleAugmentService.touchTitleTipps(ti_obj, false)
+      }
+
+      result.pkgs = transferPackages(old_org, new_org).transferred
+
+      // Transfer Platforms
+      def affected_platform_ids = Platform.executeQuery('''select p.id from Platform as p
+                                                            where exists (
+                                                              select 1 from Combo
+                                                              where fromComponent = p
+                                                              and toComponent = :op
+                                                              and type = :ctpp
+                                                            )
+                                                            and status != :sd''',
+                                                            [
+                                                              op: old_org,
+                                                              ctpp: combo_type_plt_org,
+                                                              sd: status_deleted
+                                                            ])
+
+      affected_platform_ids.each { plid ->
+        def plt = Platform.get(plid)
+        plt.provider = new_org
+        plt.save(flush: true)
+
+        result.plts++
+      }
+
+      new_org.lastUpdateComment = "Org ${old_org.id} merged"
+      new_org.save(flush: true)
+
+      old_org.status = status_deleted
+      old_org.save(flush: true)
+    }
+    catch (Exception e) {
+      log.error("Error merging orgs", e)
     }
 
     result

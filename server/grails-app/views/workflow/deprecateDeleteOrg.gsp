@@ -4,7 +4,7 @@
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-<title>GOKB: Deprecate Org Transfer</title>
+<title>GOKB: Deprecate Org</title>
 </head>
 <body>
 
@@ -16,8 +16,8 @@
 
   <div id="mainarea" class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">Remove Org from all Titles</h3>
-      <p> This action will remove the Publisher name from all associated titles and leave the publisher name field empty.  </p>
+      <h3 class="panel-title">Remove ALL Org Links</h3>
+      <p> This action will remove this Org from all associated titles, packages etc. and leave those links empty. This may break components that are linked with this Org until now. </p>
     </div>
     <div class="panel-body">
       <g:form name="DeprecateOrg" controller="workflow" action="deprecateDeleteOrg" method="post">
@@ -35,7 +35,7 @@
               </ul>
             </dd>
 
-            <button class="btn btn-success" type="submit">Confirm :: Remove this org from all titles</button>
+            <button class="btn btn-success" type="submit">Confirm :: Remove ALL Org Links</button>
           </div>
         </div>
       </g:form>
@@ -43,4 +43,3 @@
   </div>
 </body>
 </html>
-

@@ -94,12 +94,12 @@ class PlatformServiceSpec extends Specification {
     result.result == 'OK'
     result.tipps == 1
     result.tipls == 1
-    result.pkg == 1
+    result.pkgs == 1
     old_plt.status.value == 'Deleted'
-    def moved_tipp = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where exists (select 1 from Combo where fromComponent = :np and fromComponent = t)", [np: new_plt])
+    def moved_tipp = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where exists (select 1 from Combo where fromComponent = :np and toComponent = t)", [np: new_plt])
     moved_tipp.size() == 1
 
-    def moved_tipl = TitleInstancePlatform.executeQuery("from TitleInstancePlatform as t where exists (select 1 from Combo where fromComponent = :np and fromComponent = t)", [np: new_plt])
+    def moved_tipl = TitleInstancePlatform.executeQuery("from TitleInstancePlatform as t where exists (select 1 from Combo where fromComponent = :np and toComponent = t)", [np: new_plt])
     moved_tipl.size() == 1
 
     def pkg = Package.findByName("PlatformService Test Package")

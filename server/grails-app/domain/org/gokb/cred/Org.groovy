@@ -19,8 +19,9 @@ class Org extends KBComponent {
 
   def availableActions() {
     [
-        [code: 'org::deprecateReplace', label: 'Replace Publisher With...'],
-        [code: 'org::deprecateDelete', label: 'Remove Publisher name from title records...'],
+        [code: 'org::transferPackages', label: 'TRansfer Packages to...'],
+        [code: 'org::deprecateReplace', label: 'Merge into...'],
+        [code: 'org::deprecateDelete', label: 'Remove all links and delete...'],
         [code: 'method::deleteSoft', label: 'Delete Org', perm: 'delete'],
         [code: 'method::retire', label: 'Retire Org', perm: 'admin'],
         [code: 'method::setActive', label: 'Set Current']
