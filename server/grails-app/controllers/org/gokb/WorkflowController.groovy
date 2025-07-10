@@ -49,7 +49,7 @@ class WorkflowController{
       'setStatus::Current'     : [actionType: 'simple'],
       'setStatus::Expected'    : [actionType: 'simple'],
       'setStatus::Deleted'     : [actionType: 'simple'],
-      'org::transferPackages'  : [actionType: 'workflow', view: 'deprecateOrg'],
+      'org::transferPackages'  : [actionType: 'workflow', view: 'transferProviderPackages'],
       'org::deprecateReplace'  : [actionType: 'workflow', view: 'deprecateOrg'],
       'org::deprecateDelete'   : [actionType: 'workflow', view: 'deprecateDeleteOrg'],
       'verifyTitleList'        : [actionType: 'process', method: 'verifyTitleList']
@@ -1714,8 +1714,9 @@ class WorkflowController{
 
   @Transactional
   @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
-  def deprecateOrg(){
-    def result = [:]
+  def transferPackages(){
+    def result = [result: 'OK']
+    def errors = []
 
     if (params.orgsToDeprecate && params.neworg) {
       def orgs = params.list('orgsToDeprecate')
@@ -1724,21 +1725,64 @@ class WorkflowController{
       orgs.each { org_id ->
         def old_org = Org.get(org_id)
 
-        if (old_org && neworg && old_org.isEditable()) {
-          if (params.merge) {
-            orgService.mergeDuplicate(old_org, neworg)
+        if (old_org && new_org) {
+          def transfer_result = orgService.transferPackages(old_org, neworg)
 
-            flash.success = "Package Reallocation Complete".toString()
+          if (transfer_result.result == 'ERROR') {
+            result.result = 'ERROR'
+            errors << "${old_org}"
           }
-          else {
-            orgService.transferPackages(old_org, neworg)
+        }
+        else {
+          result.result = 'ERROR'
+          errors << "${org_id}"
+        }
+      }
 
-            flash.success = "Org Merge Completed".toString()
+      if (result.result == 'OK') {
+        flash.success = "Package Reallocation Complete".toString()
+      }
+      else {
+        flash.errors = "Package Reallocation Failed for ${errors}!".toString()
+      }
+
+
+      redirect(controller: 'resource', action: 'show', id: "${neworg.class.name}:${neworg.id}")
+    }
+  }
+
+  @Transactional
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  def deprecateOrg(){
+    def result = [result: 'OK']
+    def errors = []
+
+    if (params.orgsToDeprecate && params.neworg) {
+      def orgs = params.list('orgsToDeprecate')
+      def neworg = genericOIDService.resolveOID2(params.neworg)
+
+      orgs.each { org_id ->
+        def old_org = Org.get(org_id)
+
+        if (old_org && neworg) {
+          def merge_result = orgService.mergeDuplicate(old_org, neworg)
+
+          if (merge_result.result == 'ERROR') {
+            result.result = 'ERROR'
+            errors << "${old_org}"
           }
         }
         else{
-          flash.errors = "Org Deprecation Failed!".toString()
+          result.result = 'ERROR'
+          errors << "${org_id}"
         }
+      }
+
+      if (result.result == 'OK') {
+        flash.success = "Org Merge Complete!".toString()
+      }
+      else {
+        flash.errors = "Org Deprecation Failed for ${errors}!".toString()
       }
 
       redirect(controller: 'resource', action: 'show', id: "${neworg.class.name}:${neworg.id}")
@@ -1746,7 +1790,7 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def deprecateDeleteOrg(){
     log.debug("deprecateDeleteOrg ${params}")
     def result = [:]

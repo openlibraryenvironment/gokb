@@ -19,8 +19,7 @@
       </p>
     </div>
     <div class="panel-body">
-      <g:form name="DeprecateOrg" controller="workflow" action="transferPackages" method="post">
-        <input type="hidden" name="merge" value="true"/>
+      <g:form name="TransferProviderPackages" controller="workflow" action="transferPackages" method="post">
         <div class="row">
           <div class="col-md-6">
             <dt>Orgs To Deprecate:</dt>
