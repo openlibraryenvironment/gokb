@@ -23,6 +23,12 @@
         <dd>
           <g:xEditable class="ipe" owner="${d}" field="reviewRequest" />
         </dd>
+        <dt>
+          <g:annotatedLabel owner="${d}" property="editingNotes">Editing Notes</g:annotatedLabel>
+        </dt>
+        <dd style="max-width:60%">
+          <g:xEditable class="ipe" owner="${d}" field="editingNotes" />
+        </dd>
         <g:if test="${d.id}">
           <sec:ifAnyGranted roles="ROLE_SUPERUSER">
             <dt>
