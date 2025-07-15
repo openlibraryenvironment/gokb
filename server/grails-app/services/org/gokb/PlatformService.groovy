@@ -302,6 +302,7 @@ class PlatformService {
     result
   }
 
+  @Transactional
   def merge(old_platform, new_platform) {
     def result = [result: 'OK', tipps: 0, tipls: 0, pkgs: 0]
     RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -312,6 +313,7 @@ class PlatformService {
     RefdataValue combo_type_plt_tipl = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTitles')
     RefdataValue combo_type_ti_tipl = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipls')
     RefdataValue combo_type_ti_tipp = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    def psession = sessionFactory.currentSession
 
     try {
       def affected_pkgs_ids = Package.executeQuery('''select p.id from Package as p
@@ -418,8 +420,8 @@ class PlatformService {
             more_tipps = false
           }
 
-          sessionFactory.currentSession.flush()
-          sessionFactory.currentSession.clear()
+          psession.flush()
+          psession.clear()
         }
 
         Package pkg = Package.get(pid)
@@ -483,8 +485,8 @@ class PlatformService {
           more_tipls = false
         }
 
-        sessionFactory.currentSession.flush()
-        sessionFactory.currentSession.clear()
+        psession.flush()
+        psession.clear()
       }
 
       old_platform.refresh()

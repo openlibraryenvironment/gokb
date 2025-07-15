@@ -1187,15 +1187,16 @@ class WorkflowController{
     activity_record.save(flush: true)
   }
 
-  @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def processPlatformReplacement(){
     def result = [
       result: 'OK',
       old: [],
-      'new': '',
       count: 0
     ]
+
+    def new_platform = genericOIDService.resolveOID2(params.newplatform)
+    result.target = [name: new_platform.name, id: new_platform.id]
 
     params.each{ p ->
       log.debug("Testing ${p.key}")
@@ -1204,17 +1205,18 @@ class WorkflowController{
         def tt = p.key.substring(3)
         log.debug("Platform to replace: '${tt}'")
         def old_platform = Platform.get(tt)
-        def new_platform = genericOIDService.resolveOID2(params.newplatform)
-        log.debug("old: ${old_platform} new: ${new_platform}")
 
-        def service_result = platformService.merge(old_platform, new_platform)
+        log.debug("old: ${old_platform} new: ${new_platform}")
+        result.old << [name: old_platform.name, id: old_platform.id]
+
+        def service_result = platformService.merge(old_platform.id, new_platform.id)
       }
     }
     render view: 'platformReplacementResult', model: [result: result]
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   def processTippRetire(){
     log.debug("processTippRetire ${params}")
     def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')

@@ -275,7 +275,6 @@ class CleanupService {
     j.endTime = new Date();
   }
 
-  @Transactional
   def ensureUuids(Job j = null)  {
     log.debug("GOKb missing uuid check..")
     def ctr = 0
@@ -319,66 +318,94 @@ class CleanupService {
     j.endTime = new Date()
   }
 
-  @Transactional
   def ensureTipls(Job j = null)  {
     log.debug("GOKb missing tipl check..")
     def result = [result: 'OK', new_tipls: 0]
+    def active_session
 
-    TitleInstancePackagePlatform.withNewSession { session ->
-      RefdataValue status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+    try {
+      active_session = sessionFactory.currentSession
+    }
+    catch (Exception e) {
+      log.debug("Need new session ..")
+    }
+    int ctr = 0
+    int batchSize = 100
+
+    if (active_session) {
+      RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
       RefdataValue combo_tipp = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
       RefdataValue combo_tipl = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipls')
       RefdataValue combo_plt_tipp = RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps')
       RefdataValue combo_plt_tipl = RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTitles')
+      boolean more = true
 
       try {
-        def query_str = '''from TitleInstancePackagePlatform as tipp,
-                            Combo ctplt
-                            where tipp.status = :sc
-                            and tipp.url is not null
-                            and ctplt.toComponent = tipp
-                            and ctplt.type = :ct_plt_tipp
-                            and exists (
-                              select 1 from Combo as ctt
-                              where toComponent = tipp
-                              and type = :ct_ti_tipp
-                              and not exists (
-                                select 1 from Combo
-                                where fromComponent = ctplt.fromComponent
-                                and type = :ct_plt_tipl
-                                and toComponent = ctt.fromComponent
-                              )
-                            )'''
-        result.count = TitleInstancePackagePlatform.executeQuery("select count(tipp.id) ${query_str}",
-                    [
-                      sc: status_current,
-                      ct_plt_tipp: combo_plt_tipp,
-                      ct_ti_tipp: combo_tipp,
-                      ct_plt_tipl: combo_plt_tipl
-                    ]
-                  )[0]
+        def qry_pars = [
+          sc: status_current,
+          ctplttipp: combo_plt_tipp,
+          cttitipp: combo_tipp,
+          ctplttipl: combo_plt_tipl
+        ]
 
-        def query = session.createQuery("select tipp.id from ${query_str}",)
+        result.count = TitleInstancePackagePlatform.executeQuery('''select count(*) from TitleInstancePackagePlatform as tipp
+                                                                    where tipp.status = :sc
+                                                                    and tipp.url is not null
+                                                                    and exists (
+                                                                      select 1 from Combo as ctt
+                                                                      where ctt.toComponent = tipp
+                                                                      and ctt.type = :cttitipp
+                                                                      and not exists (
+                                                                        select 1 from Combo as cptpl
+                                                                        where cptpl.type = :ctplttipl
+                                                                        and cptpl.toComponent = ctt.fromComponent
+                                                                        and cptpl.fromComponent = (
+                                                                          select cpt.fromComponent from Combo as cpt
+                                                                          where cpt.toComponent = tipp
+                                                                          and cpt.type = :ctplttipp
+                                                                        )
+                                                                      )
+                                                                    )''',
+                                                                  qry_pars
+                                                                )[0]
 
+        j?.message("TIPPs to process: ${result.count}")
 
-        query.setReadOnly(true)
-        query.setParameter('sc', status_current)
-        query.setParameter('ct_plt_tipp', combo_plt_tipp)
-        query.setParameter('ct_ti_tipp', combo_tipp)
-        query.setParameter('ct_plt_tipl', combo_plt_tipl)
+        while (more) {
+          def batch = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
+                                              where tipp.status = :sc
+                                              and tipp.url is not null
+                                              and exists (
+                                                select 1 from Combo as ctt
+                                                where ctt.toComponent = tipp
+                                                and ctt.type = :cttitipp
+                                                and not exists (
+                                                  select 1 from Combo as cptpl
+                                                  where cptpl.type = :ctplttipl
+                                                  and cptpl.toComponent = ctt.fromComponent
+                                                  and cptpl.fromComponent = (
+                                                    select cpt.fromComponent from Combo as cpt
+                                                    where cpt.toComponent = tipp
+                                                    and cpt.type = :ctplttipp
+                                                  )
+                                                )
+                                              )''',
+                                            qry_pars,
+                                            [max: batchSize]
+                                          )
 
-        ScrollableResults tipp_ids = query.scroll(ScrollMode.FORWARD_ONLY)
-        int ctr = 0
+          if ( Thread.currentThread().isInterrupted() || j?.isCancelled()) {
+            log.debug("Job cancelling ..")
+            j?.endTime = new Date()
+            break;
+          }
 
-        TitleInstancePackagePlatform.withNewSession { tsession ->
-          while (tipp_ids.next()) {
-            if ( Thread.currentThread().isInterrupted() || j.isCancelled()) {
-              log.debug("Job cancelling ..")
-              j.endTime = new Date()
-              break;
-            }
+          if (batch.size() < batchSize) {
+            more = false
+          }
 
-            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_ids.get(0))
+          batch.each { tid ->
+            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tid)
             def tipls = checkForTipl(tipp.title, tipp.hostPlatform, tipp.url)
             def final_tipl = null
 
@@ -397,29 +424,140 @@ class CleanupService {
             }
 
             log.debug("TIPL ${final_tipl}")
-            j.setProgress(ctr, result.count)
+            j?.setProgress(ctr, result.count)
             ctr++
 
-            if (ctr % 50 == 0) {
-              log.debug("ensureTipls :: Processed ${ctr} TIPPs")
-              tsession.clear()
-            }
+            session.flush()
+            session.clear()
           }
         }
 
-        j.message("Finished checking for missing TIPLs, with ${result.new_tipls} newly created.".toString())
-        j.setProgress(100)
-
+        j?.message("Finished checking for missing TIPLs, with ${result.new_tipls} newly created.".toString())
+        j?.setProgress(100)
       }
       catch ( Exception e ) {
         log.error("Problem with ensure TIPLs",e)
-        j.message("There was an error ensuring TIPLs.. check logs for info.".toString())
+        j?.message("There was an error ensuring TIPLs.. check logs for info.".toString())
       }
       finally {
         log.debug("ensureTipls finished (${ctr} TIPPs)");
       }
     }
-    j.endTime = new Date()
+    else {
+      TitleInstancePackagePlatform.withNewSession { session ->
+        RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+        RefdataValue combo_tipp = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
+        RefdataValue combo_tipl = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipls')
+        RefdataValue combo_plt_tipp = RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps')
+        RefdataValue combo_plt_tipl = RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTitles')
+        boolean more = true
+
+        try {
+          def qry_pars = [
+            sc: status_current,
+            ctplttipp: combo_plt_tipp,
+            cttitipp: combo_tipp,
+            ctplttipl: combo_plt_tipl
+          ]
+
+          result.count = TitleInstancePackagePlatform.executeQuery('''select count(*) from TitleInstancePackagePlatform as tipp
+                                                                      where tipp.status = :sc
+                                                                      and tipp.url is not null
+                                                                      and exists (
+                                                                        select 1 from Combo as ctt
+                                                                        where ctt.toComponent = tipp
+                                                                        and ctt.type = :cttitipp
+                                                                        and not exists (
+                                                                          select 1 from Combo as cptpl
+                                                                          where cptpl.type = :ctplttipl
+                                                                          and cptpl.toComponent = ctt.fromComponent
+                                                                          and cptpl.fromComponent = (
+                                                                            select cpt.fromComponent from Combo as cpt
+                                                                            where cpt.toComponent = tipp
+                                                                            and cpt.type = :ctplttipp
+                                                                          )
+                                                                        )
+                                                                      )''',
+                                                                    qry_pars
+                                                                  )[0]
+
+          j?.message("TIPPs to process: ${result.count}")
+
+          while (more) {
+            def batch = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
+                                                where tipp.status = :sc
+                                                and tipp.url is not null
+                                                and exists (
+                                                  select 1 from Combo as ctt
+                                                  where ctt.toComponent = tipp
+                                                  and ctt.type = :cttitipp
+                                                  and not exists (
+                                                    select 1 from Combo as cptpl
+                                                    where cptpl.type = :ctplttipl
+                                                    and cptpl.toComponent = ctt.fromComponent
+                                                    and cptpl.fromComponent = (
+                                                      select cpt.fromComponent from Combo as cpt
+                                                      where cpt.toComponent = tipp
+                                                      and cpt.type = :ctplttipp
+                                                    )
+                                                  )
+                                                )''',
+                                              qry_pars,
+                                              [max: batchSize]
+                                            )
+
+            if ( Thread.currentThread().isInterrupted() || j?.isCancelled()) {
+              log.debug("Job cancelling ..")
+              j?.endTime = new Date()
+              break;
+            }
+
+            if (batch.size() < batchSize) {
+              more = false
+            }
+
+            batch.each { tid ->
+              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tid)
+              def tipls = checkForTipl(tipp.title, tipp.hostPlatform, tipp.url)
+              def final_tipl = null
+
+              if (tipls == null) {
+                log.warn("ensureTipls :: Skipping TIPP ${tipp} due to missing info!")
+              }
+              else if (tipls.size() == 0) {
+                final_tipl = new TitleInstancePlatform(url: tipp.url, tiplHostPlatform: tipp.hostPlatform, tiplTitle: tipp.title).save(flush: true, failOnError: true)
+                result.new_tipls++
+              }
+              else if (tipls.size() == 1) {
+                log.debug("ensureTipls :: Skipping TIPP ${tipp} due to matched tipl during in-batch check..")
+              }
+              else {
+                log.debug("Found more than one TIPL for ${tipp.title ?: tipp} on ${tipp.hostPlatform}!")
+              }
+
+              log.debug("TIPL ${final_tipl}")
+              j?.setProgress(ctr, result.count)
+              ctr++
+
+              session.flush()
+              session.clear()
+            }
+          }
+
+          j?.message("Finished checking for missing TIPLs, with ${result.new_tipls} newly created.".toString())
+          j?.setProgress(100)
+        }
+        catch ( Exception e ) {
+          log.error("Problem with ensure TIPLs",e)
+          j?.message("There was an error ensuring TIPLs.. check logs for info.".toString())
+        }
+        finally {
+          log.debug("ensureTipls finished (${ctr} TIPPs)");
+        }
+      }
+    }
+
+    j?.endTime = new Date()
 
     result
   }
@@ -429,8 +567,7 @@ class CleanupService {
 
     if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
       def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-      result = TitleInstancePlatform.executeQuery('''select tipl
-                                                          from TitleInstancePlatform as tipl,
+      result = TitleInstancePlatform.executeQuery('''select tipl from TitleInstancePlatform as tipl,
                                                           Combo as titleCombo,
                                                           Combo as platformCombo
                                                           where titleCombo.toComponent = tipl

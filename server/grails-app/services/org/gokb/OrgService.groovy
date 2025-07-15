@@ -555,7 +555,7 @@ class OrgService {
 
         result.transferred++
 
-        pobj.save(flush: true)
+        pobj.save(flush: true, failOnError: true)
       }
     }
     else {
@@ -577,10 +577,10 @@ class OrgService {
         def pkg_obj = cobj.fromComponent
 
         cobj.toComponent = new_provider
-        cobj.save(flush: true)
+        cobj.save(flush: true, failOnError: true)
 
         pkg_obj.lastUpdateComment = "Link Transfer for '${cobj.type.value}'"
-        pkg_obj.save(flush: true)
+        pkg_obj.save(flush: true, failOnError: true)
 
         result.transferred++
       }
