@@ -23,6 +23,7 @@ class ReviewRequest {
   Boolean needsNotify
   RefineProject refineProject
   String additionalInfo
+  String editingNotes
 
   // Timestamps
   Date dateCreated
@@ -33,6 +34,7 @@ class ReviewRequest {
     descriptionOfCause column:'rr_cause_txt', type:'text'
     reviewRequest column:'rr_req_txt', type:'text'
     additionalInfo column:'rr_additional_info', type:'text'
+    editingNotes column:'rr_editing_notes', type:'text'
   }
 
   static constraints = {
