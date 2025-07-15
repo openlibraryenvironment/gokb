@@ -189,6 +189,10 @@ class ReviewsController {
           errors.componentToReview = [[message: "Changing the connected component of an existing review is not allowed!", baddata: reqBody.componentToReview]]
         }
 
+        if (reqBody.editingNotes?.trim()) {
+          obj.editingNotes = reqBody.editingNotes.trim()
+        }
+
         if (obj.validate()) {
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
@@ -240,14 +244,21 @@ class ReviewsController {
       reviewRequest: null,
       descriptionOfCause: null,
       additionalInfo: null,
+      editingNotes: null,
       stdDesc: null
     ]
 
-    if (reqBody.reviewRequest?.trim())
+    if (reqBody.reviewRequest?.trim()) {
       pars.reviewRequest = reqBody.reviewRequest.trim()
+    }
 
-    if (reqBody.descriptionOfCause?.trim())
+    if (reqBody.descriptionOfCause?.trim()) {
       pars.descriptionOfCause = reqBody.descriptionOfCause.trim()
+    }
+
+    if (reqBody.editingNotes?.trim()) {
+      pars.editingNotes = reqBody.editingNotes.trim()
+    }
 
     if (reqBody.componentToReview instanceof Integer) {
       def comp = KBComponent.get(reqBody.componentToReview)
