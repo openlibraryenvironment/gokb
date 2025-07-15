@@ -189,8 +189,8 @@ class ReviewsController {
           errors.componentToReview = [[message: "Changing the connected component of an existing review is not allowed!", baddata: reqBody.componentToReview]]
         }
 
-        if (reqBody.editingNotes?.trim()) {
-          obj.editingNotes = reqBody.editingNotes.trim()
+        if (reqBody.editingNotes != null) {
+          obj.editingNotes = reqBody.editingNotes.trim() ?: null
         }
 
         if (obj.validate()) {

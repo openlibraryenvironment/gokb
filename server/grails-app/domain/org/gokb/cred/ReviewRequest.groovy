@@ -51,7 +51,7 @@ class ReviewRequest {
     lastUpdated(nullable:true, blank:true)
     needsNotify(nullable:true, blank:true)
     refineProject(nullable:true, blank:true)
-    additionalInfo(nullable:true, blank:true)
+    additionalInfo(nullable:true, blank:false)
   }
 
   public static ReviewRequest raise (KBComponent forComponent,
