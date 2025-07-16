@@ -1722,13 +1722,13 @@ class WorkflowController{
 
     if (params.orgsToDeprecate && params.neworg) {
       def orgs = params.list('orgsToDeprecate')
-      def neworg = genericOIDService.resolveOID2(params.neworg)
+      def new_org = genericOIDService.resolveOID2(params.neworg)
 
       orgs.each { org_id ->
         def old_org = Org.get(org_id)
 
         if (old_org && new_org) {
-          def transfer_result = orgService.transferPackages(old_org, neworg)
+          def transfer_result = orgService.transferPackages(old_org, new_org)
 
           if (transfer_result.result == 'ERROR') {
             result.result = 'ERROR'
@@ -1749,7 +1749,7 @@ class WorkflowController{
       }
 
 
-      redirect(controller: 'resource', action: 'show', id: "${neworg.class.name}:${neworg.id}")
+      redirect(controller: 'resource', action: 'show', id: "${new_org.class.name}:${new_org.id}")
     }
   }
 
@@ -1761,13 +1761,13 @@ class WorkflowController{
 
     if (params.orgsToDeprecate && params.neworg) {
       def orgs = params.list('orgsToDeprecate')
-      def neworg = genericOIDService.resolveOID2(params.neworg)
+      def new_org = genericOIDService.resolveOID2(params.neworg)
 
       orgs.each { org_id ->
         def old_org = Org.get(org_id)
 
-        if (old_org && neworg) {
-          def merge_result = orgService.mergeDuplicate(old_org, neworg)
+        if (old_org && new_org) {
+          def merge_result = orgService.mergeDuplicate(old_org, new_org)
 
           if (merge_result.result == 'ERROR') {
             result.result = 'ERROR'
@@ -1787,7 +1787,7 @@ class WorkflowController{
         flash.errors = "Org Deprecation Failed for ${errors}!".toString()
       }
 
-      redirect(controller: 'resource', action: 'show', id: "${neworg.class.name}:${neworg.id}")
+      redirect(controller: 'resource', action: 'show', id: "${new_org.class.name}:${new_org.id}")
     }
   }
 

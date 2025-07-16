@@ -637,8 +637,7 @@ class OrgService {
                                                     [
                                                       ti: ti_obj,
                                                       op: old_org,
-                                                      cttp: combo_type_ti_org,
-                                                      sd: status_deleted
+                                                      cttp: combo_type_ti_org
                                                     ])
         }
 
