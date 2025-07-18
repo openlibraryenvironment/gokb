@@ -652,6 +652,7 @@ class OrgService {
       result.pkgs = transferPackages(old_org, new_org).transferred
 
       // Transfer Platforms
+
       def affected_platform_ids = Platform.executeQuery('''select p.id from Platform as p
                                                             where exists (
                                                               select 1 from Combo
@@ -672,6 +673,40 @@ class OrgService {
         plt.save(flush: true)
 
         result.plts++
+      }
+
+      // Moving variantNames
+
+      def old_variants = []
+
+      old_org.refresh()
+
+      old_org.variantNames.each { vn ->
+        old_variants << [
+          variantName: vn.variantName,
+          locale: vn.locale,
+          type: vn.variantType,
+          status: vn.status
+        ]
+      }
+
+      old_org.variantNames.clear()
+      old_org.save(flush: true, failOnError: true)
+
+      log.debug("Transferring ${old_variants.size()} variants ..")
+
+      old_variants.each { variant ->
+        new_org.ensureVariantName(variant.variantName, variant.type, variant.locale)
+      }
+
+      new_org.save(flush: true)
+
+      // Moving Ids
+
+      if (old_org.ids.size() > 0 && new_org.ids?.size() == 0) {
+        def ids_to_add = old_org.activeIdInfo
+
+        componentUpdateService.updateIdentifiers(new_org, ids_to_add)
       }
 
       new_org.lastUpdateComment = "Org ${old_org.id} merged"

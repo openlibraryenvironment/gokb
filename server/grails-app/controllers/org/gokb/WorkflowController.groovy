@@ -1209,7 +1209,7 @@ class WorkflowController{
         log.debug("old: ${old_platform} new: ${new_platform}")
         result.old << [name: old_platform.name, id: old_platform.id]
 
-        def service_result = platformService.merge(old_platform.id, new_platform.id)
+        def service_result = platformService.merge(old_platform, new_platform)
       }
     }
     render view: 'platformReplacementResult', model: [result: result]

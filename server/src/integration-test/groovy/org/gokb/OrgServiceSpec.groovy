@@ -36,16 +36,26 @@ class OrgServiceSpec extends Specification {
   SessionFactory sessionFactory
 
   def setup() {
-    Org old_org = Org.findByName("OrgService Test Org Old") ?: new Org(name: "OrgService Test Org Old").save(flush: true)
-    Org new_org = Org.findByName("OrgService Test Org New") ?: new Org(name: "OrgService Test Org New").save(flush: true)
-    Platform plt = Platform.findByName("OrgService Test Platform") ?: new Platform(name: "OrgService Test Platform", provider: old_org).save(flush: true)
-    Package pkg = Package.findByName("OrgService Test Package") ?: new Package(name: "OrgService Test Package", nominalPlatform: plt, provider: old_org).save(flush: true)
+    Org old_org = Org.findByName("OrgService Test Org Old") ?: new Org(name: "OrgService Test Org Old").save(flush: true, failOnError: true)
+
+    def new_variant = old_org.ensureVariantName("TestOrgServiceVariant")
+    new_variant.save(flush: true, failOnError: true)
+
+    IdentifierNamespace viaf_ns = IdentifierNamespace.findByValue('viaf')
+    Identifier viaf_id = Identifier.findByNamespaceAndValue(viaf_ns, '0125483') ?: new Identifier(namespace: viaf_ns, value: '0125483').save(flush: true, failOnError: true)
+
+    old_org.ids << viaf_id
+    old_org.save(flush:true, failOnError: true)
+
+    Org new_org = Org.findByName("OrgService Test Org New") ?: new Org(name: "OrgService Test Org New").save(flush: true, failOnError: true)
+    Platform plt = Platform.findByName("OrgService Test Platform") ?: new Platform(name: "OrgService Test Platform", provider: old_org).save(flush: true, failOnError: true)
+    Package pkg = Package.findByName("OrgService Test Package") ?: new Package(name: "OrgService Test Package", nominalPlatform: plt, provider: old_org).save(flush: true, failOnError: true)
 
     IdentifierNamespace issn_ns = IdentifierNamespace.findByValue('issn')
     IdentifierNamespace eissn_ns = IdentifierNamespace.findByValue('eissn')
 
-    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
-    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338')
+    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483').save(flush: true, failOnError: true)
+    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338').save(flush: true, failOnError: true)
 
     JournalInstance journal = JournalInstance.findByName("OrgService Journal")
 
@@ -135,5 +145,14 @@ class OrgServiceSpec extends Specification {
     def tipp = TitleInstancePackagePlatform.findByName("Test TIPP platform change")
     tipp.refresh()
     tipp.lastUpdated >= timestamp
+
+    new_org.refresh()
+    old_org.refresh()
+
+    old_org.variantNames.size() == 0
+
+    new_org.variantNames.size() == 1
+
+    new_org.ids?.size() == 1
   }
 }

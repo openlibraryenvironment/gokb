@@ -1157,7 +1157,7 @@ where cp.owner = :c
   }
 
   @Transient
-  def ensureVariantName(String name) {
+  def ensureVariantName(String name, RefdataValue type = null, RefdataValue locale = null) {
     def result = null
     if (name.trim().size() != 0) {
       def normname = generateNormname(name)
@@ -1167,15 +1167,21 @@ where cp.owner = :c
       def existing_component = this.class.findByNormnameAndStatusNotEqual(normname, status_deleted)
 
       if (existing_component == null) {
+        existing_component = this.class.findByNameAndStatusNotEqual(name, status_deleted)
+      }
+
+      if (existing_component == null) {
 
         // Variant names use different normalisation method.
         normname = GOKbTextUtils.normaliseString(name)
 
         // not already a name
         // Make sure not already a variant name
-        def existing_variants = KBComponentVariantName.executeQuery("from KBComponentVariantName where owner = :comp and normVariantName = :nvn".toString(), [comp: this, nvn: normname])
+        def existing_variants = KBComponentVariantName.executeQuery("from KBComponentVariantName where owner = :comp and (normVariantName = :nvn or variantName = :name)".toString(), [comp: this, name: name, nvn: normname])
+
         if (existing_variants.size() == 0) {
-          result = new KBComponentVariantName(owner: this, variantName: name).save()
+          result = new KBComponentVariantName(owner: this, variantName: name, variantType: type, locale: locale).save()
+          log.debug("Created alternate name ${result} ..")
         } else {
           log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name for this component....");
         }
