@@ -411,8 +411,8 @@ class PlatformService {
             }
             else {
               log.debug("Not creating duplicate TIPP!")
-              connected_tipl.status = deleted_status
-              connected_tipl.save(flush: true)
+              connected_item.status = deleted_status
+              connected_item.save(flush: true)
             }
           }
 
@@ -424,13 +424,14 @@ class PlatformService {
           psession.clear()
         }
 
-        Package pkg = Package.get(pid)
+        def pkg = Package.findById(pid)
+        def old_plt = Platform.executeQuery("select toComponent.id from Combo where type = :cpp and fromComponent = :pkg", [cpp: combo_type_plt_pkg, pkg: pkg])[0]
 
-        if (pkg.nominalPlatform == old_platform) {
+        if (old_plt == old_platform.id) {
           pkg.nominalPlatform = new_platform
         }
 
-        pkg.lastUpdateComment = "Plattform cleanup"
+        pkg.lastUpdateComment = "Platform cleanup"
         pkg.save(flush: true)
       }
 

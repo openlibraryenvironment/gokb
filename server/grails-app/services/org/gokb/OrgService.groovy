@@ -14,6 +14,7 @@ class OrgService {
   def restMappingService
   def componentUpdateService
   def titleAugmentService
+  def sessionFactory
 
   def restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}");
@@ -595,6 +596,7 @@ class OrgService {
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue combo_type_ti_org = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
     RefdataValue combo_type_plt_org = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
+    def session = sessionFactory.currentSession
 
     try {
       // transfer publishers & update TIPPs + Packages
@@ -647,6 +649,11 @@ class OrgService {
         ti_obj.save(flush: true)
 
         titleAugmentService.touchTitleTipps(ti_obj, false)
+
+        if (result.ti % 50 == 0) {
+          session.flush()
+          session.clear()
+        }
       }
 
       result.pkgs = transferPackages(old_org, new_org).transferred
@@ -670,7 +677,7 @@ class OrgService {
       affected_platform_ids.each { plid ->
         def plt = Platform.get(plid)
         plt.provider = new_org
-        plt.save(flush: true)
+        plt.save(flush: true, failOnError: true)
 
         result.plts++
       }
@@ -683,6 +690,7 @@ class OrgService {
 
       old_org.variantNames.each { vn ->
         old_variants << [
+          id: vn.id,
           variantName: vn.variantName,
           locale: vn.locale,
           type: vn.variantType,
@@ -691,15 +699,8 @@ class OrgService {
       }
 
       old_org.variantNames.clear()
-      old_org.save(flush: true, failOnError: true)
 
       log.debug("Transferring ${old_variants.size()} variants ..")
-
-      old_variants.each { variant ->
-        new_org.ensureVariantName(variant.variantName, variant.type, variant.locale)
-      }
-
-      new_org.save(flush: true)
 
       // Moving Ids
 
@@ -709,11 +710,17 @@ class OrgService {
         componentUpdateService.updateIdentifiers(new_org, ids_to_add)
       }
 
-      new_org.lastUpdateComment = "Org ${old_org.id} merged"
-      new_org.save(flush: true)
-
       old_org.status = status_deleted
-      old_org.save(flush: true)
+      old_org.save(flush: true, failOnError: true)
+
+      old_variants.each { variant ->
+        new_org.ensureVariantName(variant.variantName, variant.type, variant.locale)
+        new_org = new_org.merge(flush: true, failOnError: true)
+      }
+
+      new_org.ensureVariantName(old_org.name)
+      new_org.lastUpdateComment = "Org ${old_org.id} merged"
+      new_org.save(flush: true, failOnError: true)
     }
     catch (Exception e) {
       log.error("Error merging orgs", e)

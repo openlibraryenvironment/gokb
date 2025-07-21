@@ -1191,8 +1191,7 @@ class WorkflowController{
   def processPlatformReplacement(){
     def result = [
       result: 'OK',
-      old: [],
-      count: 0
+      old: []
     ]
 
     def new_platform = genericOIDService.resolveOID2(params.newplatform)
@@ -1210,9 +1209,19 @@ class WorkflowController{
         result.old << [name: old_platform.name, id: old_platform.id]
 
         def service_result = platformService.merge(old_platform, new_platform)
+
+        result.report = service_result
       }
     }
-    render view: 'platformReplacementResult', model: [result: result]
+
+    withFormat {
+      html {
+        render view: 'platformReplacementResult', model: [result: result]
+      }
+      json {
+        render result as JSON
+      }
+    }
   }
 
   @Transactional

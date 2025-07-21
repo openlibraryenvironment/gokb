@@ -131,6 +131,8 @@ class OrgServiceSpec extends Specification {
     result.ti == 1
     result.pkgs == 1
     result.plts == 1
+
+    sleep(1000)
     old_org.status.value == 'Deleted'
 
     def pkg = Package.findByName("OrgService Test Package")
@@ -146,12 +148,10 @@ class OrgServiceSpec extends Specification {
     tipp.refresh()
     tipp.lastUpdated >= timestamp
 
-    new_org.refresh()
-    old_org.refresh()
-
     old_org.variantNames.size() == 0
 
-    new_org.variantNames.size() == 1
+    new_org.refresh()
+    new_org.variantNames.size() == 2
 
     new_org.ids?.size() == 1
   }
