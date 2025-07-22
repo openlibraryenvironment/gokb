@@ -403,9 +403,7 @@ class PlatformService {
                                                                     ]
                                                                   )[0]
             if (dupes == 0) {
-              ctp.fromComponent = new_platform
-              ctp.save(flush: true)
-
+              connected_item.hostPlatform = new_platform
               connected_item.lastUpdateComment = "Platform cleanup"
               connected_item.save(flush: true)
             }
