@@ -524,8 +524,14 @@ class OrgService {
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     RefdataValue combo_type_pkg_provider = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
 
+    if (!old_provider || !new_provider) {
+      log.error("transferPackages :: Missing value - Old:${old_provider}, New:${new_provider}")
+      result.result = 'ERROR'
+      return result
+    }
+
     if (createNewCombos) {
-      def affected_pkgs = Package.executeQuery('''from Package as p
+      def affected_pkgs = Package.executeQuery('''select p.id from Package as p
                                                   where exists (
                                                     select 1 from Combo as c
                                                     where fromComponent = p
@@ -537,21 +543,27 @@ class OrgService {
                                                     op: old_provider
                                                   ])
 
-      affected_pkgs.each { pobj ->
+      affected_pkgs.each { pid ->
+        Package pobj = Package.findById(pid)
+
         if (pobj.provider == old_provider) {
           pobj.provider = new_provider
+          pobj.save(flush: true, failOnError: true)
         }
 
         if (pobj.broker == old_provider) {
           pobj.broker = new_provider
+          pobj.save(flush: true, failOnError: true)
         }
 
         if (pobj.licensor == old_provider) {
           pobj.licensor = new_provider
+          pobj.save(flush: true, failOnError: true)
         }
 
         if (pobj.vendor == old_provider) {
           pobj.vendor = new_provider
+          pobj.save(flush: true, failOnError: true)
         }
 
         result.transferred++
@@ -598,6 +610,12 @@ class OrgService {
     RefdataValue combo_type_plt_org = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
     def session = sessionFactory.currentSession
 
+    if (!old_org || !new_org) {
+      log.error("mergeDuplicate :: Missing value - Old:${old_provider}, New:${new_provider}")
+      result.result = 'ERROR'
+      return result
+    }
+
     try {
       // transfer publishers & update TIPPs + Packages
 
@@ -625,7 +643,7 @@ class OrgService {
 
           combos_to_update.each { ctu ->
             ctu.toComponent = new_org
-            ctu.save(flush: true)
+            ctu.save(flush: true, failOnError: true)
           }
         }
         else {
@@ -646,7 +664,7 @@ class OrgService {
         result.ti++
 
         ti_obj.lastUpdateComment = "Org cleanup"
-        ti_obj.save(flush: true)
+        ti_obj.save(flush: true, failOnError: true)
 
         titleAugmentService.touchTitleTipps(ti_obj, false)
 

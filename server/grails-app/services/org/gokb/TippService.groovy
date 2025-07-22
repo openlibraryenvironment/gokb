@@ -882,6 +882,7 @@ class TippService {
     def tipp = TitleInstancePackagePlatform.findById(tippId)
 
     if (tipp) {
+      log.debug("Matching TIPP ${tipp.name} ..")
       CuratoryGroup group = groupId ? CuratoryGroup.findById(groupId) : null
       final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
       Package pkg = Package.deproxy(tipp.pkg)
@@ -998,14 +999,14 @@ class TippService {
 
         if (ti) {
           tipp.title = ti
-          tipp.save(flush: true)
+          tipp.save(flush: true, failOnError: true)
 
           if (result.status == 'matched') {
             boolean ti_changed = componentUpdateService.updateIdentifiers(ti, tipp_ids)
 
             if (ti_changed) {
               ti.lastSeen = new Date().getTime()
-              ti.save(flush: true)
+              ti.save(flush: true, failOnError: true)
             }
 
             titleAugmentService.addPublisher(tipp.publisherName, ti)
@@ -1092,7 +1093,7 @@ class TippService {
       title_changed |= titleAugmentService.editMonographFields(ti, mono_string_info)
     }
 
-    ti.save(flush: true)
+    ti.save(flush: true, failOnError: true)
     ti
   }
 

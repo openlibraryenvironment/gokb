@@ -425,10 +425,10 @@ class PlatformService {
         }
 
         def pkg = Package.findById(pid)
-        def old_plt = Platform.executeQuery("select toComponent.id from Combo where type = :cpp and fromComponent = :pkg", [cpp: combo_type_plt_pkg, pkg: pkg])[0]
 
-        if (old_plt == old_platform.id) {
-          pkg.nominalPlatform = new_platform
+        if (pkg.nominalPlatform == old_platform) {
+          Combo.findByFromComponentAndToComponentAndType(pkg, old_platform, combo_type_plt_pkg).delete()
+          new Combo(type: combo_type_plt_pkg, fromComponent: pkg, toComponent: new_platform).save(flush: true, failOnError: true)
         }
 
         pkg.lastUpdateComment = "Platform cleanup"
