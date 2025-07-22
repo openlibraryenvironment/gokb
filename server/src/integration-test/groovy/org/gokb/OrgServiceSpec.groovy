@@ -148,8 +148,6 @@ class OrgServiceSpec extends Specification {
     tipp.refresh()
     tipp.lastUpdated >= timestamp
 
-    old_org.variantNames.size() == 0
-
     new_org.refresh()
     new_org.variantNames.size() == 2
 

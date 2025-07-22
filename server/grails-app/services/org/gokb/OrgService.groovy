@@ -519,6 +519,7 @@ class OrgService {
     result
   }
 
+  @Transactional
   def transferPackages(old_provider, new_provider, boolean createNewCombos = true) {
     def result = [result: 'OK', transferred: 0]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -602,6 +603,7 @@ class OrgService {
     result
   }
 
+  @Transactional
   def mergeDuplicate(old_org, new_org) {
     def result = [result: 'OK', ti: 0, pkgs: 0, plts: 0]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -706,7 +708,7 @@ class OrgService {
 
       old_org.refresh()
 
-      old_org.variantNames.each { vn ->
+      KBComponentVariantName.findAllByOwner(old_org).each { vn ->
         old_variants << [
           id: vn.id,
           variantName: vn.variantName,
@@ -715,8 +717,6 @@ class OrgService {
           status: vn.status
         ]
       }
-
-      old_org.variantNames.clear()
 
       log.debug("Transferring ${old_variants.size()} variants ..")
 
