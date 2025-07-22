@@ -603,7 +603,6 @@ class OrgService {
     result
   }
 
-  @Transactional
   def mergeDuplicate(old_org, new_org) {
     def result = [result: 'OK', ti: 0, pkgs: 0, plts: 0]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -725,7 +724,9 @@ class OrgService {
       if (old_org.ids.size() > 0 && new_org.ids?.size() == 0) {
         def ids_to_add = old_org.activeIdInfo
 
-        componentUpdateService.updateIdentifiers(new_org, ids_to_add)
+        Org.withTransaction {
+          componentUpdateService.updateIdentifiers(new_org, ids_to_add)
+        }
       }
 
       old_org.status = status_deleted
