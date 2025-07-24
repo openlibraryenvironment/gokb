@@ -1030,7 +1030,20 @@ class TippService {
               ti.save(flush: true, failOnError: true)
             }
 
-            titleAugmentService.addPublisher(tipp.publisherName, ti)
+            if (!ti.currentPublisher) {
+              titleAugmentService.addPublisher(tipp.publisherName, ti)
+            }
+
+            if (title_class_name == 'org.gokb.cred.BookInstance') {
+              def mono_string_info = [
+                editionStatement: tipp.editionStatement,
+                volumeNumber    : tipp.volumeNumber,
+                firstAuthor     : tipp.firstAuthor,
+                firstEditor     : tipp.firstEditor
+              ]
+
+              ti_changed |= titleAugmentService.editMonographFields(ti, mono_string_info, true)
+            }
           }
 
           tipp.lastSeen = System.currentTimeMillis()
@@ -1096,19 +1109,15 @@ class TippService {
         'medium', 'language'
     ], tipp, ti)
 
-    def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(dateFormatService.formatDate(tipp.dateFirstInPrint)) : null
-    def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(dateFormatService.formatDate(tipp.dateFirstOnline)) : null
-
-    title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
-    title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
-
     if (title_class_name == 'org.gokb.cred.BookInstance') {
       log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
       def mono_string_info = [
         editionStatement: tipp.editionStatement,
         volumeNumber    : tipp.volumeNumber,
         firstAuthor     : tipp.firstAuthor,
-        firstEditor     : tipp.firstEditor
+        firstEditor     : tipp.firstEditor,
+        dateFirstInPrint: tipp.dateFirstInPrint,
+        dateFirstOnline : tipp.dateFirstOnline
       ]
 
       title_changed |= titleAugmentService.editMonographFields(ti, mono_string_info)
