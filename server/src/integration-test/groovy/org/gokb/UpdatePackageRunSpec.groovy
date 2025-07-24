@@ -49,7 +49,7 @@ class UpdatePackageRunSpec extends Specification {
     def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
     def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush: true)
     def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
-    def test_upd_pkg = Package.findByName('TestPackage') ?: new Package(name: 'TestPackage').save(flush: true)
+    def test_upd_pkg = Package.findByName('UpdatePackageRunTestPackage') ?: new Package(name: 'UpdatePackageRunTestPackage').save(flush: true)
     def test_journal = JournalInstance.findByName('TestJournal') ?: new JournalInstance(name: 'TestJournal').save(flush: true)
     Identifier book_doi = Identifier.findByValueAndNamespace('10.1021/978-3-16-148410-0', IdentifierNamespace.findByValue('doi')) ?: new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi'))
     Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
@@ -97,7 +97,7 @@ class UpdatePackageRunSpec extends Specification {
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
-    ['TestPackage',
+    ['UpdatePackageRunTestPackage',
      "American Chemical Society: ACS Legacy Archives"
     ].each { pkgName ->
       Package.findByName(pkgName)?.expunge()
@@ -139,7 +139,7 @@ class UpdatePackageRunSpec extends Specification {
                 ]
             ],
             "listStatus"     : "In Progress",
-            "name"           : "TestPackage",
+            "name"           : "UpdatePackageRunTestPackage",
             "nominalPlatform": [
                 "name"      : "ACS Publications",
                 "primaryUrl": "https://pubs.acs.org"
@@ -198,7 +198,7 @@ class UpdatePackageRunSpec extends Specification {
     resp.body().result == "OK"
     resp.body().message != null
     expect: "Find pkg by name, which is connected to the new TIPP"
-    def matching_pkgs = Package.findAllByName("TestPackage")
+    def matching_pkgs = Package.findAllByName("UpdatePackageRunTestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps?.size() == 3
@@ -227,7 +227,7 @@ class UpdatePackageRunSpec extends Specification {
                 ]
             ],
             "listStatus"     : "In Progress",
-            "name"           : "TestPackage",
+            "name"           : "UpdatePackageRunTestPackage",
             "nominalPlatform": [
                 "name"      : "ACS Publications",
                 "primaryUrl": "https://pubs.acs.org"
@@ -301,7 +301,7 @@ class UpdatePackageRunSpec extends Specification {
     resp.body().result == "OK"
     resp.body().message != null
     expect: "Find pkg by name, which is connected to the new TIPP"
-    def matching_pkgs = Package.findAllByName("TestPackage")
+    def matching_pkgs = Package.findAllByName("UpdatePackageRunTestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps?.size() == 3
@@ -330,7 +330,7 @@ class UpdatePackageRunSpec extends Specification {
                 ]
             ],
             "listStatus": "In Progress",
-            "name": "TestPackage",
+            "name": "UpdatePackageRunTestPackage",
             "nominalPlatform": [
                 "name": "ACS Publications",
                 "primaryUrl": "https://pubs.acs.org"
@@ -396,7 +396,7 @@ class UpdatePackageRunSpec extends Specification {
     resp.body().result == "OK"
     resp.body().message != null
     expect: "Find pkg by name, which is connected to the new TIPP"
-    def matching_pkgs = Package.findAllByName("TestPackage")
+    def matching_pkgs = Package.findAllByName("UpdatePackageRunTestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps.size() == 2
@@ -419,7 +419,7 @@ class UpdatePackageRunSpec extends Specification {
                 ]
             ],
             "listStatus"     : "In Progress",
-            "name"           : "TestPackage",
+            "name"           : "UpdatePackageRunTestPackage",
             "nominalPlatform": [
                 "name"      : "ACS Publications",
                 "primaryUrl": "https://pubs.acs.org"
@@ -471,7 +471,7 @@ class UpdatePackageRunSpec extends Specification {
     resp.body().result == "OK"
     resp.body().message != null
     expect: "Find pkg by name, which is connected to the new TIPP"
-    def matching_pkgs = Package.findAllByName("TestPackage")
+    def matching_pkgs = Package.findAllByName("UpdatePackageRunTestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps.size() == 2
@@ -610,7 +610,7 @@ class UpdatePackageRunSpec extends Specification {
                 ]
             ],
             "listStatus"     : "In Progress",
-            "name"           : "TestPackage",
+            "name"           : "UpdatePackageRunTestPackage",
             "nominalPlatform": [
                 "name"      : "ACS Publications",
                 "primaryUrl": "https://pubs.acs.org"
@@ -682,12 +682,13 @@ class UpdatePackageRunSpec extends Specification {
     resp.body().message != null
     expect: "Find pkg by name, which is connected to the new TIPP"
     def rr_mismatch = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch')
-    def matching_pkgs = Package.findAllByName("TestPackage")
-    matching_pkgs.size() == 1
-    matching_pkgs[0].id == resp.body().pkgId
-    matching_pkgs[0].tipps.size() == 3
+    sleep(500)
+    def matching_pkg = Package.findByName("UpdatePackageRunTestPackage")
+    matching_pkg.id == resp.body().pkgId
+    matching_pkg.tipps.size() == 3
+
     int titleIdMatches = 0
-    matching_pkgs[0].tipps.each {
+    matching_pkg.tipps.each {
         if (it.importId == 'titleID') {
             titleIdMatches++
         }

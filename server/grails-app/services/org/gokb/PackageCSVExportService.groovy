@@ -232,7 +232,7 @@ class PackageCSVExportService {
                                                 order by tipp.id'''
 
 
-              def query = session.createQuery(selectiveUpdate ? qry_string_selective : qry_string_full)
+              def query = session.createQuery(selectiveUpdate ? qry_string_selective : qry_string_full, Long)
               query.setReadOnly(true)
               query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
               query.setParameter('ct', combo_tipps)
@@ -490,7 +490,7 @@ class PackageCSVExportService {
                                       and c.type = :ct
                                       and tipp.lastUpdated > :ts
                                       order by tipp.id'''
-            def query = session.createQuery(selectiveUpdate ? qry_string_selective : qry_string_full)
+            def query = session.createQuery(selectiveUpdate ? qry_string_selective : qry_string_full, Long)
 
             query.setReadOnly(true)
             query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)

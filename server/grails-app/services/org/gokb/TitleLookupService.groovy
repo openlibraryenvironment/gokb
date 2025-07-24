@@ -351,7 +351,7 @@ class TitleLookupService {
             log.debug("Found new Title ${metadata.title} for previously unknown title ${matches[0]} (${matches[0].name})")
             title_match.warnings.add('title_placeholder')
           } else {
-            if (matches[0].name.equals(title) || matches[0].normname?.equals(KBComponent.generateNormname(title))) {
+            if (!title || matches[0].name.equals(title) || matches[0].normname?.equals(KBComponent.generateNormname(title))) {
               log.debug("Matched title has a similar name.")
             } else {
               title_match.warnings << [

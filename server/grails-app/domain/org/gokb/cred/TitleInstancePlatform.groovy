@@ -43,7 +43,6 @@ class TitleInstancePlatform extends KBComponent {
 	return "TIPL";
   }
 
-  @Transient
   public static def ensure(title, platform, url) {
     if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
       def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')

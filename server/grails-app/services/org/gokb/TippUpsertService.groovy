@@ -45,7 +45,7 @@ class TippUpsertService {
         RefdataValue ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
         new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
 
-        TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
+        tippService.ensureTipl(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
       }
     }
     else {
@@ -210,7 +210,7 @@ class TippUpsertService {
         }
       }
       else if (ti) {
-        TitleInstancePlatform.ensure(ti, plt, trimmed_url)
+        tippService.ensureTipl(ti, plt, trimmed_url)
       }
     }
 

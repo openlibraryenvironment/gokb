@@ -31,7 +31,7 @@ class CleanupServiceSpec extends Specification {
     def cleanupHistoryPlatform = Platform.findByName("CleanupHistoryPlatform") ?: new Platform(name: "CleanupHistoryPlatform").save(flush: true, failOnError: true)
     def url_doi = Identifier.findByValue('http://doi.org/10.23242/354-234234-233-23') ?: new Identifier(value: 'http://doi.org/10.23242/354-234234-233-23', namespace: IdentifierNamespace.findByValue('doi')).save(flush: true, validate: false)
 
-    tippActive = TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp") ?: new TitleInstancePackagePlatform(name: "CleanupHistoryTestTipp").save(flush: true, failOnError: true)
+    tippActive = TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp") ?: new TitleInstancePackagePlatform(name: "CleanupHistoryTestTipp", url: "http://tets-url.com/testcleanup").save(flush: true, failOnError: true)
 
     if (tippActive.pkg == null) {
       tippActive.pkg = cleanupHistoryPackage
@@ -86,5 +86,12 @@ class CleanupServiceSpec extends Specification {
     then:
     result == 1
     Identifier.findByValue('10.23242/354-234234-233-23') != null
+  }
+
+  void "test ensureTipls"() {
+    when:
+    def result = cleanupService.ensureTipls()
+    then:
+    result.new_tipls == 1
   }
 }

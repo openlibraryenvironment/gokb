@@ -1,6 +1,7 @@
 package org.gokb
 
 import com.k_int.ClassUtils
+import com.k_int.ConcurrencyManagerService.Job
 
 import grails.gorm.transactions.Transactional
 
@@ -13,6 +14,8 @@ class OrgService {
   def FTUpdateService
   def restMappingService
   def componentUpdateService
+  def titleAugmentService
+  def sessionFactory
 
   def restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}");
@@ -512,6 +515,277 @@ class OrgService {
 
     if (result.changed) {
       org.save(flush: true, failOnError: true)
+    }
+
+    result
+  }
+
+  def transferPackages(old_provider, new_provider, boolean createNewCombos = true) {
+    def result = [result: 'OK', transferred: 0]
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue combo_type_pkg_provider = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
+    def session = sessionFactory.currentSession
+
+    if (!old_provider || !new_provider) {
+      log.error("transferPackages :: Missing value - Old:${old_provider}, New:${new_provider}")
+      result.result = 'ERROR'
+      return result
+    }
+
+    if (createNewCombos) {
+      def affected_pkgs = Package.executeQuery('''select p.id from Package as p
+                                                  where exists (
+                                                    select 1 from Combo as c
+                                                    where fromComponent = p
+                                                    and fromComponent.status != :sd
+                                                    and toComponent = :op
+                                                  )''',
+                                                  [
+                                                    sd: status_deleted,
+                                                    op: old_provider
+                                                  ])
+
+      affected_pkgs.each { pid ->
+        new_provider.refresh()
+        Package pobj = Package.findById(pid)
+
+        if (pobj.provider == old_provider) {
+          pobj.provider = new_provider
+        }
+
+        if (pobj.broker == old_provider) {
+          pobj.broker = new_provider
+        }
+
+        if (pobj.licensor == old_provider) {
+          pobj.licensor = new_provider
+        }
+
+        if (pobj.vendor == old_provider) {
+          pobj.vendor = new_provider
+        }
+
+        result.transferred++
+
+        pobj.save(flush: true, failOnError: true)
+      }
+    }
+    else {
+      def affected_pkg_combos = Combo.executeQuery('''select id from Combo as c
+                                                      where exists (
+                                                        select 1 from Package as p
+                                                        where p.id = c.fromComponent.id
+                                                        and p.status != :sd
+                                                      )
+                                                      and toComponent = :op''',
+                                                      [
+                                                        sd: status_deleted,
+                                                        op: old_provider
+                                                      ])
+
+
+      affected_pkg_combos.each { cttid ->
+        Combo cobj = Combo.get(cttid)
+        def pkg_obj = cobj.fromComponent
+
+        cobj.toComponent = new_provider
+        cobj.save(flush: true, failOnError: true)
+
+        pkg_obj.lastUpdateComment = "Link Transfer for '${cobj.type.value}'"
+        pkg_obj.save(flush: true, failOnError: true)
+
+        result.transferred++
+      }
+    }
+
+    result
+  }
+
+  def mergeDuplicate(old_org_id, new_org_id, Job j = null) {
+    def result = null
+    boolean new_session = false
+
+    try {
+      def session = sessionFactory.currentSession
+    }
+    catch (Exception e) {
+      new_session = true
+    }
+
+    if (new_session) {
+      Platform.withNewSession {
+        result = processMergeDuplicate(old_org_id, new_org_id, j)
+      }
+    }
+    else {
+      result = processMergeDuplicate(old_org_id, new_org_id, j)
+    }
+  }
+
+  private def processMergeDuplicate(old_org_id, new_org_id, Job j = null) {
+    def result = [result: 'OK', ti: 0, pkgs: 0, plts: 0]
+    def session = sessionFactory.currentSession
+
+    Org old_org = Org.findById(old_org_id)
+    Org new_org = Org.findById(new_org_id)
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue combo_type_ti_org = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+    RefdataValue combo_type_plt_org = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
+    boolean cancelled = false
+
+    if (!old_org || !new_org) {
+      log.error("mergeDuplicate :: Missing value - Old:${old_org}, New:${new_org}")
+      result.result = 'ERROR'
+      result.message = "Unable to lookup org(s): ${old_org_id} -> ${old_org} -- ${new_org_id} -> ${new_org}!"
+      return result
+    }
+
+    try {
+      // transfer publishers & update TIPPs + Packages
+      def affected_ti_ids = TitleInstance.executeQuery('''select ti.id from TitleInstance as ti
+                                                          where exists (
+                                                            select 1 from Combo
+                                                            where fromComponent = ti
+                                                            and toComponent = :op
+                                                            and type = :cttp
+                                                          )
+                                                          and status != :sd''',
+                                                          [
+                                                            op: old_org,
+                                                            cttp: combo_type_ti_org,
+                                                            sd: status_deleted
+                                                          ])
+
+      j?.message("Processing ${affected_ti_ids.size()} published titles ..")
+
+      for (tid in affected_ti_ids) {
+        def ti_obj = TitleInstance.get(tid)
+
+        def dupes = Combo.executeQuery("select count(*) from Combo where fromComponent = :ti and toComponent = :np", [ti: ti_obj, np: new_org])[0]
+
+        if (dupes == 0) {
+          def combos_to_update = Combo.findAllByFromComponentAndToComponentAndType(ti_obj, old_org, combo_type_ti_org)
+
+          combos_to_update.each { ctu ->
+            ctu.toComponent = new_org
+            ctu.save(flush: true, failOnError: true)
+          }
+        }
+        else {
+          log.debug("Found dupes, deleting old combos ..")
+
+          def combos_deleted = Combo.executeUpdate('''delete from Combo
+                                                      where fromComponent = :ti
+                                                      and toComponent = :op
+                                                      and type = :cttp
+                                                    ''',
+                                                    [
+                                                      ti: ti_obj,
+                                                      op: old_org,
+                                                      cttp: combo_type_ti_org
+                                                    ])
+        }
+
+        result.ti++
+        j?.setProgress(result.ti, affected_ti_ids.size() + 50)
+
+        ti_obj.lastUpdateComment = "Org cleanup"
+        ti_obj.save(flush: true, failOnError: true)
+
+        titleAugmentService.touchTitleTipps(ti_obj, false)
+
+        if (result.ti % 50 == 0) {
+          session.flush()
+          session.clear()
+        }
+
+        if (Thread.currentThread().isInterrupted() || j?.isCancelled()){
+          log.debug("Job is cancelled ..")
+          cancelled = true
+          break
+        }
+      }
+
+      if (cancelled) {
+        result.result = 'CANCELLED'
+        return result
+      }
+
+      result.pkgs = transferPackages(old_org, new_org).transferred
+
+      // Transfer Platforms
+
+      def affected_platform_ids = Platform.executeQuery('''select p.id from Platform as p
+                                                            where exists (
+                                                              select 1 from Combo
+                                                              where fromComponent = p
+                                                              and toComponent = :op
+                                                              and type = :ctpp
+                                                            )
+                                                            and status != :sd''',
+                                                            [
+                                                              op: old_org,
+                                                              ctpp: combo_type_plt_org,
+                                                              sd: status_deleted
+                                                            ])
+
+      affected_platform_ids.each { plid ->
+        def plt = Platform.get(plid)
+        plt.provider = new_org
+        plt.save(flush: true, failOnError: true)
+
+        result.plts++
+      }
+
+      // Moving variantNames
+
+      def old_variants = []
+
+      old_org.refresh()
+
+      KBComponentVariantName.findAllByOwner(old_org).each { vn ->
+        old_variants << [
+          id: vn.id,
+          variantName: vn.variantName,
+          locale: vn.locale,
+          type: vn.variantType,
+          status: vn.status
+        ]
+      }
+
+      log.debug("Transferring ${old_variants.size()} variants ..")
+
+      // Moving Ids
+
+      if (old_org.ids.size() > 0 && new_org.ids?.size() == 0) {
+        def ids_to_add = old_org.activeIdInfo
+
+        Org.withTransaction {
+          componentUpdateService.updateIdentifiers(new_org, ids_to_add)
+        }
+      }
+
+      old_org.status = status_deleted
+      old_org.save(flush: true, failOnError: true)
+
+      old_variants.each { variant ->
+        new_org.ensureVariantName(variant.variantName, variant.type, variant.locale)
+        new_org = new_org.merge(flush: true, failOnError: true)
+      }
+
+      new_org.ensureVariantName(old_org.name)
+      new_org.lastUpdateComment = "Org ${old_org.id} merged"
+      new_org.save(flush: true, failOnError: true)
+
+      if (j) {
+        j.setProgress(100)
+        j.endTime = new Date()
+      }
+    }
+    catch (Exception e) {
+      result.result = 'ERROR'
+      log.error("Error merging orgs", e)
     }
 
     result

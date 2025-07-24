@@ -14,19 +14,18 @@
 				<h3>Process result:</h3>
 			<ul>
 				<li>${result['count']} TIPPs have successfully been updated to platform ${result['new']}.</li>
-				<li> The following platforms have been retired:
+				<li> The following platforms have been merged and deleted:
 					<ul>
 						<g:each in="${result['old']}" var="o">
-						<li>${o}</li>
+							<li><g:link controller="resource" action="show" id="org.gokb.cred.Platform:${o.id}">[${o.id}] - ${o.name}</g:link></li>
 						</g:each>
 
 					</ul>
 				</li>
-			</ul>									
+			</ul>
 			</div>
 		</div>
 </body>
 
 
 </html>
-
