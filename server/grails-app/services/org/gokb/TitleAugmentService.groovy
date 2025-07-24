@@ -560,15 +560,30 @@ class TitleAugmentService {
       }
     }
 
-    def dfip = GOKbTextUtils.completeDateString(updatedInfo.dateFirstInPrint)
 
     if (!onlyNew || !ti.dateFirstInPrint) {
+      def dfip = null
+
+      if (updatedInfo.dateFirstInPrint instanceof Date) {
+        dfip = updatedInfo.dateFirstInPrint
+      }
+      else {
+        dfip = GOKbTextUtils.completeDateString(updatedInfo.dateFirstInPrint)
+      }
+
       book_changed |= ClassUtils.setDateIfPresent(dfip, ti, 'dateFirstInPrint')
     }
 
-    def dfo = GOKbTextUtils.completeDateString(updatedInfo.dateFirstOnline, false)
-
     if (!onlyNew || !ti.dateFirstOnline) {
+      def dfo = null
+
+      if (updatedInfo.dateFirstOnline instanceof Date) {
+        dfo = updatedInfo.dateFirstOnline
+      }
+      else {
+        dfo = GOKbTextUtils.completeDateString(updatedInfo.dateFirstOnline, false)
+      }
+
       book_changed |= ClassUtils.setDateIfPresent(dfo, ti, 'dateFirstOnline')
     }
 
