@@ -1188,29 +1188,50 @@ class WorkflowController{
   }
 
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
-  def processPlatformReplacement(){
+  def processPlatformReplacement() {
     def result = [
       result: 'OK',
       old: []
     ]
+    def user = springSecurityService.currentUser
 
     def new_platform = genericOIDService.resolveOID2(params.newplatform)
     result.target = [name: new_platform.name, id: new_platform.id]
 
-    params.each{ p ->
-      log.debug("Testing ${p.key}")
+    def active_platform_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
+    def active_org_jobs = concurrencyManagerService.getActiveJobsForType('Admin Org Merge')
 
-      if ((p.key.startsWith('tt')) && (p.value) && (p.value instanceof String)){
-        def tt = p.key.substring(3)
-        log.debug("Platform to replace: '${tt}'")
-        def old_platform = Platform.get(tt)
+    if (active_platform_jobs || active_org_jobs) {
+      result.result = 'ERROR'
+      result.message = "There is an existing merge job running."
+      flash.error = "There is an existing merge job running."
+    }
+    else {
+      params.each{ p ->
+        log.debug("Testing ${p.key}")
 
-        log.debug("old: ${old_platform} new: ${new_platform}")
-        result.old << [name: old_platform.name, id: old_platform.id]
+        if ((p.key.startsWith('tt')) && (p.value) && (p.value instanceof String)){
+          def tt = p.key.substring(3)
+          log.debug("Platform to replace: '${tt}'")
+          def old_platform = Platform.get(tt)
 
-        def service_result = platformService.merge(old_platform, new_platform)
+          log.debug("old: ${old_platform} new: ${new_platform}")
+          result.old << [name: old_platform.name, id: old_platform.id]
 
-        result.report = service_result
+
+          Job background_job = concurrencyManagerService.createJob { Job job ->
+            platformService.merge(old_platform.id, new_platform.id, job)
+          }
+
+          background_job.ownerId = user?.id ?: null
+          background_job.description = "Platform merge ${old_platform} into ${new_platform}".toString()
+          background_job.type = RefdataCategory.lookup('Job.Type', 'Admin Platform Merge')
+          background_job.message("Start merging ${old_platform} -> ${new_platform}".toString())
+          background_job.startOrQueue()
+          background_job.startTime = new Date()
+
+          result.job_id = background_job.uuid
+        }
       }
     }
 
@@ -1767,37 +1788,58 @@ class WorkflowController{
   def deprecateOrg(){
     def result = [result: 'OK']
     def errors = []
+    def user = springSecurityService.currentUser
 
     if (params.orgsToDeprecate && params.neworg) {
       def orgs = params.list('orgsToDeprecate')
       def new_org = genericOIDService.resolveOID2(params.neworg)
 
-      orgs.each { org_id ->
-        def old_org = Org.get(org_id)
+      def active_platform_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
+      def active_org_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
 
-        if (old_org && new_org) {
-          def merge_result = orgService.mergeDuplicate(old_org, new_org)
-
-          if (merge_result.result == 'ERROR') {
-            result.result = 'ERROR'
-            errors << "${old_org}"
-          }
-        }
-        else{
-          result.result = 'ERROR'
-          errors << "${org_id}"
-        }
-      }
-
-      if (result.result == 'OK') {
-        flash.success = "Org Merge Complete!".toString()
+      if (active_platform_jobs || active_org_jobs) {
+        result.result = 'ERROR'
+        result.message = "There is an existing Org merge job running."
+        flash.errors = "There is an existing Org merge job running."
       }
       else {
-        flash.errors = "Org Deprecation Failed for ${errors}!".toString()
-      }
+        orgs.each { org_id ->
+          def old_org = Org.get(org_id)
 
-      redirect(controller: 'resource', action: 'show', id: "${new_org.class.name}:${new_org.id}")
+          if (old_org && new_org) {
+            Job background_job = concurrencyManagerService.createJob { Job job ->
+              orgService.mergeDuplicate(old_org.id, new_org.id, job)
+            }
+
+            background_job.ownerId = user?.id ?: null
+            background_job.description = "Org merge ${old_org} into ${new_org}".toString()
+            background_job.type = RefdataCategory.lookup('Job.Type', 'Admin Org Merge')
+            background_job.message("Start merging ${old_org} -> ${new_org}".toString())
+            background_job.startOrQueue()
+            background_job.startTime = new Date()
+
+            result.job_id = background_job.uuid
+          }
+          else{
+            result.result = 'ERROR'
+            errors << "${org_id}"
+          }
+        }
+
+        if (result.result == 'OK') {
+          flash.success = "Org merge started! Check admin jobs view for result.".toString()
+        }
+        else {
+          flash.errors = "Org deprecation failed for ${errors}!".toString()
+        }
+      }
     }
+    else {
+      result.result = 'ERROR'
+      flash.errors = "Missing selection!".toString()
+    }
+
+    redirect(controller: 'resource', action: 'show', id: "${params.neworg}")
   }
 
   @Transactional

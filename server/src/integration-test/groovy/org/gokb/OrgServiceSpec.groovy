@@ -125,7 +125,7 @@ class OrgServiceSpec extends Specification {
     def timestamp = new Date()
     when:
     sleep(1000)
-    def result = orgService.mergeDuplicate(old_org, new_org)
+    def result = orgService.mergeDuplicate(old_org.id, new_org.id)
     then:
     result.result == 'OK'
     result.ti == 1

@@ -89,7 +89,7 @@ class PlatformServiceSpec extends Specification {
     def old_plt = Platform.findByName("PlatformService Test Platform Merge Old")
     def new_plt = Platform.findByName("PlatformService Test Platform Merge New")
     when:
-    def result = platformService.merge(old_plt, new_plt)
+    def result = platformService.merge(old_plt.id, new_plt.id)
     then:
     result.result == 'OK'
     result.tipps == 1

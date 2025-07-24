@@ -17,7 +17,7 @@
 				<li> The following platforms have been merged and deleted:
 					<ul>
 						<g:each in="${result['old']}" var="o">
-							<li><g:link controller="resource" action="show" id="org.gokb.cred.Org:${o.id}">[${o.id}] - ${o.name}</g:link></li>
+							<li><g:link controller="resource" action="show" id="org.gokb.cred.Platform:${o.id}">[${o.id}] - ${o.name}</g:link></li>
 						</g:each>
 
 					</ul>

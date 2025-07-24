@@ -928,9 +928,30 @@ class TippService {
           log.debug("Skipping Invalid..")
         }
         else if (found.to_create == true) {
-          log.debug("No existing title matched, creating ${tipp.name}")
-          ti = createTitleFromTippData(tipp, tipp_ids)
-          result.status = 'created'
+          if (tipp.name) {
+            log.debug("No existing title matched, creating ${tipp.name}")
+            ti = createTitleFromTippData(tipp, tipp_ids)
+            result.status = 'created'
+          }
+          else if (found.matches.size() == 0) {
+            log.warn("No name for unmatched tipp ${tipp} ..")
+            RefdataValue type_mtn = RefdataCategory.lookup('ReviewRequest.StdDesc', "Missing TIPP Name")
+
+            def existing_mtn = ReviewRequest.findByStdDescAndComponentToReview(type_mtn, tipp)
+
+            if (existing_mtn.size() == 0) {
+              def review = reviewRequestService.raise(
+                tipp,
+                "The TIPP could not be linked to an existing title, and cannot create a new one due to a missing name!",
+                "Supply a name for the TIPP or delete it.",
+                null,
+                null,
+                null,
+                type_mtn,
+                componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
+              )
+            }
+          }
         }
         else if (found.matches.size() == 1) {
           // exactly one match

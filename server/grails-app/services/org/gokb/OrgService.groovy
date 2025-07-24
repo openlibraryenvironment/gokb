@@ -1,6 +1,7 @@
 package org.gokb
 
 import com.k_int.ClassUtils
+import com.k_int.ConcurrencyManagerService.Job
 
 import grails.gorm.transactions.Transactional
 
@@ -519,11 +520,11 @@ class OrgService {
     result
   }
 
-  @Transactional
   def transferPackages(old_provider, new_provider, boolean createNewCombos = true) {
     def result = [result: 'OK', transferred: 0]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     RefdataValue combo_type_pkg_provider = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
+    def session = sessionFactory.currentSession
 
     if (!old_provider || !new_provider) {
       log.error("transferPackages :: Missing value - Old:${old_provider}, New:${new_provider}")
@@ -545,26 +546,23 @@ class OrgService {
                                                   ])
 
       affected_pkgs.each { pid ->
+        new_provider.refresh()
         Package pobj = Package.findById(pid)
 
         if (pobj.provider == old_provider) {
           pobj.provider = new_provider
-          pobj.save(flush: true, failOnError: true)
         }
 
         if (pobj.broker == old_provider) {
           pobj.broker = new_provider
-          pobj.save(flush: true, failOnError: true)
         }
 
         if (pobj.licensor == old_provider) {
           pobj.licensor = new_provider
-          pobj.save(flush: true, failOnError: true)
         }
 
         if (pobj.vendor == old_provider) {
           pobj.vendor = new_provider
-          pobj.save(flush: true, failOnError: true)
         }
 
         result.transferred++
@@ -603,23 +601,48 @@ class OrgService {
     result
   }
 
-  def mergeDuplicate(old_org, new_org) {
+  def mergeDuplicate(old_org_id, new_org_id, Job j = null) {
+    def result = null
+    boolean new_session = false
+
+    try {
+      def session = sessionFactory.currentSession
+    }
+    catch (Exception e) {
+      new_session = true
+    }
+
+    if (new_session) {
+      Platform.withNewSession {
+        result = processMergeDuplicate(old_org_id, new_org_id, j)
+      }
+    }
+    else {
+      result = processMergeDuplicate(old_org_id, new_org_id, j)
+    }
+  }
+
+  private def processMergeDuplicate(old_org_id, new_org_id, Job j = null) {
     def result = [result: 'OK', ti: 0, pkgs: 0, plts: 0]
+    def session = sessionFactory.currentSession
+
+    Org old_org = Org.findById(old_org_id)
+    Org new_org = Org.findById(new_org_id)
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue combo_type_ti_org = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
     RefdataValue combo_type_plt_org = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
-    def session = sessionFactory.currentSession
+    boolean cancelled = false
 
     if (!old_org || !new_org) {
-      log.error("mergeDuplicate :: Missing value - Old:${old_provider}, New:${new_provider}")
+      log.error("mergeDuplicate :: Missing value - Old:${old_org}, New:${new_org}")
       result.result = 'ERROR'
+      result.message = "Unable to lookup org(s): ${old_org_id} -> ${old_org} -- ${new_org_id} -> ${new_org}!"
       return result
     }
 
     try {
       // transfer publishers & update TIPPs + Packages
-
       def affected_ti_ids = TitleInstance.executeQuery('''select ti.id from TitleInstance as ti
                                                           where exists (
                                                             select 1 from Combo
@@ -634,7 +657,9 @@ class OrgService {
                                                             sd: status_deleted
                                                           ])
 
-      affected_ti_ids.each { tid ->
+      j?.message("Processing ${affected_ti_ids.size()} published titles ..")
+
+      for (tid in affected_ti_ids) {
         def ti_obj = TitleInstance.get(tid)
 
         def dupes = Combo.executeQuery("select count(*) from Combo where fromComponent = :ti and toComponent = :np", [ti: ti_obj, np: new_org])[0]
@@ -663,6 +688,7 @@ class OrgService {
         }
 
         result.ti++
+        j?.setProgress(result.ti, affected_ti_ids.size() + 50)
 
         ti_obj.lastUpdateComment = "Org cleanup"
         ti_obj.save(flush: true, failOnError: true)
@@ -673,6 +699,17 @@ class OrgService {
           session.flush()
           session.clear()
         }
+
+        if (Thread.currentThread().isInterrupted() || j?.isCancelled()){
+          log.debug("Job is cancelled ..")
+          cancelled = true
+          break
+        }
+      }
+
+      if (cancelled) {
+        result.result = 'CANCELLED'
+        return result
       }
 
       result.pkgs = transferPackages(old_org, new_org).transferred
@@ -740,8 +777,14 @@ class OrgService {
       new_org.ensureVariantName(old_org.name)
       new_org.lastUpdateComment = "Org ${old_org.id} merged"
       new_org.save(flush: true, failOnError: true)
+
+      if (j) {
+        j.setProgress(100)
+        j.endTime = new Date()
+      }
     }
     catch (Exception e) {
+      result.result = 'ERROR'
       log.error("Error merging orgs", e)
     }
 
