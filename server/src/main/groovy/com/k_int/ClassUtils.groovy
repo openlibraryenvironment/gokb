@@ -42,6 +42,11 @@ class ClassUtils {
   public static boolean setDateIfPresent(def value, obj, prop) {
     LocalDateTime ldt = null
 
+    if (value instanceof Date) {
+      obj[prop] = value
+      return true
+    }
+
     if (value && value.toString().trim()) {
       if (value instanceof LocalDateTime) {
         ldt = value

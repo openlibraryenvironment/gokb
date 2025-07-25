@@ -29,13 +29,16 @@ class CleanupServiceSpec extends Specification {
 
     def cleanupHistoryPackage = Package.findByName("CleanupHistoryPackage") ?: new Package(name: "CleanupHistoryPackage").save(flush: true, failOnError: true)
     def cleanupHistoryPlatform = Platform.findByName("CleanupHistoryPlatform") ?: new Platform(name: "CleanupHistoryPlatform").save(flush: true, failOnError: true)
+    def url_doi = Identifier.findByValue('http://doi.org/10.23242/354-234234-233-23') ?: new Identifier(value: 'http://doi.org/10.23242/354-234234-233-23', namespace: IdentifierNamespace.findByValue('doi')).save(flush: true, validate: false)
 
-    tippActive = TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp") ?: new TitleInstancePackagePlatform(name: "CleanupHistoryTestTipp").save(flush: true, failOnError: true)
+    tippActive = TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp") ?: new TitleInstancePackagePlatform(name: "CleanupHistoryTestTipp", url: "http://tets-url.com/testcleanup").save(flush: true, failOnError: true)
 
     if (tippActive.pkg == null) {
       tippActive.pkg = cleanupHistoryPackage
       tippActive.hostPlatform = cleanupHistoryPlatform
       tippActive.title = titleOne
+      tippActive.ids << url_doi
+
       tippActive.save(flush: true, failOnError: true)
     }
 
@@ -58,6 +61,8 @@ class CleanupServiceSpec extends Specification {
     TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp")?.refresh().expunge()
     JournalInstance.findByName("CleanupHistoryTestTitleOne")?.expunge()
     JournalInstance.findByName("CleanupHistoryTestTitleTwo")?.expunge()
+    Identifier.findByValue('http://doi.org/10.23242/354-234234-233-23')?.expunge()
+    Identifier.findByValue('10.23242/354-234234-233-23')?.expunge()
   }
 
   void "test deleteOrphanedHistoryEvents"() {
@@ -73,5 +78,20 @@ class CleanupServiceSpec extends Specification {
     titleOne.titleHistory.size() == 0
     tippActive.lastUpdated > eventDate
     titleOne.lastUpdated > eventDate
+  }
+
+  void "test fixDoiUrlIds"() {
+    when:
+    def result = cleanupService.fixDoiUrlIds()
+    then:
+    result == 1
+    Identifier.findByValue('10.23242/354-234234-233-23') != null
+  }
+
+  void "test ensureTipls"() {
+    when:
+    def result = cleanupService.ensureTipls()
+    then:
+    result.new_tipls == 1
   }
 }

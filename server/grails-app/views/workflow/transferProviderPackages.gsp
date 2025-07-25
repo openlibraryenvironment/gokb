@@ -4,25 +4,24 @@
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-<title>GOKB: Deprecate Org</title>
+<title>GOKB: Transfer Org Packages</title>
 </head>
 <body>
 
-  <h1 class="page-header">Deprecate Org</h1>
+  <h1 class="page-header">Transfer Org Packages</h1>
 
-  <g:if test='${flash.message}'>
-    <div class='well'>${flash.message}</div>
-  </g:if>
 
   <div id="mainarea" class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">Remove ALL Org Links</h3>
-      <p> This action will remove this Org from all associated titles, packages etc. and leave those links empty. This may break components that are linked with this Org until now. </p>
+      <h3 class="panel-title">Step 1 of 1</h3>
+      <p>
+        This action will replace the existing Provider in all associated packages with the new Provider selection
+      </p>
     </div>
     <div class="panel-body">
-      <g:form name="DeprecateOrg" controller="workflow" action="deprecateDeleteOrg" method="post">
+      <g:form name="TransferProviderPackages" controller="workflow" action="transferPackages" method="post">
         <div class="row">
-          <div class="col-md-12">
+          <div class="col-md-6">
             <dt>Orgs To Deprecate:</dt>
             <dd>
               <ul>
@@ -34,8 +33,21 @@
                 </g:each>
               </ul>
             </dd>
+          </div>
 
-            <button class="btn btn-success" type="submit">Confirm :: Remove ALL Org Links</button>
+          <div class="col-md-6">
+            <dl>
+              <dt>New Provider:</dt>
+              <dd>
+                 <g:simpleReferenceTypedown class="form-control" name="neworg" baseClass="org.gokb.cred.Org" />
+              </dd>
+            </dl>
+            <button class="btn btn-success" type="submit">Transfer Packages</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12">
           </div>
         </div>
       </g:form>

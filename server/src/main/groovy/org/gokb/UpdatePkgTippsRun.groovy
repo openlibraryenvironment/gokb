@@ -492,176 +492,174 @@ class UpdatePkgTippsRun {
       return validation_result.errors
     }
     else {
-      TitleInstancePackagePlatform.withTransaction {
-        if (validation_result.errors?.size() > 0) {
-          tippError.putAll(validation_result.errors)
-        }
-        log.debug("search TIPP ${tippJson.name ?: tippJson.title.name}")
-        TitleInstancePackagePlatform[] current_tipps = null
-        TitleInstancePackagePlatform tipp
-        try {
-          log.debug("Lookup ${tippJson}")
-          def match_result = tippService.restLookup(tippJson)
-          log.debug("Lookup returned: ${match_result}")
-          // Fallunterscheidung
+      if (validation_result.errors?.size() > 0) {
+        tippError.putAll(validation_result.errors)
+      }
+      log.debug("search TIPP ${tippJson.name ?: tippJson.title.name}")
+      TitleInstancePackagePlatform[] current_tipps = null
+      TitleInstancePackagePlatform tipp
+      try {
+        log.debug("Lookup ${tippJson}")
+        def match_result = tippService.restLookup(tippJson)
+        log.debug("Lookup returned: ${match_result}")
+        // Fallunterscheidung
 
-          if (match_result.full_matches.size() > 0) {
-            tipp = match_result.full_matches[0]
+        if (match_result.full_matches.size() > 0) {
+          tipp = match_result.full_matches[0]
 
-            if (match_result.full_matches.size() > 1) {
-              log.debug("multiple (${match_result.full_matches.size()}) full matches for $tipp")
-              def additionalInfo = [otherComponents: []]
+          if (match_result.full_matches.size() > 1) {
+            log.debug("multiple (${match_result.full_matches.size()}) full matches for $tipp")
+            def additionalInfo = [otherComponents: []]
 
-              match_result.full_matches.eachWithIndex { ct, idx ->
-                if (idx > 0) {
-                  additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
-                }
-              }
-
-              // RR für Multimatch generieren
-              reviewRequestService.raise(
-                  tipp,
-                  "Ambiguous KBART Record Matches",
-                  "A KBART record has been matched on multiple package titles.",
-                  user,
-                  null,
-                  (additionalInfo as JSON).toString(),
-                  RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
-                  componentLookupService.findCuratoryGroupOfInterest(tipp, user)
-              )
-            }
-          }
-          else {
-            log.debug("Creating new TIPP..")
-            created = true
-
-            def tipp_fields = [
-              pkg: pkg,
-              hostPlatform: Platform.get(tippJson.hostPlatform.id),
-              url: tippJson.url,
-              name: tippJson.name,
-              importId: tippJson.titleId
-            ]
-
-            tipp = tippUpsertService.tiplAwareCreate(tipp_fields)
-
-            if (match_result.failed_matches?.size() > 0) {
-              log.debug("Created TIPP ${tipp} with URL ${tipp?.url}, needs review ..")
-
-              def additionalInfo = [otherComponents: []]
-
-              match_result.failed_matches.each { ct ->
-                additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id, uuid: ct.item.uuid, id: ct.item.id, name: ct.item.name, matchResults: ct.matchResults]
-              }
-
-              // RR für Multimatch generieren
-              reviewRequestService.raise(
-                  tipp,
-                  "A KBART record has been matched on an existing package title by some identifiers ({0}), but not by other important identifiers ({1}).",
-                  "Check the package titles and merge them if necessary.",
-                  user,
-                  null,
-                  (additionalInfo as JSON).toString(),
-                  RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
-                  componentLookupService.findCuratoryGroupOfInterest(tipp, user)
-              )
-            }
-          }
-
-          if (tipp) {
-            if (!matched_tipps[tipp.id]) {
-              matched_tipps[tipp.id] = 1
-
-              if (!created) {
-                TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = :tipp", [tipp: tipp])
-                tipp.refresh()
+            match_result.full_matches.eachWithIndex { ct, idx ->
+              if (idx > 0) {
+                additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
               }
             }
-            else {
-              matched_tipps[tipp.id]++
-            }
 
-            tippService.updateTippFields(tipp, tippJson, user)
-          }
-        }
-        catch (grails.validation.ValidationException ve) {
-          log.error("ValidationException attempting to create/update TIPP", ve)
-          tippError.putAll(messageService.processValidationErrors(ve.errors))
-
-          if (created) {
-            TitleInstancePackagePlatform.withTransaction {
-              tipp?.expunge()
-            }
-          }
-
-          return tippError
-        }
-        catch (Exception ge) {
-          log.error("Exception attempting to create/update TIPP:", ge)
-          def tipp_error = [
-              message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.name], locale),
-              baddata: tippJson,
-              errors : [message: ge.toString()]
-          ]
-          tipp?.expunge()
-
-          return tipp_error
-        }
-        if (tipp) {
-          if (existing_tipp_ids.size() > 0 && existing_tipp_ids.contains(tipp.id)) {
-            log.debug("Existing TIPP matched!")
-            existing_tipp_ids.removeElement(tipp.id)
-          }
-          // Probably, these tipp.status are overwritten already
-          if (tipp.status != status_deleted && tippJson.status == "Deleted") {
-            tipp.deleteSoft()
-            removedNum++
-          }
-          else if (tipp.status != status_retired && tippJson.status == "Retired") {
-            tipp.retire()
-            removedNum++
-          }
-          else if (tipp.status != status_current && (!tippJson.status || tippJson.status == "Current")) {
-            if (tipp.isDeleted() && !fullsync) {
-              reviewRequestService.raise(
-                  tipp,
-                  "Matched TIPP was marked as Deleted.",
-                  "Check TIPP Status.",
-                  user,
-                  null,
-                  null,
-                  rr_deleted
-              )
-            }
-            tipp.status = status_current
-          }
-            tipp.merge()
-          if (!tipp.hostPlatform) {
-            log.debug("unknown hostPlatform for TIPP $tipp")
-          }
-          else if (tipp.isCurrent() && tipp.hostPlatform.status != status_current) {
-            def additionalInfo = [:]
-            additionalInfo.vars = [tipp.hostPlatform.name, tipp.hostPlatform.status?.value]
+            // RR für Multimatch generieren
             reviewRequestService.raise(
                 tipp,
-                "The existing platform matched for this TIPP (${tipp.hostPlatform}) is marked as ${tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
-                "Platform not marked as current.",
+                "Ambiguous KBART Record Matches",
+                "A KBART record has been matched on multiple package titles.",
                 user,
                 null,
                 (additionalInfo as JSON).toString(),
-                rr_nonCurrent
+                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
+                componentLookupService.findCuratoryGroupOfInterest(tipp, user)
             )
           }
         }
         else {
-          log.debug("Could not reference TIPP")
-          invalidTipps << tippJson
-          def tipp_error = [
-              message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.title.name], locale),
-              baddata: tippJson
+          log.debug("Creating new TIPP..")
+          created = true
+
+          def tipp_fields = [
+            pkg: pkg,
+            hostPlatform: Platform.get(tippJson.hostPlatform.id),
+            url: tippJson.url,
+            name: tippJson.name,
+            importId: tippJson.titleId
           ]
-          return tipp_error
+
+          tipp = tippUpsertService.tiplAwareCreate(tipp_fields)
+
+          if (match_result.failed_matches?.size() > 0) {
+            log.debug("Created TIPP ${tipp} with URL ${tipp?.url}, needs review ..")
+
+            def additionalInfo = [otherComponents: []]
+
+            match_result.failed_matches.each { ct ->
+              additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id, uuid: ct.item.uuid, id: ct.item.id, name: ct.item.name, matchResults: ct.matchResults]
+            }
+
+            // RR für Multimatch generieren
+            reviewRequestService.raise(
+                tipp,
+                "A KBART record has been matched on an existing package title by some identifiers ({0}), but not by other important identifiers ({1}).",
+                "Check the package titles and merge them if necessary.",
+                user,
+                null,
+                (additionalInfo as JSON).toString(),
+                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
+                componentLookupService.findCuratoryGroupOfInterest(tipp, user)
+            )
+          }
         }
+
+        if (tipp) {
+          if (!matched_tipps[tipp.id]) {
+            matched_tipps[tipp.id] = 1
+
+            if (!created) {
+              TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = :tipp", [tipp: tipp])
+              tipp.refresh()
+            }
+          }
+          else {
+            matched_tipps[tipp.id]++
+          }
+
+          tippService.updateTippFields(tipp, tippJson, user)
+        }
+      }
+      catch (grails.validation.ValidationException ve) {
+        log.error("ValidationException attempting to create/update TIPP", ve)
+        tippError.putAll(messageService.processValidationErrors(ve.errors))
+
+        if (created) {
+          TitleInstancePackagePlatform.withTransaction {
+            tipp?.expunge()
+          }
+        }
+
+        return tippError
+      }
+      catch (Exception ge) {
+        log.error("Exception attempting to create/update TIPP:", ge)
+        def tipp_error = [
+            message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.name], locale),
+            baddata: tippJson,
+            errors : [message: ge.toString()]
+        ]
+        tipp?.expunge()
+
+        return tipp_error
+      }
+      if (tipp) {
+        if (existing_tipp_ids.size() > 0 && existing_tipp_ids.contains(tipp.id)) {
+          log.debug("Existing TIPP matched!")
+          existing_tipp_ids.removeElement(tipp.id)
+        }
+        // Probably, these tipp.status are overwritten already
+        if (tipp.status != status_deleted && tippJson.status == "Deleted") {
+          tipp.deleteSoft()
+          removedNum++
+        }
+        else if (tipp.status != status_retired && tippJson.status == "Retired") {
+          tipp.retire()
+          removedNum++
+        }
+        else if (tipp.status != status_current && (!tippJson.status || tippJson.status == "Current")) {
+          if (tipp.isDeleted() && !fullsync) {
+            reviewRequestService.raise(
+                tipp,
+                "Matched TIPP was marked as Deleted.",
+                "Check TIPP Status.",
+                user,
+                null,
+                null,
+                rr_deleted
+            )
+          }
+          tipp.status = status_current
+        }
+          tipp.merge()
+        if (!tipp.hostPlatform) {
+          log.debug("unknown hostPlatform for TIPP $tipp")
+        }
+        else if (tipp.isCurrent() && tipp.hostPlatform.status != status_current) {
+          def additionalInfo = [:]
+          additionalInfo.vars = [tipp.hostPlatform.name, tipp.hostPlatform.status?.value]
+          reviewRequestService.raise(
+              tipp,
+              "The existing platform matched for this TIPP (${tipp.hostPlatform}) is marked as ${tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
+              "Platform not marked as current.",
+              user,
+              null,
+              (additionalInfo as JSON).toString(),
+              rr_nonCurrent
+          )
+        }
+      }
+      else {
+        log.debug("Could not reference TIPP")
+        invalidTipps << tippJson
+        def tipp_error = [
+            message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.title.name], locale),
+            baddata: tippJson
+        ]
+        return tipp_error
       }
     }
     return tippError

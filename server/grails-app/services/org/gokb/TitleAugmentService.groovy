@@ -548,23 +548,44 @@ class TitleAugmentService {
     titleInstance.save(flush: true)
   }
 
-  public boolean editMonographFields(ti, updatedInfo) {
+  public boolean editMonographFields(ti, updatedInfo, boolean onlyNew = false) {
     def book_changed = false
 
     ["editionDifferentiator",
      "editionStatement", "volumeNumber",
      "summaryOfContent", "firstAuthor",
      "firstEditor"].each { stringPropertyName ->
-      if (updatedInfo[stringPropertyName] && updatedInfo[stringPropertyName].toString().trim()) {
+      if (updatedInfo[stringPropertyName] && updatedInfo[stringPropertyName].toString().trim() && (!onlyNew || !ti[stringPropertyName])) {
         book_changed |= ClassUtils.setStringIfDifferent(ti, stringPropertyName, updatedInfo[stringPropertyName])
       }
     }
 
-    def dfip = GOKbTextUtils.completeDateString(updatedInfo.dateFirstInPrint)
-    book_changed |= ClassUtils.setDateIfPresent(dfip, ti, 'dateFirstInPrint')
 
-    def dfo = GOKbTextUtils.completeDateString(updatedInfo.dateFirstOnline, false)
-    book_changed |= ClassUtils.setDateIfPresent(dfo, ti, 'dateFirstOnline')
+    if (!onlyNew || !ti.dateFirstInPrint) {
+      def dfip = null
+
+      if (updatedInfo.dateFirstInPrint instanceof Date) {
+        dfip = updatedInfo.dateFirstInPrint
+      }
+      else {
+        dfip = GOKbTextUtils.completeDateString(updatedInfo.dateFirstInPrint)
+      }
+
+      book_changed |= ClassUtils.setDateIfPresent(dfip, ti, 'dateFirstInPrint')
+    }
+
+    if (!onlyNew || !ti.dateFirstOnline) {
+      def dfo = null
+
+      if (updatedInfo.dateFirstOnline instanceof Date) {
+        dfo = updatedInfo.dateFirstOnline
+      }
+      else {
+        dfo = GOKbTextUtils.completeDateString(updatedInfo.dateFirstOnline, false)
+      }
+
+      book_changed |= ClassUtils.setDateIfPresent(dfo, ti, 'dateFirstOnline')
+    }
 
     book_changed
   }
