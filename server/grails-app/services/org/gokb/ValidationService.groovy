@@ -180,22 +180,33 @@ class ValidationService {
         ]
     ],
     zdb_id: [
-        mandatory: false,
-        pubType: "Serial",
-        namespaces: [
-            'Serial': 'zdb',
-        ],
-        validator: [
-            name: "checkKbartIdentifier",
-            args: ["_colName", "publication_type"]
-        ]
+      mandatory: false,
+      pubType: "Serial",
+      namespaces: [
+        'Serial': 'zdb',
+      ],
+      validator: [
+        name: "checkKbartIdentifier",
+        args: ["_colName", "publication_type"]
+      ]
     ],
     ddc: [
-        mandatory: false,
-        validator: [
-          name: "checkDDCList",
-          args: []
-        ]
+      mandatory: false,
+      validator: [
+        name: "checkDDCList",
+        args: []
+      ]
+    ],
+    doi_identifier: [
+      mandatory: false,
+      namespaces: [
+        'Serial': 'doi',
+        'Monograph': 'doi'
+      ],
+      validator: [
+        name: "checkKbartIdentifier",
+        args: ["_colName", "publication_type"]
+      ]
     ]
   ]
 
@@ -210,7 +221,8 @@ class ValidationService {
   static final String[] PROPRIETARY_COLS = [
       'zdb_id',
       'ddc',
-      'series'
+      'series',
+      'doi_identifier'
   ]
 
   static ISSNValidator ISSN_VAL = new ISSNValidator()
@@ -220,12 +232,17 @@ class ValidationService {
 
     def result = [
         valid: true,
+        mixed: false,
         message: "",
         rows: [
             total: 0,
             error: 0,
             warning: 0,
-            skipped: 0
+            skipped: 0,
+            type: [
+              serial: 0,
+              monograph: 0
+            ]
         ],
         errors: [
             missingColumns: [],
@@ -240,6 +257,9 @@ class ValidationService {
     ]
 
     CSVReader csv = initReader(kbart)
+
+    Boolean serial_title_id_doi = null
+    Boolean mono_title_id_doi = null
 
     Map col_positions = [:]
     String[] header = csv.readNext()
@@ -284,14 +304,40 @@ class ValidationService {
         }
         else if (nl.size() >= MANDATORY_COLS.size()) {
           def pubTypeVal = nl[col_positions['publication_type']].trim()
+          def titleIdVal = nl[col_positions['title_id']].trim()
           def pubType = checkPubType(pubTypeVal)
           IdentifierNamespace row_namespace = titleIdNamespace
 
-          if (pubType == 'Serial' && titleIdNamespaceSerial) {
-            row_namespace = titleIdNamespaceSerial
+          if (pubType == 'Serial') {
+            if (titleIdNamespaceSerial) {
+              row_namespace = titleIdNamespaceSerial
+            }
+
+
+            if (titleIdVal && serial_title_id_doi == null) {
+              serial_title_id_doi = checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi')) != null
+            }
+
+            if (result.rows.type.serial == 0 && result.rows.type.monograph > 0) {
+              result.mixed = true
+            }
+
+            result.rows.type.serial++
           }
-          else if (pubType == 'Monograph' && titleIdNamespaceMonograph) {
-            row_namespace = titleIdNamespaceMonograph
+          else if (pubType == 'Monograph') {
+            if (titleIdNamespaceMonograph) {
+              row_namespace = titleIdNamespaceMonograph
+            }
+
+            if (titleIdVal && mono_title_id_doi == null) {
+              mono_title_id_doi = checkIdForNamespace(titleIdVal, IdentifierNamespace.findByValue('doi')) != null
+            }
+
+            if (result.rows.type.monograph == 0 && result.rows.type.serial > 0) {
+              result.mixed = true
+            }
+
+            result.rows.type.monograph++
           }
 
           result.rows.total++
@@ -334,6 +380,13 @@ class ValidationService {
         nl = csv.readNext()
       }
       result.message = "File processing finished after ${result.rows.total} (${result.rows.error} errors)."
+
+      if (serial_title_id_doi) {
+        result.doi_ns_detected_serial = true
+      }
+      if (mono_title_id_doi) {
+        result.doi_ns_detected_monograph = true
+      }
     }
     else {
       log.debug("Missing mandatory columns... skipping file processing!")
