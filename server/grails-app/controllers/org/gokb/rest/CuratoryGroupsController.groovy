@@ -114,6 +114,7 @@ class CuratoryGroupsController {
     CuratoryGroup newGroup = null
     def result = [:]
     def errors = [:]
+    Boolean changed = true
     def reqBody = request.JSON
     User user = User.get(springSecurityService.principal.id)
 
@@ -123,7 +124,7 @@ class CuratoryGroupsController {
 
         def jsonMap = [:]
 
-        newGroup = restMappingService.updateObject(newGroup, jsonMap, reqBody)
+        changed = restMappingService.updateObject(newGroup, jsonMap, reqBody)
       }
       catch (grails.validation.ValidationException ve) {
         errors = ve.errors
@@ -163,7 +164,7 @@ class CuratoryGroupsController {
   @Transactional
   def update() {
     CuratoryGroup group = CuratoryGroup.get(genericOIDService.oidToId(params.id))
-    def result = [:]
+    def result = [result: 'OK', params: params, changed: false]
     def errors = [:]
     def reqBody = request.JSON
     def remove = (request.method == 'PUT')
@@ -173,9 +174,9 @@ class CuratoryGroupsController {
       boolean editable = user.hasRole('ROLE_ADMIN') || group.owner == user
 
       if (editable) {
-        source = restMappingService.updateObject(group, null, reqBody)
+        result.changed = restMappingService.updateObject(group, null, reqBody)
 
-        errors << updateMembers(group, reqBody, remove)
+        errors << updateMembers(group, reqBody, changed, remove)
 
         if (!errors) {
           if ( group.validate() ) {
@@ -206,7 +207,7 @@ class CuratoryGroupsController {
     render result as JSON
   }
 
-  private updateMembers(group, reqBody, remove) {
+  private updateMembers(group, reqBody, changed, remove) {
     if (reqBody.members) {
 
     }

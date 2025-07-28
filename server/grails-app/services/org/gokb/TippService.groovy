@@ -509,7 +509,7 @@ class TippService {
     def cov_list = reqBody.coverageStatements ?: reqBody.coverage
     def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
 
-    def changed = false
+    boolean changed = false
 
     cov_list?.each { c ->
       def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
@@ -648,7 +648,7 @@ class TippService {
       tipp.lastSeen = System.currentTimeMillis()
     }
 
-    tipp
+    changed
   }
 
   def matchUnlinkedTipps(def job = null) {
@@ -1940,10 +1940,9 @@ class TippService {
     hasChanged
   }
 
-  def updateCombos(obj, reqBody, boolean remove = true) {
+  def updateCombos(obj, reqBody, changed, boolean remove = true) {
     log.debug("Updating TIPP combos ..")
     def errors = [:]
-    boolean changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers

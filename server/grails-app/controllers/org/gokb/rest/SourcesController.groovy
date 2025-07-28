@@ -83,7 +83,8 @@ class SourcesController {
   @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def save() {
-    Source source = null
+    Source obj = null
+    Boolean changed = true
     def result = [:]
     def errors = [:]
     def reqBody = request.JSON
@@ -91,11 +92,11 @@ class SourcesController {
 
     if (reqBody?.name) {
       try {
-        source = new Source(name: reqBody.name)
+        obj = new Source(name: reqBody.name)
 
         def jsonMap = [:]
 
-        source = restMappingService.updateObject(source, jsonMap, reqBody)
+        changed = restMappingService.updateObject(obj, jsonMap, reqBody)
       }
       catch (grails.validation.ValidationException ve) {
         errors = ve.errors
@@ -106,14 +107,14 @@ class SourcesController {
     }
 
     if (!errors) {
-      if ( source.validate() ) {
-        source.save(flush: true)
+      if ( obj.validate() ) {
+        obj.save(flush: true)
 
-        errors << updateCombos(source, reqBody, false)
+        errors << updateCombos(obj, reqBody, changed, false)
 
         if (!errors) {
           response.status = 201
-          result = restMappingService.mapObjectToJson(source, params, user)
+          result = restMappingService.mapObjectToJson(obj, params, user)
         }
         else {
           response.status = 400
@@ -121,9 +122,9 @@ class SourcesController {
           result.result = 'ERROR'
         }
       } else {
-        result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
+        result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(obj.errors)]
         response.status = 409
-        source?.discard()
+        obj?.discard()
       }
     } else {
       response.status = 400
@@ -136,8 +137,8 @@ class SourcesController {
   @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
+    def result = [result: 'OK', params: params, changed: false]
     Source obj = Source.get(genericOIDService.oidToId(params.id))
-    def result = [:]
     def errors = [:]
     def reqBody = request.JSON
     def remove = (request.method == 'PUT')
@@ -159,9 +160,9 @@ class SourcesController {
         render result as JSON
       }
 
-      obj = restMappingService.updateObject(obj, null, reqBody)
+      result.changed = restMappingService.updateObject(obj, null, reqBody)
 
-      errors << updateCombos(obj, reqBody, remove)
+      errors << updateCombos(obj, reqBody, result.changed, remove)
 
       if (!errors) {
         if ( obj.validate() ) {
@@ -186,14 +187,16 @@ class SourcesController {
     render result as JSON
   }
 
-  private def updateCombos(obj, reqBody, boolean remove = true) {
+  private def updateCombos(obj, reqBody, changed, boolean remove = true) {
     log.debug("Updating package combos ..")
     def errors = [:]
 
     if (reqBody.curatoryGroups) {
-      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      def update_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
-      if (cg_errors.size() > 0) {
+      changed |= update_result.changed
+
+      if (update_result.errors.size() > 0) {
         errors['curatoryGroups'] = cg_errors
       }
     }

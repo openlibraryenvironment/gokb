@@ -163,6 +163,7 @@ class TitleController {
     def errors = [:]
     Class type = setType(reqBody?.type ? reqBody : params)
     def obj = null
+    boolean changed = true
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
     def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
@@ -195,7 +196,7 @@ class TitleController {
           obj = type.newInstance()
           obj.name = reqBody.name.trim()
 
-          obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+          changed = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
           if ( obj.validate() ) {
             obj.save(flush:true)
@@ -243,7 +244,7 @@ class TitleController {
               errors.subjects = subject_result.errors
             }
 
-            errors << updateCombos(obj, reqBody)
+            errors << updateCombos(obj, reqBody, changed)
 
             result = restMappingService.mapObjectToJson(obj, params, user)
             response.status = 201
@@ -758,7 +759,7 @@ class TitleController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = ['result':'OK', 'params': params]
+    def result = ['result':'OK', 'params': params, changed: false]
     def reqBody = request.JSON
     def remove = (request.method == 'PUT')
     def errors = [:]
@@ -779,12 +780,14 @@ class TitleController {
           render result as JSON
         }
 
-        obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+        result.changed = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
         if ( obj.validate() ) {
           log.debug("No errors.. updating combos..")
 
           def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+          result.changed |= variant_result.changed
 
           if (variant_result.errors.size() > 0) {
             errors.variantNames = variant_result.errors
@@ -792,11 +795,13 @@ class TitleController {
 
           def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
 
+          result.changed |= subject_result.changed
+
           if (subject_result.errors.size() > 0) {
             errors.subjects = subject_result.errors
           }
 
-          errors << updateCombos(obj, reqBody, remove)
+          errors << updateCombos(obj, reqBody, result.changed, remove)
 
           if ( errors.size() == 0 ) {
             obj = obj.merge(flush:true)
@@ -833,9 +838,8 @@ class TitleController {
   }
 
   @Transactional
-  private def updateCombos(obj, reqBody, boolean remove = true) {
-    log.debug("Updating title combos ..")
-    def changed = false
+  private def updateCombos(obj, reqBody, changed, boolean remove = true) {
+    log.debug("Updating title combos .. changed: ${changed}")
     def errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {

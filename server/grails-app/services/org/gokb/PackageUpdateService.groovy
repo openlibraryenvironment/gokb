@@ -17,10 +17,9 @@ class PackageUpdateService {
   def tippUpsertService
 
   @Transactional
-  def updateCombos(obj, reqBody, boolean remove = true, user) {
+  def updateCombos(obj, reqBody, changed, boolean remove = true, user) {
     log.debug("Updating package combos ..")
     def errors = [:]
-    def changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
