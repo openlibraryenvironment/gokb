@@ -949,7 +949,7 @@ class IntegrationControllerSpec extends Specification {
     pkg.tipps[0].name.startsWith("TippName")
     pkg.lastUpdatedBy.username == 'admin'
     pkg.name == "TestTokenPackageUpdate"
-    def title = pkg.tipps[0].title //JournalInstance.findByName("Journal of agricultural and food chemistry")
+    def title = TitleInstance.findById(pkg.tipps[0].title.id) //JournalInstance.findByName("Journal of agricultural and food chemistry")
     title.publisher?.size() == 1
     title.publisher[0].name == "ACS TestOrg"
     title.name =="Journal of agricultural and food chemistry"
@@ -1259,7 +1259,7 @@ class IntegrationControllerSpec extends Specification {
     current_tipps[0].editionStatement != null
     current_tipps[0].volumeNumber != null
     pkg.name == "TestTokenPackageUpdate"
-    def title = current_tipps[0].title //JournalInstance.findByName("Journal of agricultural and food chemistry")
+    def title = TitleInstance.findById(current_tipps[0].title.id) //JournalInstance.findByName("Journal of agricultural and food chemistry")
     title?.publisher?.size() == 1
     title?.publisher[0].name == "ACS TestOrg"
     title?.name == current_tipps[0].name

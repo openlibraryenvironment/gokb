@@ -881,6 +881,7 @@ class TitleAugmentService {
       Org publisher = Org.findByName(publisher_name)
       def norm_pub_name = Org.generateNormname(publisher_name);
       def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      def combo_type_pub = RefdataCategory.lookup("TitleInstance.Publisher")
 
       if (!publisher) {
         // Lookup using norm name.
@@ -903,10 +904,11 @@ class TitleAugmentService {
       }
 
       log.debug("Found publisher ${publisher}")
-      def orgs = ti.getPublisher()
-      log.debug("Check for dupes in ${orgs}")
 
-      if (publisher && !orgs.contains(publisher)) {
+      def existing_combos = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :pub and type = :ct", [ti: ti, pub: publisher, ct: combo_type_pub])
+
+      if (publisher && existing_combos.size() == 0) {
+        // new Combo(fromComponent: ti, toComponent: publisher, type: combo_type_pub).save(flush: true, failOnError: true)
         ti.publisher << publisher
         ti.save(flush: true)
         log.debug("Added new publisher ..")
