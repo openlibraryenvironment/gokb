@@ -304,7 +304,7 @@ class ValidationService {
         }
         else if (nl.size() >= MANDATORY_COLS.size()) {
           def pubTypeVal = nl[col_positions['publication_type']].trim()
-          def titleIdVal = nl[col_positions['title_id']].trim()
+          def titleIdVal = col_positions['title_id'] ? nl[col_positions['title_id']].trim() : null
           def pubType = checkPubType(pubTypeVal)
           IdentifierNamespace row_namespace = titleIdNamespace
 

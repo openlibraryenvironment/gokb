@@ -80,7 +80,7 @@ class EzbCollectionService {
           .header('User-Agent', "GOKb KBART bulk import")
           .header('Accept', 'application/json')
 
-        log.error("Headers: ${request.remoteAddress}")
+        log.debug("Headers: ${request.remoteAddress}")
 
         def resp = HttpClient.create(new URL(baseUrl)).toBlocking().retrieve(request, Map.class)
 
