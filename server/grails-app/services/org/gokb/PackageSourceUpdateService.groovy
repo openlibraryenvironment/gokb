@@ -90,8 +90,7 @@ class PackageSourceUpdateService {
 
       isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value == "WEKB")
       if ( isExternalSourceImportOrUpdate ) {
-        result.report = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job, async, restrictSize)
-
+        result = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job, async, restrictSize)
       } else {
         if (pkg_source?.url) {
           URL src_url = null

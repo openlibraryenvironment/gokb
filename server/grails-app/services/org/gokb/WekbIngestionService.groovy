@@ -48,6 +48,9 @@ class WekbIngestionService {
   ConcurrencyManagerService concurrencyManagerService
   Map identifierTargetTypes = [:]
   final int SIZE_LIMIT = 30000
+  //final int SIZE_LIMIT = 1000
+  def rdv_liststatus_checked
+  def rdv_liststatus_progress
 
   def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Package pkg, Job job, Boolean async, Boolean restrictSize) {
     def result = [result: 'OK', dryRun: false]
@@ -57,11 +60,17 @@ class WekbIngestionService {
     def ingestDate = LocalDate.now().toString()
     int batchSize = 100
 
+    rdv_liststatus_checked = RefdataCategory.lookup("Package.ListStatus", "Checked")
+    rdv_liststatus_progress = RefdataCategory.lookup("Package.ListStatus", "In Progress")
+    def initialListStatus = pkg.getListStatus()
+
     String sourceUrl = pkg_source?.url
     String wekbUUID = extractUUIDFromUrlString(sourceUrl)
 
     def packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
     int titleCount = packageInfo[0]?.titleCount
+
+
 
     if ( restrictSize && titleCount > SIZE_LIMIT ) {
       result.result = 'ERROR'
@@ -114,9 +123,22 @@ class WekbIngestionService {
       def tippBatches = []
 
       for (int offset = 0; offset < titleCount; offset += batchSize) {
-        def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
+        def tipps = null
 
-        tippBatches.add(tipps)
+        //maximum 5 Ttrials to reach WEKB endpoint
+        for (int trial = 0; trial < 5; trial++) {
+          tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
+          log.debug("11111 TIPPS: " + tipps)
+          if(tipps?.size() > 0){
+            log.debug("22222 TIPPS vorhanden... " )
+            tippBatches.add(tipps)
+            break
+          }
+          else {
+            log.debug("+++++++++++++++++ TIPPS nicht vorhanden ++++++++++++++++" )
+            sleep(1000)
+          }
+        }
 
         def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
         log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
@@ -375,6 +397,8 @@ class WekbIngestionService {
         }
       }
     }
+
+    log.debug("#### RESULT: " + result)
 
     return result
   }
