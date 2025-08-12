@@ -125,21 +125,23 @@ class WekbIngestionService {
       for (int offset = 0; offset < titleCount; offset += batchSize) {
         def tipps = null
 
-        //maximum 5 Ttrials to reach WEKB endpoint
-        for (int trial = 0; trial < 5; trial++) {
+        //maximum 5 trials to reach WEKB endpoint
+        int trials = 0
+        do {
           tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
-          log.debug("11111 TIPPS: " + tipps)
-          if(tipps?.size() > 0){
-            log.debug("22222 TIPPS vorhanden... " )
-            tippBatches.add(tipps)
-            break
+          trials++
+          if (!tipps) {
+            log.debug("+++++++++++++++++ TIPPS nicht vorhanden +++++ --> sleep..." )
+            sleep(1500)
           }
-          else {
-            log.debug("+++++++++++++++++ TIPPS nicht vorhanden ++++++++++++++++" )
-            sleep(1000)
-          }
-        }
+        } while (!tipps && trials < 5)
 
+        if (tipps) {
+          tippBatches.add(tipps)
+        }
+        else {
+          result.result = 'ERROR'
+        }
         def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
         log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
 

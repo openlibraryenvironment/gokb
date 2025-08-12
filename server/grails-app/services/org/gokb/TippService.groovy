@@ -1589,7 +1589,7 @@ class TippService {
       }
     }
 
-    if (full_matches.size == 1) {
+    if (full_matches.size() == 1) {
       result.full_matches = full_matches
     }
     else if (full_matches.size() > 1) {
@@ -1871,6 +1871,11 @@ class TippService {
         tipp[propName] = tippInfo[propName].trim()
         hasChanged = true
       }
+    }
+
+    if(!tippInfo['publisherName']) {
+      tipp['publisherName'] = ''
+      hasChanged = true
     }
 
     if (!tipp.importId && (tippInfo.importId || tippInfo.titleId)) {
