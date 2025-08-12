@@ -1873,11 +1873,6 @@ class TippService {
       }
     }
 
-    if(!tippInfo['publisherName']) {
-      tipp['publisherName'] = ''
-      hasChanged = true
-    }
-
     if (!tipp.importId && (tippInfo.importId || tippInfo.titleId)) {
       tipp.importId = tippInfo.importId ?: tippInfo.titleId
       hasChanged = true
