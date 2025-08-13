@@ -59,10 +59,13 @@ class WekbIngestionService {
     ingest_systime = startTime
     def ingestDate = LocalDate.now().toString()
     int batchSize = 100
+    def missedBatches = []
+
 
     rdv_liststatus_checked = RefdataCategory.lookup("Package.ListStatus", "Checked")
     rdv_liststatus_progress = RefdataCategory.lookup("Package.ListStatus", "In Progress")
     def initialListStatus = pkg.getListStatus()
+    log.debug("+++ Initial List Status: " + initialListStatus)
 
     String sourceUrl = pkg_source?.url
     String wekbUUID = extractUUIDFromUrlString(sourceUrl)
@@ -140,8 +143,10 @@ class WekbIngestionService {
           tippBatches.add(tipps)
         }
         else {
-          result.result = 'ERROR'
+          missedBatches.add(offset)
+          //result.result = 'ERROR'
         }
+
         def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
         log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
 
@@ -341,6 +346,12 @@ class WekbIngestionService {
         session.clear()
       }
 
+
+      if (missedBatches.size() > 0) {
+        result.result = 'ERROR'
+        result.message = "Not all the titles could be imported/updated because the source server was temporary unavailable."
+      }
+
       log.debug("start Title Matching... ")
 
       def currentSession = sessionFactory.getCurrentSession()
@@ -399,6 +410,16 @@ class WekbIngestionService {
         }
       }
     }
+
+    // Liststatus is set to checked in matching job, if no RRs exist.
+    // But in some other cases ist must be set back to progress
+    /* if (initialListStatus == rdv_liststatus_progress || result.result == 'ERROR') {
+      log.debug("#### ListStatus must be set back to PROGRESS ####")
+      Package.withNewSession {
+        pkg.setListStatus(rdv_liststatus_progress)
+        pkg.save(flush: true)
+      }
+    } */
 
     log.debug("#### RESULT: " + result)
 
