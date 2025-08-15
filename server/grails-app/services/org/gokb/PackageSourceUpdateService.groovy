@@ -4,10 +4,13 @@ import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
 import groovy.util.logging.Slf4j
+import org.apache.commons.net.ftp.FTPClient
+import org.apache.commons.net.ftp.FTPClientConfig
 
 import java.net.http.*
 import java.net.http.HttpResponse.BodyHandlers
 import java.net.http.HttpRequest.BodyPublishers
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.LocalDate
@@ -16,6 +19,7 @@ import java.util.regex.Pattern
 
 import org.gokb.cred.*
 import org.mozilla.universalchardet.UniversalDetector
+import org.apache.commons.net.*
 
 @Slf4j
 class PackageSourceUpdateService {
@@ -323,7 +327,59 @@ class PackageSourceUpdateService {
               return result
             }
           }
-          // else if (src_url.getProtocol() in ['ftp', 'sftp']) {
+          else if (src_url.getProtocol() in ['ftp', 'sftp']) {
+            FTPClient ftp = new FTPClient()
+            FTPClientConfig config = new FTPClientConfig()
+
+            def hostname = "ftp.epnet.com"
+            def username = "jake"
+            def password = "gijaq3eV"
+            def directory = "/kbart"
+            def filename = "8gh-kbart2.txt"
+
+            try {
+              ftp.connect(hostname)
+              ftp.enterLocalPassiveMode()
+              log.debug("1111 : " + ftp.getReplyString() )
+              def loggedIn = ftp.login(username, password)
+              log.debug("+++ EINGELOGGT... : " + loggedIn )
+
+
+              if (ftp.isConnected()) {
+                //log.debug(" #### Directories: " + ftp.listDirectories())
+
+                ftp.changeWorkingDirectory(directory)
+                log.debug("2222 : " + ftp.getReplyString() )
+                log.debug("##### Files: " + ftp.listFiles())
+                log.debug("3333 : " + ftp.getReplyString() )
+
+                InputStream is = ftp.retrieveFileStream(filename)
+
+                ByteArrayOutputStream tmp_result = new ByteArrayOutputStream();
+                byte[] buffer = new byte[1024];
+                for (int length; (length = is.read(buffer)) != -1; ) {
+                  tmp_result.write(buffer, 0, length);
+                }
+
+                log.debug("###########################################################################################")
+                log.debug(tmp_result.toString(StandardCharsets.UTF_8.name()))
+                log.debug("###########################################################################################")
+
+
+                //def file_result = TSVIngestionService.analyseFile(is)
+
+
+                ftp.logout()
+                ftp.disconnect()
+              }
+
+            } catch (Exception e) {
+              e.printStackTrace()
+            }
+
+            return
+
+          }
           else {
             result.result = 'ERROR'
             result.messageCode = 'kbart.errors.url.protocol'
