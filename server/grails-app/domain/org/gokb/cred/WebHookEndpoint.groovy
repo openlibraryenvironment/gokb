@@ -7,10 +7,13 @@ import groovy.util.logging.*
 class WebHookEndpoint {
   String name
   String url
-  Long authmethod
-  String principal
-  String credentials
+  Long authmethod //legacy
+  RefdataValue supplyMethod
+  String principal //legacy
+  String credentials //legacy
   User owner
+  String ba_username
+  String ba_password
 
   static mapping = {
     url column:'ep_url'
@@ -25,6 +28,9 @@ class WebHookEndpoint {
     authmethod(nullable:true, blank:true)
     principal(nullable:true, blank:true)
     credentials(nullable:true, blank:true)
+    supplyMethod(nullable:true, blank:true)
+    ba_username(nullable:true, blank:true)
+    ba_password(nullable:true, blank:true)
   }
 
   static def refdataFind(params) {

@@ -1247,6 +1247,30 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'WebHookEndpoints':[
+          baseclass:'org.gokb.cred.WebHookEndpoint',
+          title:'Web Endpoints',
+          group:'Secondary',
+          defaultSort:'id',
+          defaultOrder:'desc',
+          qbeConfig:[
+                  qbeForm:[
+                          [
+                                  prompt:'Name',
+                                  qparam:'qp_name',
+                                  placeholder:'Name of Web Endpoint',
+                                  contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
+                          ],
+                  ],
+                  qbeGlobals:[
+                  ],
+                  qbeResults:[
+                          [heading:'Name', property:'name', link:[controller:'resource', action:'show', id:'x.r.uuid'] ],
+                          [heading:'URL', property:'url'],
+                          [heading:'Methode', property:'supplyMethod'],
+                  ]
+          ]
+  ],
 
 ]
 
