@@ -81,7 +81,22 @@ class BulkPackageImportService {
           else if (reqBody.active == false) {
             existing_cfg.automatedUpdate = false
           }
-          existing_cfg.save(flush: true)
+
+          if (reqBody.updateOnly == true) {
+            existing_cfg.updateOnly = true
+          }
+          else if (reqBody.updateOnly == false) {
+            existing_cfg.updateOnly = false
+          }
+
+          if (reqBody.prependProviderName == true) {
+            existing_cfg.prependProviderName = true
+          }
+          else if (reqBody.prependProviderName == false) {
+            existing_cfg.prependProviderName = false
+          }
+
+          existing_cfg.save(flush: true, failOnError: true)
         }
       }
       else {
@@ -91,7 +106,9 @@ class BulkPackageImportService {
           frequency: (reqBody.frequency ? RefdataCategory.lookup('BulkImportListConfig.Frequency', reqBody.frequency) : null),
           owner: user,
           url: reqBody.url,
-          automatedUpdate: reqBody.automatedUpdate
+          automatedUpdate: reqBody.automatedUpdate,
+          updateOnly: reqBody.updateOnly,
+          prependProviderName: reqBody.prependProviderName
         ]
 
         existing_cfg = new BulkImportListConfig(info)
@@ -106,7 +123,7 @@ class BulkPackageImportService {
     result
   }
 
-  private def validateConfig (config) {
+  private def validateConfig (Map config) {
     def result = [valid: true, errors:[:]]
 
     if (!config.code || !config.code.trim()) {
@@ -183,7 +200,7 @@ class BulkPackageImportService {
     result
   }
 
-  private def validateCollection(col) {
+  private def validateCollection(Map col) {
     log.debug("Checking collection info: ${col}")
     def errors = [:]
     def col_errors = checkConfigItem(col, false)
@@ -208,7 +225,7 @@ class BulkPackageImportService {
     errors
   }
 
-  private def fetchRemoteConfig(url) {
+  private def fetchRemoteConfig(String url) {
     try {
       def resp = HttpClient.create(new URL(url)).toBlocking().retrieve(HttpRequest.GET("/"), Map.class)
 
@@ -219,7 +236,7 @@ class BulkPackageImportService {
     }
   }
 
-  private def checkConfigItem(cobj, boolean specific = false) {
+  private def checkConfigItem(Map cobj, boolean specific = false) {
     def errors = [:]
 
     KNOWN_CONFIG_FIELDS.each { fname, cfg ->
@@ -255,7 +272,7 @@ class BulkPackageImportService {
   }
 
   @Transactional
-  def startUpdate(listInfo, dryRun, async, User user = null) {
+  def startUpdate(BulkImportListConfig listInfo, Boolean dryRun, Boolean async, User user = null) {
     def result = [result: 'OK']
     def job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
     def running_jobs = concurrencyManagerService.getActiveJobsForType(job_rdv)
@@ -291,7 +308,7 @@ class BulkPackageImportService {
     result
   }
 
-  private def fetchUpdatedLists (listInfo, dryRun, job) {
+  private def fetchUpdatedLists (BulkImportListConfig listInfo, Boolean dryRun, Job job) {
     def result = [result: 'OK', report: [:]]
     def allCollections = []
     boolean cancelled = false
@@ -408,7 +425,7 @@ class BulkPackageImportService {
                   }
                   else if (candidates.size() > 1) {
                     log.warn("Found ${candidates} as possible package candidates!")
-                    type_results.error++
+                    type_results.errors++
                     pkg_result.result = 'ERROR'
                     pkg_result.errors.matching = [
                       [
@@ -420,7 +437,7 @@ class BulkPackageImportService {
                   }
                 } else if (obj && !obj.curatoryGroups.contains(curator)) {
                   log.warn("Matched package has other curators!")
-                  type_results.error++
+                  type_results.errors++
                   pkg_result.result = 'ERROR'
                   pkg_result.errors.matching = [
                     [
@@ -443,16 +460,32 @@ class BulkPackageImportService {
                 }
 
                 if (!skip) {
-                  if (!obj) {
-                    log.debug("Creating new Package ..")
+                  boolean pkg_created = false
 
-                    try {
-                      obj = new Package(name: item.package_name).save(flush: true, failOnError: true)
-                      type_results.created++
+                  if (!obj) {
+                    if (listInfo.updateOnly) {
+                      log.debug("Skipping existing Package due to config ..")
+                      skip = true
                     }
-                    catch (Exception e) {
-                      log.debug("Errors creating new package!", e)
-                      type_results.errors++
+                    else {
+                      log.debug("Creating new Package ..")
+
+                      try {
+                        String provider_prefix = provider.preferredShortname ?: provider.name
+                        String final_name = item.package_name
+
+                        if (listInfo.prependProviderName) {
+                          final_name = "${provider_prefix}: ${final_name}"
+                        }
+
+                        obj = new Package(name: final_name).save(flush: true, failOnError: true)
+                        type_results.created++
+                        pkg_created = true
+                      }
+                      catch (Exception e) {
+                        log.debug("Errors creating new package!", e)
+                        type_results.errors++
+                      }
                     }
                   }
                   else {
@@ -496,8 +529,20 @@ class BulkPackageImportService {
                       obj.ids << collection_id
                     }
 
-                    if (!obj.curatoryGroups.contains(curator)) {
+                    if (!obj.curatoryGroups.contains(curator) && (pkg_created || listInfo.curatorPolicy?.value == 'Add')) {
                       obj.curatoryGroups << curator
+                    }
+                    else if (listInfo.curatorPolicy?.value == 'Old') {
+                      log.debug("Not changing existing package curator ..")
+                    }
+                    else if (listInfo.curatorPolicy?.value == 'New') {
+                      if (!obj.curatoryGroups.contains(curator)) {
+                        obj.curatoryGroups << curator
+                      }
+
+                      obj.save(flush: true)
+
+                      obj.curatoryGroups.retainAll([curator])
                     }
 
                     obj.save()
@@ -683,7 +728,7 @@ class BulkPackageImportService {
     result
   }
 
-  private void setPackageBinaryRefdata(obj, prop, val) {
+  private void setPackageBinaryRefdata(Package obj, String prop, boolean val) {
     if (val == true) {
       obj[prop] = RefdataCategory.lookup(prop, "Yes")
     }
@@ -695,7 +740,7 @@ class BulkPackageImportService {
     }
   }
 
-  private boolean hasChangedFile(pid, item) {
+  private boolean hasChangedFile(Long pid, Map item) {
     Package.withNewSession {
       boolean result = false
       def deposit_token = java.util.UUID.randomUUID().toString()
