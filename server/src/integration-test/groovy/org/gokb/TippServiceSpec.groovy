@@ -43,9 +43,9 @@ class TippServiceSpec extends Specification {
   IdentifierNamespace isbn_ns
 
   def setup() {
-    Org publisher = Org.findByName("TippService Test Org") ?: new Org(name: "TippService Test Org").save(flush: true)
-    Platform plt = Platform.findByName("TippService Test Platform") ?: new Platform(name: "TippService Test Platform", provider: publisher).save(flush: true)
-    Package pkg = Package.findByName("TippService Test Package") ?: new Package(name: "TippService Test Package").save(flush: true)
+    Org publisher = Org.findByName("TippService Test Org") ?: new Org(name: "TippService Test Org").save(flush: true, failOnError: true)
+    Platform plt = Platform.findByName("TippService Test Platform") ?: new Platform(name: "TippService Test Platform", provider: publisher).save(flush: true, failOnError: true)
+    Package pkg = Package.findByName("TippService Test Package") ?: new Package(name: "TippService Test Package").save(flush: true, failOnError: true)
 
     if (!issn_ns) {
       issn_ns = IdentifierNamespace.findByValue('issn')
@@ -58,34 +58,34 @@ class TippServiceSpec extends Specification {
     }
 
     if (!BookInstance.findByName("TippService Book 1")) {
-      Identifier isbn = new Identifier(namespace: isbn_ns, value: '979-11-655-6390-5').save(flush: true)
-      BookInstance book = new BookInstance(name: "TippService Book 1").save(flush:true)
+      Identifier isbn = new Identifier(namespace: isbn_ns, value: '979-11-655-6390-5').save(flush: true, failOnError: true)
+      BookInstance book = new BookInstance(name: "TippService Book 1").save(flush: true, failOnError: true)
       book.ids.add(isbn)
-      book.save(flush: true)
+      book.save(flush: true, failOnError: true)
     }
 
-    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
-    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338')
+    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483').save(flush: true, failOnError: true)
+    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338').save(flush: true, failOnError: true)
 
     JournalInstance journal = JournalInstance.findByName("TippService Journal 1")
     JournalInstance journal2 = JournalInstance.findByName("TippService Journal 2")
 
     if (!journal) {
-      journal = new JournalInstance(name: "TippService Journal 1").save(flush:true)
+      journal = new JournalInstance(name: "TippService Journal 1").save(flush: true, failOnError: true)
       journal.ids.addAll([issn, eissn])
-      journal.save(flush: true)
+      journal.save(flush: true, failOnError: true)
     }
 
     if (!journal2) {
-      journal2 = new JournalInstance(name: "TippService Journal 2").save(flush:true)
+      journal2 = new JournalInstance(name: "TippService Journal 2").save(flush: true, failOnError: true)
       journal2.ids.addAll([issn])
-      journal2.save(flush: true)
+      journal2.save(flush: true, failOnError: true)
     }
 
     TitleInstancePackagePlatform rr_tipp = TitleInstancePackagePlatform.findByName("Test TIPP ambiguous review")
 
     if (!rr_tipp) {
-      Package rr_pkg = Package.findByName("TippService Test reviewAmbiguousMatches Package") ?: new Package(name: "TippService Test reviewAmbiguousMatches Package").save(flush: true)
+      Package rr_pkg = Package.findByName("TippService Test reviewAmbiguousMatches Package") ?: new Package(name: "TippService Test reviewAmbiguousMatches Package").save(flush: true, failOnError: true)
 
       def tmap = [
         pkg            : rr_pkg.id,
@@ -101,7 +101,7 @@ class TippServiceSpec extends Specification {
       rr_tipp = tippUpsertService.upsertDTO(tmap)
 
       rr_tipp.ids.addAll([issn, eissn])
-      rr_tipp.save(flush: true)
+      rr_tipp.save(flush: true, failOnError: true)
     }
 
     RefdataValue rr_type = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Title Matches')
@@ -111,7 +111,7 @@ class TippServiceSpec extends Specification {
 
     if (ambiguous_rr && ambiguous_rr.status == rr_status_closed) {
       ambiguous_rr.status = rr_status_open
-      ambiguous_rr.save(flush: true)
+      ambiguous_rr.save(flush: true, failOnError: true)
     } else {
       Map additionalInfo = [
         otherComponents: [
@@ -135,7 +135,54 @@ class TippServiceSpec extends Specification {
         stdDesc: rr_type,
         additionalInfo: (additionalInfo as JSON).toString(),
         componentToReview: rr_tipp
-      ).save(flush:true)
+      ).save(flush: true, failOnError: true)
+    }
+
+    TitleInstancePackagePlatform update_tipp = TitleInstancePackagePlatform.findByName("Test TIPP updateTippFields")
+
+    if (!update_tipp) {
+
+      def tmap = [
+        pkg            : pkg.id,
+        hostPlatform   : plt.id,
+        url            : "http://test-url.net/",
+        status         : "Current",
+        name           : "Test TIPP updateTippFields",
+        editStatus     : "Approved",
+        language       : "ger",
+        publicationType: "Serial",
+        paymentType    : "Paid",
+        coverage: [
+          [
+            startDate: '2012-01',
+            startVolume: '1',
+            startIssue: '1',
+            endDate: null,
+            endVolume: null,
+            endIssue: null,
+            coverageDepth: 'Fulltext',
+            coverageNote: 'No Embargo',
+            embargo: null
+          ]
+        ]
+      ]
+
+      update_tipp = tippUpsertService.upsertDTO(tmap)
+
+      update_tipp.ids.addAll([issn, eissn])
+      update_tipp.save(flush: true, failOnError: true)
+    }
+
+    Package tipl_test_pkg = Package.findByName("TippService TiplTestPackage") ?: new Package(name: "TippService TiplTestPackage").save(flush: true, failOnError: true)
+    TitleInstancePackagePlatform tipl_test_tipp = TitleInstancePackagePlatform.findByName("TippService CreateTiplTest")
+
+    Identifier issn_tipl = Identifier.findByNamespaceAndValue(issn_ns, '0161-9152') ?: new Identifier(namespace: issn_ns, value: '0161-9152').save(flush: true, failOnError: true)
+    Identifier eissn_tipl = Identifier.findByNamespaceAndValue(eissn_ns, '1574-4647') ?: new Identifier(namespace: eissn_ns, value: '1574-4647').save(flush: true, failOnError: true)
+
+    if (!tipl_test_tipp) {
+      tipl_test_tipp = new TitleInstancePackagePlatform(name: "TippService CreateTiplTest", url: "http://testing.de/test", pkg: tipl_test_pkg, hostPlatform: plt).save(flush: true, failOnError: true)
+      tipl_test_tipp.ids.addAll([issn_tipl, eissn_tipl])
+      tipl_test_tipp.save(flush: true, failOnError: true)
     }
   }
 
@@ -150,19 +197,21 @@ class TippServiceSpec extends Specification {
       "TippService Book 1",
       "TippService Journal Conflict 1",
       "TippService Journal Conflict 2",
-      "Test TIPP ambiguous review"
+      "Test TIPP ambiguous review",
+      "Test TIPP updateTippFields",
+      "TippService CreateTiplTest"
     ].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
     Package.findByName("TippService Test Package")?.expunge()
     Package.findByName("TippService Test reviewAmbiguousMatches Package")?.expunge()
+    Package.findByName("TippService TiplTestPackage")?.expunge()
     Platform.findByName("TippService Test Platform")?.expunge()
     Org.findByName("TippService Test Org")?.expunge()
     BookInstance.findByName("TippService Book 1")?.expunge()
     BookInstance.findByName("TippService Update Book")?.expunge()
     JournalInstance.findByName("TippService Journal 1")?.expunge()
     JournalInstance.findByName("TippService Journal Conflict 1")?.expunge()
-
   }
 
   void "Test create new title from a minimal TIPP"() {
@@ -242,15 +291,17 @@ class TippServiceSpec extends Specification {
     then:
     result.status == 'created'
     tipp.title != null
-    tipp.name == tipp.title.name
-    tipp.firstEditor == tipp.title.firstEditor
-    tipp.firstAuthor == tipp.title.firstAuthor
-    tipp.editionStatement == tipp.title.editionStatement
-    tipp.volumeNumber == tipp.title.volumeNumber
-    tipp.dateFirstInPrint == tipp.title.dateFirstInPrint
-    tipp.dateFirstOnline == tipp.title.dateFirstOnline
-    tipp.medium.value == tipp.title.medium.value
-    tipp.title.publisher*.name.contains(tipp.publisherName)
+    def title = TitleInstance.findById(tipp.title.id)
+    tipp.name == title.name
+    tipp.firstEditor == title.firstEditor
+    tipp.firstAuthor == title.firstAuthor
+    tipp.editionStatement == title.editionStatement
+    tipp.volumeNumber == title.volumeNumber
+    tipp.dateFirstInPrint == title.dateFirstInPrint
+    tipp.dateFirstOnline == title.dateFirstOnline
+    tipp.medium.value == title.medium.value
+    title.refresh()
+    title.publisher*.name.contains(tipp.publisherName)
   }
 
   void "Test attach existing title with a TIPP by its IDs"() {
@@ -343,6 +394,21 @@ class TippServiceSpec extends Specification {
     ReviewRequest.findByComponentToReviewAndStdDesc(tipp.title, rdv_desc) != null
   }
 
+  void "Test create new title and tipl"() {
+    given:
+    def tipp = TitleInstancePackagePlatform.findByName("TippService CreateTiplTest")
+
+    when:
+    def result = tippService.matchTitle(tipp.id)
+
+    then:
+    result?.status == 'created'
+    sleep(500)
+    def ti = TitleInstance.get(tipp.title.id)
+    ti?.tipls?.size() == 1
+  }
+
+
   void "Test skip title linking due to ambiguous matches"() {
     given:
     Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
@@ -424,5 +490,87 @@ class TippServiceSpec extends Specification {
 
     review.status == RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
     tipp.title != null
+  }
+
+  void "Test updateTippFields without changes"() {
+    given:
+    def tipp_to_update = TitleInstancePackagePlatform.findByName("Test TIPP updateTippFields")
+    def old_update = tipp_to_update.lastUpdated
+    def update_info = [
+        url            : "http://test-url.net/",
+        status         : "Current",
+        name           : "Test TIPP updateTippFields",
+        editStatus     : "Approved",
+        language       : "ger",
+        publicationType: "Serial",
+        paymentType    : "Paid",
+        identifiers: [
+          [
+            type: 'issn',
+            value: '0128-5483'
+          ],
+          [
+            type: 'eissn',
+            value: '2180-4338'
+          ]
+        ]
+      ]
+    when:
+    def result = tippService.updateTippFields(tipp_to_update, update_info)
+    then:
+    result == false
+    tipp_to_update.refresh().lastUpdated == old_update
+  }
+
+  void "Test updateTippFields with changes in simple fields"() {
+    given:
+    def tipp_to_update = TitleInstancePackagePlatform.findByName("Test TIPP updateTippFields")
+    def old_update = tipp_to_update.lastUpdated
+    def update_info = [
+        url            : "http://test-url.net/update",
+        name           : "Test TIPP updateTippFields",
+        language       : "ger",
+        publicationType: "Serial",
+        paymentType    : "Paid",
+        identifiers: [
+          [
+            type: 'issn',
+            value: '0128-5483'
+          ],
+          [
+            type: 'eissn',
+            value: '2180-4338'
+          ]
+        ]
+      ]
+    when:
+    def result = tippService.updateTippFields(tipp_to_update, update_info)
+    then:
+    result == true
+    tipp_to_update.refresh().lastUpdated != old_update
+  }
+
+  void "Test updateTippFields with removed identifier"() {
+    given:
+    def tipp_to_update = TitleInstancePackagePlatform.findByName("Test TIPP updateTippFields")
+    def old_update = tipp_to_update.lastUpdated
+    def update_info = [
+        url            : "http://test-url.net/update",
+        name           : "Test TIPP updateTippFields",
+        language       : "ger",
+        publicationType: "Serial",
+        paymentType    : "Paid",
+        identifiers: [
+          [
+            type: 'eissn',
+            value: '2180-4338'
+          ]
+        ]
+      ]
+    when:
+    def result = tippService.updateTippFields(tipp_to_update, update_info)
+    then:
+    result == true
+    tipp_to_update.lastUpdated != old_update
   }
 }

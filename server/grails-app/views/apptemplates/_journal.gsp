@@ -309,7 +309,7 @@
             <tr>
               <td><g:link controller="resource" action="show"
                           id="${tipl.tiplHostPlatform.class.name}:${tipl.tiplHostPlatform.id}">${tipl.tiplHostPlatform.name}</g:link></td>
-              <td>${tipl.url}</td>
+              <td>${tipl['url']}</td>
               <td><g:xEditableRefData owner="${tipl}" field="status" config='KBComponent.Status'/></td>
             </tr>
           </g:each>

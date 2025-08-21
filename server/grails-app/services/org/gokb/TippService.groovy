@@ -753,7 +753,7 @@ class TippService {
   }
 
   @Transactional
-  def matchPackage(pkgId, def job = null) {
+  def matchPackage(pkgId, def job = null, def parentJob = null) {
     log.debug("Matching titles for package ${pkgId}")
     def result = [
       result: 'OK',
@@ -823,6 +823,12 @@ class TippService {
       session.flush()
       session.clear()
 
+      if (job && (!parentJob || !parentJob.ownerId) && !hasOpenReviews(pkgId)) {
+        Package pkg = Package.get(pkgId)
+        pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
+        pkg.save(flush: true)
+      }
+
       if (job) {
         job.setProgress(100)
         job.message("Finished package title matching.")
@@ -838,6 +844,36 @@ class TippService {
     result
   }
 
+  public Boolean hasOpenReviews(pid) {
+    ReviewRequest.withNewSession {
+      RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+      RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
+      RefdataValue manual_review_type = RefdataCategory.lookup("ReviewRequest.StdDesc", 'Manual Request')
+
+      def qry = '''select count(*) from ReviewRequest as rr
+                    where (
+                      rr.componentToReview.id = :pid
+                      and rr.stdDesc != :mr
+                    )
+                    or (
+                      rr.componentToReview in (
+                        select t from TitleInstancePackagePlatform as t
+                        where exists (
+                          select 1 from Combo
+                          where fromComponent.id = :pid
+                          and toComponent = t
+                          and type = :ct
+                        )
+                      )
+                    )
+                    and rr.status = :so'''
+
+      def total = ReviewRequest.executeQuery(qry, [pid: pid, mr: manual_review_type, ct: combo_tipps, so: status_open])[0]
+
+      return total > 0
+    }
+  }
+
   @Transactional
   def matchTitle(tippId, def groupId = null) {
     def result = [status: 'matched', reviewCreated: false]
@@ -846,6 +882,7 @@ class TippService {
     def tipp = TitleInstancePackagePlatform.findById(tippId)
 
     if (tipp) {
+      log.debug("Matching TIPP ${tipp.name} ..")
       CuratoryGroup group = groupId ? CuratoryGroup.findById(groupId) : null
       final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
       Package pkg = Package.deproxy(tipp.pkg)
@@ -891,9 +928,33 @@ class TippService {
           log.debug("Skipping Invalid..")
         }
         else if (found.to_create == true) {
-          log.debug("No existing title matched, creating ${tipp.name}")
-          ti = createTitleFromTippData(tipp, tipp_ids)
-          result.status = 'created'
+          if (tipp.name) {
+            log.debug("No existing title matched, creating ${tipp.name}")
+            ti = createTitleFromTippData(tipp, tipp_ids)
+            result.status = 'created'
+          }
+          else if (found.matches.size() == 0) {
+            log.warn("No name for unmatched tipp ${tipp} ..")
+            RefdataValue type_mtn = RefdataCategory.lookup('ReviewRequest.StdDesc', "Missing TIPP Name")
+
+            def existing_mtn = ReviewRequest.findByStdDescAndComponentToReview(type_mtn, tipp)
+
+            if (existing_mtn) {
+              log.debug("Unmatched ${tipp} already has a review ..")
+            }
+            else {
+              def review = reviewRequestService.raise(
+                tipp,
+                "The TIPP could not be linked to an existing title, and cannot create a new one due to a missing name!",
+                "Supply a name for the TIPP or delete it.",
+                null,
+                null,
+                null,
+                type_mtn,
+                componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
+              )
+            }
+          }
         }
         else if (found.matches.size() == 1) {
           // exactly one match
@@ -961,21 +1022,45 @@ class TippService {
         }
 
         if (ti) {
-          new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
+          tipp.title = ti
+          tipp.save(flush: true, failOnError: true)
 
           if (result.status == 'matched') {
             boolean ti_changed = componentUpdateService.updateIdentifiers(ti, tipp_ids)
 
             if (ti_changed) {
               ti.lastSeen = new Date().getTime()
-              ti.save(flush: true)
+              ti = ti.merge(flush: true, failOnError: true)
             }
 
-            titleAugmentService.addPublisher(tipp.publisherName, ti)
+            if (!ti.currentPublisher) {
+              titleAugmentService.addPublisher(tipp.publisherName, ti)
+
+              if (ti.currentPublisher) {
+                ti_changed = true
+              }
+            }
+
+            if (title_class_name == 'org.gokb.cred.BookInstance') {
+              def mono_string_info = [
+                editionStatement: tipp.editionStatement,
+                volumeNumber    : tipp.volumeNumber,
+                firstAuthor     : tipp.firstAuthor,
+                firstEditor     : tipp.firstEditor
+              ]
+
+              ti_changed |= titleAugmentService.editMonographFields(ti, mono_string_info, true)
+            }
+
+            if (ti_changed) {
+              ti.save(flush: true)
+            }
           }
 
           tipp.lastSeen = System.currentTimeMillis()
           tipp.save(flush: true)
+
+          ensureTipl(ti, tipp.hostPlatform, tipp.url)
 
           touchPackage(tipp)
 
@@ -1026,20 +1111,18 @@ class TippService {
     ti.name = tipp.name
 
     log.debug("Set name ${ti.name} ..")
-    ti.save(flush: true)
+    ti.save(flush: true, failOnError: true)
+
     titleAugmentService.addPublisher(tipp.publisherName, ti)
+    ti.save(flush: true, failOnError: true)
+
     log.debug("Transfering new ti ids: ${tipp_ids}")
     componentUpdateService.updateIdentifiers(ti, tipp_ids)
+    ti.refresh()
 
     title_changed |= componentUpdateService.setAllRefdata([
         'medium', 'language'
     ], tipp, ti)
-
-    def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(dateFormatService.formatDate(tipp.dateFirstInPrint)) : null
-    def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(dateFormatService.formatDate(tipp.dateFirstOnline)) : null
-
-    title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
-    title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
 
     if (title_class_name == 'org.gokb.cred.BookInstance') {
       log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
@@ -1047,13 +1130,15 @@ class TippService {
         editionStatement: tipp.editionStatement,
         volumeNumber    : tipp.volumeNumber,
         firstAuthor     : tipp.firstAuthor,
-        firstEditor     : tipp.firstEditor
+        firstEditor     : tipp.firstEditor,
+        dateFirstInPrint: tipp.dateFirstInPrint,
+        dateFirstOnline : tipp.dateFirstOnline
       ]
 
       title_changed |= titleAugmentService.editMonographFields(ti, mono_string_info)
     }
 
-    ti.save(flush: true)
+    ti.save(flush: true, failOnError: true)
     ti
   }
 
@@ -1188,7 +1273,7 @@ class TippService {
     def result = []
     TIPPCoverageStatement latest = latest(tipp.coverageStatements)
 
-    if (latest && found.matches.size > 1) {
+    if (latest && found.matches.size() > 1) {
       def matches = []
       // too many identifier matches
       for (def comp : found.matches) {
@@ -1504,7 +1589,7 @@ class TippService {
       }
     }
 
-    if (full_matches.size == 1) {
+    if (full_matches.size() == 1) {
       result.full_matches = full_matches
     }
     else if (full_matches.size() > 1) {
@@ -1718,6 +1803,16 @@ class TippService {
     coverage_item
   }
 
+  public void deleteExistingCoverage(tipp) {
+    def tcs_ids = tipp.coverageStatements*.id
+
+    tcs_ids.each {
+      def tcs_obj = TIPPCoverageStatement.get(it)
+      tipp.removeFromCoverageStatements(tcs_obj)
+    }
+    tipp.save(flush: true)
+  }
+
   public Boolean existsCoverage(tipp, coverage) {
     Boolean result = false
     def mapped_statement = convertCoverageItem(coverage)
@@ -1748,17 +1843,24 @@ class TippService {
     pkg_obj?.save(flush:true)
   }
 
-  public TitleInstancePackagePlatform updateTippFields(tipp, tippInfo, User user = null, boolean create_coverage = true) {
-    componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
+  public boolean updateTippFields(tipp, tippInfo, User user = null, boolean create_coverage = true) {
+    boolean hasChanged = componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
+
+    log.debug("updateTippFields hasChanged after ids: ${hasChanged}")
 
     if (create_coverage) {
       def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
 
       cov_list.each { c ->
-        tipp.addToCoverageStatements(convertCoverageItem(c))
+        if (!existsCoverage(tipp, c)) {
+          tipp.addToCoverageStatements(convertCoverageItem(c))
+          hasChanged = true
+        }
       }
 
-      tipp.save(flush: true)
+      if (hasChanged) {
+        tipp.save(flush: true, failOnError: true)
+      }
     }
 
     log.debug("Update simple fields: ${tippInfo}")
@@ -1767,17 +1869,19 @@ class TippService {
     'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
       if (tippInfo[propName] && tippInfo[propName].trim() != tipp[propName]) {
         tipp[propName] = tippInfo[propName].trim()
+        hasChanged = true
       }
     }
 
-    if (!tipp.importId) {
+    if (!tipp.importId && (tippInfo.importId || tippInfo.titleId)) {
       tipp.importId = tippInfo.importId ?: tippInfo.titleId
+      hasChanged = true
     }
 
     log.debug("Updated info (${tipp.id}): ${tipp.url} ${tipp.name}")
 
     if (tippInfo.dateFirstInPrint) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstInPrint), tipp, 'dateFirstInPrint')
+      hasChanged |= ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstInPrint), tipp, 'dateFirstInPrint')
     }
     else {
       log.debug("No dateFirstInPrint -> ${tippInfo.dateFirstInPrint}")
@@ -1787,46 +1891,68 @@ class TippService {
     LocalDateTime date_first_online = GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline)
 
     if (access_start_ldt) {
-      ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
+      hasChanged |= ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
+
+      if (tipp.accessEndDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessEndDate = null
+      }
     }
 
     if (date_first_online) {
-      ClassUtils.setDateIfPresent(date_first_online, tipp, 'dateFirstOnline')
+      hasChanged |= ClassUtils.setDateIfPresent(date_first_online, tipp, 'dateFirstOnline')
     }
 
     if (tippInfo.accessEndDate) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
+      hasChanged |= ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
+
+      if (tipp.accessStartDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessStartDate = null
+      }
     }
 
     if (tipp.accessEndDate && tipp.accessEndDate < new Date()) {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+      hasChanged |= ClassUtils.setRefdataIfPresent('Retired', tipp, 'status')
     }
     else if (tippInfo.status?.toLowerCase() == 'retired' && tipp.status.value != 'Retired') {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-      tipp.accessEndDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
+      hasChanged |= ClassUtils.setRefdataIfPresent('Retired', tipp, 'status')
+      hasChanged |= ClassUtils.updateDateField(LocalDate.now(), tipp, 'accessEndDate')
+
+      if (tipp.accessStartDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessStartDate = null
+      }
     }
     else if (date_first_online && date_first_online > LocalDateTime.now()) {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-      ClassUtils.setDateIfPresent(date_first_online, tipp, 'accessStartDate')
+      hasChanged |= ClassUtils.setRefdataIfPresent('Expected', tipp, 'status')
+      hasChanged |= ClassUtils.setDateIfPresent(date_first_online, tipp, 'accessStartDate')
+
+      if (tipp.accessEndDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessEndDate = null
+      }
     }
     else if (access_start_ldt && access_start_ldt > LocalDateTime.now()) {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+      hasChanged |= ClassUtils.setRefdataIfPresent('Expected', tipp, 'status')
+
+      if (tipp.accessEndDate && tipp.accessEndDate < tipp.accessStartDate) {
+        tipp.accessEndDate = null
+      }
     }
 
-    ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
-    ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
+    hasChanged |= ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
+    hasChanged |= ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
 
     if (tippInfo.paymentType in ['F', 'f']) {
-      ClassUtils.setRefdataIfPresent('OA', tipp, 'paymentType')
+      hasChanged |= ClassUtils.setRefdataIfPresent('OA', tipp, 'paymentType')
     } else if (tippInfo.paymentType in ['P', 'p']) {
-      ClassUtils.setRefdataIfPresent('Paid', tipp, 'paymentType')
+      hasChanged |= ClassUtils.setRefdataIfPresent('Paid', tipp, 'paymentType')
     }
 
-    ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
+    hasChanged |= ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
 
-    tipp.save(flush:true)
+    if (hasChanged) {
+      tipp.save(flush:true, failOnError: true)
+    }
 
-    tipp
+    hasChanged
   }
 
   def updateCombos(obj, reqBody, boolean remove = true) {
@@ -2021,5 +2147,45 @@ class TippService {
 
     duplicate.deleteSoft()
     touchPackage(target)
+  }
+
+  def ensureTipl(title, platform, url) {
+    if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
+      def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      def r = TitleInstancePlatform.executeQuery('''select tipl
+              from TitleInstancePlatform as tipl,
+              Combo as titleCombo,
+              Combo as platformCombo
+              where titleCombo.toComponent = tipl
+              and titleCombo.fromComponent = :ti
+              and platformCombo.toComponent = tipl
+              and platformCombo.fromComponent = :plt
+              and tipl.status = :sc
+              ''',[ti: title, plt: platform, sc: status_current])
+
+      if ( r.size() == 0 ) {
+        def tipl = new TitleInstancePlatform(url:url).save(flush:true, failOnError:true)
+
+        def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTitles')
+        def plt_combo = new Combo(toComponent:tipl, fromComponent:platform, type:plt_combo_type).save(flush:true, failOnError:true);
+
+        def ti_combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipls')
+        def ti_combo = new Combo(toComponent:tipl, fromComponent:title, type:ti_combo_type).save(flush:true, failOnError:true);
+
+        return tipl
+
+      } else if ( r.size() == 1 ) {
+        def matched_tipl = r[0]
+
+        if (url && matched_tipl.url != url) {
+          matched_tipl.url = url
+        }
+        return matched_tipl
+
+      } else {
+        log.warn("Found more than one TIPL for ${title} on ${platform}!")
+        return null
+      }
+    }
   }
 }

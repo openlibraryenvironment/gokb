@@ -58,6 +58,14 @@
 		<dd>
 			<g:xEditableBoolean owner="${d}" field="automaticUpdates" />
 		</dd>
+		<sec:ifAnyGranted roles="ROLE_ADMIN">
+			<dt>
+				<g:annotatedLabel owner="${d}" property="">Ignore KBART Size Limit</g:annotatedLabel>
+			</dt>
+			<dd>
+				<g:xEditableBoolean owner="${d}" field="ignoreSizeLimit" />
+			</dd>
+		</sec:ifAnyGranted>
 		<dt>
 			<g:annotatedLabel owner="${d}" property="targetNamespace">Title ID Namespace</g:annotatedLabel>
 		</dt>

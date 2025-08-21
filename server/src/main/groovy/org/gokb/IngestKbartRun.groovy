@@ -343,7 +343,7 @@ class IngestKbartRun {
             }
 
             def matching_job = concurrencyManagerService.createJob { mjob ->
-              tippService.matchPackage(pkg_info.id, mjob)
+              tippService.matchPackage(pkg_info.id, mjob, job)
             }
 
             matching_job.description = "Package Title Matching".toString()
@@ -823,13 +823,7 @@ class IngestKbartRun {
 
           if (result.status != 'created' && result.status != 'partial') {
             if (tipp.coverageStatements?.size() > 1 || (tipp.coverageStatements?.size() == 1 && !tippService.existsCoverage(tipp, tipp_map.coverageStatements[0]))) {
-              def tcs_ids = tipp.coverageStatements*.id
-
-              tcs_ids.each {
-                def tcs_obj = TIPPCoverageStatement.get(it)
-                tipp.removeFromCoverageStatements(tcs_obj)
-              }
-              tipp.save(flush: true)
+              tippService.deleteExistingCoverage(tipp)
             }
             else if (tipp.coverageStatements?.size() > 0) {
               new_coverage = false
@@ -896,7 +890,7 @@ class IngestKbartRun {
     }
 
     if (!dryRun && tipp) {
-      tipp = tippService.updateTippFields(tipp, tipp_map, user, new_coverage)
+      boolean hasTippChanged = tippService.updateTippFields(tipp, tipp_map, user, new_coverage)
       tipp.refresh()
 
       // log.debug("Values updated, set lastSeen");
@@ -921,7 +915,7 @@ class IngestKbartRun {
           log.debug("Skipping unchanged")
         }
 
-        tipp.save(flush: true)
+        tipp.save(flush: true, failOnError: true)
       }
       else {
         log.error("Validation failed!")

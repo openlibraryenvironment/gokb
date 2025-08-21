@@ -79,13 +79,18 @@ class PackageSourceUpdateService {
       title_ns_serial_id = pkg_source?.titleIdSerial?.id ?: null
       title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: null
 
+      if ( restrictSize ) {
+        def ignoreSizeLimit = pkg_source?.getIgnoreSizeLimit()
+        restrictSize = !ignoreSizeLimit
+      }
+
       if (job && !job.startTime) {
         job.startTime = startTime
       }
 
-      isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value && pkg_source.importConfig.value != "EZB")
+      isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value == "WEKB")
       if ( isExternalSourceImportOrUpdate ) {
-        result.report = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job)
+        result.report = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job, async, restrictSize)
 
       } else {
         if (pkg_source?.url) {
@@ -355,25 +360,6 @@ class PackageSourceUpdateService {
                                                     job,
                                                     title_ns_serial_id,
                                                     title_ns_mono_id)
-
-        if (hasOpenIssues(pid, async, result)) {
-          log.info("There were issues with the automated job (valid: ${result.validation?.valid}, reviews: ${result.report?.reviews}${!async ? ', matching reviews: '  + result.matchingJob?.reviews : ''}), keeping listStatus in progress..")
-        }
-        else if (!async && !dryRun) {
-          log.debug("Setting new listStatus to checked ..")
-
-          Package.withNewTransaction {
-            def pack = Package.findById(pid)
-            pack.refresh()
-            pack.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
-            pack.save(flush: true)
-          }
-
-          log.debug("Set package list status to checked!")
-        }
-        else {
-          log.debug("Skipping async job list status ..")
-        }
       }
       else {
         Job update_job = concurrencyManagerService.createJob { Job j ->
@@ -411,26 +397,6 @@ class PackageSourceUpdateService {
         }
         catch (Exception e) {
           log.error("Package import threw an exception!", e)
-        }
-
-        if (hasOpenIssues(pid, async, result.job_result)) {
-          log.info("There were issues with the automated job (valid: ${result.job_result?.validation?.valid}, reviews: ${result.job_result?.report?.reviews}${!async ? ', matching reviews: '  + result.matchingJob?.reviews : ''}), keeping listStatus in progress..")
-        }
-        else if (!async && !dryRun) {
-          log.debug("Setting new listStatus to checked ..")
-
-          try {
-            Package.withNewSession {
-              Package ptc = Package.findById(pid)
-              ptc.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
-              ptc.save(flush: true)
-            }
-          }
-          catch (Exception e) {
-            log.error("Unable to check list status!", e)
-          }
-
-          log.debug("Set package list status to checked!")
         }
       }
     }
@@ -491,8 +457,11 @@ class PackageSourceUpdateService {
 
       def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
 
-      if (file_name) {
+      if (file_name?.contains('filename=')) {
         file_name = file_name.split('filename=')[1]
+      }
+      else if (file_name?.contains('filename*=')) {
+        file_name = file_name.split('filename*=')[1].split("'")[2]
       }
 
       result.content_mime_type = headers.firstValue('Content-Type').isPresent() ? headers.firstValue('Content-Type').get() : null
@@ -565,42 +534,6 @@ class PackageSourceUpdateService {
     }
 
     result
-  }
-
-  public Boolean hasOpenIssues(pid, async, jobResult) {
-    boolean result = false
-
-    if (jobResult.validation?.valid == false || jobResult.report?.reviews > 0 || (!async && jobResult.matchingJob?.reviews > 0)) {
-      result = true
-    }
-    else if (hasOpenTippReviews(pid)) {
-      result = true
-    }
-
-    result
-  }
-
-  public Boolean hasOpenTippReviews(pid) {
-    ReviewRequest.withNewSession {
-      RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-      RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
-
-      def qry = '''select count(*) from ReviewRequest as rr
-                    where rr.componentToReview in (
-                      select t from TitleInstancePackagePlatform as t
-                      where exists (
-                        select 1 from Combo
-                        where fromComponent.id = :pid
-                        and toComponent = t
-                        and type = :ct
-                      )
-                    )
-                    and rr.status = :so'''
-
-      def total = ReviewRequest.executeQuery(qry, [pid: pid, ct: combo_tipps, so: status_open])[0]
-
-      return total > 0
-    }
   }
 
   public Boolean hasFileChanged(pkgId, datafileId) {

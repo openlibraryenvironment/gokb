@@ -24,6 +24,8 @@ class WorkflowController{
   def dateFormatService
   def concurrencyManagerService
   def titleAugmentService
+  def platformService
+  def orgService
 
   def actionConfig = [
       'method::deleteSoft'     : [actionType: 'simple'],
@@ -47,6 +49,7 @@ class WorkflowController{
       'setStatus::Current'     : [actionType: 'simple'],
       'setStatus::Expected'    : [actionType: 'simple'],
       'setStatus::Deleted'     : [actionType: 'simple'],
+      'org::transferPackages'  : [actionType: 'workflow', view: 'transferProviderPackages'],
       'org::deprecateReplace'  : [actionType: 'workflow', view: 'deprecateOrg'],
       'org::deprecateDelete'   : [actionType: 'workflow', view: 'deprecateDeleteOrg'],
       'verifyTitleList'        : [actionType: 'process', method: 'verifyTitleList']
@@ -1184,42 +1187,66 @@ class WorkflowController{
     activity_record.save(flush: true)
   }
 
-  @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def processPackageReplacement(){
-    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
-    def result = [:]
-    result['old'] = []
-    result['new'] = ''
-    result['count'] = 0
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  def processPlatformReplacement() {
+    def result = [
+      result: 'OK',
+      old: []
+    ]
+    def user = springSecurityService.currentUser
 
-    params.each{ p ->
-      log.debug("Testing ${p.key}")
-      if ((p.key.startsWith('tt')) && (p.value) && (p.value instanceof String)){
-        def tt = p.key.substring(3)
-        log.debug("Platform to replace: \"${tt}\"")
-        def old_platform = Platform.get(tt)
-        def new_platform = genericOIDService.resolveOID2(params.newplatform)
-        log.debug("old: ${old_platform} new: ${new_platform}")
-        try{
-          def updates_count = Combo.executeQuery("select count(combo) from Combo combo where combo.fromComponent = :plt", [plt: old_platform])
-          Combo.executeUpdate("update Combo combo set combo.fromComponent = :np where combo.fromComponent = :op", [np: new_platform, op: old_platform])
-          result['count'] += updates_count
-          result['old'] += old_platform.name
-          result['new'] = new_platform.name
-          old_platform.status = retired_status
-          old_platform.save(flush: true)
-        }
-        catch (Exception e){
-          log.debug("Problem executing update")
+    def new_platform = genericOIDService.resolveOID2(params.newplatform)
+    result.target = [name: new_platform.name, id: new_platform.id]
+
+    def active_platform_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
+    def active_org_jobs = concurrencyManagerService.getActiveJobsForType('Admin Org Merge')
+
+    if (active_platform_jobs || active_org_jobs) {
+      result.result = 'ERROR'
+      result.message = "There is an existing merge job running."
+      flash.error = "There is an existing merge job running."
+    }
+    else {
+      params.each{ p ->
+        log.debug("Testing ${p.key}")
+
+        if ((p.key.startsWith('tt')) && (p.value) && (p.value instanceof String)){
+          def tt = p.key.substring(3)
+          log.debug("Platform to replace: '${tt}'")
+          def old_platform = Platform.get(tt)
+
+          log.debug("old: ${old_platform} new: ${new_platform}")
+          result.old << [name: old_platform.name, id: old_platform.id]
+
+
+          Job background_job = concurrencyManagerService.createJob { Job job ->
+            platformService.merge(old_platform.id, new_platform.id, job)
+          }
+
+          background_job.ownerId = user?.id ?: null
+          background_job.description = "Platform merge ${old_platform} into ${new_platform}".toString()
+          background_job.type = RefdataCategory.lookup('Job.Type', 'Admin Platform Merge')
+          background_job.message("Start merging ${old_platform} -> ${new_platform}".toString())
+          background_job.startOrQueue()
+          background_job.startTime = new Date()
+
+          result.job_id = background_job.uuid
         }
       }
     }
-    render view: 'platformReplacementResult', model: [result: result]
+
+    withFormat {
+      html {
+        render view: 'platformReplacementResult', model: [result: result]
+      }
+      json {
+        render result as JSON
+      }
+    }
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   def processTippRetire(){
     log.debug("processTippRetire ${params}")
     def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
@@ -1683,12 +1710,9 @@ class WorkflowController{
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToRulebase(){
-    def result = [:]
-
-
-    result.ref = request.getHeader('referer')
-    log.debug("${params.sourceName}")
-    log.debug("${params.sourceId}")
+    def result = [
+      ref: request.getHeader('referer')
+    ]
 
     def source = Source.get(params.sourceId)
 
@@ -1722,53 +1746,104 @@ class WorkflowController{
 
   @Transactional
   @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
-  def deprecateOrg(){
-    def result = [:]
-    log.debug("Params: ${params}")
-    log.debug("otd: ${params.orgsToDeprecate}")
-    log.debug("neworg: ${params.neworg}")
-    if (params.orgsToDeprecate && params.neworg){
+  def transferPackages(){
+    def result = [result: 'OK']
+    def errors = []
+
+    if (params.orgsToDeprecate && params.neworg) {
       def orgs = params.list('orgsToDeprecate')
-      def neworg = genericOIDService.resolveOID2(params.neworg)
+      def new_org = genericOIDService.resolveOID2(params.neworg)
 
-      orgs.each{ org_id ->
-
+      orgs.each { org_id ->
         def old_org = Org.get(org_id)
 
-        if (old_org && neworg && old_org.isEditable()){
-          log.debug("Got org to deprecate and neworg...  Process now")
-          def timestamp = new Date()
+        if (old_org && new_org) {
+          def transfer_result = orgService.transferPackages(old_org, new_org)
 
-          def updated_from_combos = Combo.executeUpdate('''update Combo as c
-            set c.fromComponent = :neworg
-            where c.fromComponent = :oldorg
-            and c.toComponent != :neworg
-            and not exists (select 1 from Combo as dc where dc.fromComponent = :neworg and dc.toComponent = c.toComponent and dc.type = c.type)''', [oldorg: old_org, neworg: neworg])
-          log.debug("Moved ${updated_from_combos} fromComponents!")
-
-          def updated_to_combos = Combo.executeUpdate('''update Combo as c
-            set c.toComponent = :neworg
-            where c.toComponent = :oldorg
-            and c.fromComponent != :neworg
-            and not exists (select 1 from Combo as dc where dc.toComponent = :neworg and dc.fromComponent = c.fromComponent and dc.type = c.type)''', [oldorg: old_org, neworg: neworg])
-          log.debug("Moved ${updated_to_combos} toComponents!")
-
-          def deleted_combos = Combo.executeUpdate("delete from Combo where fromComponent = :oldorg or toComponent = :oldorg", [oldorg: old_org])
-
-          log.debug("Deleted ${deleted_combos} Combos!")
-
-          flash.success = "Org Deprecation Completed".toString()
+          if (transfer_result.result == 'ERROR') {
+            result.result = 'ERROR'
+            errors << "${old_org}"
+          }
         }
-        else{
-          flash.errors = "Org Deprecation Failed!".toString()
+        else {
+          result.result = 'ERROR'
+          errors << "${org_id}"
         }
       }
-      redirect(controller: 'resource', action: 'show', id: "${neworg.class.name}:${neworg.id}")
+
+      if (result.result == 'OK') {
+        flash.success = "Package Reallocation Complete".toString()
+      }
+      else {
+        flash.errors = "Package Reallocation Failed for ${errors}!".toString()
+      }
+
+
+      redirect(controller: 'resource', action: 'show', id: "${new_org.class.name}:${new_org.id}")
     }
   }
 
   @Transactional
-  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  def deprecateOrg(){
+    def result = [result: 'OK']
+    def errors = []
+    def user = springSecurityService.currentUser
+
+    if (params.orgsToDeprecate && params.neworg) {
+      def orgs = params.list('orgsToDeprecate')
+      def new_org = genericOIDService.resolveOID2(params.neworg)
+
+      def active_platform_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
+      def active_org_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
+
+      if (active_platform_jobs || active_org_jobs) {
+        result.result = 'ERROR'
+        result.message = "There is an existing Org merge job running."
+        flash.errors = "There is an existing Org merge job running."
+      }
+      else {
+        orgs.each { org_id ->
+          def old_org = Org.get(org_id)
+
+          if (old_org && new_org) {
+            Job background_job = concurrencyManagerService.createJob { Job job ->
+              orgService.mergeDuplicate(old_org.id, new_org.id, job)
+            }
+
+            background_job.ownerId = user?.id ?: null
+            background_job.description = "Org merge ${old_org} into ${new_org}".toString()
+            background_job.type = RefdataCategory.lookup('Job.Type', 'Admin Org Merge')
+            background_job.message("Start merging ${old_org} -> ${new_org}".toString())
+            background_job.startOrQueue()
+            background_job.startTime = new Date()
+
+            result.job_id = background_job.uuid
+          }
+          else{
+            result.result = 'ERROR'
+            errors << "${org_id}"
+          }
+        }
+
+        if (result.result == 'OK') {
+          flash.success = "Org merge started! Check admin jobs view for result.".toString()
+        }
+        else {
+          flash.errors = "Org deprecation failed for ${errors}!".toString()
+        }
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      flash.errors = "Missing selection!".toString()
+    }
+
+    redirect(controller: 'resource', action: 'show', id: "${params.neworg}")
+  }
+
+  @Transactional
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def deprecateDeleteOrg(){
     log.debug("deprecateDeleteOrg ${params}")
     def result = [:]

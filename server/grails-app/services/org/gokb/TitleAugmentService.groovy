@@ -548,23 +548,44 @@ class TitleAugmentService {
     titleInstance.save(flush: true)
   }
 
-  public boolean editMonographFields(ti, updatedInfo) {
+  public boolean editMonographFields(ti, updatedInfo, boolean onlyNew = false) {
     def book_changed = false
 
     ["editionDifferentiator",
      "editionStatement", "volumeNumber",
      "summaryOfContent", "firstAuthor",
      "firstEditor"].each { stringPropertyName ->
-      if (updatedInfo[stringPropertyName] && updatedInfo[stringPropertyName].toString().trim()) {
+      if (updatedInfo[stringPropertyName] && updatedInfo[stringPropertyName].toString().trim() && (!onlyNew || !ti[stringPropertyName])) {
         book_changed |= ClassUtils.setStringIfDifferent(ti, stringPropertyName, updatedInfo[stringPropertyName])
       }
     }
 
-    def dfip = GOKbTextUtils.completeDateString(updatedInfo.dateFirstInPrint)
-    book_changed |= ClassUtils.setDateIfPresent(dfip, ti, 'dateFirstInPrint')
 
-    def dfo = GOKbTextUtils.completeDateString(updatedInfo.dateFirstOnline, false)
-    book_changed |= ClassUtils.setDateIfPresent(dfo, ti, 'dateFirstOnline')
+    if (!onlyNew || !ti.dateFirstInPrint) {
+      def dfip = null
+
+      if (updatedInfo.dateFirstInPrint instanceof Date) {
+        dfip = updatedInfo.dateFirstInPrint
+      }
+      else {
+        dfip = GOKbTextUtils.completeDateString(updatedInfo.dateFirstInPrint)
+      }
+
+      book_changed |= ClassUtils.setDateIfPresent(dfip, ti, 'dateFirstInPrint')
+    }
+
+    if (!onlyNew || !ti.dateFirstOnline) {
+      def dfo = null
+
+      if (updatedInfo.dateFirstOnline instanceof Date) {
+        dfo = updatedInfo.dateFirstOnline
+      }
+      else {
+        dfo = GOKbTextUtils.completeDateString(updatedInfo.dateFirstOnline, false)
+      }
+
+      book_changed |= ClassUtils.setDateIfPresent(dfo, ti, 'dateFirstOnline')
+    }
 
     book_changed
   }
@@ -860,6 +881,7 @@ class TitleAugmentService {
       Org publisher = Org.findByName(publisher_name)
       def norm_pub_name = Org.generateNormname(publisher_name);
       def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      def combo_type_pub = RefdataCategory.lookup("TitleInstance.Publisher")
 
       if (!publisher) {
         // Lookup using norm name.
@@ -882,10 +904,11 @@ class TitleAugmentService {
       }
 
       log.debug("Found publisher ${publisher}")
-      def orgs = ti.getPublisher()
-      log.debug("Check for dupes in ${orgs}")
 
-      if (publisher && !orgs.contains(publisher)) {
+      def existing_combos = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :pub and type = :ct", [ti: ti, pub: publisher, ct: combo_type_pub])
+
+      if (publisher && existing_combos.size() == 0) {
+        // new Combo(fromComponent: ti, toComponent: publisher, type: combo_type_pub).save(flush: true, failOnError: true)
         ti.publisher << publisher
         ti.save(flush: true)
         log.debug("Added new publisher ..")

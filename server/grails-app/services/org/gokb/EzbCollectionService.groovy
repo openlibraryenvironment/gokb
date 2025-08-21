@@ -80,7 +80,7 @@ class EzbCollectionService {
           .header('User-Agent', "GOKb KBART bulk import")
           .header('Accept', 'application/json')
 
-        log.error("Headers: ${request.remoteAddress}")
+        log.debug("Headers: ${request.remoteAddress}")
 
         def resp = HttpClient.create(new URL(baseUrl)).toBlocking().retrieve(request, Map.class)
 
@@ -435,7 +435,12 @@ class EzbCollectionService {
             hasChanged = true
           }
 
-          if (obj.provider != provider) {
+          if (platform.provider && platform.provider != provider && obj.provider != platform.provider) {
+            log.info("Adjusted provider for $obj to platform selection!")
+            obj.provider = platform.provider
+            hasChanged = true
+          }
+          else if (provider && platform.provider == provider && obj.provider != provider) {
             obj.provider = provider
             hasChanged = true
           }

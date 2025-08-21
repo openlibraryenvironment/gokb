@@ -346,6 +346,15 @@ globalSearchTemplates = [
           // II: Default not yet implemented
           default:[ type:'query', query:'select r from RefdataValue where r.value=:v and r.owner.description=:o', params:['Current','KBComponent.Status'] ]
         ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.Org',
+          prompt:'Provider',
+          qparam:'qp_provider',
+          placeholder:'Provider',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'provider'],
+          hide:false
+        ],
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
@@ -354,6 +363,7 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Name/Title', property:'name', sort:'name',link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Primary URL', property:'primaryUrl'],
+        [heading:'Provider', property:'provider?.name', link:true],
         [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
