@@ -89,8 +89,8 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
 
       // Add the from/to components before removing from the 2 lists.
       if (incoming) {
-        
-        
+
+
 
         combo.setFromComponent(comp);
         combo.setToComponent(component);
@@ -100,7 +100,7 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
         combo.setFromComponent(component);
         combo.setToComponent(comp);
       }
-      
+
       // Remove the combos.
       Combo.createCriteria().list {
         and {

@@ -4,18 +4,18 @@
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-<title>GOKB: Deprecate Org Transfer</title>
+<title>GOKB: Merge Duplicate Orgs</title>
 </head>
 <body>
 
-  <h1 class="page-header">Deprecate Org</h1>
+  <h1 class="page-header">Merge Duplicate Orgs</h1>
 
 
   <div id="mainarea" class="panel panel-default">
     <div class="panel-heading">
       <h3 class="panel-title">Step 1 of 1</h3>
       <p>
-This action will replace the existing Publisher in all associated titles with the new Publisher selection
+        This action will move all existing links from one Org to Packages, Titles and Platforms unto another Org (avoiding duplicates)
       </p>
     </div>
     <div class="panel-body">
@@ -55,4 +55,3 @@ This action will replace the existing Publisher in all associated titles with th
   </div>
 </body>
 </html>
-

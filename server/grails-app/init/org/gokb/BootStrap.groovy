@@ -401,6 +401,14 @@ class BootStrap {
                 }
             }
 
+            log.info("Cleanup DOI urls")
+
+            def doi_ctr = cleanupService.fixDoiUrlIds()
+
+            if (doi_ctr > 0) {
+                log.info("${doi_ctr} DOI-Ids updated")
+            }
+
             log.debug("Register users and override default admin password")
             registerUsers()
 
@@ -1075,6 +1083,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Invalid Indentifiers").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Duplicate Title Info").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Matching Conflict").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Missing TIPP Name").save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Activity.Status', 'Complete').save(flush: true, failOnError: true)
@@ -1213,6 +1222,8 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'PackageUpdateTipps').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'EZBCollectionIngest').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'BulkPackageIngest').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'Admin Org Merge').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'Admin Platform Merge').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)

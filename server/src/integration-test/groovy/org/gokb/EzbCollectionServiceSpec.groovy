@@ -38,7 +38,7 @@ class EzbCollectionServiceSpec extends Specification {
     Org.withNewSession {
       testCurator = CuratoryGroup.findByName("EzbTestCurator") ?: new CuratoryGroup(name: "EzbTestCurator").save(flush: true)
       testProvider = Org.findByName("EzbTestProvider") ?: new Org(name: "EzbTestProvider").save(flush: true)
-      testPlatform = Platform.findByName("EzbTestPlatform") ?: new Platform(name: "EzbTestPlatform").save(flush: true)
+      testPlatform = Platform.findByName("EzbTestPlatform") ?: new Platform(name: "EzbTestPlatform", provider: testProvider).save(flush: true)
       testId = Identifier.findByValue("EZB-TEST-12345") ?: new Identifier(value: 'EZB-TEST-12345', namespace: IdentifierNamespace.findByValue('ezb-collection-id')).save(flush: true)
       Source testSrc = Source.findByName("EZB-TEST-12345: EzbTestPkg") ?: new Source(name: "EZB-TEST-12345: EzbTestPkg", url: "https://ezb.uni-regensburg.de/services/titlelist.phtml?collection_id=EZB-NALFO-01634&title_split=1").save(flush:true)
       testPackage = Package.findByName("EzbTestPkg") ?: new Package(name: "EzbTestPkg", source: testSrc).save(flush: true)

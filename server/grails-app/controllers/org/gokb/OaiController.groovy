@@ -153,12 +153,18 @@ class OaiController {
   private def buildHeader(record, builder, options, request) {
     Boolean cachedPackageResponse = (options.oaiConfig.id == 'packages' && grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false))
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def stableUriBase = grailsApplication.config.getProperty('gokb.stableUriBase')
 
     builder.'header'() {
       identifier("${record.class.name}:${record.id}")
 
       if (options.oaiConfig.uriPath) {
-        uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${options.oaiConfig.uriPath}/${record.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${options.oaiConfig.uriPath}/${record.uuid}"))
+        if (stableUriBase) {
+          uri("${stableUriBase}${options.oaiConfig.uriPath}/${record.uuid}")
+        }
+        else {
+          uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${options.oaiConfig.uriPath}/${record.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${options.oaiConfig.uriPath}/${record.uuid}"))
+        }
       }
 
       uuid(record.uuid)

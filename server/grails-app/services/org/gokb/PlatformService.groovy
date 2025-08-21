@@ -1,6 +1,7 @@
 package org.gokb
 
 import com.k_int.ClassUtils
+import com.k_int.ConcurrencyManagerService.Job
 
 import grails.gorm.transactions.Transactional
 
@@ -298,6 +299,292 @@ class PlatformService {
       result.primaryUrl = platformDTO.primaryUrl
       result.save(flush:true, failOnError:true)
     }
+
+    result
+  }
+
+  def merge(old_platform_id, new_platform_id, Job j = null) {
+    def result = null
+    boolean new_session = false
+
+    try {
+      def session = sessionFactory.currentSession
+    }
+    catch (Exception e) {
+      new_session = true
+    }
+
+    if (new_session) {
+      Platform.withNewSession {
+        result = processMerge(old_platform_id, new_platform_id, j)
+      }
+    }
+    else {
+      result = processMerge(old_platform_id, new_platform_id, j)
+    }
+  }
+
+  private def processMerge(old_platform_id, new_platform_id, Job j = null) {
+    def result = [result: 'OK', tipps: 0, tipls: 0, pkgs: 0]
+    Session psession = sessionFactory.currentSession
+
+    Platform old_platform = Platform.findById(old_platform_id)
+    Platform new_platform = Platform.findById(new_platform_id)
+
+    if (!old_platform || !new_platform) {
+      log.error("merge :: Missing value - Old: ${old_platform}, New: ${new_platform}")
+      result.result = 'ERROR'
+      result.message = "Unable to lookup platform(s): ${old_platform_id} -> ${old_platform} -- ${new_platform_id} -> ${new_platform}!"
+      return result
+    }
+
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue combo_type_plt_pkg = RefdataCategory.lookup('Combo.Type', 'Package.NominalPlatform')
+    RefdataValue combo_type_pkg_org = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
+    RefdataValue combo_type_pkg_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+    RefdataValue combo_type_plt_tipp = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
+    RefdataValue combo_type_plt_tipl = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTitles')
+    RefdataValue combo_type_plt_org = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
+    RefdataValue combo_type_ti_tipl = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipls')
+    RefdataValue combo_type_ti_tipp = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    boolean cancelled = false
+
+    try {
+      def affected_pkgs_ids = Package.executeQuery('''select p.id from Package as p
+                                                  where exists (
+                                                    select 1 from Combo as pkg_to_plt
+                                                    where fromComponent = p
+                                                    and toComponent = :op
+                                                    and type = :ctpplt
+                                                  )
+                                                  or exists (
+                                                    select 1 from Combo as pkg_to_tipp
+                                                    where fromComponent = p
+                                                    and type = :ctpkg
+                                                    and toComponent.status != :sd
+                                                    and exists (
+                                                      select 1 from Combo as plt_to_tipp
+                                                      where fromComponent = :op
+                                                      and plt_to_tipp.toComponent = pkg_to_tipp.toComponent
+                                                      and type = :cttplt
+                                                    )
+                                                  )
+                                                  and status != :sd''',
+                                                  [
+                                                    op: old_platform,
+                                                    ctpplt: combo_type_plt_pkg,
+                                                    ctpkg: combo_type_pkg_tipp,
+                                                    cttplt: combo_type_plt_tipp,
+                                                    sd: status_deleted
+                                                  ])
+
+      j?.message("Processing ${affected_pkgs_ids.size()} affected pkgs ..")
+
+      for (pid in affected_pkgs_ids) {
+        if (cancelled) {
+          break
+        }
+
+        result.pkgs++
+        boolean more_tipps = true
+        j?.message("Processing TIPPs for package ${pid} ..")
+
+        while (more_tipps) {
+          if (Thread.currentThread().isInterrupted() || j?.isCancelled()){
+            log.debug("Job is cancelled ..")
+            result.result = 'CANCELLED'
+            cancelled = true
+            break
+          }
+
+          j?.setProgress(Math.floor(50 * (result.pkgs/(affected_pkgs_ids.size() + 1))).toInteger())
+
+          def affected_tipp_combos_batch = Combo.executeQuery('''from Combo as c
+                                            where c.fromComponent.id = :pid
+                                            and c.type = :ctt
+                                            and c.toComponent.status != :sd
+                                            and exists (
+                                              select 1 from Combo
+                                              where fromComponent = :op
+                                              and type = :ctp
+                                              and toComponent = c.toComponent
+                                            )''',
+                                          [
+                                            op: old_platform,
+                                            ctt: combo_type_pkg_tipp,
+                                            ctp: combo_type_plt_tipp,
+                                            pid: pid,
+                                            sd: status_deleted
+                                          ],
+                                          [max: 50]
+                                        )
+          result.tipps += affected_tipp_combos_batch.size()
+
+          affected_tipp_combos_batch.each { ctp ->
+            def connected_item = ClassUtils.deproxy(ctp.toComponent)
+            def dupes = TitleInstancePackagePlatform.executeQuery('''select count(tipp.id) from TitleInstancePackagePlatform as tipp
+                                                                      where exists (
+                                                                        select 1 from Combo
+                                                                        where toComponent = tipp
+                                                                        and fromComponent.id = :pid
+                                                                        and type = :ctpkg
+                                                                      )
+                                                                      and exists (
+                                                                        select 1 from Combo
+                                                                        where toComponent = tipp
+                                                                        and fromComponent = :ti
+                                                                        and type = :ctti
+                                                                      )
+                                                                      and exists (
+                                                                        select 1 from Combo
+                                                                        where toComponent = tipp
+                                                                        and fromComponent = :np
+                                                                        and type = :ctplt
+                                                                      )
+                                                                      and status != :sd''',
+                                                                    [
+                                                                      ctpkg: combo_type_pkg_tipp,
+                                                                      ctti: combo_type_ti_tipp,
+                                                                      ctplt: combo_type_plt_tipp,
+                                                                      ti: connected_item.title,
+                                                                      pid: pid,
+                                                                      np: new_platform,
+                                                                      sd: status_deleted
+                                                                    ]
+                                                                  )[0]
+            if (dupes == 0) {
+              connected_item.hostPlatform = new_platform
+              connected_item.lastUpdateComment = "Platform cleanup"
+              connected_item.save(flush: true, failOnError: true)
+            }
+            else {
+              log.debug("Not creating duplicate TIPP!")
+              connected_item.status = status_deleted
+              connected_item.save(flush: true, failOnError: true)
+            }
+          }
+
+          if (affected_tipp_combos_batch.size() < 50) {
+            more_tipps = false
+          }
+
+          psession.flush()
+          psession.clear()
+        }
+
+        if (!cancelled) {
+          def pkg = Package.findById(pid)
+
+          if (pkg.nominalPlatform == old_platform) {
+            Combo.findByFromComponentAndToComponentAndType(pkg, old_platform, combo_type_plt_pkg).delete()
+            new Combo(type: combo_type_plt_pkg, fromComponent: pkg, toComponent: new_platform).save(flush: true, failOnError: true)
+          }
+
+          pkg.lastUpdateComment = "Platform cleanup"
+          pkg.save(flush: true, failOnError: true)
+        }
+      }
+
+      if (cancelled) {
+        return result
+      }
+
+      boolean more_tipls = true
+
+      j?.message("Processing TIPLs ..")
+
+
+      def count_tipls = Combo.executeQuery('''select count(*) from Combo as c
+                                              where c.fromComponent = :op
+                                              and c.type = :ctp''',
+                                            [
+                                              op: old_platform,
+                                              ctp: combo_type_plt_tipl
+                                            ]
+                                          )[0]
+
+      while (more_tipls) {
+        if (Thread.currentThread().isInterrupted() || j?.isCancelled()){
+          log.debug("Job is cancelled ..")
+          result.result = 'CANCELLED'
+          cancelled = true
+          break
+        }
+
+        if (count_tipls > 0) {
+          j?.setProgress(50 + Math.floor(50 * (result.tipls/count_tipls)).toInteger())
+        }
+
+        def affected_tipl_combos_batch = Combo.executeQuery('''from Combo as c
+                                                                where c.fromComponent = :op
+                                                                and c.type = :ctp''',
+                                                              [
+                                                                op: old_platform,
+                                                                ctp: combo_type_plt_tipl
+                                                              ],
+                                                              [max: 50]
+                                                            )
+        result.tipls += affected_tipl_combos_batch.size()
+
+        affected_tipl_combos_batch.each { ctp ->
+          def connected_tipl = ClassUtils.deproxy(ctp.toComponent)
+          def dupes = TitleInstancePlatform.executeQuery('''select count(*) from TitleInstancePlatform as tipl,
+                                                            Combo as cti
+                                                            where cti.type = :ctti
+                                                            and cti.fromComponent = :ti
+                                                            and cti.toComponent = tipl
+                                                            and tipl.status != :sd
+                                                            and exists (
+                                                              select 1 from Combo
+                                                              where toComponent = tipl
+                                                              and fromComponent = :np
+                                                            )''',
+                                                          [
+                                                            ctti: combo_type_ti_tipl,
+                                                            ti: connected_tipl.tiplTitle,
+                                                            sd: status_deleted,
+                                                            np: new_platform
+                                                          ]
+                                                        )[0]
+
+          if (dupes == 0) {
+            ctp.fromComponent = new_platform
+            ctp.save(flush: true, failOnError: true)
+
+            connected_tipl.lastUpdateComment = "Platform cleanup"
+            connected_tipl.save(flush: true, failOnError: true)
+          }
+          else {
+            log.debug("Not creating duplicate TIPL for ${connected_tipl.tiplTitle}")
+            connected_tipl.status = status_deleted
+            connected_tipl.save(flush: true, failOnError: true)
+          }
+        }
+
+        if (affected_tipl_combos_batch.size() < 50) {
+          more_tipls = false
+        }
+
+        psession.flush()
+        psession.clear()
+      }
+
+      if (cancelled) {
+        return result
+      }
+
+      old_platform.refresh()
+      old_platform.status = status_deleted
+      old_platform.save(flush: true, failOnError: true)
+    }
+    catch (Exception e){
+      log.error("Problem merging platforms", e)
+      result.result = 'ERROR'
+    }
+
+    j?.setProgress(100)
+    j?.endTime = new Date()
 
     result
   }
