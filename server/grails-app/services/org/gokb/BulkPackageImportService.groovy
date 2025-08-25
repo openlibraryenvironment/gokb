@@ -72,7 +72,14 @@ class BulkPackageImportService {
           }
 
           if (reqBody.frequency) {
-            existing_cfg.frequency = RefdataCategory.lookup('BulkImportListConfig.Frequency', reqBody.frequency)
+            RefdataValue frequency_val = RefdataCategory.lookup('BulkImportListConfig.Frequency', reqBody.frequency)
+
+            if (frequency_val) {
+              existing_cfg.frequency = frequency_val
+            }
+            else {
+              log.warn("Unable to reference bulk frequency ${reqBody.frequency}")
+            }
           }
 
           if (reqBody.active == true) {
@@ -96,6 +103,24 @@ class BulkPackageImportService {
             existing_cfg.prependProviderName = false
           }
 
+          if (reqBody.updateNames == true) {
+            existing_cfg.updateNames = true
+          }
+          else if (reqBody.updateNames == false) {
+            existing_cfg.updateNames = false
+          }
+
+          if (reqBody.curatorPolicy) {
+            RefdataValue policy_val = RefdataCategory.lookup('BulkImportListConfig.CuratorPolicy', reqBody.curatorPolicy)
+
+            if (policy_val) {
+              existing_cfg.frequency = policy_val
+            }
+            else {
+              log.warn("Unable to reference bulk curator policy ${reqBody.curatorPolicy}")
+            }
+          }
+
           existing_cfg.save(flush: true, failOnError: true)
         }
       }
@@ -108,7 +133,9 @@ class BulkPackageImportService {
           url: reqBody.url,
           automatedUpdate: reqBody.automatedUpdate,
           updateOnly: reqBody.updateOnly,
-          prependProviderName: reqBody.prependProviderName
+          prependProviderName: reqBody.prependProviderName,
+          updateNames: reqBody.updateNames,
+          curatorPolicy: (reqBody.curatorPolicy ? RefdataCategory.lookup('BulkImportListConfig.CuratorPolicy', reqBody.curatorPolicy) : null)
         ]
 
         existing_cfg = new BulkImportListConfig(info)
@@ -397,7 +424,7 @@ class BulkPackageImportService {
                 skip = true
                 pkg_result.errors.curatoryGroup = [
                   [
-                    message: "Config owner does not have the permission!",
+                    message: "Config owner does not have the permission to create package with defined curator!",
                     messageCode: "import.bulk.error.curator.permissions"
                   ]
                 ]
@@ -410,17 +437,11 @@ class BulkPackageImportService {
                   obj = Package.findByUuid(item.package_uuid)
                 }
 
-                if (!obj) {
-                  obj = Package.findByNormname(KBComponent.generateNormname(item.package_name))
-                }
-
                 if (!obj && collection_id) {
-                  def candidates = Package.executeQuery('''from Package as p
-                                                          where exists (select 1 from Combo where fromComponent = p and toComponent = :cg)
-                                                          and exists (select 1 from Combo where fromComponent = p and toComponent = :cid)''', [cg: curator, cid: collection_id])
+                  def candidates = collection_id.getActiveIdentifiedComponents('Package')
 
                   if (candidates.size() == 1) {
-                    obj = candidates[0]
+                    obj = KBComponent.deproxy(candidates[0])
                     log.debug("Found package ${obj} via id ${collection_id} and curatoryGroup ${curator}")
                   }
                   else if (candidates.size() > 1) {
@@ -435,8 +456,15 @@ class BulkPackageImportService {
                     ]
                     skip = true
                   }
-                } else if (obj && !obj.curatoryGroups.contains(curator)) {
+                }
+
+                if (!obj) {
+                  obj = Package.findByNormname(KBComponent.generateNormname(item.package_name))
+                }
+
+                if (obj && !obj.curatoryGroups.contains(curator) && listInfo.curatorPolicy?.value == 'Skip') {
                   log.warn("Matched package has other curators!")
+
                   type_results.errors++
                   pkg_result.result = 'ERROR'
                   pkg_result.errors.matching = [
@@ -450,9 +478,10 @@ class BulkPackageImportService {
 
                 if (obj?.source?.bulkConfig && obj.source.bulkConfig.id != listInfo.id) {
                   log.warn("Matched package ${obj} already has another bulk config (${obj.source.bulkConfig.id}) assigned!")
+
                   pkg_result.errors.matching = [
                     [
-                      message: "A single package has been matched, but its source is already connected to antother bulk config!",
+                      message: "A single package has been matched, but its source is already connected to another bulk config!",
                       messageCode: "import.bulk.error.matched.sourceBulkConfig.label",
                     ]
                   ]
@@ -461,6 +490,12 @@ class BulkPackageImportService {
 
                 if (!skip) {
                   boolean pkg_created = false
+                  String provider_prefix = provider.preferredShortname ?: provider.name
+                  String final_name = item.package_name
+
+                  if (listInfo.prependProviderName) {
+                    final_name = "${provider_prefix}: ${final_name}"
+                  }
 
                   if (!obj) {
                     if (listInfo.updateOnly) {
@@ -471,13 +506,6 @@ class BulkPackageImportService {
                       log.debug("Creating new Package ..")
 
                       try {
-                        String provider_prefix = provider.preferredShortname ?: provider.name
-                        String final_name = item.package_name
-
-                        if (listInfo.prependProviderName) {
-                          final_name = "${provider_prefix}: ${final_name}"
-                        }
-
                         obj = new Package(name: final_name).save(flush: true, failOnError: true)
                         type_results.created++
                         pkg_created = true
@@ -494,6 +522,8 @@ class BulkPackageImportService {
                   }
 
                   if (obj) {
+                    source = obj.source
+
                     if (!obj.contentType && (item.content_type || type.content_type)) {
                       obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
                     }
@@ -518,6 +548,16 @@ class BulkPackageImportService {
                       obj.consistent = RefdataCategory.lookup('Package.Scope', item.scope ?: type.scope)
                     }
 
+                    if (listInfo.updateNames && final_name != obj.name) {
+                      obj.name = final_name
+                      obj.save(flush: true, failOnError: true)
+
+                      if (source) {
+                        source.name = final_name
+                        source.save(flush: true, failOnError: true)
+                      }
+                    }
+
                     obj.nominalPlatform = platform
                     obj.provider = provider
                     obj.save()
@@ -528,38 +568,53 @@ class BulkPackageImportService {
                     if (collection_id && !obj.ids.contains(collection_id)) {
                       obj.ids << collection_id
                     }
+                    RefdataValue type_pc = RefdataCategory.lookup("Combo.Type", "Package.CuratoryGroups")
 
-                    if (!obj.curatoryGroups.contains(curator) && (pkg_created || listInfo.curatorPolicy?.value == 'Add')) {
-                      obj.curatoryGroups << curator
-                    }
-                    else if (listInfo.curatorPolicy?.value == 'Old') {
-                      log.debug("Not changing existing package curator ..")
-                    }
-                    else if (listInfo.curatorPolicy?.value == 'New') {
-                      if (!obj.curatoryGroups.contains(curator)) {
+                    def existing_combos_count = Combo.executeQuery('''select count(*) from Combo
+                                                                      where type = :ct
+                                                                      and fromComponent = :pkg
+                                                                      and toComponent = :ncg
+                                                                  ''', [
+                                                                    ct: type_pc,
+                                                                    pkg: obj,
+                                                                    ncg: curator
+                                                                  ])[0]
+
+                    if (existing_combos_count == 0) {
+                      log.debug("Handling changed curator ..")
+
+                      if (pkg_created || listInfo.curatorPolicy?.value == 'Add' || listInfo.curatorPolicy?.value == 'New') {
+                        log.debug("Adding new curator ${curator}")
+
                         obj.curatoryGroups << curator
+                        obj.save(flush: true)
+
+                        if (listInfo.curatorPolicy?.value == 'New') {
+                          log.debug("Removing old groups ..")
+                          obj.curatoryGroups.retainAll([curator])
+                        }
+                      }
+                      else if (listInfo.curatorPolicy?.value == 'Old') {
+                        log.debug("Not changing existing package curator ..")
                       }
 
-                      obj.save(flush: true)
-
-                      obj.curatoryGroups.retainAll([curator])
+                      log.debug("New curator list: ${obj.curatoryGroups}")
                     }
 
-                    obj.save()
+                    obj.save(flush: true, failOnError: true)
 
-                    source = obj.source
 
                     if (!source) {
                       log.debug("Setting new package source..")
 
                       try {
-                        def dupe = Source.findByName(item.package_name)
+                        def dupe = Source.findByName(final_name)
 
                         if (!dupe) {
-                          source = new Source(name: item.package_name).save(flush:true, failOnError: true)
+                          source = new Source(name: final_name).save(flush:true, failOnError: true)
                         }
                         else {
-                          log.warn("Found existing source with package name ${item.package_name}!")
+                          log.warn("Found existing source with package name ${final_name}!")
                           source = dupe
                         }
                       }
@@ -574,6 +629,23 @@ class BulkPackageImportService {
 
                         obj.source = source
                         obj.save(flush: true)
+                      }
+                    }
+                    else {
+                      if (source.curatoryGroups == obj.curatoryGroups) {
+                        log.debug("Not updating source curators ..")
+                      }
+                      else {
+                        obj.curatoryGroups.each { pcg ->
+                          if (!source.curatoryGroups.contains(pcg)) {
+                            source.curatoryGroups << pcg
+                          }
+                        }
+
+                        source.save(flush: true)
+
+                        source.curatoryGroups.retainAll(obj.curatoryGroups)
+                        source.save(flush: true)
                       }
                     }
 

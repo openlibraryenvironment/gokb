@@ -8,6 +8,7 @@ class BulkImportListConfig {
   Boolean automatedUpdate = false
   Boolean updateOnly = false
   Boolean prependProviderName = false
+  Boolean updateNames = false
   RefdataValue frequency
   RefdataValue curatorPolicy
   User owner
@@ -25,6 +26,7 @@ class BulkImportListConfig {
     owner column:'bilc_owner_fk'
     updateOnly column: 'bilc_update_only'
     prependProviderName column: 'bilc_prepend_provider_name'
+    updateNames column: 'bilc_update_names'
  }
 
   static constraints = {
@@ -46,10 +48,12 @@ class BulkImportListConfig {
     url (nullable:true, blank:false)
     automatedUpdate (nullable:true)
     frequency (nullable:true, blank:false)
+    curatorPolicy (nullable:true, blank:false)
     lastRun (nullable:true, blank:false)
     owner (nullable:true, blank:false)
     updateOnly (nullable:true)
     prependProviderName (nullable:true)
+    updateNames (nullable:true)
   }
 
   static def refdataFind(params) {

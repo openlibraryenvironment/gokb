@@ -15,7 +15,7 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
   private final RefdataValue status;
   private final RefdataValue type;
 
-  public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection<Combo> vals) {
+  public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection vals) {
     this (component, status, type, vals, false );
   }
 
@@ -79,37 +79,40 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
     KBComponent comp = (KBComponent)element;
 
     // Removed item successfully.
-    boolean removed = super.remove(comp);
-    if (removed) {
+    super.remove(comp);
 
-      // Create the Combo.
-      Combo combo = new Combo ();
-      combo.setStatus(status);
-      combo.setType(type);
+    boolean removed = false
 
-      // Add the from/to components before removing from the 2 lists.
-      if (incoming) {
-
-
-
-        combo.setFromComponent(comp);
-        combo.setToComponent(component);
-
-      } else {
-
-        combo.setFromComponent(component);
-        combo.setToComponent(comp);
-      }
-
+    if (comp) {
       // Remove the combos.
-      Combo.createCriteria().list {
-        and {
-          eq("status", combo.status)
-          eq("type", combo.type)
-          eq("fromComponent", combo.fromComponent)
-          eq("toComponent", combo.toComponent)
+      def combos = Combo.executeQuery('''select id from Combo
+                            where type = :ct
+                            and status = :cs
+                            and fromComponent = :fc
+                            and toComponent = :tc''',
+                            [
+                              ct: type,
+                              cs: status,
+                              fc: (incoming ? comp : component),
+                              tc: (incoming ? component : comp)
+                            ])
+      combos.each {
+        def combo = Combo.findById(it)
+
+        if (incoming) {
+          // Incoming combos of component.
+          component.removeFromIncomingCombos(combo)
+          comp.removeFromOutgoingCombos(combo)
+
+        } else {
+          // Outgoing combos of component.
+          component.removeFromOutgoingCombos (combo)
+          comp.removeFromIncomingCombos (combo)
         }
-      }*.delete()
+
+        combo.delete(flush: true)
+        removed = true
+      }
     }
 
     return removed;
@@ -138,10 +141,21 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
       element = items.next();
       if (!coll.contains(element)) {
         // Remove.
-        items.remove();
+        this.remove(element)
       }
     }
 
     return removed;
+  }
+
+  @Override
+  public void clear() {
+    Iterator items = this.iterator()
+    Object element
+
+    while (items.hasNext()) {
+      element = items.next()
+      this.remove(element)
+    }
   }
 }
