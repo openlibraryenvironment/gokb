@@ -304,8 +304,10 @@ class RestMappingService {
     def immutable = defaultImmmutable + (jsonMap?.immutable ?: [])
 
     log.debug("Ignore: ${toIgnore}, Immutable: ${immutable}")
+
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
       def newVal = reqBody[p.name]
+
       if (!toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody.keySet().contains(p.name)) {
         log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
 
@@ -320,7 +322,14 @@ class RestMappingService {
         }
         else {
           log.debug("checking for type of property ${p.name} -> ${p.type}")
+          if (newVal == null || newVal == "") {
+            obj[p.name] = null
+          }
+
           switch (p.type) {
+            case Integer.class:
+              updateIntField(obj, p.name, newVal)
+              break;
             case Long.class:
               updateLongField(obj, p.name, newVal)
               break;
@@ -339,9 +348,11 @@ class RestMappingService {
         }
       }
     }
-    if(obj.validate()) {
+
+    if (obj.validate()) {
       obj.save()
-    } else {
+    }
+    else {
       obj
     }
   }
@@ -1165,6 +1176,26 @@ class RestMappingService {
       obj.errors.rejectValue(
           prop,
           'typeMismatch.java.lang.Long'
+      )
+    }
+    obj
+  }
+
+  public def updateIntField(obj, prop, val) {
+    log.debug("Set simple prop ${prop} = ${val} (as Long)")
+
+    try {
+      obj[prop] = Integer.parseInt(val)
+    }
+    catch (Exception e) {
+      obj.errors.reject(
+          'typeMismatch.java.lang.Integer',
+          [prop] as Object[],
+          '[Invalid number value for property [{0}]]'
+      )
+      obj.errors.rejectValue(
+          prop,
+          'typeMismatch.java.lang.Integer'
       )
     }
     obj
