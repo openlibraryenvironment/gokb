@@ -1115,6 +1115,9 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Source.Frequency', 'Quarterly', '090').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Source.Frequency', 'Yearly', '365').save(flush: true, failOnError: true)
 
+        RefdataCategory.lookupOrCreate('Source.TransferMethod', 'HTTP').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Source.TransferMethod', 'FTP').save(flush: true, failOnError: true)
+
         RefdataCategory.lookupOrCreate('BulkImportListConfig.Frequency', 'Daily', '001').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('BulkImportListConfig.Frequency', 'Weekly', '007').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('BulkImportListConfig.Frequency', 'Monthly', '030').save(flush: true, failOnError: true)

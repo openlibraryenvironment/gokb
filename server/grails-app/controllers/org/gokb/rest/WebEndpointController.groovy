@@ -10,6 +10,8 @@ import java.time.LocalDateTime
 
 class WebEndpointController {
 
+    static namespace = 'rest'
+
     def componentLookupService
     def springSecurityService
 

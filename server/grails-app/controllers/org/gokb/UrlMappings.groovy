@@ -189,7 +189,7 @@ class UrlMappings {
       patch "/jobs/$id/cancel" (controller: 'jobs', namespace: 'rest', action: 'cancel')
       delete "/jobs/$id" (controller: 'jobs', namespace: 'rest', action: 'delete')
 
-      get "/web-endpoint"(controller: 'webEndpoint', namespace: 'rest', action: 'show')
+      get "/web-endpoint"(controller: 'webEndpoint', namespace: 'rest', action: 'index')
     }
     "/$controller/$action?/$id?" {
       constraints {
