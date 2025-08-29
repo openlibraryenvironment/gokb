@@ -31,7 +31,26 @@ class WebEndpointController {
 
         result = componentLookupService.restLookup(user, WebHookEndpoint, params)
         //log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
-        log.debug("#### " + result)
+        log.debug("#### " + result.data.getClass().getName())
+        log.debug("#### " + result.data)
+
+        if (result.data) {
+            def resultList = result.data
+            resultList*.remove('ba_password')
+            resultList*.remove('ba_username')
+
+            log.debug("+++++ " + resultList)
+
+            if (params['method']) {
+                resultList = resultList.findAll( x -> x.transferMethod?.name == params['method'])
+            }
+
+            result.data = resultList
+        }
+
+
+
+
 
         render result as JSON
     }
