@@ -548,7 +548,18 @@ class AdminController {
       "BookInstance",
       "JournalInstance",
       "TitleInstancePackagePlatform",
-      "DatabaseInstance", "Office", "Imprint", "Package", "ReviewRequest", "Org", "Platform", "Source", "KBComponentVariantName", "TitleInstancePlatform", "TIPPCoverageStatement"]
+      "DatabaseInstance",
+      "Office",
+      "Imprint",
+      "Package",
+      "ReviewRequest",
+      "Org",
+      "Platform",
+      "Source",
+      "KBComponentVariantName",
+      "TitleInstancePlatform",
+      "TIPPCoverageStatement"
+    ]
 
     default_dcs.each { dcd ->
 
