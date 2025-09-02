@@ -425,14 +425,18 @@ class IngestKbartRun {
 
   def doCleanup(pkgId, date) {
     def result = [:]
-    RefdataValue new_status = RefdataCategory.lookup('KBComponent.Status', (isCleanup ? 'Deleted' : 'Retired'))
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
     def retire_pars = [
       pkgid: pkgId,
       dt: ingest_systime,
-      sc: RefdataCategory.lookup('KBComponent.Status', 'Current'),
-      sr: new_status,
+      so: status_current,
+      sn: (isCleanup ? status_deleted : status_retired),
       igdt: dateFormatService.parseDate(date),
+      ctp: combo_type,
       now: new Date()
     ]
 
@@ -441,23 +445,46 @@ class IngestKbartRun {
       closed: RefdataCategory.lookup('ReviewRequest.Status', 'Closed'),
       now: new Date(),
       open: RefdataCategory.lookup('ReviewRequest.Status', 'Open'),
-      nstatus: new_status
+      ctp: combo_type,
+      nstatus: (isCleanup ? status_deleted : status_retired)
     ]
 
-    log.debug("Retiring via pars ${retire_pars}")
+    log.debug("Retiring/Deleting via pars ${retire_pars}")
 
     def removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
-        set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
+        set tipp.status = :sn, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
         where exists (
           select 1 from Combo as tc
           where tc.fromComponent.id = :pkgid
           and tc.toComponent.id = tipp.id
+          and tc.type = :ctp
         )
         and (
           tipp.lastSeen is null
           or tipp.lastSeen < :dt
         )
-        and tipp.status = :sc''', retire_pars)
+        and tipp.status = :so''', retire_pars)
+
+    retire_pars.so = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+    retire_pars.sn = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    log.debug("Deleting removed expected Titles")
+
+    def removed_expected_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
+        set tipp.status = :sn, tipp.lastUpdated = :now
+        where exists (
+          select 1 from Combo as tc
+          where tc.fromComponent.id = :pkgid
+          and tc.toComponent.id = tipp.id
+          and tc.type = :ctp
+        )
+        and (
+          tipp.lastSeen is null
+          or tipp.lastSeen < :dt
+        )
+        and tipp.status = :so''', retire_pars)
+
+    log.debug("Closing reviews")
 
     def closed_rrs_count = ReviewRequest.executeUpdate('''update ReviewRequest as rr
         set rr.status = :closed, rr.lastUpdated = :now
@@ -466,19 +493,21 @@ class IngestKbartRun {
           where tc.fromComponent.id = :pkgid
           and tc.toComponent.id = rr.componentToReview.id
           and tc.toComponent.status = :nstatus
+          and tc.type = :ctp
         )
         and rr.status = :open''', rr_pars)
 
     result.closedReviews = closed_rrs_count
 
     if (isCleanup) {
-      result.deleted = removed_count
+      result.deleted = removed_count + removed_expected_count
     }
     else {
       result.retired = removed_count
+      result.deleted = removed_expected_count
     }
 
-    log.debug("Completed tipp cleanup (${removed_count} ${isCleanup ? 'deleted' : 'retired'})")
+    log.debug("Completed tipp cleanup (deleted: ${result.deleted}, retired: ${result.retired})")
     log.debug("Closed ${closed_rrs_count} reviews of noncurrent tipps.")
 
     result
