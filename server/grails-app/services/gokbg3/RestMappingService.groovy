@@ -258,7 +258,7 @@ class RestMappingService {
             combos.each { c ->
               def linked_obj = getEmbeddedJson(reverse ? c.fromComponent : c.toComponent, user)
 
-              if (c.status?.value == 'Active') {
+              if (c.status?.value == 'Active' && linked_obj?.status?.name != 'Deleted') {
                 result['_embedded'][cp] << linked_obj
               }
               else {
