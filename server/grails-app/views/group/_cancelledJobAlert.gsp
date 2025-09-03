@@ -12,7 +12,7 @@
 <g:message code="curatoryGroup.alert.closing" locale="${locale ?: 'en'}"/>
 <br/>
 <g:message code="curatoryGroup.alert.signature" locale="${locale ?: 'en'}"/>
-<hr/>
+<div>________________________________________</div>
 <div>Global Open Knowledge Base (GOKB)</div>
 <p/>
 <div>Mail: ${supportAddress}</div>
