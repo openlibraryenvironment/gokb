@@ -17,8 +17,6 @@ class SearchController {
   def gokbAclService
   def displayTemplateService
 
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     User user = springSecurityService.currentUser
     def start_time = System.currentTimeMillis();

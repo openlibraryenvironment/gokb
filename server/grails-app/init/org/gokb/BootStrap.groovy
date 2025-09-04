@@ -75,6 +75,7 @@ class BootStrap {
             def adminRole = Role.findByAuthority('ROLE_ADMIN') ?: new Role(authority: 'ROLE_ADMIN', roleType: 'global').save(failOnError: true)
             def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType: 'global').save(failOnError: true)
             def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType: 'global').save(failOnError: true)
+            def puRole = Role.findByAuthority('ROLE_POWERUSER') ?: new Role(authority: 'ROLE_POWERUSER', roleType: 'global').save(failOnError: true)
 
             log.debug("Create admin user...");
             def adminUser = User.findByUsername('admin')
@@ -542,6 +543,7 @@ class BootStrap {
             AclSid sidContributor = AclSid.findBySid('ROLE_CONTRIBUTOR') ?: new AclSid(sid: 'ROLE_CONTRIBUTOR', principal: false).save(flush: true)
             AclSid sidEditor = AclSid.findBySid('ROLE_EDITOR') ?: new AclSid(sid: 'ROLE_EDITOR', principal: false).save(flush: true)
             AclSid sidApi = AclSid.findBySid('ROLE_API') ?: new AclSid(sid: 'ROLE_API', principal: false).save(flush: true)
+            AclSid sidPowerUser = AclSid.findBySid('ROLE_POWERUSER') ?: new AclSid(sid: 'ROLE_POWERUSER', principal: false).save(flush: true)
 
             RefdataValue std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save(flush: true, failOnError: true)
             grailsApplication.domainClasses.each { dc ->

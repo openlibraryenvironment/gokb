@@ -26,7 +26,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 @Slf4j
-@Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
 class RegisterController extends grails.plugin.springsecurity.ui.RegisterController {
 
   /** Dependency injection for the 'uiMailStrategy' bean. */

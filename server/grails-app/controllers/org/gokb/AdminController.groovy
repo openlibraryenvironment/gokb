@@ -34,11 +34,15 @@ class AdminController {
   ConcurrencyManagerService concurrencyManagerService
   TippService tippService
 
+  def index() {
+    redirect(controller: 'admin', action: 'jobs')
+  }
+
   def logViewer() {
     // cache "until_changed"
     // def f = new File ("${grailsApplication.config.log_location}")
     // return [file: "${f.canonicalPath}"]
-    redirect(controller: 'admin', action: 'jobs');
+    redirect(controller: 'admin', action: 'jobs')
   }
 
   def ensureUuids() {
@@ -165,6 +169,7 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
   def jobs() {
     log.debug("Jobs");
     def result = [:]

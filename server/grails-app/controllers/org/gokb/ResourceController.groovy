@@ -19,11 +19,9 @@ class ResourceController {
   def aclUtilService
   def displayTemplateService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
 
     User user = springSecurityService.currentUser
@@ -150,7 +148,6 @@ class ResourceController {
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def download () {
     // Download data stored in a single file tar.gz archive blob field for a particular resource.
     if ( params.id ) {

@@ -1,6 +1,6 @@
 <html>
 <head>
-  <meta name='layout' content='sb-admin'/>
+  <meta name='layout' content='public'/>
   <title><g:message code='spring.security.ui.forgotPassword.title'/></title>
 </head>
 

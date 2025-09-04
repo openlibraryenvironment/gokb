@@ -18,7 +18,6 @@ class CreateController {
   def displayTemplateService
   def messageSource
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     log.debug("CreateControler::index... ${params}");
     def result=[:]
@@ -53,7 +52,6 @@ class CreateController {
     result
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def process() {
     log.debug("CreateController::process... ${params}");
 
