@@ -16,6 +16,7 @@ class UserProfileService {
   def passwordEncoder
   def mailService
   def messageSource
+  def dateFormatService
   PageRenderer groovyPageRenderer
 
 	static final String EMAIL_LAYOUT = "/layouts/email"
