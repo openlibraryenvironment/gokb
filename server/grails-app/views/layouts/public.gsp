@@ -47,7 +47,7 @@
           <li><a href="https://github.com/openlibraryenvironment/gokb/wiki/API"  style="font-weight:bold;">API Documentation</a></li>
           <li><span style="width:15px"></span></li>
           <g:if test="${grailsApplication.config.getProperty('gokb.uiUrl')}">
-            <li><a style="font-weight:bold;" href ="${grailsApplication.config.getProperty('gokb.uiUrl')}">GOKB Client</a></li>
+            <li><a style="font-weight:bold;" href ="${grailsApplication.config.getProperty('gokb.uiUrl')}"><g:message code="public.userClient.label"/></a></li>
           </g:if>
       </div>
    </nav>
