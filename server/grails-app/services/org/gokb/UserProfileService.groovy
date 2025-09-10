@@ -463,17 +463,19 @@ class UserProfileService {
     def includes = []
     def excludes = []
     def newUserData = [
-      id             : user.id,
-      username       : user.username,
-      displayName    : user.displayName,
-      email          : user.email,
-      preferredLocaleString: user.preferredLocaleString,
-      enabled        : user.enabled,
-      accountExpired : user.accountExpired,
-      accountLocked  : user.accountLocked,
-      passwordExpired: user.passwordExpired,
-      status         : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
-      defaultPageSize: user.defaultPageSize
+      id                    : user.id,
+      username              : user.username,
+      displayName           : user.displayName,
+      email                 : user.email,
+      preferredLocaleString : user.preferredLocaleString,
+      enabled               : user.enabled,
+      accountExpired        : user.accountExpired,
+      accountLocked         : user.accountLocked,
+      passwordExpired       : user.passwordExpired,
+      status                : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
+      defaultPageSize       : user.defaultPageSize,
+      dateCreated           : user.dateCreated ? dateFormatService.formatIsoTimestamp(user.dateCreated) : null,
+      lastUpdated           : user.lastUpdated ? dateFormatService.formatIsoTimestamp(user.lastUpdated) : null
     ]
 
     if (params._include)
