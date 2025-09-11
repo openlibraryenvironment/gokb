@@ -70,6 +70,9 @@ class TippUpsertService {
       if (pkg_info instanceof Map) {
         pkg = Package.get(pkg_info.id ?: pkg_info.internalId)
       }
+      else if (pkg_info instanceof String) {
+        pkg = Package.findByUuid(pkg_info)
+      }
       else {
         pkg = Package.get(pkg_info)
       }
@@ -83,6 +86,9 @@ class TippUpsertService {
       if (plt_info instanceof Map) {
         plt = Platform.get(plt_info.id ?: plt_info.internalId)
       }
+      else if (plt_info instanceof String) {
+        plt = Platform.findByUuid(plt_info)
+      }
       else {
         plt = Platform.get(plt_info)
       }
@@ -95,6 +101,9 @@ class TippUpsertService {
 
       if (title_info instanceof Map) {
         ti = TitleInstance.get(title_info.id ?: title_info.internalId)
+      }
+      else if (title_info instanceof String) {
+        ti = TitleInstance.findByUuid(title_info)
       }
       else {
         ti = TitleInstance.get(title_info)

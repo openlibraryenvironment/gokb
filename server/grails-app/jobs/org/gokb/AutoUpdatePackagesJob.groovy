@@ -23,15 +23,17 @@ class AutoUpdatePackagesJob {
 
     if (grailsApplication.config.getProperty('gokb.packageUpdate.enabled', Boolean, false)) {
       log.debug("Beginning scheduled auto update packages job.")
-      def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+      def status_expected = RefdataCategory.lookup("KBComponent.Status", "Expected")
+
       // find all updateable packages
       def updPacks = Package.executeQuery(
         '''select p.id from Package p
            where p.source is not null and
            p.source.automaticUpdates = true
-           and p.status != :sd
+           and p.status in (:sf)
            and (p.source.lastRun is null or p.source.lastRun < current_date)''',
-           [sd: status_deleted])
+           [sf: [status_current, status_expected]])
 
       for (pid in updPacks) {
         Package p = Package.findById(pid)
