@@ -428,9 +428,10 @@ class IngestKbartRun {
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    RefdataValue status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
     RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
-    def retire_pars = [
+    def cleanup_current_pars = [
       pkgid: pkgId,
       dt: ingest_systime,
       so: status_current,
@@ -449,7 +450,7 @@ class IngestKbartRun {
       nstatus: (isCleanup ? status_deleted : status_retired)
     ]
 
-    log.debug("Retiring/Deleting via pars ${retire_pars}")
+    log.debug("Retiring/Deleting via pars ${cleanup_current_pars}")
 
     def removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
         set tipp.status = :sn, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
@@ -463,10 +464,16 @@ class IngestKbartRun {
           tipp.lastSeen is null
           or tipp.lastSeen < :dt
         )
-        and tipp.status = :so''', retire_pars)
+        and tipp.status = :so''', cleanup_current_pars)
 
-    retire_pars.so = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-    retire_pars.sn = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def cleanup_expected_pars = [
+      pkgid: pkgId,
+      dt: ingest_systime,
+      so: status_expected,
+      sn: status_deleted,
+      ctp: combo_type,
+      now: new Date()
+    ]
 
     log.debug("Deleting removed expected Titles")
 
@@ -482,7 +489,7 @@ class IngestKbartRun {
           tipp.lastSeen is null
           or tipp.lastSeen < :dt
         )
-        and tipp.status = :so''', retire_pars)
+        and tipp.status = :so''', cleanup_expected_pars)
 
     log.debug("Closing reviews")
 
