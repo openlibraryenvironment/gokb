@@ -30,6 +30,7 @@ class AdminController {
   def titleAugmentService
   def uploadAnalysisService
   def jobManagerService
+  def curatoryGroupAlertingService
   CleanupService cleanupService
   ConcurrencyManagerService concurrencyManagerService
   TippService tippService
