@@ -116,7 +116,8 @@ class Org extends KBComponent {
       'curatoryGroups',
       'providedPlatforms',
       'offices',
-      'roles'
+      'roles',
+      'comments'
     ]
   ]
 

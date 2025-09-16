@@ -156,7 +156,8 @@ class Package extends KBComponent {
       'ids',
       'variantNames',
       'curatoryGroups',
-      'subjects'
+      'subjects',
+      'comments'
     ]
   ]
 

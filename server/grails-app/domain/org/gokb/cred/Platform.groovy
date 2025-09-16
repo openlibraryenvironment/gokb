@@ -92,7 +92,8 @@ class Platform extends KBComponent {
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'curatoryGroups'
+      'curatoryGroups',
+      'comments'
     ]
   ]
 
