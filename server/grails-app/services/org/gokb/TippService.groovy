@@ -1552,7 +1552,7 @@ class TippService {
       boolean has_conflicts = false
 
       if (tippInfo.importId == ctipp.importId) {
-        tipp_id_match_results << [namespace: 'title_id', value: tippInfo.titleId, match: 'OK']
+        tipp_id_match_results << [namespace: 'title_id', value: tippInfo.importId, match: 'OK']
       }
 
       namespaces[typeString.toLowerCase()].eachWithIndex { plns, idx ->
