@@ -364,7 +364,7 @@ class RestMappingService {
         rdv = RefdataValue.findByOwnerAndValue(category, value.value)
       }
       else if (value.name) {
-        rdv = RefdataValue.findByOwnerAndValue(category, value.value)
+        rdv = RefdataValue.findByOwnerAndValue(category, value.name)
       }
     }
     else {
@@ -406,7 +406,6 @@ class RestMappingService {
 
     if (val != null) {
       if (ptype == RefdataValue) {
-        def rdv = null
         String catName = cat ? cat.desc : classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
 
         if (!cat) {
@@ -428,17 +427,17 @@ class RestMappingService {
 
           if (rdv_result.obj) {
             if (catName == 'KBComponent.Status') {
-              updateStatus(obj, rdv.value)
+              updateStatus(obj, rdv_result.obj.value)
             }
             else {
-              obj[prop] = rdv
+              obj[prop] = rdv_result.obj
             }
           }
           else {
             if (rdv_result.error?.field == 'owner') {
               obj.errors.reject(
                   'rdc.values.notFound',
-                  [rdv, cat] as Object[],
+                  [rdv_result.obj, cat] as Object[],
                   '[Value {0} is not valid for category {1}!]'
               )
               obj.errors.rejectValue(
@@ -460,7 +459,7 @@ class RestMappingService {
           }
         }
         else {
-          log.error("Could not resolve category (${obj.niceName}.${p.name})!")
+          log.error("Could not resolve category (${obj.niceName}.${prop})!")
         }
       }
       else {
@@ -651,7 +650,7 @@ class RestMappingService {
           '[{0} is not a valid status value!]'
       )
       obj.errors.rejectValue(
-          prop,
+          'status',
           'rdc.values.notFound'
       )
     }
