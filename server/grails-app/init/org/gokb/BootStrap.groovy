@@ -1121,6 +1121,11 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('BulkImportListConfig.Frequency', 'Quarterly', '090').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('BulkImportListConfig.Frequency', 'Yearly', '365').save(flush: true, failOnError: true)
 
+        RefdataCategory.lookupOrCreate('BulkImportListConfig.CuratorPolicy', 'Add').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('BulkImportListConfig.CuratorPolicy', 'Skip').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('BulkImportListConfig.CuratorPolicy', 'New').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('BulkImportListConfig.CuratorPolicy', 'Old').save(flush: true, failOnError: true)
+
         RefdataCategory.lookupOrCreate('RDFDataType', 'uri').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('RDFDataType', 'string').save(flush: true, failOnError: true)
 
