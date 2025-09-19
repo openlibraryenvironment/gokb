@@ -1110,6 +1110,7 @@ class RestMappingService {
 
       pubs_to_add.each { publisher ->
         boolean found = false
+
         for (int i = 0; !found && i < publisher_combos.size(); i++) {
           Combo pc = publisher_combos[i]
           def idMatch = pc."${propName}".id == publisher.id
@@ -1133,18 +1134,8 @@ class RestMappingService {
     }
 
     if (remove && !result.errors) {
-      Iterator items = publisher_combos.iterator()
-      Object element
-
-      while (items.hasNext()) {
-        element = items.next()
-
-        if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
-          // Remove.
-          element.delete()
-          result.changed = true
-        }
-      }
+      result.changed |= obj.publisher.retainAll(pubs_to_add)
+      obj.save(flush: true)
     }
 
     result

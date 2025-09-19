@@ -1,39 +1,39 @@
-package org.gokb;
+package org.gokb
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.ArrayList
+import java.util.Collection
+import java.util.Iterator
 
-import org.gokb.cred.Combo;
-import org.gokb.cred.KBComponent;
-import org.gokb.cred.RefdataValue;
+import org.gokb.cred.Combo
+import org.gokb.cred.KBComponent
+import org.gokb.cred.RefdataValue
 
 public class ComboPersistedList extends org.apache.commons.collections.list.AbstractListDecorator {
 
-  private final KBComponent component;
-  private final boolean incoming;
-  private final RefdataValue status;
-  private final RefdataValue type;
+  private final KBComponent component
+  private final boolean incoming
+  private final RefdataValue status
+  private final RefdataValue type
 
   public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection vals) {
-    this (component, status, type, vals, false );
+    this (component, status, type, vals, false )
   }
 
   public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection vals, boolean incoming) {
-    super(new ArrayList(vals));
-    this.component = component;
-    this.status = status;
-    this.type = type;
-    this.incoming = incoming;
+    super(new ArrayList(vals))
+    this.component = component
+    this.status = status
+    this.type = type
+    this.incoming = incoming
   }
 
   @Override
   public boolean add(Object element) {
 
-    KBComponent comp = (KBComponent)element;
+    KBComponent comp = (KBComponent)element
 
     // Try and add the object.
-    boolean added = super.add(element);
+    boolean added = super.add(element)
 
     if (added) {
 
@@ -53,35 +53,34 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
       } else {
 
         // Outgoing combos of component.
-        component.addToOutgoingCombos (combo);
-        comp.addToIncomingCombos (combo);
+        component.addToOutgoingCombos (combo)
+        comp.addToIncomingCombos (combo)
       }
     }
 
-    return added;
+    return added
   }
 
   @Override
   public boolean addAll( Collection coll) {
 
     // Ensure we use our extended add.
-    boolean added = true;
+    boolean added = false
+
     for (Object element : coll) {
-      added = added && this.add(element);
+      added |= this.add(element)
     }
 
-    return added;
+    return added
   }
 
   @Override
   public boolean remove(Object element) {
 
-    KBComponent comp = (KBComponent)element;
+    KBComponent comp = (KBComponent)element
 
     // Removed item successfully.
-    super.remove(comp);
-
-    boolean removed = false
+    boolean removed = super.remove(comp)
 
     if (comp) {
       // Remove the combos.
@@ -121,31 +120,34 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
   @Override
   public boolean removeAll(Collection coll) {
     // Ensure we use our extended remove.
-    boolean removed = true;
+    boolean removed = false
+
     for (Object element : coll) {
-      removed = removed && this.remove(element);
+      removed |= this.remove(element)
     }
 
-    return removed;
+    return removed
   }
 
   @Override
   public boolean retainAll(Collection coll) {
 
-    boolean removed = true;
+    boolean removed = false
 
     // Remove all items not in the supplied collection.
-    Iterator items = this.iterator();
-    Object element;
+    Iterator items = this.iterator()
+    Object element
+
     while (items.hasNext()) {
-      element = items.next();
+      element = items.next()
+
       if (!coll.contains(element)) {
         // Remove.
-        this.remove(element)
+        removed |= this.remove(element)
       }
     }
 
-    return removed;
+    return removed
   }
 
   @Override
