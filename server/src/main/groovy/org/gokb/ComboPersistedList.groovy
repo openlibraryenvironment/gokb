@@ -83,38 +83,46 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
     boolean removed = super.remove(comp)
 
     if (comp) {
-      // Remove the combos.
-      def combos = Combo.executeQuery('''select id from Combo
-                            where type = :ct
-                            and status = :cs
-                            and fromComponent = :fc
-                            and toComponent = :tc''',
-                            [
-                              ct: type,
-                              cs: status,
-                              fc: (incoming ? comp : component),
-                              tc: (incoming ? component : comp)
-                            ])
-      combos.each {
-        def combo = Combo.findById(it)
-
-        if (incoming) {
-          // Incoming combos of component.
-          component.removeFromIncomingCombos(combo)
-          comp.removeFromOutgoingCombos(combo)
-
-        } else {
-          // Outgoing combos of component.
-          component.removeFromOutgoingCombos (combo)
-          comp.removeFromIncomingCombos (combo)
-        }
-
-        combo.delete(flush: true)
-        removed = true
-      }
+      removed = clearCombos(comp)
     }
 
-    return removed;
+    return removed
+  }
+
+
+  private boolean clearCombos(comp) {
+    boolean removed = false
+    def combos = Combo.executeQuery('''select id from Combo
+                          where type = :ct
+                          and status = :cs
+                          and fromComponent = :fc
+                          and toComponent = :tc''',
+                          [
+                            ct: type,
+                            cs: status,
+                            fc: (incoming ? comp : component),
+                            tc: (incoming ? component : comp)
+                          ])
+
+    combos.each {
+      def combo = Combo.findById(it)
+
+      if (incoming) {
+        // Incoming combos of component.
+        component.removeFromIncomingCombos(combo)
+        comp.removeFromOutgoingCombos(combo)
+
+      } else {
+        // Outgoing combos of component.
+        component.removeFromOutgoingCombos (combo)
+        comp.removeFromIncomingCombos (combo)
+      }
+
+      combo.delete(flush: true)
+      removed = true
+    }
+
+    return removed
   }
 
   @Override
@@ -131,19 +139,18 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
 
   @Override
   public boolean retainAll(Collection coll) {
-
     boolean removed = false
+    Iterator itr = this.iterator()
 
     // Remove all items not in the supplied collection.
-    Iterator items = this.iterator()
-    Object element
 
-    while (items.hasNext()) {
-      element = items.next()
+    while (itr.hasNext()) {
+      Object element = itr.next()
 
       if (!coll.contains(element)) {
         // Remove.
-        removed |= this.remove(element)
+        itr.remove()
+        removed = clearCombos(element)
       }
     }
 
@@ -152,12 +159,12 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
 
   @Override
   public void clear() {
-    Iterator items = this.iterator()
-    Object element
+    Iterator itr = this.iterator()
 
-    while (items.hasNext()) {
-      element = items.next()
-      this.remove(element)
+    while (itr.hasNext()) {
+      Object element = itr.next()
+      itr.remove()
+      clearCombos(element)
     }
   }
 }
