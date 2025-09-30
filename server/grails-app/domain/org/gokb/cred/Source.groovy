@@ -76,7 +76,8 @@ class Source extends KBComponent {
       'curatoryGroups'
     ],
     'defaultEmbeds': [
-      'curatoryGroups'
+      'curatoryGroups',
+      'comments'
     ]
   ]
 

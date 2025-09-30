@@ -186,6 +186,15 @@ class AjaxSupportController {
       cols:['value'],
       format:'simple'
     ],
+    'KBComponent.Language' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      qryParams:[],
+      rdvCat: "KBComponent.Language",
+      cols:['value'],
+      format:'simple'
+    ],
     'VariantNameType' : [
       domain:'RefdataValue',
       countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
@@ -210,6 +219,15 @@ class AjaxSupportController {
       rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
       qryParams:[],
       rdvCat: "KBComponentVariantName.Locale",
+      cols:['value'],
+      format:'simple'
+    ],
+    'Language' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      qryParams:[],
+      rdvCat: "KBComponent.Language",
       cols:['value'],
       format:'simple'
     ],
@@ -1435,6 +1453,65 @@ class AjaxSupportController {
       def vname = message(code:'variantName.label')
       flash.error = message(code:'default.not.found.message', args:[vname, params.id])
       result.message = "Variant with id ${params.id} not found!".toString()
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+
+        redirect(url: redirect_to);
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deleteComment : Used to delete a comment of a component.
+   * @param id : The id of the comment
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deleteComment() {
+    log.debug("${params}");
+    def result = ['result':'OK', 'params': params]
+    def comment = KBComponentComment.get(params.id)
+    def user = springSecurityService.currentUser
+    def commentOwner = comment?.owner ?: null
+
+    if ( comment != null ) {
+      def editable = checkEditable(commentOwner, user)
+
+      if (editable) {
+        result.deleted_comment = "${comment.language.value}"
+        result.owner_oid = "${commentOwner.class.name}:${commentOwner.id}"
+
+        comment.delete()
+        commentOwner.lastUpdateComment = "Deleted comment for language '${comment.language.value}'"
+        commentOwner.save(flush: true)
+      }
+      else {
+        result.result = 'ERROR'
+        result.code = 403
+        result.message = "No permission to edit comments for this object!"
+        flash.error = message(code:'comment.owner.denied')
+      }
+    }
+    else if (!variant) {
+      result.result = 'ERROR'
+      result.code = 404
+      def vname = message(code:'comment.label')
+      flash.error = message(code:'default.not.found.message', args:[vname, params.id])
+      result.message = "Comment with id ${params.id} not found!".toString()
     }
 
     withFormat {
