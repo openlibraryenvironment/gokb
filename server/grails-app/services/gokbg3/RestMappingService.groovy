@@ -1186,6 +1186,8 @@ class RestMappingService {
       obj.save(flush: true)
     }
 
+    log.debug("New list of pubs: ${pubs_to_add}")
+
     if (remove && !result.errors) {
       result.changed |= obj.publisher.retainAll(pubs_to_add)
       obj.save(flush: true)
