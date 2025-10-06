@@ -531,9 +531,40 @@ class AdminController {
     render result as JSON
   }
 
+  def generateMissingDOIs() {
+    log.debug("Generate missing DOI book ids from importIds")
+    def result = [params: params, result: null]
+
+    Job j = concurrencyManagerService.createJob { job ->
+      packageCleanupService.generateTitleDOIsFromTippInfo(job)
+    }.startOrQueue()
+
+    j.description = "Generating missing DOI book ids from TIPP importIds"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Transfer eBook DOIs')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
+
   def setupAcl() {
 
-    def default_dcs = ["BookInstance", "JournalInstance", "TitleInstancePackagePlatform", "DatabaseInstance", "Office", "Imprint", "Package", "ReviewRequest", "Org", "Platform", "Source", "KBComponentVariantName", "TitleInstancePlatform", "TIPPCoverageStatement"]
+    def default_dcs = [
+      "BookInstance",
+      "JournalInstance",
+      "TitleInstancePackagePlatform",
+      "DatabaseInstance",
+      "Office",
+      "Imprint",
+      "Package",
+      "ReviewRequest",
+      "Org",
+      "Platform",
+      "Source",
+      "KBComponentVariantName",
+      "TitleInstancePlatform",
+      "TIPPCoverageStatement"
+    ]
 
     default_dcs.each { dcd ->
 
