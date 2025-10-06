@@ -28,7 +28,6 @@ class AjaxSupportController {
 
 
   @Deprecated
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def edit() {
     // edit [name:name, value:project:12, pk:org.gokb.cred.Package:2950, action:edit, controller:ajaxSupport]
     log.debug("edit ${params}");
@@ -60,7 +59,6 @@ class AjaxSupportController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def setRef() {
     def result = [:]
     render result as JSON
@@ -71,7 +69,6 @@ class AjaxSupportController {
    * @param id : The label of the RefdataCategory
    */
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def getRefdata() {
     log.debug("AjaxController::getRefdata ${params}")
 
@@ -296,7 +293,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
     User user = springSecurityService.currentUser
@@ -532,7 +528,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToStdCollection() {
     log.debug("addToStdCollection(${params})");
     // Adds a link to a collection that is not mapped through a join object
@@ -598,7 +593,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def unlinkManyToMany() {
     log.debug("unlinkManyToMany(${params})");
     def contextObj = resolveOID2(params.__context)
@@ -708,7 +702,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def delete() {
     log.debug("delete(${params}), referer: ${request.getHeader('referer')}");
     // Adds a link to a collection that is not mapped through a join object
@@ -795,7 +788,6 @@ class AjaxSupportController {
    * @param filter1 : A status value string which should be filtered out after the query has been executed
    */
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def lookup() {
     log.debug("AjaxController::lookup ${params}");
     def result = [:]
@@ -831,7 +823,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def editableSetValue() {
     log.debug("editableSetValue ${params}");
     def user = springSecurityService.currentUser
@@ -927,7 +918,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def genericSetRel() {
     // [id:1, value:JISC_Collections_NESLi2_Lic_IOP_Institute_of_Physics_NESLi2_2011-2012_01012011-31122012.., type:License, action:inPlaceSave, controller:ajax
     // def clazz=grailsApplication.domainClasses.findByFullName(params.type)
@@ -1042,7 +1032,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addIdentifier() {
     log.debug("addIdentifier - ${params}")
     def result = ['result': 'OK', 'params': params]
@@ -1118,7 +1107,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addSubject() {
     log.debug("addSubject - ${params}")
     def result = [result: 'OK', params: params]
@@ -1185,7 +1173,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def appliedCriterion() {
     log.debug("applied criterion AJAXSupportController - ${params} ");
     def result = [status:'OK']
@@ -1226,7 +1213,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def criterionComment() {
     log.debug("criterionComment: ${params}");
     def result    = [:]
@@ -1260,7 +1246,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def criterionCommentDelete() {
     log.debug('criterionCommentDelete:'+params);
     def result       = [:]
@@ -1284,7 +1269,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def plusOne() {
     log.debug("plusOne ${params}");
     def result       = [:]
@@ -1328,7 +1312,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def authorizeVariant() {
     log.debug("${params}");
     def result = ['result':'OK', 'params':params]
@@ -1419,7 +1402,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteVariant() {
     log.debug("${params}");
     def result = ['result':'OK', 'params': params]
@@ -1539,7 +1521,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteCoverageStatement() {
     log.debug("${params}");
     def result = ['result':'OK', 'params': params]
@@ -1595,7 +1576,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteCombo() {
     def result = ['result': "OK", 'params': params]
     Combo c = Combo.get(params.id);
@@ -1660,7 +1640,6 @@ class AjaxSupportController {
    */
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deletePrice() {
     def result = ['result': "OK", 'params': params]
     ComponentPrice c = ComponentPrice.get(params.id);
@@ -1695,7 +1674,6 @@ class AjaxSupportController {
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def applyForUserorg() {
     def result = ['result': 'OK', 'params': params]
     def user_org = UserOrganisation.get(params.id ?: params.userOrg)

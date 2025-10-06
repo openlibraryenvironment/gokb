@@ -195,7 +195,7 @@ class UrlMappings {
       }
     }
 
-    "/"(controller: 'public', action: 'index')
+    "/"(controller: 'home', action: 'index')
     "500"(controller: 'error', action: 'forbidden', exception: NotFoundException)
     "500"(controller: 'error', action: 'unauthorized', exception: AccessDeniedException)
     "500"(controller: 'error', action: 'serverError')

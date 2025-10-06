@@ -14,7 +14,6 @@ class ComponentController {
 
   def index() { }
 
-  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   def identifierConflicts() {
     log.debug("identifierConflicts :: ${params}")
 

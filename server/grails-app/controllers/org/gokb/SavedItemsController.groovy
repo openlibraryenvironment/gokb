@@ -13,7 +13,6 @@ class SavedItemsController {
   def classExaminationService
   def gokbAclService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     def result = [:]
     User user = springSecurityService.currentUser
