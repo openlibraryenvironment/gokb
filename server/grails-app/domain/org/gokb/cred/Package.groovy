@@ -43,6 +43,8 @@ class Package extends KBComponent {
   Date listVerifiedDate
   Date lastCachedDate
   String descriptionURL
+  Integer startYear
+  Integer endYear
 
   private static refdataDefaults = [
     "scope"      : "Front File",
@@ -92,6 +94,8 @@ class Package extends KBComponent {
     listVerifier column: 'pkg_list_verifier'
     userListVerifier column: 'pkg_list_verifier_user_fk'
     descriptionURL column: 'pkg_descr_url'
+    startYear column: 'pkg_start_year'
+    endYear column: 'pkg_end_year'
   }
 
   static constraints = {
@@ -106,6 +110,29 @@ class Package extends KBComponent {
     globalNote(nullable: true, blank: true)
     lastProject(nullable: true, blank: false)
     descriptionURL(nullable: true, blank: true)
+    startYear(validator: { val, obj ->
+      if (val) {
+        if (val < 1700 || val > 9999) {
+          return ['package.yearRange']
+        }
+        else if (obj.hasChanged('startYear') && !obj.hasChanged('endYear') && obj.endYear && obj.endYear < val) {
+          return ['package.endPriorToStart']
+        }
+      }
+    })
+    endYear(validator: { val, obj ->
+      if (val) {
+        if (!obj.startYear) {
+          return ['package.endYear.missingStartYear']
+        }
+        if (val < 1700 || val > 9999) {
+          return ['package.yearRange']
+        }
+        else if ((obj.hasChanged('endYear') || !obj.hasChanged('startYear')) && obj.startYear > val) {
+          return ['package.endPriorToStart']
+        }
+      }
+    })
     name(validator: { val, obj ->
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {

@@ -179,6 +179,8 @@ class PackageCachingService {
                 'paymentType'(item.paymentType?.value)
                 'global'(item.global?.value)
                 'globalNote'(item.globalNote)
+                'startYear'(item.startYear)
+                'endYear'(item.endYear)
                 'contentType'(item.contentType?.value)
 
                 if (item.nominalPlatform) {
