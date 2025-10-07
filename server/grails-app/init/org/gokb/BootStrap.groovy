@@ -1241,6 +1241,18 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Source.ImportConfig', 'WEKB').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Source.ImportConfig', 'EZB').save(flush: true, failOnError: true)
 
+
+        RefdataCategory.lookupOrCreate('Org.PreferredSupplyMethod', 'FTP').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.PreferredSupplyMethod', 'HTTPSAuth').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.PreferredSupplyMethod', 'HTTPSNoAuth').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Daily', '001').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Weekly', '007').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Monthly', '030').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Quarterly', '090').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Yearly', '365').save(flush: true, failOnError: true)
+
+
         lookupOrCreateCuratoryGroupTypes()
 
         // Can be activated on local development instances.

@@ -20,7 +20,7 @@ class Org extends KBComponent {
   Boolean supplyCsv
   Boolean supplyMarc
   Boolean supplyOnix
-  RefdataValue supplyMethod
+  RefdataValue preferredSupplyMethod
   String kbartHostUrl
   Boolean autoImportSupported
   Boolean kbartUrlWithDateMask
@@ -34,7 +34,7 @@ class Org extends KBComponent {
   Boolean kbartExtensionMonographParentCollectionTitle
   Boolean kbartExtensionSeries
   Boolean kbartExtensionSubjetArea
-  KBComponentComment comment
+  KBComponentComment comments
 
 
 
