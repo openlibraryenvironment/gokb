@@ -125,7 +125,7 @@ class PackageSourceUpdateService {
             result.messageCode = 'kbart.errors.url.invalid'
             result.message = "Package source URL is invalid!"
 
-            createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+            result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
             return result
           }
@@ -149,7 +149,7 @@ class PackageSourceUpdateService {
               result.message = "There was an error trying to fetch KBART via URL!"
               result.exceptionMsg = file_info.exceptionMsg
 
-              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
@@ -159,7 +159,7 @@ class PackageSourceUpdateService {
               result.messageCode = 'kbart.errors.url.fileSize'
               result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
 
-              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
@@ -169,7 +169,7 @@ class PackageSourceUpdateService {
               result.messageCode = 'kbart.errors.url.html'
               result.message = "URL returned HTML, indicating provider configuration issues!"
 
-              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             } else if (file_info.mimeTypeError) {
@@ -178,7 +178,7 @@ class PackageSourceUpdateService {
               result.message = "KBART URL returned a wrong content type!"
               log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
-              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             } else if (file_info.status == 403) {
@@ -187,7 +187,7 @@ class PackageSourceUpdateService {
               result.messageCode = 'kbart.errors.url.denied'
               result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
 
-              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
@@ -227,7 +227,7 @@ class PackageSourceUpdateService {
               result.message = "KBART URL returned a wrong content type!"
               log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
-              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
@@ -286,7 +286,7 @@ class PackageSourceUpdateService {
 
                       tmp_file.delete()
 
-                      createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                      result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
                       return result
                     }
@@ -301,7 +301,7 @@ class PackageSourceUpdateService {
 
                   tmp_file.delete()
 
-                  createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                  result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
                   return result
                 }
@@ -318,7 +318,7 @@ class PackageSourceUpdateService {
               result.result = 'SKIPPED'
               log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
 
-              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
@@ -330,7 +330,7 @@ class PackageSourceUpdateService {
             result.message = "KBART URL has an unsupported protocol!"
             log.debug("Unsupported protocol for URL ${src_url}")
 
-            createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+            result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
             return result
           }
@@ -344,6 +344,7 @@ class PackageSourceUpdateService {
         }
       }
     }
+
     if (datafile_id) {
       if (job) {
         result = TSVIngestionService.updatePackage(pid,
@@ -547,7 +548,7 @@ class PackageSourceUpdateService {
     return (ordered_combos.size() == 0 || ordered_combos[0] != datafileId)
   }
 
-  private void createJobResult(pkg, job, startTime, dryRun, ownerId, groupId, result) {
+  private def createJobResult(pkg, job, startTime, dryRun, ownerId, groupId, result) {
     def job_map = [:]
     def job_uuid = job?.uuid ?: UUID.randomUUID().toString()
 
@@ -591,5 +592,17 @@ class PackageSourceUpdateService {
         result_object.save(flush: true)
       }
     }
+
+    def info_map = [
+      uuid: job_map.uuid,
+      groupId: job_map.groupId,
+      linkedItemId: pkg.id,
+      linkedItemName: pkg.name,
+      startTime: job_map.startTime,
+      endTime: job_map.endTime,
+      messageCode: result.messageCode
+    ]
+
+    return info_map
   }
 }

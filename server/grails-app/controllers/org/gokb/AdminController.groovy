@@ -30,6 +30,7 @@ class AdminController {
   def titleAugmentService
   def uploadAnalysisService
   def jobManagerService
+  def curatoryGroupAlertingService
   CleanupService cleanupService
   ConcurrencyManagerService concurrencyManagerService
   TippService tippService
@@ -508,6 +509,15 @@ class AdminController {
     ezbCollectionService.startUpdate(springSecurityService.currentUser)
 
     render(view: "logViewer", model: logViewer())
+  }
+
+  def triggerDailyReviewsAlerts() {
+    log.debug("Triggering curator review notifications")
+    def result = [result: 'OK']
+
+    result = curatoryGroupAlertingService.triggerDailyReviewsAlerts()
+
+    render result as JSON
   }
 
   def cleanupIssnConflicts() {

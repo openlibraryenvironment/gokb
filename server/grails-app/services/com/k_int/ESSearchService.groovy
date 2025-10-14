@@ -53,7 +53,8 @@ class ESSearchService{
           "editStatus",
           "contentType",
           "publicationType",
-          "status"
+          "status",
+          "roles"
       ],
       namespace: [
           "titleNamespace",

@@ -541,6 +541,27 @@ class ComponentLookupService {
               idx++
             }
           }
+          else if (p instanceof ManyToMany) {
+            if (validLong.size() > 0) {
+              boolean failed_lookup = false
+
+              qryParams[p.name] = p.type.get(validLong[0])
+
+              if (qryParams[p.name]) {
+                paramStr += ":${p.name} member of p.${p.name}"
+              }
+              else {
+                failed_lookup = true
+              }
+
+              if (validLong.size() > 1) {
+                for (int i = 1; i < validLong.size(); i++) {
+                  qryParams["${p.name}${i}"] = p.type.get(validLong[i])
+                  paramStr += " OR :${p.name}${i} member of p.${p.name}"
+                }
+              }
+            }
+          }
         }
         else if (p.type == Long) {
           qryParams[p.name] = alts.collect { Long.valueOf(it) }

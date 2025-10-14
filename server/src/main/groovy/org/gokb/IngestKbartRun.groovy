@@ -100,7 +100,11 @@ class IngestKbartRun {
 
   def start(nJob, session) {
     job = nJob ?: job
-    def pkg_info = [id: pkg.id, uuid: pkg.uuid, name: pkg.name]
+    def pkg_info = [
+      id: pkg.id,
+      uuid: pkg.uuid,
+      name: pkg.name
+    ]
     log.debug("ingest start")
     def result = [result: 'OK', dryRun: dryRun]
     result.messages = []
@@ -157,7 +161,11 @@ class IngestKbartRun {
       job?.setProgress(0)
 
       def file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false, serialNamespace, monographNamespace)
-      result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, invalid: file_info.rows.error]
+      result.report = [
+        numRows: file_info.rows.total,
+        skipped: file_info.rows.skipped,
+        invalid: file_info.rows.error
+      ]
       result.validation = file_info
 
       if (file_info.errors.missingColumns) {

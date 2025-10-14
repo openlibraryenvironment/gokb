@@ -654,8 +654,17 @@ class UserProfileService {
         newUserData.curatoryGroups += [
           id    : group.id,
           name  : group.name,
+          email : group.email,
           _links: [
-            'self': [href: base + "/curatoryGroups/$group.id"]
+            self: [
+              href: base + "/curatoryGroups/$group.id",
+            ],
+            update: [
+              href: (group.owner == user || user.isAdmin()) ? base + "/curatoryGroups/$group.id" : null
+            ],
+            delete: [
+              href: (user.superUserStatus) ? base + "/curatoryGroups/$group.id" : null
+            ]
           ]
         ]
       }
