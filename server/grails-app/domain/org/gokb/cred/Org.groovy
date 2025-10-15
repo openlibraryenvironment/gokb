@@ -34,7 +34,6 @@ class Org extends KBComponent {
   Boolean kbartExtensionMonographParentCollectionTitle
   Boolean kbartExtensionSeries
   Boolean kbartExtensionSubjetArea
-  KBComponentComment comments
 
 
 
