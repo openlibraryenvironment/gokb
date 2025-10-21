@@ -24,20 +24,22 @@ import spock.lang.Shared
 
 @Integration
 class ReviewsTestSpec extends AbstractAuthSpec {
-
-
   BlockingHttpClient http
 
   private ReviewRequest rr
   private ReviewRequest rrDeescalate
+  private ReviewRequest rrAugment
   private JournalInstance title
   private JournalInstance matchedTitle
   private CuratoryGroup pkgGroup
   private CuratoryGroup titleGroup
   private CuratoryGroup editorialGroup
+  private CuratoryGroup adminGroup
+  private CuratoryGroup augmentGroup
   private User pkgGroupUser
   private User titleGroupUser
   private User editorialGroupUser
+  private User augmentGroupUser
   private RefdataValue inProgress
   private RefdataValue inactive
 
@@ -51,28 +53,34 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     }
 
     if (!title) {
-      title = JournalInstance.findOrCreateWhere(name: "testTitle for integration testing").save(flush: true, failOnError: true)
+      title = JournalInstance.findOrSaveWhere(name: "testTitle for integration testing")
     }
     if (!matchedTitle) {
-      matchedTitle = JournalInstance.findOrCreateWhere(name: "review matching title").save(flush: true, failOnError: true)
+      matchedTitle = JournalInstance.findOrSaveWhere(name: "review matching title")
     }
 
     if (!rr) {
-      rr = ReviewRequest.findOrCreateWhere(reviewRequest: "fake review request for integration testing", descriptionOfCause: "testCause", componentToReview:title)
-      rr.save(flush: true, failOnError: true)
+      rr = ReviewRequest.findOrSaveWhere(reviewRequest: "fake review request for integration testing", descriptionOfCause: "testCause", componentToReview: title)
     }
 
     if (!editorialGroup) {
       editorialGroup = CuratoryGroup.findByName("Journal Central Curators")
     }
 
+    if (!adminGroup) {
+      adminGroup = CuratoryGroup.findOrSaveWhere(name: "GOKB Team")
+    }
+
+    if (!augmentGroup) {
+      augmentGroup = CuratoryGroup.findOrSaveWhere(name: "ZDB")
+    }
+
     if (!titleGroup) {
-      titleGroup = CuratoryGroup.findOrCreateWhere(name: "titleGroup").save(flush: true, failOnError: true)
+      titleGroup = CuratoryGroup.findOrSaveWhere(name: "titleGroup")
     }
 
     if (!pkgGroup) {
-      pkgGroup = CuratoryGroup.findOrCreateWhere(name: "pkgGroup", superordinatedGroup: titleGroup).save(flush: true, failOnError: true)
-      pkgGroup.superordinatedGroup = titleGroup
+      pkgGroup = CuratoryGroup.findOrSaveWhere(name: "pkgGroup", superordinatedGroup: titleGroup)
     }
 
     if (!inProgress) {
@@ -83,9 +91,13 @@ class ReviewsTestSpec extends AbstractAuthSpec {
       inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
     }
 
+    if (!rrAugment) {
+      rrAugment = ReviewRequest.findOrSaveWhere(reviewRequest: "test augment escalate", descriptionOfCause: "testCause", componentToReview: title)
+      AllocatedReviewGroup.create(augmentGroup, rrAugment, true)
+    }
+
     if (!rrDeescalate) {
-      rrDeescalate = ReviewRequest.findOrCreateWhere(reviewRequest: "fake review request for deescalation testing", descriptionOfCause: "testCause", componentToReview:title)
-      rrDeescalate.save(flush: true, failOnError: true)
+      rrDeescalate = ReviewRequest.findOrSaveWhere(reviewRequest: "fake review request for deescalation testing", descriptionOfCause: "testCause", componentToReview: title)
       AllocatedReviewGroup.create(pkgGroup, rr, true)
 
       def argBase = AllocatedReviewGroup.create(pkgGroup, rrDeescalate, true)
@@ -117,6 +129,16 @@ class ReviewsTestSpec extends AbstractAuthSpec {
       [contributorRole, userRole, editorRole].each { role ->
         if (!titleGroupUser.authorities.contains(role)) {
             UserRole.create(titleGroupUser, role)
+        }
+      }
+    }
+
+    if (!User.findByUsername("augmentGroupUser")) {
+      augmentGroupUser = new User(username: "augmentGroupUser", password: 'augmentGrp1', curatoryGroups: [augmentGroup], enabled: true, locked: false).save(flush: true)
+
+      [contributorRole, userRole, editorRole].each { role ->
+        if (!augmentGroupUser.authorities.contains(role)) {
+            UserRole.create(augmentGroupUser, role)
         }
       }
     }
@@ -205,7 +227,72 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     resp.body().descriptionOfCause == restBody.descriptionOfCause
   }
 
-  void "test review escalation"() {
+  void "test check escalatable for package title review"() {
+    given:
+    def urlPath = getUrlPath()
+
+    when:
+    String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/reviews/escalatable/${rr.id}/${pkgGroup.id}")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().isEscalatable == true
+    resp.body().escalationTargetGroup?.id == titleGroup.id
+  }
+
+  void "test check escalatable for reference title review to admin group"() {
+    given:
+    def urlPath = getUrlPath()
+
+    when:
+    String accessToken = getAccessToken('augmentGroupUser', 'augmentGrp1')
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/reviews/escalatable/${rrAugment.id}/${augmentGroup.id}")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().isEscalatable == true
+    resp.body().escalationTargetGroup?.id == adminGroup.id
+  }
+
+  void "test check escalatable for unescalatable title review"() {
+    given:
+    def urlPath = getUrlPath()
+
+    when:
+    String accessToken = getAccessToken('admin', 'admin')
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/reviews/escalatable/${rrAugment.id}/${adminGroup.id}")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().isEscalatable == false
+    resp.body().escalationTargetGroup == null
+  }
+
+  void "test check escalatable title review with missing editing rights"() {
+    given:
+    def urlPath = getUrlPath()
+
+    when:
+    String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/reviews/escalatable/${rrAugment.id}/${augmentGroup.id}")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().isEscalatable == false
+    resp.body().escalationTargetGroup == null
+    resp.body().errors.size() == 1
+  }
+
+  void "test successful review escalation"() {
     given:
     def urlPath = getUrlPath()
     def restBody = [
@@ -223,7 +310,125 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     resp.status == HttpStatus.OK
   }
 
-  void "test review deescalation"() {
+  void "test denied review escalation due to missing editing rights"() {
+    given:
+    def urlPath = getUrlPath()
+    def restBody = [
+      id: rrAugment.id,
+      activeGroup: pkgGroup.id
+    ]
+
+    when:
+    String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/escalate/${rrAugment.id}", restBody)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    }
+    catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      resp = e.response
+    }
+
+    then:
+    resp.status == HttpStatus.FORBIDDEN
+  }
+
+  void "test check deescalatable title review with missing editing rights"() {
+    given:
+    def urlPath = getUrlPath()
+
+    when:
+    String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/reviews/deescalatable/${rrDeescalate.id}/${augmentGroup.id}")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().isDeescalatable == false
+    resp.body().escalationTargetGroup == null
+    resp.body().errors.size() == 1
+  }
+
+
+  void "test denied review deescalation due to invalid activeGroup"() {
+    given:
+    def urlPath = getUrlPath()
+    def restBody = [
+      id: rrDeescalate.id,
+      activeGroup: pkgGroup.id
+    ]
+
+    when:
+    String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/deescalate/${rrDeescalate.id}", restBody)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    }
+    catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      resp = e.response
+    }
+
+    then:
+    resp.status == HttpStatus.BAD_REQUEST
+  }
+
+  void "test denied review deescalation due to missing user editing rights"() {
+    given:
+    def urlPath = getUrlPath()
+    def restBody = [
+      id: rrDeescalate.id,
+      activeGroup: titleGroup.id
+    ]
+
+    when:
+    String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/deescalate/${rrDeescalate.id}", restBody)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    }
+    catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      resp = e.response
+    }
+
+    then:
+    resp.status == HttpStatus.FORBIDDEN
+  }
+
+  void "test denied review deescalation due to invalid activeGroup"() {
+    given:
+    def urlPath = getUrlPath()
+    def restBody = [
+      id: rrDeescalate.id,
+      activeGroup: pkgGroup.id
+    ]
+
+    when:
+    String accessToken = getAccessToken('titleGroupUser', 'ttlGrp1')
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/deescalate/${rrDeescalate.id}", restBody)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    }
+    catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      resp = e.response
+    }
+
+    then:
+    resp.status == HttpStatus.BAD_REQUEST
+  }
+
+  void "test successful review deescalation"() {
     given:
     def urlPath = getUrlPath()
     def restBody = [
@@ -240,4 +445,6 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     then:
     resp.status == HttpStatus.OK
   }
+
+
 }
