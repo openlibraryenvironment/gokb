@@ -335,6 +335,25 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     resp.status == HttpStatus.FORBIDDEN
   }
 
+  void "test successful admin review escalation"() {
+    given:
+    def urlPath = getUrlPath()
+    def restBody = [
+      id: rrAugment.id,
+      activeGroup: augmentGroup.id
+    ]
+
+    when:
+    String accessToken = getAccessToken('augmentGroupUser', 'augmentGrp1')
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/escalate/${rrAugment.id}", restBody)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().escalationTargetGroup?.id == adminGroup.id
+  }
+
   void "test check deescalatable title review with missing editing rights"() {
     given:
     def urlPath = getUrlPath()
