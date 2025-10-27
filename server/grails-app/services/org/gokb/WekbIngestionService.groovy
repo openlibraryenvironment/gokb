@@ -40,10 +40,10 @@ class WekbIngestionService {
   */
   boolean isUpdate
   Long ingest_systime
-  def rdv_current
-  def rdv_deleted
-  def rdv_expected
-  def rdv_retired
+  RefdataValue rdv_current
+  RefdataValue rdv_deleted
+  RefdataValue rdv_expected
+  RefdataValue rdv_retired
   SessionFactory sessionFactory
   ConcurrencyManagerService concurrencyManagerService
   Map identifierTargetTypes = [:]
@@ -75,10 +75,12 @@ class WekbIngestionService {
       validIdentifierForPubType.put("Database", getValidIdentifiersForPublicationType("Database"))
       validIdentifierForPubType.put("Other", getValidIdentifiersForPublicationType("Other"))
 
-      rdv_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-      rdv_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-      rdv_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-      rdv_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+      rdv_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+      rdv_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+      rdv_expected = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED)
+      rdv_retired = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+
+      RefdataValue combo_pkg = RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps')
 
       isUpdate = false
       int old_tipp_count = TitleInstancePackagePlatform.executeQuery('''select count(*)
@@ -86,8 +88,9 @@ class WekbIngestionService {
               Combo as c
               where c.fromComponent.id = :pkg
               and c.toComponent = tipp
+              and c.type = :ct
               and tipp.status = :sc''',
-              [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+              [pkg: pkg.id, ct: combo_pkg, sc: rdv_current])[0]
 
       result.report = [
         numRows : titleCount,
@@ -112,266 +115,332 @@ class WekbIngestionService {
 
       int tippNum = 0
       def tippBatches = []
+      boolean cancelled = false
 
-      for (int offset = 0; offset < titleCount; offset += batchSize) {
-        def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
+      try {
+        for (int offset = 0; offset < titleCount; offset += batchSize) {
+          def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
 
-        tippBatches.add(tipps)
 
-        def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
-        log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
+          tippBatches.add(tipps)
 
-        for (tipp in tipps) {
-          def targetNamespaceTitleId = null
-          tippNum++
-          log.debug('TIPP ' + tippNum + ": " + tipp)
+          def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
+          log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
 
-          if (tipp.status == 'Deleted') {
-            //in der WEKB gelöschte Titel werden nicht importiert
-            log.debug("Title is deleted --> SKIP")
-            result.report["skipped"]++
-            continue
-          }
+          for (tipp in tipps) {
+            def targetNamespaceTitleId = null
 
-          Map ids = tipp.identifiers?.find { it.namespace == 'title_id' }
-          def title_id = null
+            if (tippNum == 0) {
+              log.debug("Checking first TIPP for duplicates ..")
 
-          if (ids) {
-            title_id = ids.value
-            log.debug('ids: ' + ids + ", title_id: " + title_id)
-          }
+              def dupes = TitleInstancePackagePlatform.executeQuery('''select uuid
+                      from TitleInstancePackagePlatform as tipp
+                      where uuid = :uuid
+                      and exists (
+                        select 1
+                        from Combo
+                        where type = :ct
+                        and toComponent = tipp
+                        and fromComponent.id != :pkg
+                      )
+                      ''', [pkg: pkg.id, ct: combo_pkg, uuid: tipp.uuid])
 
-          def lang = null
+              if (dupes) {
+                cancelled = true
+                result.result = 'ERROR'
+                result.errors << [
+                  message: "The first title of this import (${tipp.name}) already exists in another package. Multiple instances of the same external package are not allowed!",
+                  baddata: tipp.uuid
+                ]
+                break
+              }
+            }
 
-          if (tipp.languages && tipp.languages.size() > 0) {
-            lang = tipp.languages.get(0)?.value
-          }
 
-          def pubtype = tipp.publicationType
+            tippNum++
+            log.debug('TIPP ' + tippNum + ": " + tipp)
 
-          if (pubtype == 'Serial') {
-            targetNamespaceTitleId = targetNamespaceTitleIdSerial
-          } else {
-            targetNamespaceTitleId = targetNamespaceTitleIdMonograph
-          }
+            if (tipp.status == 'Deleted') {
+              //in der WEKB gelöschte Titel werden nicht importiert
+              log.debug("Title is deleted --> SKIP")
+              result.report["skipped"]++
+              continue
+            }
 
-          def identifiers = []
-          //def validIdentifiers = getValidIdentifiersForPublicationType(tipp.publicationType)
+            Map ids = tipp.identifiers?.find { it.namespace == 'title_id' }
+            def title_id = null
 
-          if (tipp.identifiers && tipp.identifiers.size() > 0) {
-            boolean titleIdIsToSet = false
+            if (ids) {
+              title_id = ids.value
+              log.debug('ids: ' + ids + ", title_id: " + title_id)
+            }
 
-            if (targetNamespaceTitleId) {
-              titleIdIsToSet = true
+            def lang = null
+
+            if (tipp.languages && tipp.languages.size() > 0) {
+              lang = tipp.languages.get(0)?.value
+            }
+
+            def pubtype = tipp.publicationType
+
+            if (pubtype == 'Serial') {
+              targetNamespaceTitleId = targetNamespaceTitleIdSerial
+            } else {
+              targetNamespaceTitleId = targetNamespaceTitleIdMonograph
+            }
+
+            def identifiers = []
+            //def validIdentifiers = getValidIdentifiersForPublicationType(tipp.publicationType)
+
+            if (tipp.identifiers && tipp.identifiers.size() > 0) {
+              boolean titleIdIsToSet = false
+
+              if (targetNamespaceTitleId) {
+                titleIdIsToSet = true
+
+                for (identifier in tipp.identifiers) {
+                  if (identifier.namespace && identifier.namespace.equalsIgnoreCase(targetNamespaceTitleId)) {
+                    titleIdIsToSet = false
+                  }
+                }
+              }
 
               for (identifier in tipp.identifiers) {
-                if (identifier.namespace && identifier.namespace.equalsIgnoreCase(targetNamespaceTitleId)) {
-                  titleIdIsToSet = false
+                String identifierType = null
+
+                if (identifier.namespace) {
+                  switch (identifier.namespace) {
+                    case "eisbn":
+                      if (pubtype == "Monograph") {
+                          identifierType = "isbn"
+                      }
+                      break;
+                    case "isbn":
+                      if (pubtype == "Monograph") {
+                          identifierType = "pisbn"
+                      }
+                      break;
+                    case "title_id":
+                      if (titleIdIsToSet) {
+                        identifierType = targetNamespaceTitleId
+                      }
+                      break;
+                    default:
+                      if (validIdentifierForPubType.get(pubtype).contains(identifier.namespace)) {
+                        identifierType = identifier.namespace
+                      }
+                  }
+                }
+
+                if (identifierType) {
+                  identifiers << [type: identifierType, value: identifier.value]
                 }
               }
             }
 
-            for (identifier in tipp.identifiers) {
-              String identifierType = null
 
-              if (identifier.namespace) {
-                switch (identifier.namespace) {
-                  case "eisbn":
-                    if (pubtype == "Monograph") {
-                        identifierType = "isbn"
-                    }
-                    break;
-                  case "isbn":
-                    if (pubtype == "Monograph") {
-                        identifierType = "pisbn"
-                    }
-                    break;
-                  case "title_id":
-                    if (titleIdIsToSet) {
-                      identifierType = targetNamespaceTitleId
-                    }
-                    break;
-                  default:
-                    if (validIdentifierForPubType.get(pubtype).contains(identifier.namespace)) {
-                      identifierType = identifier.namespace
-                    }
-                }
-              }
+            def tipp_map = [
+              uuid                       : tipp.uuid?.trim(),
+              url                        : tipp.url?.trim(),
+              coverageStatements         : tipp.coverage ?: [
+                [
+                  embargo      : null,
+                  coverageDepth: 'Fulltext',
+                  coverageNote : null,
+                  startDate    : null,
+                  startVolume  : null,
+                  startIssue   : null,
+                  endDate      : null,
+                  endVolume    : null,
+                  endIssue     : null
+                ]
+              ],
+              importId                   : title_id?.trim(),
+              name                       : tipp.name?.trim(),
+              publicationType            : tipp.publicationType?.trim(),
+              parentPublicationTitleId   : tipp.parentPublicationTitleId?.trim(),
+              precedingPublicationTitleId: tipp.precedingPublicationTitleId?.trim(),
+              firstAuthor                : tipp.firstAuthor?.trim(),
+              publisherName              : tipp.publisherName?.trim(),
+              volumeNumber               : tipp.volumeNumber?.trim(),
+              editionStatement           : tipp.editionStatement?.trim(),
+              dateFirstInPrint           : tipp.dateFirstInPrint?.trim(),
+              dateFirstOnline            : tipp.dateFirstOnline?.trim(),
+              firstEditor                : tipp.firstEditor?.trim(),
+              subjectArea                : tipp.subjectArea?.trim(),
+              series                     : tipp.series?.trim(),
+              language                   : lang,
+              medium                     : tipp.medium?.trim(),
+              accessStartDate            : tipp.accessStartDate?.trim(),
+              accessEndDate              : tipp.accessEndDate?.trim(),
+              lastSeen                   : ingest_systime,
+              identifiers                : identifiers,
+              pkg                        : [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
+              hostPlatform               : [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
+              paymentType                : tipp.accessType == "Free" ? "F" : "P"
+            ]
 
-              if (identifierType) {
-                identifiers << [type: identifierType, value: identifier.value]
-              }
+            def line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
+
+            result.report[line_result.status]++
+
+            if (tippNum % 50 == 0) {
+              def session = sessionFactory.getCurrentSession()
+              session.flush()
+              session.clear()
             }
+
           }
 
-
-          def tipp_map = [
-            uuid                       : tipp.uuid?.trim(),
-            url                        : tipp.url?.trim(),
-            coverageStatements         : tipp.coverage ?: [
-              [
-                embargo      : null,
-                coverageDepth: 'Fulltext',
-                coverageNote : null,
-                startDate    : null,
-                startVolume  : null,
-                startIssue   : null,
-                endDate      : null,
-                endVolume    : null,
-                endIssue     : null
-              ]
-            ],
-            importId                   : title_id?.trim(),
-            name                       : tipp.name?.trim(),
-            publicationType            : tipp.publicationType?.trim(),
-            parentPublicationTitleId   : tipp.parentPublicationTitleId?.trim(),
-            precedingPublicationTitleId: tipp.precedingPublicationTitleId?.trim(),
-            firstAuthor                : tipp.firstAuthor?.trim(),
-            publisherName              : tipp.publisherName?.trim(),
-            volumeNumber               : tipp.volumeNumber?.trim(),
-            editionStatement           : tipp.editionStatement?.trim(),
-            dateFirstInPrint           : tipp.dateFirstInPrint?.trim(),
-            dateFirstOnline            : tipp.dateFirstOnline?.trim(),
-            firstEditor                : tipp.firstEditor?.trim(),
-            subjectArea                : tipp.subjectArea?.trim(),
-            series                     : tipp.series?.trim(),
-            language                   : lang,
-            medium                     : tipp.medium?.trim(),
-            accessStartDate            : tipp.accessStartDate?.trim(),
-            accessEndDate              : tipp.accessEndDate?.trim(),
-            lastSeen                   : ingest_systime,
-            identifiers                : identifiers,
-            pkg                        : [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-            hostPlatform               : [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
-            paymentType                : tipp.accessType == "Free" ? "F" : "P"
-          ]
-
-          def line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
-
-          result.report[line_result.status]++
-
-          if (tippNum % 50 == 0) {
-            def session = sessionFactory.getCurrentSession()
-            session.flush()
-            session.clear()
+          if (cancelled) {
+             break
           }
+
+          int progress = (int) ((offset / titleCount) * 100)
+          log.debug("++++++++++ progress: " + progress)
+          job?.setProgress(progress)
+
+          def session = sessionFactory.getCurrentSession()
+          session.flush()
+          session.clear()
 
         }
-
-        int progress = (int) ((offset / titleCount) * 100)
-        log.debug("++++++++++ progress: " + progress)
-        job?.setProgress(progress)
 
         def session = sessionFactory.getCurrentSession()
         session.flush()
         session.clear()
 
-      }
+        if (!cancelled) {
+          // handle Tipp-Status
+          //def status_map = ['Current': rdv_current, 'Deleted': rdv_deleted, 'Expected': rdv_expected, 'Retired': rdv_retired]
+          log.debug("set TIPP status...")
+          tippNum = 0
 
-      def session = sessionFactory.getCurrentSession()
-      session.flush()
-      session.clear()
+          for (int i = 0; i < tippBatches.size(); i++) {
+            def tipps = tippBatches.get(i)
 
+            for (tipp in tipps) {
+              tippNum++
+              def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
 
-      // handle Tipp-Status
-      //def status_map = ['Current': rdv_current, 'Deleted': rdv_deleted, 'Expected': rdv_expected, 'Retired': rdv_retired]
-      log.debug("set TIPP status...")
-      tippNum = 0
+              if (importedTipp == null) {
+                log.debug("Title was not imported --> Skip")
+                continue
+              }
 
-      for (int i = 0; i < tippBatches.size(); i++) {
-        def tipps = tippBatches.get(i)
+              def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
 
-        for (tipp in tipps) {
-          tippNum++
-          def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
+              if (actualTippStatus) {
+                importedTipp.setStatus(actualTippStatus)
+              }
+              else if (tipp.status == "Removed") {
+                importedTipp.setStatus(RefdataCategory.lookup('KBComponent.Status', 'Retired'))
+              }
+              else {
+                log.error("Unable to process wekb TIPP status value ${tipp.status} for TIPP ${tipp.uuid}!")
+              }
 
-          if (importedTipp == null) {
-            log.debug("Title was not imported --> Skip")
-            continue
-          }
+              //result.report[tipp.status.toString().toLowerCase()]++
+              //importedTipp.setStatus(status_map.get(tipp.status))
 
-          def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
+              if (tippNum % 50 == 0) {
+                session = sessionFactory.getCurrentSession()
+                session.flush()
+                session.clear()
+              }
+            }
 
-          if (actualTippStatus) {
-            importedTipp.setStatus(actualTippStatus)
-          }
-          else if (tipp.status == "Removed") {
-            importedTipp.setStatus(RefdataCategory.lookup('KBComponent.Status', 'Retired'))
-          }
-          else {
-            log.error("Unable to process wekb TIPP status value ${tipp.status} for TIPP ${tipp.uuid}!")
-          }
-
-          //result.report[tipp.status.toString().toLowerCase()]++
-          //importedTipp.setStatus(status_map.get(tipp.status))
-
-          if (tippNum % 50 == 0) {
             session = sessionFactory.getCurrentSession()
             session.flush()
             session.clear()
           }
+
+          log.debug("start Title Matching... ")
+
+          def currentSession = sessionFactory.getCurrentSession()
+          currentSession.flush()
+          currentSession.clear()
+
+          Job matching_job
+
+          Package.withNewSession {
+            matching_job = concurrencyManagerService.createJob { mjob ->
+              tippService.matchPackage(pkgInfo.id, mjob)
+            }
+
+            Package p = Package.get(pkg.getId())
+            matching_job.description = "Package Title Matching".toString()
+            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+            matching_job.linkedItem = pkgInfo
+            matching_job.message("Starting title match for Package ${p.name}".toString())
+            matching_job.startOrQueue()
+            matching_job.startTime = new Date()
+          }
+
+          if (!async) {
+            result.matchingJob = matching_job.get()
+          } else {
+            result.matchingJob = matching_job.uuid
+          }
         }
-
-        session = sessionFactory.getCurrentSession()
-        session.flush()
-        session.clear()
       }
+      catch (grails.validation.ValidationException ve) {
+        log.error('Validation error druing wekb package update', e)
+        List field_errors = ve.errors.fieldErrors
+        result.result = 'ERROR'
+        result.exception = e.message
 
-      log.debug("start Title Matching... ")
-
-      def currentSession = sessionFactory.getCurrentSession()
-      currentSession.flush()
-      currentSession.clear()
-
-      Job matching_job
-
-      Package.withNewSession {
-        matching_job = concurrencyManagerService.createJob { mjob ->
-          tippService.matchPackage(pkgInfo.id, mjob)
+        if (field_errors) {
+          field_errors.each { er ->
+            if (er.field == 'uuid' && er.code == 'unique') {
+              result.errors << [
+                message: 'At least one title with the same UUID has already been imported in another package!',
+                baddata: er.rejectValue
+              ]
+            }
+            else {
+              result.errors << [
+                message: 'At least one title failed validation while saving!',
+                field: er.field,
+                baddata: er.rejectValue
+              ]
+            }
+          }
         }
-
-        Package p = Package.get(pkg.getId())
-        matching_job.description = "Package Title Matching".toString()
-        matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-        matching_job.linkedItem = pkgInfo
-        matching_job.message("Starting title match for Package ${p.name}".toString())
-        matching_job.startOrQueue()
-        matching_job.startTime = new Date()
+      }
+      catch (Exception e) {
+        log.error('Error in updating wekb package', e)
+        result.result = 'ERROR'
+        result.exception = e.message
       }
 
-      if (!async) {
-        result.matchingJob = matching_job.get()
-      } else {
-        result.matchingJob = matching_job.uuid
-      }
-    }
+      if (job) {
+        job.setProgress(100)
+        job.endTime = new Date()
 
-    if (job) {
-      job.setProgress(100)
-      job.endTime = new Date()
+        JobResult.withNewTransaction {
+          def result_object = JobResult.findByUuid(job.uuid)
 
-      JobResult.withNewTransaction {
-        def result_object = JobResult.findByUuid(job.uuid)
+          /*if (result.titleMatch) {
+              result.titleMatch.rowConflicts = titleMatchConflicts
+          } */
 
-        /*if (result.titleMatch) {
-            result.titleMatch.rowConflicts = titleMatchConflicts
-        } */
+          if (!result_object) {
+            def job_map = [
+              uuid        : (job.uuid),
+              description : "External Source Import".toString(),
+              resultObject: (result as JSON).toString(),
+              type        : (job.type),
+              statusText  : (result.result),
+              ownerId     : (job.ownerId),
+              groupId     : (job.groupId),
+              startTime   : (job.startTime),
+              endTime     : (job.endTime),
+              linkedItemId: (job.linkedItem?.id)
+            ]
 
-        if (!result_object) {
-          def job_map = [
-            uuid        : (job.uuid),
-            description : "External Source Import".toString(),
-            resultObject: (result as JSON).toString(),
-            type        : (job.type),
-            statusText  : (result.result),
-            ownerId     : (job.ownerId),
-            groupId     : (job.groupId),
-            startTime   : (job.startTime),
-            endTime     : (job.endTime),
-            linkedItemId: (job.linkedItem?.id)
-          ]
-
-          def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+            def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+          }
         }
       }
     }
