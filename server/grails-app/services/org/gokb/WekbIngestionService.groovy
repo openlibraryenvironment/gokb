@@ -13,6 +13,7 @@ import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.Source
+import org.gokb.cred.Combo
 import org.gokb.cred.TIPPCoverageStatement
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
@@ -148,10 +149,8 @@ class WekbIngestionService {
               if (dupes) {
                 cancelled = true
                 result.result = 'ERROR'
-                result.errors << [
-                  message: "The first title of this import (${tipp.name}) already exists in another package. Multiple instances of the same external package are not allowed!",
-                  baddata: tipp.uuid
-                ]
+                result.message = "The first title of this import (${tipp.name}) already exists in another package. Multiple instances of the same external package are not allowed!"
+                result.baddata = tipp.uuid
                 break
               }
             }

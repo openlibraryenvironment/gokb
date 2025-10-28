@@ -12,6 +12,7 @@ class ExternalSourceImportController {
     //NO-OP
   }
 
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   def getPackageMetaData(){
     log.debug("getPackageMetaData query: ${params}")
     def noResults = ["":""]
@@ -29,6 +30,7 @@ class ExternalSourceImportController {
   }
 
 
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   def getPlatformMetaData(){
     def noResults = ["":""]
     def uuid = params?.uuid
@@ -44,6 +46,7 @@ class ExternalSourceImportController {
     render noResults as JSON
   }
 
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   def getProviderData(){
     def noResults = ["":""]
     def uuid = params?.uuid
@@ -60,6 +63,7 @@ class ExternalSourceImportController {
     render noResults as JSON
   }
 
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   def checkProviderExists(){
     def noResults = ["":""]
     def reqBody = request.JSON
@@ -96,6 +100,7 @@ class ExternalSourceImportController {
 
   } */
 
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   def getTitleData(){
     def noResults = ["":""]
     def uuid = params?.uuid
