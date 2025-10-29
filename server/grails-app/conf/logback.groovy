@@ -66,7 +66,21 @@ else {
 }
 
 def targetDir = BuildSettings.TARGET_DIR
+
 if (Environment.isDevelopmentMode() && targetDir != null) {
+    appender("ROLLING", RollingFileAppender) {
+        encoder(PatternLayoutEncoder) {
+            pattern = "%level %logger - %msg%n"
+        }
+        rollingPolicy(TimeBasedRollingPolicy) {
+            fileNamePattern = "${targetDir}/logs/catalina-%d{yyyy-MM-dd_HH}.gz"  // Rollover each hour and zip rolled over file
+            maxHistory = 4 //maximum number of archive files to keep
+        }
+    }
+    logger("StackTrace", ERROR, ['ROLLING'], false)
+}
+
+/*if (Environment.isDevelopmentMode() && targetDir != null) {
   appender("FULL_STACKTRACE", FileAppender) {
     file = "${targetDir}/stacktrace.log"
     append = true
@@ -75,5 +89,5 @@ if (Environment.isDevelopmentMode() && targetDir != null) {
     }
   }
   logger("StackTrace", ERROR, ['FULL_STACKTRACE'], false)
-}
+} */
 root(ERROR, ['STDOUT'])
