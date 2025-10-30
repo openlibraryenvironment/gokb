@@ -107,7 +107,6 @@ class ErrorController {
   def unauthorized() {
     def resp = [code: 401, message:'Unauthorized']
 
-    log.error("####: " + request.forwardURI)
     if(request.forwardURI.contains('/rest/') || request.forwardURI.contains('/externalSource/')) {
       log.debug("Rendering JSON REST 401 (${request.forwardURI})")
       response.setStatus(401)
