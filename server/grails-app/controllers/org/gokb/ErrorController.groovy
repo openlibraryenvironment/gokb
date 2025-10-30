@@ -20,7 +20,7 @@ class ErrorController {
       resp.exception = exception
     }
 
-    if ( request.forwardURI.contains('/rest/') ) {
+    if (request.forwardURI.contains('/rest/') || request.forwardURI.contains('/externalSource/')) {
       log.debug("Rendering JSON REST 500 (${request.forwardURI})")
       response.setStatus(500)
       render resp as JSON
@@ -41,7 +41,7 @@ class ErrorController {
   def wrongMethod() {
     def resp = [code: 405, message:'Method not allowed']
 
-    if(request.forwardURI.contains('/rest/')) {
+    if(request.forwardURI.contains('/rest/') || request.forwardURI.contains('/externalSource/')) {
       log.debug("Rendering JSON REST 405 (${request.forwardURI})")
       response.setStatus(405)
       render resp as JSON
@@ -62,7 +62,7 @@ class ErrorController {
   def notFound() {
     def resp = [code: 404, message:'Not Found']
 
-    if(request.forwardURI.contains('/rest/')) {
+    if(request.forwardURI.contains('/rest/') || request.forwardURI.contains('/externalSource/')) {
       log.debug("Rendering JSON REST 404 (${request.forwardURI})")
       response.setStatus(404)
       render resp as JSON
@@ -84,7 +84,7 @@ class ErrorController {
   def forbidden() {
     def resp = [code: 403, message:'Forbidden']
 
-    if(request.forwardURI.contains('/rest/')) {
+    if(request.forwardURI.contains('/rest/') || request.forwardURI.contains('/externalSource/')) {
       log.debug("Rendering JSON REST 403 (${request.forwardURI})")
       response.setStatus(403)
       render resp as JSON
@@ -107,7 +107,8 @@ class ErrorController {
   def unauthorized() {
     def resp = [code: 401, message:'Unauthorized']
 
-    if(request.forwardURI.contains('/rest/')) {
+    log.error("####: " + request.forwardURI)
+    if(request.forwardURI.contains('/rest/') || request.forwardURI.contains('/externalSource/')) {
       log.debug("Rendering JSON REST 401 (${request.forwardURI})")
       response.setStatus(401)
       render resp as JSON
@@ -130,7 +131,7 @@ class ErrorController {
   def badRequest() {
     def resp = [code: 400, message:'Bad Request']
 
-    if(request.forwardURI.contains('/rest/')) {
+    if(request.forwardURI.contains('/rest/') || request.forwardURI.contains('/externalSource/')) {
       log.debug("Rendering JSON REST 400 (${request.forwardURI})")
       response.setStatus(400)
       render resp as JSON
