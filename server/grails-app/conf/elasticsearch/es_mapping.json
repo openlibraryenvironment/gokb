@@ -227,7 +227,7 @@
       "type" : "text",
       "analyzer" : "custom_chars_analyzer",
       "search_analyzer" : "custom_chars_analyzer",
-      "copy_to" : "suggest",
+      "copy_to" : ["suggest", "normname", "normSuggest"],
       "fields" : {
         "name" : {
           "type" : "text"
@@ -321,6 +321,15 @@
     },
     "endYear": {
       "type": "integer"
+    },
+    "normname": {
+      "type" : "text",
+      "analyzer" : "icu"
+    },
+    "normSuggest": {
+      "type": "text",
+      "analyzer": "icu_suggest",
+      "search_analyzer": "icu"
     }
   }
 }

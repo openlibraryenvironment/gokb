@@ -42,6 +42,26 @@
             "lowercase",
             "autocomplete_filter"
           ]
+        },
+        "icu": {
+          "type": "custom",
+          "tokenizer": "icu_tokenizer",
+          "char_filter": [
+            "colon_filter"
+          ],
+          "filter": [
+            "lowercase",
+            "icu_folding"
+          ]
+        },
+        "icu_suggest": {
+          "type":      "custom",
+          "tokenizer": "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_folding",
+            "autocomplete_filter"
+          ]
         }
       },
       "tokenizer": {
