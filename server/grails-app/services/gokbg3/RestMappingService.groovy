@@ -880,19 +880,14 @@ class RestMappingService {
     List notFound = []
     List toRemove = []
 
-      log.error("00000: " + obj + ", " + comments)
-
     KBComponentComment.withTransaction {
       comments.each { co ->
         KBComponentComment cobj = null
         boolean created = false
-          log.error("1111: " + co)
 
         if (co instanceof Map) {
-            log.error("2222: instance Map " )
           if (co.id) {
             cobj = KBComponentComment.findById(co.id)
-              log.error("3333 " + cobj)
             if (!cobj || cobj.owner != obj) {
               result.errors << [
                 message: 'Unable to reference existing comment item!',
@@ -903,10 +898,8 @@ class RestMappingService {
           else if (co.language && co.value?.trim()) {
 
             def rd_result = lookupRefdataValueForCategory(co.language, cat_lang)
-              log.error("4444: " + rd_result)
             if (rd_result.obj) {
               def existing = KBComponentComment.findByOwnerAndLanguage(obj, rd_result.obj)
-                log.error("5555: " + existing)
               if (existing) {
                 result.errors << [
                   message: 'Matched incoming comment without id to existing comment with the same language!',
