@@ -662,6 +662,7 @@ class PackageController {
     def title_ns_id = null
     def title_ns_serial_id = null
     def title_ns_mono_id = null
+    Source pkg_source = pkg.source
 
     if (params.activeGroup) {
       CuratoryGroup active_group
@@ -743,72 +744,84 @@ class PackageController {
       Boolean dry_run = params.boolean('dryRun') ?: false
       Boolean skip_invalid = params.boolean('skipInvalid') ?: false
       Boolean delete_missing = params.boolean('deleteMissing') ?: false
-      def info = TSVIngestionService.analyseFile(temp_file)
       Boolean async = params.async ? params.boolean('async') : true
+      Long max_file_length = 20971520L
 
-      log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
-      datafile = DataFile.findByMd5(info.md5sumHex)
+      def info = TSVIngestionService.analyseFile(temp_file)
 
-      if (!datafile) {
-        log.debug("Create new datafile")
-        DataFile.withNewTransaction {
-          datafile = new DataFile(
-            guid:deposit_token,
-            md5:info.md5sumHex,
-            uploadName:upload_filename,
-            name:upload_filename,
-            filesize:info.filesize,
-            encoding:info.encoding,
-            uploadMimeType:upload_mime_type
-          ).save()
+      if (!source || source?.ignoreSizeLimit || user.isAdmin() || info.filesize <= max_file_length) {
+        log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
+        datafile = DataFile.findByMd5(info.md5sumHex)
 
-          datafile.fileData = temp_file.getBytes()
-          datafile.save(failOnError:true,flush:true)
-          log.debug("Saved new datafile : ${datafile.id} -- ${datafile.uploadName}")
-        }
-      }
+        if (!datafile) {
+          log.debug("Create new datafile")
+          DataFile.withNewTransaction {
+            datafile = new DataFile(
+              guid:deposit_token,
+              md5:info.md5sumHex,
+              uploadName:upload_filename,
+              name:upload_filename,
+              filesize:info.filesize,
+              encoding:info.encoding,
+              uploadMimeType:upload_mime_type
+            ).save()
 
-      if (datafile) {
-        Job background_job = concurrencyManagerService.createJob { Job job ->
-          TSVIngestionService.updatePackage(pkg.id,
-            datafile.id,
-            title_ns_id,
-            async,
-            add_only,
-            user.id,
-            active_group_id,
-            dry_run,
-            skip_invalid,
-            delete_missing,
-            job,
-            title_ns_serial_id,
-            title_ns_mono_id
-          )
+            datafile.fileData = temp_file.getBytes()
+            datafile.save(failOnError:true,flush:true)
+            log.debug("Saved new datafile : ${datafile.id} -- ${datafile.uploadName}")
+          }
         }
 
-        if (active_group_id) {
-          background_job.groupId = active_group_id
-        }
-        background_job.ownerId = user.id
-        background_job.description = "KBART REST ingest (${pkgInfo.name})".toString()
-        background_job.type = RefdataCategory.lookup('Job.Type', (dry_run ? 'KBARTIngestDryRun' : 'KBARTIngest'))
-        background_job.linkedItem = pkgInfo
-        background_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
-        background_job.startOrQueue()
-        background_job.startTime = new Date()
+        if (datafile) {
+          Job background_job = concurrencyManagerService.createJob { Job job ->
+            TSVIngestionService.updatePackage(pkg.id,
+              datafile.id,
+              title_ns_id,
+              async,
+              add_only,
+              user.id,
+              active_group_id,
+              dry_run,
+              skip_invalid,
+              delete_missing,
+              job,
+              title_ns_serial_id,
+              title_ns_mono_id
+            )
+          }
 
-        if (async) {
-          result.jobId = background_job.uuid
+          if (active_group_id) {
+            background_job.groupId = active_group_id
+          }
+          background_job.ownerId = user.id
+          background_job.description = "KBART REST ingest (${pkgInfo.name})".toString()
+          background_job.type = RefdataCategory.lookup('Job.Type', (dry_run ? 'KBARTIngestDryRun' : 'KBARTIngest'))
+          background_job.linkedItem = pkgInfo
+          background_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
+          background_job.startOrQueue()
+          background_job.startTime = new Date()
+
+          if (async) {
+            result.jobId = background_job.uuid
+          }
+          else {
+            result.job_result = background_job.get()
+          }
         }
         else {
-          result.job_result = background_job.get()
+          log.debug("Unable to reference DataFile!")
+          result.result = 'ERROR'
+          response.status = 500
+          result.message = "There has been an error processing the KBART file!"
         }
+
       }
-      else {
-        log.debug("Unable to reference DataFile!")
+      else if (source) {
+        log.warn("KBART import failed for ${pkg} due to filesize restrictions!")
         result.result = 'ERROR'
-        response.status = 500
-        result.message = "There has been an error processing the KBART file!"
+        response.status = 413
+        result.message = "The provided file is too big!"
+        result.messageCode = "kbart.errors.fileSize"
       }
     }
     else if (pkg?.id) {

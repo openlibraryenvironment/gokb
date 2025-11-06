@@ -25,6 +25,8 @@ class PackageSourceUpdateService {
   WekbIngestionService wekbIngestionService
   boolean isExternalSourceImportOrUpdate
 
+  static HttpClient client
+
   static Pattern DATE_PLACEHOLDER_PATTERN = ~/[0-9]{4}-[0-9]{2}-[0-9]{2}/
   static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
   static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
@@ -32,6 +34,10 @@ class PackageSourceUpdateService {
   @javax.annotation.PostConstruct
   def init() {
     log.info("Initialising source update service...")
+    client = HttpClient.newBuilder()
+      .connectTimeout(Duration.ofSeconds(30))
+      .followRedirects(HttpClient.Redirect.NORMAL)
+      .build()
   }
 
   def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false, boolean restrictSize = true) {
@@ -412,10 +418,6 @@ class PackageSourceUpdateService {
 
   def fetchKbartFile(File tmp_file, URL src_url, boolean restrictSize = true) {
     def result = [content_mime_type: null, file_name: null]
-    HttpClient client = HttpClient.newBuilder()
-      .connectTimeout(Duration.ofSeconds(30))
-      .followRedirects(HttpClient.Redirect.NORMAL)
-      .build()
 
     Long max_length = 20971520L // 1024 * 1024 * 20
     Long content_length
