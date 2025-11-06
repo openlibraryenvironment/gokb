@@ -41,6 +41,6 @@ class RolesTestSpec extends AbstractAuthSpec {
 
     then:
     resp.status == HttpStatus.OK
-    resp.body().data.size() == 6
+    resp.body().data.size() == 7
   }
 }

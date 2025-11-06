@@ -30,15 +30,20 @@ class AdminController {
   def titleAugmentService
   def uploadAnalysisService
   def jobManagerService
+  def curatoryGroupAlertingService
   CleanupService cleanupService
   ConcurrencyManagerService concurrencyManagerService
   TippService tippService
+
+  def index() {
+    redirect(controller: 'admin', action: 'jobs')
+  }
 
   def logViewer() {
     // cache "until_changed"
     // def f = new File ("${grailsApplication.config.log_location}")
     // return [file: "${f.canonicalPath}"]
-    redirect(controller: 'admin', action: 'jobs');
+    redirect(controller: 'admin', action: 'jobs')
   }
 
   def ensureUuids() {
@@ -165,6 +170,7 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
   def jobs() {
     log.debug("Jobs");
     def result = [:]
@@ -505,6 +511,15 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def triggerDailyReviewsAlerts() {
+    log.debug("Triggering curator review notifications")
+    def result = [result: 'OK']
+
+    result = curatoryGroupAlertingService.triggerDailyReviewsAlerts()
+
+    render result as JSON
+  }
+
   def cleanupIssnConflicts() {
     Job j = concurrencyManagerService.createJob { Job job ->
       cleanupService.cleanupIssnConflictTitles(job)
@@ -526,9 +541,40 @@ class AdminController {
     render result as JSON
   }
 
+  def generateMissingDOIs() {
+    log.debug("Generate missing DOI book ids from importIds")
+    def result = [params: params, result: null]
+
+    Job j = concurrencyManagerService.createJob { job ->
+      packageCleanupService.generateTitleDOIsFromTippInfo(job)
+    }.startOrQueue()
+
+    j.description = "Generating missing DOI book ids from TIPP importIds"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Transfer eBook DOIs')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
+
   def setupAcl() {
 
-    def default_dcs = ["BookInstance", "JournalInstance", "TitleInstancePackagePlatform", "DatabaseInstance", "Office", "Imprint", "Package", "ReviewRequest", "Org", "Platform", "Source", "KBComponentVariantName", "TitleInstancePlatform", "TIPPCoverageStatement"]
+    def default_dcs = [
+      "BookInstance",
+      "JournalInstance",
+      "TitleInstancePackagePlatform",
+      "DatabaseInstance",
+      "Office",
+      "Imprint",
+      "Package",
+      "ReviewRequest",
+      "Org",
+      "Platform",
+      "Source",
+      "KBComponentVariantName",
+      "TitleInstancePlatform",
+      "TIPPCoverageStatement"
+    ]
 
     default_dcs.each { dcd ->
 

@@ -331,6 +331,11 @@ public class HQLBuilder {
                                                          ( ( crit.defn.contextTree.wildcard=='R' || crit.defn.contextTree.wildcard=='B') ? '%' : '')
         break;
 
+      case 'has':
+        hql_builder_context.query_clauses.add(":${crit.defn.qparam} member of ${scoped_property}")
+        hql_builder_context.bindvars[crit.defn.qparam] = hql_builder_context.genericOIDService.resolveOID2(crit.value)
+        break;
+
       default:
         log.error("Unhandled comparator '${crit.defn.contextTree.comparator}'. crit: ${crit}");
     }

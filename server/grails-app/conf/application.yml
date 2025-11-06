@@ -169,6 +169,9 @@ environments:
             packageUpdate:
                 cron: "0 0 6 * * ? *"
                 enabled: false
+            reviewRequestNotification:
+                cron: "0 0 20 * * ? *"
+                enabled: false
             packageOaiCaching:
                 enabled: false
             tippMatching:
@@ -236,6 +239,9 @@ environments:
             ftupdate_enabled: false
             packageUpdate:
                 cron: "0 0 6 * * ? *"
+                enabled: false
+            reviewRequestNotification:
+                cron: "0 0 20 * * ? *"
                 enabled: false
             packageOaiCaching:
                 enabled: false
@@ -309,6 +315,9 @@ environments:
             packageUpdate:
                 cron: "0 0 6 * * ? *"
                 enabled: false
+            reviewRequestNotification:
+                cron: "0 0 20 * * ? *"
+                enabled: false
             packageOaiCaching:
                 enabled: true
             tippMatching:
@@ -349,6 +358,7 @@ gokb:
         active: false
         otherVoters: false
     costInfo: false
+    cancelledJobsNotifications: false
     baseTempDirectory: '/tmp/gokb/'
     tsvExportTempDirectory: '/tmp/gokb/export'
     packageXmlCacheDirectory: '/tmp/gokb/oai/'

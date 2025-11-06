@@ -12,11 +12,9 @@ class UploadController {
   def uploadAnalysisService
   def TSVIngestionService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processSubmission() {
     if ( request.method == 'POST' ) {
       def temp_file

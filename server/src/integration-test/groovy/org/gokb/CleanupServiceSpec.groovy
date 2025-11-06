@@ -30,6 +30,7 @@ class CleanupServiceSpec extends Specification {
     def cleanupHistoryPackage = Package.findByName("CleanupHistoryPackage") ?: new Package(name: "CleanupHistoryPackage").save(flush: true, failOnError: true)
     def cleanupHistoryPlatform = Platform.findByName("CleanupHistoryPlatform") ?: new Platform(name: "CleanupHistoryPlatform").save(flush: true, failOnError: true)
     def url_doi = Identifier.findByValue('http://doi.org/10.23242/354-234234-233-23') ?: new Identifier(value: 'http://doi.org/10.23242/354-234234-233-23', namespace: IdentifierNamespace.findByValue('doi')).save(flush: true, validate: false)
+    def test_doi
 
     tippActive = TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp") ?: new TitleInstancePackagePlatform(name: "CleanupHistoryTestTipp", url: "http://tets-url.com/testcleanup").save(flush: true, failOnError: true)
 
@@ -53,16 +54,35 @@ class CleanupServiceSpec extends Specification {
     else {
       log.debug("Existing history!")
     }
+
+    def book_doi = BookInstance.findByName("CleanupTestNewDoiBook") ?: new BookInstance(name: "CleanupTestNewDoiBook").save(flush: true, failOnError: true)
+
+    def tipp_doi = TitleInstancePackagePlatform.findByName("CleanupTestNewDoiTipp")
+
+    if (!tipp_doi) {
+      def tipp_map = [
+        name: "CleanupTestNewDoiTipp",
+        pkg: cleanupHistoryPackage,
+        hostPlatform: cleanupHistoryPlatform,
+        title: book_doi,
+        importId: '10.23434/234666523X'
+      ]
+
+      tipp_doi = new TitleInstancePackagePlatform(tipp_map).save(flush: true, failOnError: true)
+    }
   }
 
   def cleanup() {
+    TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp")?.refresh().expunge()
+    TitleInstancePackagePlatform.findByName("CleanupTestNewDoiTipp")?.expunge()
     Package.findByName("CleanupHistoryPackage")?.refresh().expunge()
     Platform.findByName("CleanupHistoryPlatform")?.refresh().expunge()
-    TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp")?.refresh().expunge()
     JournalInstance.findByName("CleanupHistoryTestTitleOne")?.expunge()
     JournalInstance.findByName("CleanupHistoryTestTitleTwo")?.expunge()
+    BookInstance.findByName("CleanupTestNewDoiBook")?.expunge()
     Identifier.findByValue('http://doi.org/10.23242/354-234234-233-23')?.expunge()
     Identifier.findByValue('10.23242/354-234234-233-23')?.expunge()
+    Identifier.findByValue('10.23434/234666523X')?.expunge()
   }
 
   void "test deleteOrphanedHistoryEvents"() {
@@ -93,5 +113,16 @@ class CleanupServiceSpec extends Specification {
     def result = cleanupService.ensureTipls()
     then:
     result.new_tipls == 1
+  }
+
+  void "test generateTitleDOIsFromTippInfo"() {
+    when:
+    def result = cleanupService.generateTitleDOIsFromTippInfo()
+    then:
+    result.result == 'OK'
+    result.counts['LINKED'] == 1
+    def doi_ti = BookInstance.findByName("CleanupTestNewDoiBook")
+    doi_ti.ids.size() == 1
+    doi_ti.ids[0].value == '10.23434/234666523X'
   }
 }

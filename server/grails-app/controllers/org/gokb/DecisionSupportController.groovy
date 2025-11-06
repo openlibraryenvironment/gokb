@@ -19,7 +19,6 @@ group by c.id
 order by c.id
 ''';
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     def result = [:]
     log.debug("DecisionSupportController::index");

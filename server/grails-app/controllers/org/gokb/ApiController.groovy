@@ -206,7 +206,7 @@ class ApiController {
     apiReturn(result)
   }
 
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()")
   def quickCreate() {
     // Get the type of component we are going to attempt to create.
     def type = params.qq_type
@@ -268,8 +268,7 @@ class ApiController {
     }
   }
 
-  // this is used as an entrypoint for single page apps based on frameworks like angular.
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_USER') and isFullyAuthenticated()")
   def search() {
     def result = [result: 'OK']
 
@@ -479,6 +478,7 @@ class ApiController {
    * @param withCombos : Also return all combos directly linked to the object
   **/
 
+  @Secured("hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()")
   def show() {
     def result = ['result':'OK', 'params': params]
     if (params.oid || params.id) {
@@ -530,7 +530,7 @@ class ApiController {
   }
 
 
-  def private doQuery (qbetemplate, params, result) {
+  private def doQuery (qbetemplate, params, result) {
     log.debug("doQuery ${result}");
     def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
     com.k_int.HQLBuilder.build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService)
@@ -592,7 +592,7 @@ class ApiController {
     "macros"              : true,
   ]
 
-  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
   def esconfig () {
 
     // If etag matches then we can just return the 304 to denote that the resource is unchanged.
@@ -607,7 +607,7 @@ class ApiController {
     "${capabilities.app.version}${capabilities.app.buildNumber}".toString()
   }
 
-  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()")
   def bulkLoadUsers() {
 
     log.debug("bulkLoadUsers");
@@ -804,7 +804,7 @@ class ApiController {
     }
   }
 
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()")
   synchronized def lookup () {
     long start = System.currentTimeMillis()
     String classType = GrailsNameUtils.getClassNameRepresentation(params.type)
@@ -878,6 +878,8 @@ class ApiController {
   /**
    * See the service method {@link com.k_int.ESSearchService#getApiTunnel(def params)} for usage instructions.
    */
+
+  @Secured("hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()")
   def elasticsearchTunnel() {
     def result = [:]
     try {
@@ -893,6 +895,7 @@ class ApiController {
     render result as JSON
   }
 
+  @Secured("hasRole('ROLE_USER') and isFullyAuthenticated()")
   def retrieveZdbCandidates() {
     def result = [result: 'OK']
     def title = TitleInstance.get(genericOIDService.oidToId(params.id))

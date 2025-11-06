@@ -8,14 +8,13 @@ import org.springframework.security.access.annotation.Secured;
 
 class CoreferenceController {
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def index() { 
+  def index() {
     def result = [:]
     result.count = -1
     log.debug("coreference::index")
     if ( params.idpart ) {
 
-      log.debug("Lookup ${params.nspart}:${params.idpart}.");
+      log.debug("Lookup ${params.nspart}:${params.idpart}.")
 
       def q = new DetachedCriteria(Identifier).build {
         if ( params.nspart ) {
@@ -34,27 +33,31 @@ class CoreferenceController {
         matched_ids.each { int_id ->
           def matched_id = [:]
           log.debug("Recognised identifier.. find all occurrences")
-		
-  	  ComboCriteria crit = ComboCriteria.createFor(KBComponent.createCriteria())
-		
-          matched_id.identifier = int_id
-          matched_id.records = crit.list {
-		crit.add ("ids.id", "eq", int_id.id)
-	  }
-	  matched_id.count = matched_id.records.size()
 
-	  result.matched_identifiers.add(matched_id);
+  	      ComboCriteria crit = ComboCriteria.createFor(KBComponent.createCriteria())
+
+          matched_id.identifier = int_id
+
+          matched_id.records = crit.list {
+            crit.add ("ids.id", "eq", int_id.id)
+	        }
+
+	        matched_id.count = matched_id.records.size()
+
+          result.matched_identifiers.add(matched_id)
         }
-	result.count = result.matched_identifiers.size()
+
+	      result.count = result.matched_identifiers.size()
       }
-      log.debug("result: ${result}");
+
+      log.debug("result: ${result}")
     }
 
-    def api_response;
+    def api_response
 
     if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
       api_response = ['requestedNS':params.nspart,
-                       'requestedID':params.idpart, 
+                       'requestedID':params.idpart,
                        'count':result.count ?: 0,
                        'matchedIdentifiers':[]]
 
@@ -81,7 +84,7 @@ class CoreferenceController {
       }
     }
 
-    
+
     withFormat {
       html result
       json { render api_response as JSON }
@@ -89,7 +92,6 @@ class CoreferenceController {
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def search() {
   }
 }

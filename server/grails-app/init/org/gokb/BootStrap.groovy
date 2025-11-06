@@ -75,6 +75,7 @@ class BootStrap {
             def adminRole = Role.findByAuthority('ROLE_ADMIN') ?: new Role(authority: 'ROLE_ADMIN', roleType: 'global').save(failOnError: true)
             def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType: 'global').save(failOnError: true)
             def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType: 'global').save(failOnError: true)
+            def puRole = Role.findByAuthority('ROLE_POWERUSER') ?: new Role(authority: 'ROLE_POWERUSER', roleType: 'global').save(failOnError: true)
 
             log.debug("Create admin user...");
             def adminUser = User.findByUsername('admin')
@@ -542,6 +543,7 @@ class BootStrap {
             AclSid sidContributor = AclSid.findBySid('ROLE_CONTRIBUTOR') ?: new AclSid(sid: 'ROLE_CONTRIBUTOR', principal: false).save(flush: true)
             AclSid sidEditor = AclSid.findBySid('ROLE_EDITOR') ?: new AclSid(sid: 'ROLE_EDITOR', principal: false).save(flush: true)
             AclSid sidApi = AclSid.findBySid('ROLE_API') ?: new AclSid(sid: 'ROLE_API', principal: false).save(flush: true)
+            AclSid sidPowerUser = AclSid.findBySid('ROLE_POWERUSER') ?: new AclSid(sid: 'ROLE_POWERUSER', principal: false).save(flush: true)
 
             RefdataValue std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save(flush: true, failOnError: true)
             grailsApplication.domainClasses.each { dc ->
@@ -1470,9 +1472,8 @@ class BootStrap {
 
     def ensureEsIndex(String indexName, def esClient) {
         log.debug("ensureESIndex for ${indexName}");
-        def request = new GetIndexRequest(indexName)
 
-        if (!esClient.indices().exists(request, RequestOptions.DEFAULT)) {
+        if (!esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT)) {
             log.debug("ES index ${indexName} did not exist, creating..")
             CreateIndexRequest createRequest = new CreateIndexRequest(indexName)
             log.debug("Adding index settings..")
@@ -1498,7 +1499,40 @@ class BootStrap {
         }
         else {
             log.debug("ES index ${indexName} already exists..")
+            verifyMapping(indexName, esClient)
             // Validate settings & mappings
+        }
+    }
+
+    private void verifyMapping(String indexName, def esClient) {
+        def existingMappings = esClient.indices().get(new GetIndexRequest(indexName), RequestOptions.DEFAULT).getMappings()[indexName].sourceAsMap()
+
+        log.debug("Got existing mapping: ${existingMappings}")
+
+        def new_mapping = ESWrapperService.mapping
+        def new_props = [properties: [:]]
+
+        log.debug("handling new mapping: ${new_mapping}")
+
+        new_mapping.properties.each { key, val ->
+            if (existingMappings['properties'][key]) {
+                log.debug("Property for $key already exists!")
+            }
+            else {
+                new_props.properties[key] = val
+            }
+        }
+
+        if (new_props.properties) {
+            PutMappingRequest mr = new PutMappingRequest(indexName).source(new_props)
+            def mappingResponse = esClient.indices().putMapping(mr, RequestOptions.DEFAULT)
+
+            if (mappingResponse.isAcknowledged()) {
+                log.debug("Added new mapping properties for index $indexName")
+            }
+            else {
+                log.error("Unable to add new mapping fields to index $indexName")
+            }
         }
     }
 
