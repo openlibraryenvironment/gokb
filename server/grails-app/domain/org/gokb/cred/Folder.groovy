@@ -2,17 +2,17 @@ package org.gokb.cred
 
 class Folder extends FolderEntry {
 
-  transient static String AVAILABILITY_QUERY = """
-select count(t) 
-from TitleInstance as t, 
-     KBComponentFolderEntry as fe 
-where fe.folder = :folder 
-  and t.id = fe.linkedComponent.id
-  and exists ( select c from Combo as c where c.fromComponent = t and c.type.value = 'TitleInstance.Tipps' )
-"""
+  transient static String AVAILABILITY_QUERY = '''select count(t)
+        from TitleInstance as t,
+            KBComponentFolderEntry as fe
+        where fe.folder = :folder
+          and t.id = fe.linkedComponent.id
+          and exists ( select c from Combo as c where c.fromComponent = t and c.type.value = 'TitleInstance.Tipps' )'''
 
   String name
   Party owner
+
+  Set contents = []
 
   static hasMany = [
     contents:FolderEntry
@@ -36,11 +36,11 @@ where fe.folder = :folder
 
   transient getAvailability() {
     def result = [:]
- 
+
     result.total = contents.size();
 
     result.available = TitleInstance.executeQuery(AVAILABILITY_QUERY,[folder:this])
- 
-    return result   
+
+    return result
   }
 }

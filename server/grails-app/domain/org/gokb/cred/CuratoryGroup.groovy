@@ -14,6 +14,9 @@ class CuratoryGroup extends KBComponent {
   Boolean newReviewsAlerts = false
   String preferredLocaleString
 
+  Set users = []
+  Set subordinatedGroups = []
+
   static hasMany = [
     users: User,
     subordinatedGroups: CuratoryGroup
@@ -26,7 +29,10 @@ class CuratoryGroup extends KBComponent {
     preferredLocaleString column: 'cg_preferred_locale_string'
   }
 
-  static mappedBy = [users: "curatoryGroups", subordinatedGroups: "superordinatedGroup"]
+  static mappedBy = [
+    users: "curatoryGroups",
+    subordinatedGroups: "superordinatedGroup"
+  ]
 
   static manyByCombo = [
     licenses: License,
