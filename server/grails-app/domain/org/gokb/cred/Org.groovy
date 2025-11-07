@@ -17,6 +17,8 @@ class Org extends KBComponent {
   IdentifierNamespace titleNamespaceMonograph
   String preferredShortname
 
+  Set roles = []
+
   def availableActions() {
     [
         [code: 'org::transferPackages', label: 'Transfer Packages to...', perm: 'admin'],

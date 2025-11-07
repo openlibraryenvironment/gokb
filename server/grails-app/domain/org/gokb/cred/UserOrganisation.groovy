@@ -9,9 +9,11 @@ import org.hibernate.proxy.HibernateProxy
 @Slf4j
 class UserOrganisation extends Party {
 
-  
+
   User owner
   RefdataValue mission
+
+  Set members = []
 
   static constraints = {
     owner (nullable:true, blank:false)

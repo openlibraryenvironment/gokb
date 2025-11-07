@@ -14,7 +14,7 @@ class RefdataCategory {
 
   String desc
   String label
-  Set values
+  Set values = []
 
   static mapping = {
     id column: 'rdc_id'

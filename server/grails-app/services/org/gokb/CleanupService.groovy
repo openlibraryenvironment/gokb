@@ -1457,17 +1457,23 @@ class CleanupService {
   }
 
   def generateTitleDOIsFromTippInfo(Job j = null) {
-    def result = [result: 'OK', counts: [:]]
-
-    def active_session
+    def result
 
     try {
-      active_session = sessionFactory.currentSession
+      def session = sessionFactory.currentSession
+      result = processTitleDOIcleanup(session, j)
     }
     catch (Exception e) {
-      active_session = sessionFactory.openSession()
+      TitleInstance.withNewSession { session ->
+        result = processTitleDOIcleanup(session, j)
+      }
     }
 
+    result
+  }
+
+  private def processTitleDOIcleanup(active_session, j) {
+    def result = [result: 'OK', counts: [:]]
     RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
     RefdataValue combo_type_ids = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
     IdentifierNamespace doi_ns = IdentifierNamespace.findByValue('doi')

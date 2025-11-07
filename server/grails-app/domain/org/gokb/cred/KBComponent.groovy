@@ -317,6 +317,9 @@ where cp.owner = :c
   Set reviewRequests = []
   Set variantNames = []
   Set comments = []
+  Set subjects = []
+  Set prices = []
+  Set people = []
 
   // Org provOrg
   // String provUpdateFrequency

@@ -3,14 +3,19 @@ package org.gokb.cred
 class ComponentHistoryEvent {
 
   Date eventDate
-  Set participants
+  Set participants = []
   // Timestamps
   Date dateCreated
   Date lastUpdated
   Long lastSeen
 
-  static hasMany = [ participants:ComponentHistoryEventParticipant ]
-  static mappedBy = [ participants:'event' ]
+  static hasMany = [
+    participants: ComponentHistoryEventParticipant
+  ]
+
+  static mappedBy = [
+    participants: 'event'
+  ]
 
 
   static constraints = {
