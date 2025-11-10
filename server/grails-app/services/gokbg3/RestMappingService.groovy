@@ -907,7 +907,6 @@ class RestMappingService {
         if (co instanceof Map) {
           if (co.id) {
             cobj = KBComponentComment.findById(co.id)
-
             if (!cobj || cobj.owner != obj) {
               result.errors << [
                 message: 'Unable to reference existing comment item!',
@@ -916,11 +915,10 @@ class RestMappingService {
             }
           }
           else if (co.language && co.value?.trim()) {
-            def rd_result = lookupRefdataValueForCategory(co.language, cat_lang)
 
+            def rd_result = lookupRefdataValueForCategory(co.language, cat_lang)
             if (rd_result.obj) {
               def existing = KBComponentComment.findByOwnerAndLanguage(obj, rd_result.obj)
-
               if (existing) {
                 result.errors << [
                   message: 'Matched incoming comment without id to existing comment with the same language!',
