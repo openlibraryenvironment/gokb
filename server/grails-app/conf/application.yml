@@ -204,6 +204,7 @@ environments:
                     platforms: gokbplatforms
             centralGroups:
                 JournalInstance: 'Journal Central Curators'
+                admin: 'GOKB Team'
         cache:
             headers:
                 enabled: false
@@ -272,6 +273,7 @@ environments:
                     platforms: gokbplatformstest
             centralGroups:
                 JournalInstance: 'Journal Central Curators'
+                admin: 'GOKB Team'
             ezbOpenCollections:
                 enabled: false
                 url: https://ezb-api.ur.de/collections/v1/
@@ -349,6 +351,7 @@ environments:
                     platforms: gokbplatforms
             centralGroups:
                 JournalInstance: 'Journal Central Curators'
+                admin: 'GOKB Team'
         logging:
             config: classpath:logback-prod.xml
 gokb:

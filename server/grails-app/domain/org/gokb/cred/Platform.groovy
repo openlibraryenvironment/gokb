@@ -15,7 +15,11 @@ class Platform extends KBComponent {
   RefdataValue shibbolethAuthentication
   RefdataValue passwordAuthentication
 
-  static hasMany = [roles: RefdataValue]
+  Set roles = []
+
+  static hasMany = [
+    roles: RefdataValue
+  ]
 
   static hasByCombo = [
     provider: Org

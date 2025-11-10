@@ -546,7 +546,7 @@ class AdminController {
     def result = [params: params, result: null]
 
     Job j = concurrencyManagerService.createJob { job ->
-      packageCleanupService.generateTitleDOIsFromTippInfo(job)
+      cleanupService.generateTitleDOIsFromTippInfo(job)
     }.startOrQueue()
 
     j.description = "Generating missing DOI book ids from TIPP importIds"

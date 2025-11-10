@@ -38,6 +38,8 @@ class Org extends KBComponent {
 
 
 
+  Set roles = []
+
   def availableActions() {
     [
         [code: 'org::transferPackages', label: 'Transfer Packages to...', perm: 'admin'],

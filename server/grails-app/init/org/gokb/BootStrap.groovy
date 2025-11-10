@@ -149,6 +149,7 @@ class BootStrap {
 
         ensureCuratoryGroup(grailsApplication.config.getProperty('gokb.defaultCuratoryGroup'))
         ensureCuratoryGroup(grailsApplication.config.getProperty('gokb.centralGroups.JournalInstance'))
+        ensureCuratoryGroup(grailsApplication.config.getProperty('gokb.centralGroups.admin'))
 
         KBComponent.withTransaction {
             log.info("GOKB missing normalised component names")
@@ -447,12 +448,15 @@ class BootStrap {
         log.info("GoKB Init complete")
     }
 
-    private Object ensureCuratoryGroup(String groupName){
+    def ensureCuratoryGroup(String groupName){
+        CuratoryGroup obj
+
         if (groupName != null){
             log.debug("Ensure curatory group: ${groupName}");
-            def local_cg = CuratoryGroup.findByName(groupName) ?:
-                new CuratoryGroup(name: groupName).save(flush: true, failOnError: true);
+            obj = CuratoryGroup.findByName(groupName) ?: new CuratoryGroup(name: groupName).save(flush: true, failOnError: true);
         }
+
+        obj
     }
 
     def defaultBulkLoaderConfig() {

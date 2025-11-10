@@ -76,7 +76,7 @@ class RestMappingService {
     def nested = params['nested'] ? true : false
     def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
-    def jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
+    Map jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
     def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
@@ -93,6 +93,14 @@ class RestMappingService {
 
       if (KBComponent.isAssignableFrom(obj.class)) {
         result._links.retire = ['href': href ? href + "/retire" : null]
+      }
+    }
+
+    if (jsonMap?.admin && (!user || !user.isAdmin())) {
+      jsonMap.admin.each { jme ->
+        if (!jsonMap.ignore.contains(jme)) {
+          jsonMap.ignore << jme
+        }
       }
     }
 
@@ -292,6 +300,7 @@ class RestMappingService {
   /**
    *  updateObject : Updates an domain class object based on a provided object map.
    * @param obj : The object to be updated
+   * @param jsonMap : The map of update restrictions for the object class
    * @param reqBody : The map of properties to be updated
    */
 
@@ -302,7 +311,6 @@ class RestMappingService {
 
     def toIgnore = defaultIgnore + (jsonMap?.ignore ?: [])
     def immutable = defaultImmmutable + (jsonMap?.immutable ?: [])
-
     log.debug("Ignore: ${toIgnore}, Immutable: ${immutable}")
 
     pent.getPersistentProperties().each { p -> // list of PersistentProperties

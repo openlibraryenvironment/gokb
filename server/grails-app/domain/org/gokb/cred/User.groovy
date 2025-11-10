@@ -38,13 +38,18 @@ class User extends Party {
   // used by @gokbg3.RestMappingService.selectJsonLabel
   public static final String jsonLabel = "username"
 
+  Set curatoryGroups = []
+  Set updateTokens = []
+
   static hasMany = [
     curatoryGroups : CuratoryGroup,
     updateTokens: UpdateToken
   ]
 
-  static mappedBy = [curatoryGroups: "users",
-                     updateTokens: "updateUser"]
+  static mappedBy = [
+    curatoryGroups: "users",
+    updateTokens: "updateUser"
+  ]
 
   static constraints = {
     username(validator: { val, obj ->

@@ -66,6 +66,8 @@ class TitleInstancePackagePlatform extends KBComponent {
   RefdataValue medium
   String importId
 
+  Set coverageStatements = []
+
   private static refdataDefaults = [
       "format"       : "Electronic",
       "delayedOA"    : "Unknown",
