@@ -21,7 +21,7 @@
   <logger name="org.gokb.PackageService" level="DEBUG"/>
   <logger name="org.gokb.TippService" level="DEBUG"/>
   <logger name="org.gokb.CleanupService" level="DEBUG"/>
-  <logger name="org.gokb.ComponentLookupService" level="INFO"/>
+  <logger name="org.gokb.ComponentLookupService" level="DEBUG"/>
   <logger name="org.gokb.ComponentStatisticService" level="INFO"/>
   <logger name="org.gokb.ComponentUpdateService" level="DEBUG"/>
   <logger name="org.gokb.TitleLookupService" level="DEBUG"/>

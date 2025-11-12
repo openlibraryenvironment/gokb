@@ -138,7 +138,7 @@ class PackageSourceUpdateService {
             result.messageCode = 'kbart.errors.url.invalid'
             result.message = "Package source URL is invalid!"
 
-            createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+            result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
             return result
           }
@@ -169,90 +169,90 @@ class PackageSourceUpdateService {
                     result.message = "There was an error trying to fetch KBART via URL!"
                     result.exceptionMsg = file_info.exceptionMsg
 
-                    createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
                     return result
                 }
 
-                if (file_info.fileSizeError) {
-                    result.result = 'ERROR'
-                    result.messageCode = 'kbart.errors.url.fileSize'
-                    result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
+            if (file_info.fileSizeError) {
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.fileSize'
+              result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
 
-                    createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
-                    return result
-                }
+              return result
+            }
 
-                if (file_info.accessError) {
-                    result.result = 'ERROR'
-                    result.messageCode = 'kbart.errors.url.html'
-                    result.message = "URL returned HTML, indicating provider configuration issues!"
+            if (file_info.accessError) {
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.html'
+              result.message = "URL returned HTML, indicating provider configuration issues!"
 
-                    createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
-                    return result
-                } else if (file_info.mimeTypeError) {
-                    result.result = 'ERROR'
-                    result.messageCode = 'kbart.errors.url.mimeType'
-                    result.message = "KBART URL returned a wrong content type!"
-                    log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+              return result
+            } else if (file_info.mimeTypeError) {
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.mimeType'
+              result.message = "KBART URL returned a wrong content type!"
+              log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
-                    createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
-                    return result
-                } else if (file_info.status == 403) {
-                    log.debug("URL request failed!")
-                    result.result = 'ERROR'
-                    result.messageCode = 'kbart.errors.url.denied'
-                    result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
+              return result
+            } else if (file_info.status == 403) {
+              log.debug("URL request failed!")
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.denied'
+              result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
 
-                    createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
-                    return result
-                }
+              return result
+            }
 
-                if (!file_info.file_name && (dynamic_date || extracted_date)) {
-                    LocalDate active_date = LocalDate.now()
-                    boolean skipLookupByDate = false
-                    src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-                    log.debug("Fetching dated URL for today..")
-                    file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
+            if (!file_info.file_name && (dynamic_date || extracted_date)) {
+              LocalDate active_date = LocalDate.now()
+              boolean skipLookupByDate = false
+              src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
+              log.debug("Fetching dated URL for today..")
+              file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
-                    // Look at first of this month
-                    if (!file_info.file_name) {
-                        sleep(500)
-                        log.debug("Fetching first of the month..")
-                        def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
-                        file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
-                    }
+              // Look at first of this month
+              if (!file_info.file_name) {
+                sleep(500)
+                log.debug("Fetching first of the month..")
+                def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
+                file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
+              }
 
-                    // Check all days of this month
-                    while (!skipLookupByDate && active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
-                        active_date = active_date.minusDays(1)
-                        src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-                        log.debug("Fetching dated URL for date ${active_date}")
-                        sleep(500)
-                        file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-
-                        if (file_info.mimeTypeError) {
-                            skipLookupByDate = true
-                        }
-                    }
-                }
+              // Check all days of this month
+              while (!skipLookupByDate && active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
+                active_date = active_date.minusDays(1)
+                src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
+                log.debug("Fetching dated URL for date ${active_date}")
+                sleep(500)
+                file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
                 if (file_info.mimeTypeError) {
-                    result.result = 'ERROR'
-                    result.messageCode = 'kbart.errors.url.mimeType'
-                    result.message = "KBART URL returned a wrong content type!"
-                    log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
-
-                    createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-                    return result
+                  skipLookupByDate = true
                 }
+              }
+            }
 
-                log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
+            if (file_info.mimeTypeError) {
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.mimeType'
+              result.message = "KBART URL returned a wrong content type!"
+              log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+              return result
+            }
+
+            log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
             } // end not-FTP
             if (file_info.file_name) {
@@ -307,7 +307,7 @@ class PackageSourceUpdateService {
 
                       tmp_file.delete()
 
-                      createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                      result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
                       return result
                     }
@@ -322,7 +322,7 @@ class PackageSourceUpdateService {
 
                   tmp_file.delete()
 
-                  createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                  result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
                   return result
                 }
@@ -339,7 +339,7 @@ class PackageSourceUpdateService {
               result.result = 'SKIPPED'
               log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
 
-              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
@@ -350,7 +350,7 @@ class PackageSourceUpdateService {
             result.message = "KBART URL has an unsupported protocol!"
             log.debug("Unsupported protocol for URL ${src_url}")
 
-            createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+            result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
             return result
           }
@@ -364,6 +364,7 @@ class PackageSourceUpdateService {
         }
       }
     }
+
     if (datafile_id) {
       if (job) {
         result = TSVIngestionService.updatePackage(pid,
@@ -567,7 +568,7 @@ class PackageSourceUpdateService {
     return (ordered_combos.size() == 0 || ordered_combos[0] != datafileId)
   }
 
-  private void createJobResult(pkg, job, startTime, dryRun, ownerId, groupId, result) {
+  private def createJobResult(pkg, job, startTime, dryRun, ownerId, groupId, result) {
     def job_map = [:]
     def job_uuid = job?.uuid ?: UUID.randomUUID().toString()
 
@@ -611,6 +612,18 @@ class PackageSourceUpdateService {
         result_object.save(flush: true)
       }
     }
+
+    def info_map = [
+      uuid: job_map.uuid,
+      groupId: job_map.groupId,
+      linkedItemId: pkg.id,
+      linkedItemName: pkg.name,
+      startTime: job_map.startTime,
+      endTime: job_map.endTime,
+      messageCode: result.messageCode
+    ]
+
+    return info_map
   }
 
   def fetchKbartFileFromFTPServer (File tmp_file ) {

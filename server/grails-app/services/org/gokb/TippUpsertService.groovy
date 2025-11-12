@@ -26,15 +26,16 @@ class TippUpsertService {
     def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
     def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
     def tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
+    def tipp_pubtype = tipp_fields.publicationType ? RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', tipp_fields.publicationType) : null
     def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid,
                                                   status: tipp_status,
                                                   editStatus: tipp_editstatus,
+                                                  publicationType: tipp_pubtype,
                                                   name: tipp_fields.name,
                                                   language: tipp_language,
                                                   url: tipp_fields.url).save(failOnError: true, flush:true)
 
     if (result) {
-
       RefdataValue pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
       new Combo(toComponent: result, fromComponent: tipp_fields.pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
 
@@ -69,6 +70,9 @@ class TippUpsertService {
       if (pkg_info instanceof Map) {
         pkg = Package.get(pkg_info.id ?: pkg_info.internalId)
       }
+      else if (pkg_info instanceof String) {
+        pkg = Package.findByUuid(pkg_info)
+      }
       else {
         pkg = Package.get(pkg_info)
       }
@@ -82,6 +86,9 @@ class TippUpsertService {
       if (plt_info instanceof Map) {
         plt = Platform.get(plt_info.id ?: plt_info.internalId)
       }
+      else if (plt_info instanceof String) {
+        plt = Platform.findByUuid(plt_info)
+      }
       else {
         plt = Platform.get(plt_info)
       }
@@ -94,6 +101,9 @@ class TippUpsertService {
 
       if (title_info instanceof Map) {
         ti = TitleInstance.get(title_info.id ?: title_info.internalId)
+      }
+      else if (title_info instanceof String) {
+        ti = TitleInstance.findByUuid(title_info)
       }
       else {
         ti = TitleInstance.get(title_info)

@@ -25,8 +25,8 @@ class SourcesController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def result = [:]
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    Map result = [:]
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -42,11 +42,9 @@ class SourcesController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
-    def result = [:]
-    def obj = null
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def is_curator = true
-    User user = null
+    Map result = [:]
+    Source obj
+    User user
 
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
@@ -84,8 +82,8 @@ class SourcesController {
   @Transactional
   def save() {
     Source source = null
-    def result = [:]
-    def errors = [:]
+    Map result = [:]
+    Map errors = [:]
     def reqBody = request.JSON
     User user = User.get(springSecurityService.principal.id)
 
@@ -93,9 +91,13 @@ class SourcesController {
       try {
         source = new Source(name: reqBody.name)
 
-        def jsonMap = [:]
+        Map fieldConfig = [:]
 
-        source = restMappingService.updateObject(source, jsonMap, reqBody)
+        if (!user || !user.isAdmin()) {
+          fieldConfig.ignore = ['importConfig', 'ignoreSizeLimit', 'ezbMatch']
+        }
+
+        source = restMappingService.updateObject(source, fieldConfig, reqBody)
       }
       catch (grails.validation.ValidationException ve) {
         errors = ve.errors
@@ -137,10 +139,10 @@ class SourcesController {
   @Transactional
   def update() {
     Source obj = Source.get(genericOIDService.oidToId(params.id))
-    def result = [:]
-    def errors = [:]
+    Map result = [:]
+    Map errors = [:]
     def reqBody = request.JSON
-    def remove = (request.method == 'PUT')
+    boolean remove = (request.method == 'PUT')
     User user = User.get(springSecurityService.principal.id)
     boolean editable = true
 
@@ -159,7 +161,14 @@ class SourcesController {
         render result as JSON
       }
 
-      obj = restMappingService.updateObject(obj, null, reqBody)
+
+      Map fieldConfig = [:]
+
+      if (!user || !user.isAdmin()) {
+        fieldConfig.ignore = ['importConfig', 'ignoreSizeLimit', 'ezbMatch']
+      }
+
+      obj = restMappingService.updateObject(obj, fieldConfig, reqBody)
 
       errors << updateCombos(obj, reqBody, remove)
 
@@ -188,10 +197,10 @@ class SourcesController {
 
   private def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating package combos ..")
-    def errors = [:]
+    Map errors = [:]
 
     if (reqBody.curatoryGroups) {
-      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      Map cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
       if (cg_errors.size() > 0) {
         errors['curatoryGroups'] = cg_errors

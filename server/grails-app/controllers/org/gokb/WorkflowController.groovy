@@ -55,7 +55,6 @@ class WorkflowController{
       'verifyTitleList'        : [actionType: 'process', method: 'verifyTitleList']
   ]
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def action(){
     log.debug("WorkflowController::action(${params})")
     def result = [:]
@@ -171,7 +170,6 @@ class WorkflowController{
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def startTitleChange(){
 
     log.debug("startTitleChange(${params})")
@@ -270,7 +268,6 @@ class WorkflowController{
     redirect(action: 'editTitleChange', id: new_activity.id)
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def startTitleMerge(){
 
     log.debug("startTitleMerge(${params})")
@@ -331,7 +328,6 @@ class WorkflowController{
     redirect(action: 'editTitleMerge', id: new_activity.id)
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def editTitleMerge(){
     log.debug("editTitleMerge() - ${params}")
 
@@ -396,7 +392,6 @@ class WorkflowController{
     result
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def startTitleTransfer(){
     log.debug("startTitleTransfer")
     def user = springSecurityService.currentUser
@@ -485,7 +480,6 @@ class WorkflowController{
     redirect(action: 'editTitleTransfer', id: new_activity.id)
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def editTitleTransfer(){
     log.debug("editTitleTransfer() - ${params}")
 
@@ -682,7 +676,6 @@ class WorkflowController{
     result
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def editTitleChange(){
     log.debug("editTitleChange() - ${params}")
 
@@ -823,7 +816,6 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTitleChange(activity_record, activity_data){
 
     activity_data.tipps.each{ tipp_map_entry ->
@@ -925,7 +917,6 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTitleMerge(activity_record, activity_data, merge_params){
     log.debug("processTitleMerge ${params}\n\n ${activity_data}")
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -1070,7 +1061,6 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTitleTransfer(activity_record, activity_data){
     log.debug("processTitleTransfer ${params}\n\n ${activity_data}")
     def user = springSecurityService.currentUser
@@ -1187,7 +1177,6 @@ class WorkflowController{
     activity_record.save(flush: true)
   }
 
-  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def processPlatformReplacement() {
     def result = [
       result: 'OK',
@@ -1246,7 +1235,6 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   def processTippRetire(){
     log.debug("processTippRetire ${params}")
     def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
@@ -1268,7 +1256,6 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTippMove(){
     log.debug("processTippMove ${params}")
     def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -1313,7 +1300,6 @@ class WorkflowController{
     redirect(url: params.ref)
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def download(){
     log.debug("Download ${params}")
     DataFile df = DataFile.findByGuid(params.id)
@@ -1325,184 +1311,7 @@ class WorkflowController{
     }
   }
 
-  /**
-   *  authorizeVariant : Used to replace the name of a component by one of its variant names.
-   * @param id : The id of the variant name
-   */
-
-  // Deprecated – use action in AjaxSupport instead
-  @Deprecated
-  @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def authorizeVariant(){
-    log.debug("${params}")
-    def result = ['result': 'OK', 'params': params]
-    def variant = KBComponentVariantName.get(params.id)
-
-    if (variant != null && variant.owner.isEditable()){
-      // Does the current owner.name exist in a variant? If not, we should create one so we don't loose the info
-      def current_name_as_variant = variant.owner.variantNames.find{ it.variantName == variant.owner.name }
-      if (current_name_as_variant == null){
-        log.debug("No variant name found for current name: ${variant.owner.name} ")
-        def variant_name = variant.owner.getId()
-        if (variant.owner.name){
-          variant_name = variant.owner.name
-        }
-        else if (variant.owner?.respondsTo('getDisplayName') && variant.owner.getDisplayName()){
-          variant_name = variant.owner.getDisplayName()?.trim()
-        }
-        else if (variant.owner?.respondsTo('getName')){
-          variant_name = variant.owner?.getName()?.trim()
-        }
-        def new_variant = new KBComponentVariantName(owner: variant.owner, variantName: variant_name).save(flush: true)
-      }
-      else{
-        log.debug("Found existing variant name: ${current_name_as_variant}")
-      }
-      variant.variantType = RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Authorized')
-      variant.owner.name = variant.variantName
-
-      if (variant.owner.validate()){
-        variant.owner.save(flush: true)
-      }
-      else{
-        result.result = 'ERROR'
-        result.code = 400
-        result.message = "This name already belongs to another component of the same type!"
-        flash.error = "This name already belongs to another component of the same type!"
-      }
-    }
-    else if (!variant){
-      result.result = 'ERROR'
-      result.code = 404
-      result.message = "Could not find variant!"
-    }
-    else{
-      result.result = 'ERROR'
-      result.code = 403
-      result.message = "Owner object is not editable!"
-      flash.error = "Owner object is not editable!"
-    }
-
-    withFormat{
-      html{
-        def redirect_to = request.getHeader('referer')
-
-        if (params.redirect){
-          redirect_to = params.redirect
-        }
-        else if ((params.fragment) && (params.fragment.length() > 0)){
-          redirect_to = "${redirect_to}#${params.fragment}"
-        }
-      }
-      json{
-        render result as JSON
-      }
-    }
-  }
-
-  /**
-   *  deleteVariant : Used to delete a variant name of a component.
-   * @param id : The id of the variant name
-   */
-
-  // Deprecated – use action in AjaxSupport instead
-  @Deprecated
-  @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def deleteVariant(){
-    log.debug("${params}")
-    def result = ['result': 'OK', 'params': params]
-    def variant = KBComponentVariantName.get(params.id)
-
-    if (variant != null && variantOwner.isEditable()){
-      def variantOwner = variant.owner
-      def variantName = variant.variantName
-
-      variant.delete()
-      variantOwner.lastUpdateComment = "Deleted Alternate Name ${variantName}."
-      variantOwner.save(flush: true)
-
-      result.owner_oid = "${variantOwner.class.name}:${variantOwner.id}"
-      result.deleted_variant = "${variantName}"
-    }
-    else if (!variant){
-      result.result = 'ERROR'
-      result.code = 404
-      result.message = "Could not find variant!"
-    }
-    else{
-      result.result = 'ERROR'
-      result.code = 403
-      result.message = "Owner object is not editable!"
-    }
-
-    withFormat{
-      html{
-        def redirect_to = request.getHeader('referer')
-
-        if (params.redirect){
-          redirect_to = params.redirect
-        }
-        else if ((params.fragment) && (params.fragment.length() > 0)){
-          redirect_to = "${redirect_to}#${params.fragment}"
-        }
-      }
-      json{
-        render result as JSON
-      }
-    }
-  }
-
-  /**
-   *  deleteCoverageStatement : Used to delete a TIPPCoverageStatement.
-   * @param id : The id of the coverage statement object
-   */
-
-  // Deprecated – use action in AjaxSupport instead
-  @Deprecated
-  @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def deleteCoverageStatement(){
-    log.debug("${params}")
-    def result = ['result': 'OK', 'params': params]
-    def tcs = TIPPCoverageStatement.get(params.id)
-    def tipp = tcs.owner
-
-    if (tcs != null && tipp.isEditable()){
-      tcs.delete()
-      tipp.lastUpdateComment = "Deleted Coverage Statement."
-      tipp.save(flush: true)
-    }
-    else if (!tcs){
-      result.result = 'ERROR'
-      result.code = 404
-      result.message = "Could not find coverage statement!"
-    }
-    else{
-      result.result = 'ERROR'
-      result.code = 403
-      result.message = "This TIPP is not editable!"
-    }
-
-    withFormat{
-      html{
-        def redirect_to = request.getHeader('referer')
-
-        if (params.redirect){
-          redirect_to = params.redirect
-        }
-        else if ((params.fragment) && (params.fragment.length() > 0)){
-          redirect_to = "${redirect_to}#${params.fragment}"
-        }
-      }
-      json{
-        render result as JSON
-      }
-    }
-  }
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
   def processCreateWebHook(){
 
     log.debug("processCreateWebHook ${params}")
@@ -1552,7 +1361,6 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processRRTransfer(){
     def result = [:]
     log.debug("processRRTransfer ${params}")
@@ -1575,7 +1383,6 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def newRRLink(){
     def new_rr = null
     log.debug("newRRLink ${params}")
@@ -1605,7 +1412,6 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def createTitleHistoryEvent(){
     log.debug("createTitleHistoryEvent")
     def result = [result: 'OK']
@@ -1663,7 +1469,6 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteTitleHistoryEvent(){
 
     def result = [:]
@@ -1677,7 +1482,6 @@ class WorkflowController{
 
 
   // @Transactional(readOnly = true)
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   private def packageKBartExport(id){
     def type = params.exportType == 'title' ? PackageCSVExportService.ExportType.KBART_TITLE : PackageCSVExportService.ExportType.KBART_TIPP
     def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
@@ -1693,7 +1497,6 @@ class WorkflowController{
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   private def packageTSVExport(id){
     def export_date = dateFormatService.formatDate(new Date())
 
@@ -1708,7 +1511,6 @@ class WorkflowController{
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToRulebase(){
     def result = [
       ref: request.getHeader('referer')
@@ -1745,7 +1547,7 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
   def transferPackages(){
     def result = [result: 'OK']
     def errors = []
@@ -1784,7 +1586,7 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
   def deprecateOrg(){
     def result = [result: 'OK']
     def errors = []
@@ -1843,7 +1645,7 @@ class WorkflowController{
   }
 
   @Transactional
-  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
   def deprecateDeleteOrg(){
     log.debug("deprecateDeleteOrg ${params}")
     def result = [:]
@@ -1860,46 +1662,7 @@ class WorkflowController{
     result
   }
 
-  /**
-   *  deleteCombo : Used to delete a combo object.
-   * @param id : The id of the combo object
-   */
-
-  // Deprecated – use action in AjaxSupport instead
-  @Deprecated
   @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def deleteCombo(){
-    Combo c = Combo.get(params.id)
-    if (c.fromComponent.isEditable()){
-      log.debug("Delete combo..")
-      c.delete(flush: true)
-    }
-    else{
-      log.debug("Not deleting combo.. no edit permissions on fromComponent!")
-    }
-
-    withFormat{
-      html{
-        def redirect_to = request.getHeader('referer')
-
-        if (params.redirect){
-          redirect_to = params.redirect
-        }
-        else if ((params.fragment) && (params.fragment.length() > 0)){
-          redirect_to = "${redirect_to}#${params.fragment}"
-        }
-
-        redirect(url: redirect_to)
-      }
-      json{
-        render result as JSON
-      }
-    }
-  }
-
-  @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   private def verifyTitleList(packages_to_verify){
     def user = springSecurityService.currentUser
 
@@ -1923,7 +1686,6 @@ class WorkflowController{
     redirect(url: request.getHeader('referer'))
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   private def triggerSourceUpdate(packages_to_update){
     log.info("triggerSourceUpdate for Packages ${packages_to_update}..")
     def user = springSecurityService.currentUser

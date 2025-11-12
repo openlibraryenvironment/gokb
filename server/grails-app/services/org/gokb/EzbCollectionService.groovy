@@ -145,9 +145,10 @@ class EzbCollectionService {
 
         if (!cancelled) {
           for (item in items) {
-            if (Thread.currentThread().isInterrupted()) {
+            if (Thread.currentThread().isInterrupted() || job.isCancelled()) {
               break
               cancelled = true
+              result.result = 'CANCELLED'
             }
 
             handleEzbCollectionItem(item, type_results)
@@ -159,6 +160,10 @@ class EzbCollectionService {
 
         job.message("Completed type ${type} with ${type_results}".toString())
         result.report[type] = type_results
+      }
+
+      if (cancelled) {
+        return result
       }
 
       // Cleaning up newly archived collections

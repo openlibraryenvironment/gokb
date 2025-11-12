@@ -1273,7 +1273,7 @@ class TippService {
     def result = []
     TIPPCoverageStatement latest = latest(tipp.coverageStatements)
 
-    if (latest && found.matches.size > 1) {
+    if (latest && found.matches.size() > 1) {
       def matches = []
       // too many identifier matches
       for (def comp : found.matches) {
@@ -1552,7 +1552,7 @@ class TippService {
       boolean has_conflicts = false
 
       if (tippInfo.importId == ctipp.importId) {
-        tipp_id_match_results << [namespace: 'title_id', value: tippInfo.titleId, match: 'OK']
+        tipp_id_match_results << [namespace: 'title_id', value: tippInfo.importId, match: 'OK']
       }
 
       namespaces[typeString.toLowerCase()].eachWithIndex { plns, idx ->
@@ -1589,7 +1589,7 @@ class TippService {
       }
     }
 
-    if (full_matches.size == 1) {
+    if (full_matches.size() == 1) {
       result.full_matches = full_matches
     }
     else if (full_matches.size() > 1) {

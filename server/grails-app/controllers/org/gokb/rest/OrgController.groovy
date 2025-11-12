@@ -164,6 +164,12 @@ class OrgController {
             errors.variantNames = variant_result.errors
           }
 
+          def comments_result = restMappingService.updateComments(obj, reqBody.comments)
+
+          if (comments_result.errors.size() > 0) {
+            errors.comments = comments_result.errors
+          }
+
           errors << orgService.updateCombos(obj, reqBody)
           if(errors) {
             obj.expunge()
@@ -233,6 +239,12 @@ class OrgController {
 
         if (variant_result.errors.size() > 0) {
           errors.variantNames = variant_result.errors
+        }
+
+        def comments_result = restMappingService.updateComments(obj, reqBody.comments, remove)
+
+        if (comments_result.errors.size() > 0) {
+          errors.comments = comments_result.errors
         }
 
         errors << orgService.updateCombos(obj, reqBody, remove)

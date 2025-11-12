@@ -53,7 +53,8 @@ class ESSearchService{
           "editStatus",
           "contentType",
           "publicationType",
-          "status"
+          "status",
+          "roles"
       ],
       namespace: [
           "titleNamespace",
@@ -114,6 +115,12 @@ class ESSearchService{
           "_embed",
           "_include",
           "_exclude"
+      ],
+      number: [
+        [
+          fields: ["startYear", "endYear"],
+          type: "int"
+        ]
       ]
   ]
 
@@ -346,6 +353,50 @@ class ESSearchService{
       dateQuery.format("yyyy-MM-dd'T'HH:mm:ss'Z'||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
 
       query.must(dateQuery)
+    }
+  }
+
+  /*
+   addNumberRanges
+   Config supports search over single field or separate start & end:
+    [
+      [
+        fields: ["volume"],
+        type: "long",
+        minParam: "minVolumeNum",
+        maxParam: "maxVolumeNum"
+      ],
+      [
+        fields: ["startYear", "endYear"]
+        type: "int"
+      ]
+    ]
+  */
+
+  private void addNumberRanges(query, errors, qpars) {
+    requestMapping.number.each { config ->
+      if (config.fields.size() == 1) {
+        QueryBuilder rangeQuery = QueryBuilders.rangeQuery(config.fields[0])
+
+        if (qpars[config.minParam]) {
+          rangeQuery.gte(qpars."${config.type}"(qpars[config.minParam]))
+        }
+
+        if (qpars[config.maxParam]) {
+          rangeQuery.lte(qpars."${config.type}"(qpars[config.maxParam]))
+        }
+
+        query.must(rangeQuery)
+      }
+      else if (config.fields.size() == 2) {
+        if (qpars[config.fields[0]]) {
+          query.must(QueryBuilders.rangeQuery(config.fields[0]).gte(qpars."${config.type}"([config.fields[0]])))
+        }
+
+        if (qpars[config.fields[1]]) {
+          query.must(QueryBuilders.rangeQuery(config.fields[1]).lte(qpars."${config.type}"([config.fields[1]])))
+        }
+      }
     }
   }
 
@@ -682,6 +733,7 @@ class ESSearchService{
         scrollQuery.must(QueryBuilders.termQuery('componentType', final_type))
       }
       addDateQueries(scrollQuery, errors, params)
+      addNumberRanges(scrollQuery, errors, params)
       specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
 
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -783,6 +835,7 @@ class ESSearchService{
 
       filterByComponentType(exactQuery, component_type, params)
       addDateQueries(exactQuery, errors, params)
+      addNumberRanges(exactQuery, errors, params)
       processNameFields(exactQuery, errors, params)
       processGenericFields(exactQuery, errors, params)
       addIdentifierQuery(exactQuery, errors, params)

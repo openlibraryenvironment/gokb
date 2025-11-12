@@ -8,6 +8,7 @@ class AutoUpdatePackagesJob {
 
   def ezbCollectionService
   def packageSourceUpdateService
+  def curatoryGroupAlertingService
   def sessionFactory
   // Allow only one run at a time.
   static concurrent = false
@@ -17,17 +18,22 @@ class AutoUpdatePackagesJob {
   }
 
   def execute() {
+    def failed_jobs_by_group = [:]
+    def failed_jobs_no_group = []
+
     if (grailsApplication.config.getProperty('gokb.packageUpdate.enabled', Boolean, false)) {
       log.debug("Beginning scheduled auto update packages job.")
-      def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+      def status_expected = RefdataCategory.lookup("KBComponent.Status", "Expected")
+
       // find all updateable packages
       def updPacks = Package.executeQuery(
         '''select p.id from Package p
            where p.source is not null and
            p.source.automaticUpdates = true
-           and p.status != :sd
+           and p.status in (:sf)
            and (p.source.lastRun is null or p.source.lastRun < current_date)''',
-           [sd: status_deleted])
+           [sf: [status_current, status_expected]])
 
       for (pid in updPacks) {
         Package p = Package.findById(pid)
@@ -35,6 +41,22 @@ class AutoUpdatePackagesJob {
         if (p.source?.needsUpdate() == true) {
           def result = packageSourceUpdateService.updateFromSource(p.id)
           log.debug("Result of update: ${result}")
+
+          if (result.result == 'ERROR') {
+            if (result.jobInfo?.groupId) {
+              if (result.jobInfo.groupId && !failed_jobs_by_group[result.jobInfo.groupId]) {
+                failed_jobs_by_group[result.jobInfo.groupId] = []
+              }
+
+              failed_jobs_by_group[result.jobInfo.groupId] << result.jobInfo
+            }
+            else if (result.jobInfo) {
+              failed_jobs_no_group << result.jobInfo
+            }
+            else {
+              log.warn("No job info for source update for package '${p.name}' (ID ${p.id})")
+            }
+          }
 
           sleep(5000)
         }
@@ -50,6 +72,13 @@ class AutoUpdatePackagesJob {
           break
         }
       }
+
+      if (grailsApplication.config.getProperty('gokb.cancelledJobsNotifications', Boolean, false) && grailsApplication.config.getProperty('gokb.alerts.emailFrom') && failed_jobs_by_group) {
+        failed_jobs_by_group.each { id, jobs ->
+          curatoryGroupAlertingService.triggerDailyJobsAlert(id, jobs)
+        }
+      }
+
       log.info("auto update packages job completed.")
     } else {
       log.debug("automatic package update is not enabled - set config.gokb.packageUpdate_enabled = true in config to enable")

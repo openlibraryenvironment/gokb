@@ -139,7 +139,7 @@ class CuratoryGroupsController {
 
         if (!errors) {
           response.setStatus(201)
-          result = restMappingService.mapObjectToJson(source, params, user)
+          result = restMappingService.mapObjectToJson(newGroup, params, user)
         }
         else {
           response.setStatus(400)
@@ -173,13 +173,13 @@ class CuratoryGroupsController {
       boolean editable = user.hasRole('ROLE_ADMIN') || group.owner == user
 
       if (editable) {
-        source = restMappingService.updateObject(group, null, reqBody)
+        group = restMappingService.updateObject(group, null, reqBody)
 
-        errors << updateMembers(group, reqBody, remove)
+        // errors << updateMembers(group, reqBody, remove)
 
         if (!errors) {
           if ( group.validate() ) {
-            source = group.merge(flush: true)
+            group = group.merge(flush: true)
             result = restMappingService.mapObjectToJson(group, params, user)
           } else {
             result = [result: 'ERROR', message: "new group data is not valid", errors: messageService.processValidationErrors(group.errors)]
@@ -208,7 +208,7 @@ class CuratoryGroupsController {
 
   private updateMembers(group, reqBody, remove) {
     if (reqBody.members) {
-
+      // TODO
     }
   }
 

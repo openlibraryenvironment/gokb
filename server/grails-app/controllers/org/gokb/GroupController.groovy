@@ -14,7 +14,6 @@ class GroupController {
 
   def springSecurityService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     def result = [:]
     if ( params.id ) {

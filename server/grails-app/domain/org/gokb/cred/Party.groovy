@@ -21,6 +21,8 @@ class Party {
   Date dateCreated
   Date lastUpdated
 
+  Set memberships = []
+
   static hasMany = [
     memberships: UserOrganisationMembership
   ]

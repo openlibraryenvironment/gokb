@@ -473,8 +473,8 @@ class OrgService {
   public def updateRoles(Org org, roles, boolean remove = true) {
     RefdataCategory category = RefdataCategory.findByLabel('Org.Role')
     def result = [changed: false, errors: []]
-    def old_roles = org.roles
-    def new_roles = []
+    def old_roles = org.roles?.toArray() ?: []
+    List new_roles = []
 
     roles.each { nr ->
       RefdataValue role_obj = null
@@ -499,7 +499,7 @@ class OrgService {
 
     new_roles.each { nr ->
       if (!old_roles.contains(nr)) {
-        org.addToRoles(role_obj)
+        org.addToRoles(nr)
         result.changed = true
       }
     }
@@ -508,6 +508,7 @@ class OrgService {
       old_roles.each { old_role ->
         if (!new_roles.contains(old_role)) {
           org.removeFromRoles(old_role)
+          org.save(flush: true)
           result.changed = true
         }
       }
@@ -786,6 +787,42 @@ class OrgService {
     catch (Exception e) {
       result.result = 'ERROR'
       log.error("Error merging orgs", e)
+    }
+
+    result
+  }
+
+  @Transactional
+  public def adjustOrgRolesToExistingCombos(org) {
+    def result = [result: 'OK', changed: false]
+    RefdataValue role_provider = RefdataCategory.lookup('Org.Role', 'Platform Provider')
+    RefdataValue role_publisher = RefdataCategory.lookup('Org.Role', 'Publisher')
+    RefdataValue combo_type_publisher = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+    def existing_roles = org.roles.toArray()
+    def new_roles = []
+
+    Boolean is_provider = org.providedPlatforms?.size() > 0
+    Boolean is_publisher = Combo.executeQuery('select count(*) from Combo where type = :rpb and toComponent = :org')[0] > 0
+
+    if (is_provider) {
+      new_roles << role_provider
+    }
+
+    if (is_publisher) {
+      new_roles << role_publisher
+    }
+
+    result.changed |= org.roles.addAll(new_roles)
+
+    if (changed) {
+      org.save()
+    }
+
+    boolean removed = org.roles.retainAll(new_roles)
+
+    if (removed) {
+      org.save()
+      result.changed = true
     }
 
     result
