@@ -72,7 +72,7 @@ class Source extends KBComponent {
       'bulkConfig'
     ],
     'admin'        : [
-      'bulkConfig',
+      'importConfig',
       'ignoreSizeLimit',
       'ezbMatch'
     ],

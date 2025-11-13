@@ -96,14 +96,6 @@ class RestMappingService {
       }
     }
 
-    if (jsonMap?.admin && (!user || !user.isAdmin())) {
-      jsonMap.admin.each { jme ->
-        if (!jsonMap.ignore.contains(jme)) {
-          jsonMap.ignore << jme
-        }
-      }
-    }
-
     if (embed_active.size() == 0) {
       if (KBComponent.isAssignableFrom(obj.class)) {
         if (!nested) {
