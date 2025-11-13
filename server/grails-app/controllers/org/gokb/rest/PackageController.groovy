@@ -31,6 +31,7 @@ class PackageController {
   def TSVIngestionService
   def packageUpdateService
   def tippUpsertService
+  def adminAlertingService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -662,7 +663,7 @@ class PackageController {
     def title_ns_id = null
     def title_ns_serial_id = null
     def title_ns_mono_id = null
-    Source pkg_source = pkg.source
+    Source source = pkg.source
 
     if (params.activeGroup) {
       CuratoryGroup active_group
@@ -821,6 +822,8 @@ class PackageController {
         response.status = 413
         result.message = "The provided file is too big!"
         result.messageCode = "kbart.errors.fileSize"
+
+        adminAlertingService.sendSizeLimitAlert(pkg)
       }
     }
     else if (pkg?.id) {
