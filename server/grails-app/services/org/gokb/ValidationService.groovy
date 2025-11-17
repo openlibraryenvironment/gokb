@@ -1067,6 +1067,8 @@ class ValidationService {
         ]
       ]
     }
+
+    result
   }
 
   def checkDDCList(String value) {

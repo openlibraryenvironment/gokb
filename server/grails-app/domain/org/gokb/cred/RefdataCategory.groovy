@@ -5,6 +5,7 @@ import groovy.util.logging.*
 import grails.util.GrailsNameUtils
 import javax.persistence.Transient
 import org.grails.datastore.mapping.model.*
+import org.hibernate.proxy.HibernateProxy
 
 @Slf4j
 class RefdataCategory {
@@ -41,6 +42,22 @@ class RefdataCategory {
 
   String getLogEntityId() {
     "${this.class.name}:${id}"
+  }
+
+  @Override
+  public boolean equals (Object obj) {
+
+    if (obj != null) {
+      if ( obj instanceof RefdataCategory ) {
+        return obj.id == id
+      }
+      else if ( obj instanceof HibernateProxy ) {
+        Object dep_obj = KBComponent.deproxy (obj)
+        return dep_obj.id == id
+      }
+    }
+
+    return false
   }
 
   public static final String restPath = "/refdata/categories"
