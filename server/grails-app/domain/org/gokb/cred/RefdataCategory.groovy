@@ -43,6 +43,22 @@ class RefdataCategory {
     "${this.class.name}:${id}"
   }
 
+  @Override
+  public boolean equals (Object obj) {
+
+    if (obj != null) {
+      if ( obj instanceof RefdataCategory ) {
+        return obj.id == id
+      }
+      else if ( obj instanceof HibernateProxy ) {
+        Object dep_obj = KBComponent.deproxy (obj)
+        return dep_obj.id == id
+      }
+    }
+
+    return false
+  }
+
   public static final String restPath = "/refdata/categories"
 
   static def lookup(category_name, value, def sortkey = null) {
