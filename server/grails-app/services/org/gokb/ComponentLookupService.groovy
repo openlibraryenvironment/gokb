@@ -775,7 +775,7 @@ class ComponentLookupService {
                         where ag.review = p
                         and ag.group IN :alg
                         and ag.status != :inactive
-                        and ag.escatedFrom is not null
+                        and ag.escalatedFrom is not null
                       )'''
         }
         else {
