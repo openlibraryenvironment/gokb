@@ -5,6 +5,7 @@ import groovy.util.logging.*
 import grails.util.GrailsNameUtils
 import javax.persistence.Transient
 import org.grails.datastore.mapping.model.*
+import org.hibernate.proxy.HibernateProxy
 
 @Slf4j
 class RefdataCategory {
