@@ -10,6 +10,15 @@
       }
     },
     {
+      "provider": {
+        "match": "contentProvider*",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
       "date": {
         "match": "*Date",
         "match_mapping_type": "date",

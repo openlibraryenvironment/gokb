@@ -66,7 +66,8 @@ class Org extends KBComponent {
       vendedPackages   : Package,
       offeredLicenses  : License,
       heldLicenses     : License,
-      offices          : Office
+      offices          : Office,
+      offeredPackages  : Package
   ]
 
   static hasByCombo = [
@@ -88,6 +89,7 @@ class Org extends KBComponent {
       offeredLicenses  : 'licensor',
       heldLicenses     : 'licensee',
       offices          : 'org',
+      offeredPackages  : 'contentProvider'
   ]
 
   //  static mappedBy = [
@@ -228,7 +230,6 @@ class Org extends KBComponent {
   def toGoKBXml(builder, attr) {
     def publishes = getPublishedTitles()
     def issues = getIssuedTitles()
-    def provides = getProvidedPackages()
     def platforms = getProvidedPlatforms()
     def offices = getOffices()
     def identifiers = getIds()
@@ -302,32 +303,6 @@ class Org extends KBComponent {
               builder.'platform'(['id': plat.id, 'uuid': plat.uuid]) {
                 builder.'name'(plat.name)
                 builder.'primaryUrl'(plat.primaryUrl)
-              }
-            }
-          }
-        }
-
-        if (provides) {
-          'providedPackages' {
-            provides.each { pp ->
-              Package pkg = Package.deproxy(pp)
-
-              builder.'package'(['id': pkg.id, 'uuid': pkg.uuid]) {
-                builder.'name'(pkg.name)
-                builder.'contentType'(pkg.contentType?.value)
-                builder.'global'(pkg.global?.value)
-                builder.'identifiers' {
-                  pkg.activeIdInfo.each { tid ->
-                    builder.'identifier'(tid)
-                  }
-                }
-                builder.'curatoryGroups' {
-                  pkg.curatoryGroups?.each { cg ->
-                    builder.'group'(['id': cg.id]) {
-                      builder.'name'(cg.name)
-                    }
-                  }
-                }
               }
             }
           }

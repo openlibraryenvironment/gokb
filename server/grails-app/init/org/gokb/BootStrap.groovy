@@ -1171,6 +1171,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Combo.Type', 'Org.CuratoryGroups').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Org.Imprint').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Provider').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.ContentProvider').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Package.CuratoryGroups').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Package.NominalPlatform').save(flush: true, failOnError: true)
