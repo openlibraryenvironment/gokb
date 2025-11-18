@@ -76,7 +76,7 @@ class RestMappingService {
     def nested = params['nested'] ? true : false
     def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
-    def jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
+    Map jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
     def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
@@ -152,7 +152,7 @@ class RestMappingService {
             }
           }
           else {
-            if ((embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) || (!nested && p.name == 'reviewRequests' && user?.editorStatus)) {
+            if ((embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) || (!nested && ['reviewRequests', 'comments'].contains(p.name) && user?.editorStatus)) {
               log.debug("Handling embeds for ${p.name}: ${obj[p.name]}")
               result['_embedded'][p.name] = []
 
@@ -258,7 +258,7 @@ class RestMappingService {
             combos.each { c ->
               def linked_obj = getEmbeddedJson(reverse ? c.fromComponent : c.toComponent, user)
 
-              if (c.status?.value == 'Active') {
+              if (c.status?.value == 'Active' && linked_obj?.status?.name != 'Deleted') {
                 result['_embedded'][cp] << linked_obj
               }
               else {
@@ -292,6 +292,7 @@ class RestMappingService {
   /**
    *  updateObject : Updates an domain class object based on a provided object map.
    * @param obj : The object to be updated
+   * @param jsonMap : The map of update restrictions for the object class
    * @param reqBody : The map of properties to be updated
    */
 
@@ -303,10 +304,11 @@ class RestMappingService {
 
     def toIgnore = defaultIgnore + (jsonMap?.ignore ?: [])
     def immutable = defaultImmmutable + (jsonMap?.immutable ?: [])
-
     log.debug("Ignore: ${toIgnore}, Immutable: ${immutable}")
+
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
       def newVal = reqBody[p.name]
+
       if (!toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody.keySet().contains(p.name)) {
         log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
 
@@ -321,7 +323,14 @@ class RestMappingService {
         }
         else {
           log.debug("checking for type of property ${p.name} -> ${p.type}")
+          if (newVal == null || newVal == "") {
+            obj[p.name] = null
+          }
+
           switch (p.type) {
+            case Integer.class:
+              updateIntField(obj, p.name, newVal)
+              break;
             case Long.class:
               updateLongField(obj, p.name, newVal)
               break;
@@ -351,14 +360,67 @@ class RestMappingService {
     return changed
   }
 
-  private boolean updateAssoc(obj, prop, val, def cat = null) {
-    boolean changed = false
+  def lookupRefdataValueForCategory(value, RefdataCategory category) {
+    def result = [obj: null]
+    RefdataValue rdv = null
+
+    if (value instanceof Integer) {
+      rdv = RefdataValue.get(value)
+    }
+    else if (value instanceof String) {
+      rdv = RefdataValue.findByOwnerAndValue(category, value)
+    }
+    else if (value instanceof Map) {
+      if (value.id) {
+        rdv = RefdataValue.get(value.id)
+      }
+      else if (value.value) {
+        rdv = RefdataValue.findByOwnerAndValue(category, value.value)
+      }
+      else if (value.name) {
+        rdv = RefdataValue.findByOwnerAndValue(category, value.name)
+      }
+    }
+    else {
+      result.error = [
+        message: 'Unable to process refdata info!',
+        baddata: value,
+        code: 400
+      ]
+    }
+
+    if (rdv) {
+      if (rdv.owner == category) {
+        result.obj = rdv
+      }
+      else {
+        result.error = [
+          message: 'Provided value does not belong to the right category!',
+          baddata: value,
+          field: 'owner',
+          code: 400
+        ]
+      }
+    }
+    else if (!result.error) {
+      result.error = [
+        message: 'Unable to find provided refdata!',
+        baddata: value,
+        code: 404
+      ]
+    }
+
+    result
+  }
+
+  @Transactional
+  public Boolean updateAssoc(obj, prop, val, def cat = null) {
     log.debug("Update association $obj - $prop: $val")
+    Boolean changed = false
     def ptype = grailsApplication.mappingContext.getPersistentEntity(obj.class.name).getPropertyByName(prop).type
 
     if (val != null) {
       if (ptype == RefdataValue) {
-        def rdv = null
         String catName = cat ? cat.desc : classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
 
         if (!cat) {
@@ -376,30 +438,27 @@ class RestMappingService {
         }
 
         if (cat) {
-          if (val instanceof Integer) {
-            rdv = RefdataValue.get(val)
+          def rdv_result = lookupRefdataValueForCategory(val, cat)
 
-            if (rdv) {
-              if (rdv in cat.values) {
-                if (catName == 'KBComponent.Status') {
-                  changed = updateStatus(obj, rdv.value)
-                }
-                else if (rdv != obj[prop]) {
-                  obj[prop] = rdv
-                  changed = true
-                }
-              }
-              else {
-                obj.errors.reject(
-                    'rdc.values.notFound',
-                    [rdv, cat] as Object[],
-                    '[Value {0} is not valid for category {1}!]'
-                )
-                obj.errors.rejectValue(
-                    prop,
-                    'rdc.values.notFound'
-                )
-              }
+          if (rdv_result.obj) {
+            if (catName == 'KBComponent.Status') {
+              updateStatus(obj, rdv_result.obj.value)
+            }
+            else {
+              obj[prop] = rdv_result.obj
+            }
+          }
+          else {
+            if (rdv_result.error?.field == 'owner') {
+              obj.errors.reject(
+                  'rdc.values.notFound',
+                  [rdv_result.obj, cat] as Object[],
+                  '[Value {0} is not valid for category {1}!]'
+              )
+              obj.errors.rejectValue(
+                  prop,
+                  'rdc.values.notFound'
+              )
             }
             else {
               obj.errors.reject(
@@ -413,104 +472,9 @@ class RestMappingService {
               )
             }
           }
-          else if (val instanceof Map) {
-            if (val.id && val.id != null) {
-              log.debug("Assign by id")
-              rdv = RefdataValue.get(val.id)
-
-              if (rdv) {
-                if (rdv in cat.values) {
-                  if (catName == 'KBComponent.Status') {
-                    changed = updateStatus(obj, rdv.value)
-                  }
-                  else if (rdv != obj[prop]) {
-                    obj[prop] = rdv
-                    changed = true
-                  }
-                }
-                else {
-                  obj.errors.reject(
-                      'rdc.values.notFound',
-                      [rdv, cat] as Object[],
-                      '[Value {0} is not valid for category {1}!]'
-                  )
-                  obj.errors.rejectValue(
-                      prop,
-                      'rdc.values.notFound'
-                  )
-                }
-              }
-              else {
-                log.debug("Unable to fetch rdv by ID")
-                obj.errors.reject(
-                    'default.not.found.message',
-                    [ptype, val.id] as Object[],
-                    '[{0} not found with id {1}]'
-                )
-                obj.errors.rejectValue(
-                    prop,
-                    'default.not.found.message'
-                )
-              }
-            }
-            else if (val.name) {
-              log.debug("Assign by value")
-              rdv = RefdataCategory.lookup(catName, val.name)
-
-              if (!rdv) {
-                log.debug("Unable to fetch rdv by value")
-                obj.errors.reject(
-                    'rdc.values.notFound',
-                    [val.name, prop] as Object[],
-                    '[{0} is not a valid value for property {1}!]'
-                )
-                obj.errors.rejectValue(
-                    prop,
-                    'rdc.values.notFound'
-                )
-              }
-              else {
-                if (catName == 'KBComponent.Status') {
-                  changed = updateStatus(obj, rdv.value)
-                }
-                else if (rdv != obj[prop]) {
-                  obj[prop] = rdv
-                  changed = true
-                }
-              }
-            }
-            else {
-              log.error("Unable to handle value map ${val}")
-            }
-          }
-          else {
-            rdv = RefdataCategory.lookup(catName, val)
-
-            if (!rdv) {
-              log.debug("Unable to lookup rdv for ${val}")
-              obj.errors.reject(
-                  'rdc.values.notFound',
-                  [val, prop] as Object[],
-                  '[{0} is not a valid value for property {1}!]'
-              )
-              obj.errors.rejectValue(
-                  prop,
-                  'rdc.values.notFound'
-              )
-            }
-            else {
-              if (catName == 'KBComponent.Status') {
-                changed = updateStatus(obj, rdv.value)
-              }
-              else if (rdv != obj[prop]) {
-                obj[prop] = rdv
-                changed = true
-              }
-            }
-          }
         }
         else {
-          log.error("Could not resolve category (${obj.niceName}.${p.name})!")
+          log.error("Could not resolve category (${obj.niceName}.${prop})!")
         }
       }
       else {
@@ -717,7 +681,7 @@ class RestMappingService {
           '[{0} is not a valid status value!]'
       )
       obj.errors.rejectValue(
-          prop,
+          'status',
           'rdc.values.notFound'
       )
     }
@@ -865,14 +829,14 @@ class RestMappingService {
                   result.changed = true
 
                   if (it.locale) {
-                    newVariant = updateAssoc(newVariant, 'locale', it.locale, RefdataCategory.findByDesc(KBComponent.RD_LANGUAGE))
+                    result.changed |= updateAssoc(newVariant, 'locale', it.locale, RefdataCategory.findByDesc(KBComponent.RD_LANGUAGE))
                   }
                   else {
                     newVariant.locale = null
                   }
 
                   if (it.variantType) {
-                    newVariant = updateAssoc(newVariant, 'variantType', it.variantType)
+                    result.changed |= updateAssoc(newVariant, 'variantType', it.variantType)
                   }
                   else {
                     newVariant.variantType = null
@@ -934,6 +898,99 @@ class RestMappingService {
       log.debug("Unable to process variants:", e)
       result.errors << [message: "Unable to process variants!", code: 500, baddata: vals]
     }
+    result
+  }
+
+  @Transactional
+  def updateComments(obj, comments, boolean remove = true) {
+    def result = [changed: false, errors: []]
+    RefdataCategory cat_lang = RefdataCategory.findByDesc(KBComponent.RD_LANGUAGE)
+    Boolean changed = false
+    List remaining = []
+    List notFound = []
+    List toRemove = []
+
+    KBComponentComment.withTransaction {
+      comments.each { co ->
+        KBComponentComment cobj = null
+        boolean created = false
+
+        if (co instanceof Map) {
+          if (co.id) {
+            cobj = KBComponentComment.findById(co.id)
+            if (!cobj || cobj.owner != obj) {
+              result.errors << [
+                message: 'Unable to reference existing comment item!',
+                baddata: co
+              ]
+            }
+          }
+          else if (co.language && co.value?.trim()) {
+
+            def rd_result = lookupRefdataValueForCategory(co.language, cat_lang)
+            if (rd_result.obj) {
+              def existing = KBComponentComment.findByOwnerAndLanguage(obj, rd_result.obj)
+              if (existing) {
+                result.errors << [
+                  message: 'Matched incoming comment without id to existing comment with the same language!',
+                  baddata: co
+                ]
+              }
+              else {
+                created = true
+                cobj = new KBComponentComment(owner: obj, value: co.value, language: rd_result.obj).save(flush: true)
+                result.changed = true
+              }
+            }
+            else {
+              result.errors << rd_result.error
+            }
+          }
+          else {
+            result.errors << [
+              message: 'Missing language info or value for comment item!',
+              baddata: co
+            ]
+          }
+        }
+        else if (co instanceof Integer) {
+          cobj = KBComponentComment.get(co)
+        }
+        else {
+          result.errors << [
+            message: 'Unable to process comment item!',
+            baddata: co
+          ]
+        }
+
+        if (cobj) {
+          if (!created && co.value != cobj.value) {
+            cobj.value = co.value
+            cobj.save(flush: true)
+            result.changed = true
+          }
+
+          remaining << cobj
+        }
+      }
+
+      if (remove) {
+        obj.comments.each { old_comment ->
+          if (!remaining.contains(old_comment)) {
+            toRemove << old_comment.id
+          }
+        }
+
+        toRemove.each { trid ->
+          def tr_obj = KBComponentComment.get(trid)
+
+          obj.removeFromComments(tr_obj)
+          obj.save(flush: true)
+          result.changed = true
+        }
+      }
+    }
+
     result
   }
 
@@ -1135,6 +1192,7 @@ class RestMappingService {
 
       pubs_to_add.each { publisher ->
         boolean found = false
+
         for (int i = 0; !found && i < publisher_combos.size(); i++) {
           Combo pc = publisher_combos[i]
           def idMatch = pc."${propName}".id == publisher.id
@@ -1157,19 +1215,11 @@ class RestMappingService {
       obj.save(flush: true)
     }
 
+    log.debug("New list of pubs: ${pubs_to_add}")
+
     if (remove && !result.errors) {
-      Iterator items = publisher_combos.iterator()
-      Object element
-
-      while (items.hasNext()) {
-        element = items.next()
-
-        if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
-          // Remove.
-          element.delete()
-          result.changed = true
-        }
-      }
+      result.changed |= obj.publisher.retainAll(pubs_to_add)
+      obj.save(flush: true)
     }
 
     result
@@ -1194,7 +1244,27 @@ class RestMappingService {
     }
   }
 
-  public void updateDateField(obj, prop, val) {
+  public def updateIntField(obj, prop, val) {
+    log.debug("Set simple prop ${prop} = ${val} (as Long)")
+
+    try {
+      obj[prop] = Integer.parseInt(val)
+    }
+    catch (Exception e) {
+      obj.errors.reject(
+          'typeMismatch.java.lang.Integer',
+          [prop] as Object[],
+          '[Invalid number value for property [{0}]]'
+      )
+      obj.errors.rejectValue(
+          prop,
+          'typeMismatch.java.lang.Integer'
+      )
+    }
+    obj
+  }
+
+  public def updateDateField(obj, prop, val) {
     if (val == null || !val.trim()) {
       obj[prop] = null
     }

@@ -167,6 +167,12 @@ class OrgController {
             errors.variantNames = variant_result.errors
           }
 
+          def comments_result = restMappingService.updateComments(obj, reqBody.comments)
+
+          if (comments_result.errors.size() > 0) {
+            errors.comments = comments_result.errors
+          }
+
           errors << orgService.updateCombos(obj, reqBody, changed)
 
           if (errors) {
@@ -205,6 +211,7 @@ class OrgController {
     def remove = (request.method == 'PUT')
     def user = User.get(springSecurityService.principal.id)
     Org obj = Org.findByUuid(params.id)
+    boolean changed_name = false
 
     if (!obj) {
       obj = Org.get(genericOIDService.oidToId(params.id))
@@ -231,6 +238,10 @@ class OrgController {
 
         def jsonMap = obj.jsonMapping
 
+        if (reqBody.name && reqBody.name != obj.name) {
+          changed_name = true
+        }
+
         result.changed = restMappingService.updateObject(obj, jsonMap, reqBody)
 
         def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
@@ -240,6 +251,14 @@ class OrgController {
         if (variant_result.errors.size() > 0) {
           errors.variantNames = variant_result.errors
         }
+
+        def comments_result = restMappingService.updateComments(obj, reqBody.comments, remove)
+
+        if (comments_result.errors.size() > 0) {
+          errors.comments = comments_result.errors
+        }
+
+        result.changed |= comments_result.changed
 
         errors << orgService.updateCombos(obj, reqBody, result.changed, remove)
 
@@ -260,7 +279,7 @@ class OrgController {
           response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
-        if (result.changed && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
+        if (changed_name && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           obj.providedPackages.each {
             FTUpdateService.updateSingleItem(it)
           }

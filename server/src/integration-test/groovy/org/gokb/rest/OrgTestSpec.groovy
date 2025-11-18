@@ -183,4 +183,160 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.body()._embedded.offices?.size() == 2
     resp.body()._embedded.offices*.function.name.contains("Other")
   }
+
+  void "test add valid comment"() {
+    given:
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+
+    Map update_record = [
+      name: "TestOrgPatch",
+      comments              : [
+        [language: [name: 'eng'], value: "sdgozfgsdf\n\ndlghdgshfgsd"]
+      ],
+    ]
+
+    when:
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/orgs/$test_org.id")
+      .build()
+
+    HttpRequest request = HttpRequest.PUT(uri, update_record)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+    then:
+
+    resp.status == HttpStatus.OK
+
+    expect:
+
+    resp.body()._embedded.comments?.size() == 1
+  }
+
+  void "test add multiple comments for the same language"() {
+    given:
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+
+    Map update_record = [
+      name: "TestOrgPatch",
+      comments              : [
+        [language: [name: 'eng'], value: "sdgozfgsdf\n\ndlghdgshfgsd"],
+        [language: [name: 'eng'], value: "sdgofsdf\n\ndlghddgsd"]
+      ],
+    ]
+
+    when:
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/orgs/$test_org.id")
+      .build()
+
+    HttpRequest request = HttpRequest.PUT(uri, update_record)
+      .bearerAuth(accessToken)
+    HttpStatus status
+
+    try {
+      HttpResponse resp = http.exchange(request, Map)
+    }
+    catch(Exception e) {
+      status = e.status
+    }
+
+    then:
+
+    status == HttpStatus.BAD_REQUEST
+  }
+
+  void "test update existing comment"() {
+    given:
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+
+    Map init_record = [
+      name: "TestOrgPatch",
+      comments: [
+        [
+          language: [name: 'eng'],
+          value: "sdgozfgsdf\n\ndlghdgshfgsd"
+        ]
+      ],
+    ]
+
+    when:
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/orgs/$test_org.id")
+      .build()
+
+    HttpRequest request = HttpRequest.PUT(uri, init_record)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+
+    Map update_record = [
+      name: "TestOrgPatch",
+      comments: [
+        [
+          id: resp.body()._embedded.comments[0].id,
+          language: [name: 'eng'],
+          value: "updated"
+        ]
+      ],
+    ]
+
+
+    HttpRequest request2 = HttpRequest.PUT(uri, update_record)
+      .bearerAuth(accessToken)
+    HttpResponse resp2 = http.exchange(request2, Map)
+
+    then:
+
+    resp.status == HttpStatus.OK
+    resp2.status == HttpStatus.OK
+
+    expect:
+
+    resp2.body()._embedded.comments[0].value == 'updated'
+  }
+
+  void "test remove existing comment"() {
+    given:
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+
+    Map initial_record = [
+      name: "TestOrgPatch",
+      comments              : [
+        [language: [name: 'eng'], value: "sdgozfgsdf\n\ndlghdgshfgsd"]
+      ],
+    ]
+
+    Map update_record = [
+      name: "TestOrgPatch",
+      comments: [],
+    ]
+
+    when:
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/orgs/$test_org.id")
+      .build()
+
+    HttpRequest request = HttpRequest.PUT(uri, update_record)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+
+    HttpRequest request2 = HttpRequest.PUT(uri, update_record)
+      .bearerAuth(accessToken)
+    HttpResponse resp2 = http.exchange(request2, Map)
+
+    then:
+
+    resp2.status == HttpStatus.OK
+
+    expect:
+
+    resp2.body()._embedded.comments.size() == 0
+  }
 }

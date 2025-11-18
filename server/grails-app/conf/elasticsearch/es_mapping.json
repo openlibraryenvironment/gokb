@@ -315,6 +315,12 @@
     },
     "publishedTo": {
       "type": "date"
+    },
+    "startYear": {
+      "type": "integer"
+    },
+    "endYear": {
+      "type": "integer"
     }
   }
 }

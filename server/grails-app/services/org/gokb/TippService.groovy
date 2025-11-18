@@ -939,7 +939,10 @@ class TippService {
 
             def existing_mtn = ReviewRequest.findByStdDescAndComponentToReview(type_mtn, tipp)
 
-            if (existing_mtn.size() == 0) {
+            if (existing_mtn) {
+              log.debug("Unmatched ${tipp} already has a review ..")
+            }
+            else {
               def review = reviewRequestService.raise(
                 tipp,
                 "The TIPP could not be linked to an existing title, and cannot create a new one due to a missing name!",
@@ -1027,11 +1030,15 @@ class TippService {
 
             if (ti_changed) {
               ti.lastSeen = new Date().getTime()
-              ti.save(flush: true, failOnError: true)
+              ti = ti.merge(flush: true, failOnError: true)
             }
 
             if (!ti.currentPublisher) {
               titleAugmentService.addPublisher(tipp.publisherName, ti)
+
+              if (ti.currentPublisher) {
+                ti_changed = true
+              }
             }
 
             if (title_class_name == 'org.gokb.cred.BookInstance') {
@@ -1043,6 +1050,10 @@ class TippService {
               ]
 
               ti_changed |= titleAugmentService.editMonographFields(ti, mono_string_info, true)
+            }
+
+            if (ti_changed) {
+              ti.save(flush: true)
             }
           }
 
@@ -1100,10 +1111,14 @@ class TippService {
     ti.name = tipp.name
 
     log.debug("Set name ${ti.name} ..")
-    ti.save(flush: true)
+    ti.save(flush: true, failOnError: true)
+
     titleAugmentService.addPublisher(tipp.publisherName, ti)
+    ti.save(flush: true, failOnError: true)
+
     log.debug("Transfering new ti ids: ${tipp_ids}")
     componentUpdateService.updateIdentifiers(ti, tipp_ids)
+    ti.refresh()
 
     title_changed |= componentUpdateService.setAllRefdata([
         'medium', 'language'
@@ -1258,7 +1273,7 @@ class TippService {
     def result = []
     TIPPCoverageStatement latest = latest(tipp.coverageStatements)
 
-    if (latest && found.matches.size > 1) {
+    if (latest && found.matches.size() > 1) {
       def matches = []
       // too many identifier matches
       for (def comp : found.matches) {
@@ -1537,7 +1552,7 @@ class TippService {
       boolean has_conflicts = false
 
       if (tippInfo.importId == ctipp.importId) {
-        tipp_id_match_results << [namespace: 'title_id', value: tippInfo.titleId, match: 'OK']
+        tipp_id_match_results << [namespace: 'title_id', value: tippInfo.importId, match: 'OK']
       }
 
       namespaces[typeString.toLowerCase()].eachWithIndex { plns, idx ->
@@ -1574,7 +1589,7 @@ class TippService {
       }
     }
 
-    if (full_matches.size == 1) {
+    if (full_matches.size() == 1) {
       result.full_matches = full_matches
     }
     else if (full_matches.size() > 1) {

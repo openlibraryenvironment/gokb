@@ -117,6 +117,7 @@ class UrlMappings {
 
       get "/reviews"(controller: 'reviews', namespace: 'rest', action: 'index')
       get "/reviews/bulk"(controller: 'reviews', namespace: 'rest', action: 'bulk')
+      get "/reviews/editorialGroups"(controller: 'reviews', namespace: 'rest', action: 'editorialGroups')
       get "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'show')
       post "/reviews"(controller: 'reviews', namespace: 'rest', action: 'save')
       put "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
@@ -129,6 +130,8 @@ class UrlMappings {
       get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
       get "/curatoryGroups/$id/jobs"(controller: 'curatoryGroups', namespace: 'rest', action: 'getJobs')
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
+      put "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'update')
+      patch "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'update')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
       post "/curatoryGroups/createGroupType"(controller: 'curatoryGroups', namespace: 'rest', action: 'createGroupType')
       post "/curatoryGroups/connectGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'connectGroups')
@@ -195,7 +198,7 @@ class UrlMappings {
       }
     }
 
-    "/"(controller: 'public', action: 'index')
+    "/"(controller: 'home', action: 'index')
     "500"(controller: 'error', action: 'forbidden', exception: NotFoundException)
     "500"(controller: 'error', action: 'unauthorized', exception: AccessDeniedException)
     "500"(controller: 'error', action: 'serverError')

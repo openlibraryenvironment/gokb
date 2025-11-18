@@ -329,6 +329,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.body().nominalPlatform != null
     resp.body().scope.name == "Front File"
     resp.body().globalNote == "Testing Consortium"
+    resp.body().breakable.name == "Yes"
     resp.body()._embedded?.ids?.size() == 1
   }
 

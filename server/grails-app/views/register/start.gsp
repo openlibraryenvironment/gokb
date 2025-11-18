@@ -23,7 +23,7 @@
         </g:if>
 
         <g:if test="${flash.message}">
-          <div class="info alert-info" style="display: block">${flash.message}</div>
+          <div class="alert alert-info" style="display: block">${flash.message}</div>
         </g:if>
 
         <g:if test='${emailSent}'>

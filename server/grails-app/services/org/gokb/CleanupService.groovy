@@ -427,8 +427,8 @@ class CleanupService {
             j?.setProgress(ctr, result.count)
             ctr++
 
-            session.flush()
-            session.clear()
+            active_session.flush()
+            active_session.clear()
           }
         }
 
@@ -1454,5 +1454,92 @@ class CleanupService {
     }
 
     doi_ctr
+  }
+
+  def generateTitleDOIsFromTippInfo(Job j = null) {
+    def result
+
+    try {
+      def session = sessionFactory.currentSession
+      result = processTitleDOIcleanup(session, j)
+    }
+    catch (Exception e) {
+      TitleInstance.withNewSession { session ->
+        result = processTitleDOIcleanup(session, j)
+      }
+    }
+
+    result
+  }
+
+  private def processTitleDOIcleanup(active_session, j) {
+    def result = [result: 'OK', counts: [:]]
+    RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+    RefdataValue combo_type_ids = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+    IdentifierNamespace doi_ns = IdentifierNamespace.findByValue('doi')
+
+    def query_string = '''from BookInstance as ti
+                          where status = :sc
+                          and not exists (
+                            select 1 from Combo
+                            where type = :ctid
+                            and fromComponent = ti
+                            and toComponent.namespace = :nsd
+                          )'''
+
+    boolean more = true
+    Long last_id = 0L
+
+    def count = BookInstance.executeQuery("select count(id) ${query_string}".toString(),
+                                          [
+                                            sc: status_current,
+                                            ctid: combo_type_ids,
+                                            nsd: doi_ns
+                                          ])[0]
+
+    log.debug("Got total of ${count} ..")
+    int ctr = 0
+
+    while (more) {
+      def batch = BookInstance.executeQuery("${query_string} and id > :cursor order by id".toString(),
+                                            [
+                                              sc: status_current,
+                                              ctid: combo_type_ids,
+                                              nsd: doi_ns,
+                                              cursor: last_id
+                                            ],
+                                            [max: 50])
+
+      batch.each { book ->
+        last_id = book.id
+
+        def augment_result = titleAugmentService.addMissingDoiFromTipps(book)
+
+        log.debug("Got TI augment result ${augment_result}")
+
+        if (!result.counts[augment_result.result]) {
+          result.counts[augment_result.result] = 1
+        }
+        else {
+          result.counts[augment_result.result]++
+        }
+
+        ctr++
+      }
+
+      j?.setProgress(ctr, count)
+
+      active_session.flush()
+      active_session.clear()
+
+      if (batch.size() < 50) {
+        more = false
+      }
+    }
+
+    j?.endTime = new Date()
+    j?.message("Processed ${ctr} titles (${result.counts}).".toString())
+
+    result
   }
 }

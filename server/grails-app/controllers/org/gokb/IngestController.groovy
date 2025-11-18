@@ -13,14 +13,12 @@ class IngestController {
   def TSVIngestionService
   def springSecurityService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     def result=[:]
     result.existingProfiles = IngestionProfile.findAll()
     result
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addProfile() {
     log.debug("addProfile ${params}")
 
@@ -65,7 +63,6 @@ class IngestController {
     redirect(action:'index')
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def profile() {
     log.debug("profile")
 
@@ -169,7 +166,7 @@ class IngestController {
     result
   }
 
-  def analyse(temp_file) {
+  private def analyse(temp_file) {
 
     def result=[:]
     result.filesize = 0

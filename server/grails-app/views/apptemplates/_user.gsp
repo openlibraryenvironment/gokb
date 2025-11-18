@@ -12,6 +12,9 @@
         <g:xEditable class="ipe" owner="${d}" field="email"/>
       </dd>
     </g:if>
+    <dt><g:annotatedLabel owner="${d}" property="preferredLocaleString">Preferred Locale</g:annotatedLabel></dt>
+    <dd><g:xEditable class="ipe" owner="${d}" field="preferredLocaleString" /></dd>
+
     <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
     <dd>
        <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" />

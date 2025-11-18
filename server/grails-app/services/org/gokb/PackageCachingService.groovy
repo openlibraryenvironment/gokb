@@ -87,7 +87,7 @@ class PackageCachingService {
     def activeScheduledJobs = jobManagerService.runningJobs?.findAll { it.jobDetail.key.name == 'org.gokb.AutoCachePackagesJob'} ?: null
     boolean cancelled = false
 
-    if (item && (!force || !activeScheduledJobs) && !activeComponentJobs && (force || item.listStatus == status_checked)) {
+    if (item && (force || !activeScheduledJobs) && !activeComponentJobs && (force || item.listStatus == status_checked)) {
       try {
         if (!dir.exists()) {
           dir.mkdirs()
@@ -179,6 +179,8 @@ class PackageCachingService {
                 'paymentType'(item.paymentType?.value)
                 'global'(item.global?.value)
                 'globalNote'(item.globalNote)
+                'startYear'(item.startYear)
+                'endYear'(item.endYear)
                 'contentType'(item.contentType?.value)
 
                 if (item.nominalPlatform) {

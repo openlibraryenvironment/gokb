@@ -140,7 +140,7 @@ class CuratoryGroupsController {
 
         if (!errors) {
           response.setStatus(201)
-          result = restMappingService.mapObjectToJson(source, params, user)
+          result = restMappingService.mapObjectToJson(newGroup, params, user)
         }
         else {
           response.setStatus(400)
@@ -176,11 +176,11 @@ class CuratoryGroupsController {
       if (editable) {
         result.changed = restMappingService.updateObject(group, null, reqBody)
 
-        errors << updateMembers(group, reqBody, changed, remove)
+        // TODO errors << curatoryGroupService.updateMembers(group, reqBody, result.changed, remove)
 
         if (!errors) {
           if ( group.validate() ) {
-            source = group.merge(flush: true)
+            group = group.merge(flush: true)
             result = restMappingService.mapObjectToJson(group, params, user)
           } else {
             result = [result: 'ERROR', message: "new group data is not valid", errors: messageService.processValidationErrors(group.errors)]
@@ -205,12 +205,6 @@ class CuratoryGroupsController {
       result.message = "Unable to lookup curatory group by id!"
     }
     render result as JSON
-  }
-
-  private updateMembers(group, reqBody, changed, remove) {
-    if (reqBody.members) {
-
-    }
   }
 
   @Secured("hasAnyRole('ROLE_CONTRIBUTOR', 'ROLE_EDITOR', 'ROLE_ADMIN') and isAuthenticated()")

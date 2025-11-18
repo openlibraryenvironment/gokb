@@ -15,7 +15,11 @@ class Platform extends KBComponent {
   RefdataValue shibbolethAuthentication
   RefdataValue passwordAuthentication
 
-  static hasMany = [roles: RefdataValue]
+  Set roles = []
+
+  static hasMany = [
+    roles: RefdataValue
+  ]
 
   static hasByCombo = [
     provider: Org
@@ -92,7 +96,8 @@ class Platform extends KBComponent {
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'curatoryGroups'
+      'curatoryGroups',
+      'comments'
     ]
   ]
 

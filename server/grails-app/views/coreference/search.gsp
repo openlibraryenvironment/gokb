@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="layout" content="sb-admin"/>
+    <meta name="layout" content="public"/>
     <title>GOKB: Coreference Service</title>
   </head>
   <body>

@@ -292,15 +292,17 @@ class TippServiceSpec extends Specification {
     then:
     result.status == 'created'
     tipp.title != null
-    tipp.name == tipp.title.name
-    tipp.firstEditor == tipp.title.firstEditor
-    tipp.firstAuthor == tipp.title.firstAuthor
-    tipp.editionStatement == tipp.title.editionStatement
-    tipp.volumeNumber == tipp.title.volumeNumber
-    tipp.dateFirstInPrint == tipp.title.dateFirstInPrint
-    tipp.dateFirstOnline == tipp.title.dateFirstOnline
-    tipp.medium.value == tipp.title.medium.value
-    tipp.title.publisher*.name.contains(tipp.publisherName)
+    def title = TitleInstance.findById(tipp.title.id)
+    tipp.name == title.name
+    tipp.firstEditor == title.firstEditor
+    tipp.firstAuthor == title.firstAuthor
+    tipp.editionStatement == title.editionStatement
+    tipp.volumeNumber == title.volumeNumber
+    tipp.dateFirstInPrint == title.dateFirstInPrint
+    tipp.dateFirstOnline == title.dateFirstOnline
+    tipp.medium.value == title.medium.value
+    title.refresh()
+    title.publisher*.name.contains(tipp.publisherName)
   }
 
   void "Test attach existing title with a TIPP by its IDs"() {

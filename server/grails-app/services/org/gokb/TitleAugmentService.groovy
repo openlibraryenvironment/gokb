@@ -881,6 +881,7 @@ class TitleAugmentService {
       Org publisher = Org.findByName(publisher_name)
       def norm_pub_name = Org.generateNormname(publisher_name);
       def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      def combo_type_pub = RefdataCategory.lookup("TitleInstance.Publisher")
 
       if (!publisher) {
         // Lookup using norm name.
@@ -903,10 +904,11 @@ class TitleAugmentService {
       }
 
       log.debug("Found publisher ${publisher}")
-      def orgs = ti.getPublisher()
-      log.debug("Check for dupes in ${orgs}")
 
-      if (publisher && !orgs.contains(publisher)) {
+      def existing_combos = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :pub and type = :ct", [ti: ti, pub: publisher, ct: combo_type_pub])
+
+      if (publisher && existing_combos.size() == 0) {
+        // new Combo(fromComponent: ti, toComponent: publisher, type: combo_type_pub).save(flush: true, failOnError: true)
         ti.publisher << publisher
         ti.save(flush: true)
         log.debug("Added new publisher ..")
@@ -937,5 +939,70 @@ class TitleAugmentService {
     else {
       log.error("No viable variant name supplied!")
     }
+  }
+
+  public def addMissingDoiFromTipps(ti) {
+    log.debug("addMissingDoiFromTipps for ${ti}")
+    def result = [result: 'OK', candidates: []]
+
+    RefdataValue combo_title_tipp = RefdataCategory.lookup("Combo.Type", "TitleInstance.Tipps")
+    RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+    IdentifierNamespace doi_ns = IdentifierNamespace.findByValue('doi')
+
+    def tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
+                                                              where status = :sc
+                                                              and exists (
+                                                                select 1 from Combo
+                                                                where type = :ctt
+                                                                and fromComponent = :ti
+                                                                and toComponent = tipp)''',
+                                                              [
+                                                                sc: status_current,
+                                                                ctt: combo_title_tipp,
+                                                                ti: ti
+                                                              ])
+
+    log.debug("Checking ${tipps.size()} tipps ..")
+
+    tipps.each { tipp ->
+      if (tipp.importId && !result.candidates.contains(tipp.importId) && validationService.checkIdForNamespace(tipp.importId, doi_ns)) {
+        result.candidates << tipp.importId
+      }
+    }
+
+    if (result.candidates.size() == 1) {
+      log.debug("Found a single candidate DOI ..")
+      Identifier new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('doi', result.candidates[0])
+      def linked_titles = new_id.getActiveIdentifiedComponents('TitleInstance')
+
+      if (linked_titles.size() == 0) {
+        ti.ids << new_id
+        ti.save(flush: true, failOnError: true)
+        touchTitleTipps(ti)
+
+        result.result = 'LINKED'
+      }
+      else {
+        if (linked_titles.contains(ti)) {
+          log.debug("Not adding duplicate DOI id!")
+          result.result = 'SKIPPED_ALREADY_LINKED'
+        }
+        else {
+          log.debug("Found DOI is already linked to another TI ${linked_titles}!")
+          result.otherLinks = linked_titles
+          result.result = 'SKIPPED_EXISTING_LINKS'
+        }
+      }
+    }
+    else if (result.candidates.size() > 1) {
+      log.debug("Found different DOIs (${result.candidates}) linked to TIPPs of ${ti}!")
+      result.result = 'SKIPPED_MULTIPLE_CANDIDATES'
+    }
+    else {
+      log.debug("No DOI candidates found ..")
+      result.result = 'SKIPPED_NO_CANDIDATES'
+    }
+
+    result
   }
 }

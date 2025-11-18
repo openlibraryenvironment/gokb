@@ -316,6 +316,10 @@ where cp.owner = :c
   Set incomingCombos = []
   Set reviewRequests = []
   Set variantNames = []
+  Set comments = []
+  Set subjects = []
+  Set prices = []
+  Set people = []
 
   // Org provOrg
   // String provUpdateFrequency
@@ -367,7 +371,8 @@ where cp.owner = :c
     reviewRequests      : 'componentToReview',
     people              : 'component',
     subjects            : 'component',
-    prices              : 'owner'
+    prices              : 'owner',
+    comments            : 'owner'
   ]
 
   static hasMany = [
@@ -379,7 +384,8 @@ where cp.owner = :c
     reviewRequests      : ReviewRequest,
     people              : ComponentPerson,
     subjects            : ComponentSubject,
-    prices              : ComponentPrice
+    prices              : ComponentPrice,
+    comments            : KBComponentComment
   ]
 
 
@@ -414,7 +420,7 @@ where cp.owner = :c
     variantNames cascade: "all,delete-orphan", lazy: false
     //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
     //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
-
+    comments cascade: "all,delete-orphan", lazy: false
   }
 
   static constraints = {

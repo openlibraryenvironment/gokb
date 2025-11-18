@@ -19,15 +19,13 @@ class Subject extends KBComponent {
   ]
 
   static mapping = {
-
-	scheme column:'subj_scheme'
-	heading column:'subj_heading'
+    scheme column:'subj_scheme'
+    heading column:'subj_heading'
   }
 
   static constraints = {
-
-	scheme(nullable:true, blank:false)
-	heading(nullable:true, blank:false)
+    scheme(nullable:true, blank:false)
+    heading(nullable:true, blank:false)
   }
 
   static jsonMapping = [
