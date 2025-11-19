@@ -211,7 +211,7 @@ class OrgController {
     def remove = (request.method == 'PUT')
     def user = User.get(springSecurityService.principal.id)
     Org obj = Org.findByUuid(params.id)
-    boolean changed_name = false
+    String old_name
 
     if (!obj) {
       obj = Org.get(genericOIDService.oidToId(params.id))
@@ -219,6 +219,8 @@ class OrgController {
 
     if (obj && reqBody) {
       def editable = obj.isEditable()
+
+      old_name = obj.name
 
       if (editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
         def cur = user.curatoryGroups*.id.intersect(obj.curatoryGroups*.id)
@@ -237,10 +239,6 @@ class OrgController {
         }
 
         def jsonMap = obj.jsonMapping
-
-        if (reqBody.name && reqBody.name != obj.name) {
-          changed_name = true
-        }
 
         result.changed = restMappingService.updateObject(obj, jsonMap, reqBody)
 
@@ -279,7 +277,7 @@ class OrgController {
           response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
-        if (changed_name && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
+        if (result.changed && reqBody.name && reqBody.name != old_name && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           obj.providedPackages.each {
             FTUpdateService.updateSingleItem(it)
           }
