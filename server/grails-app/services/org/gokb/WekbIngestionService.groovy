@@ -49,6 +49,8 @@ class WekbIngestionService {
   ConcurrencyManagerService concurrencyManagerService
   Map identifierTargetTypes = [:]
   final int SIZE_LIMIT = 30000
+  def rdv_liststatus_checked
+  def rdv_liststatus_progress
 
   def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Package pkg, Job job, Boolean async, Boolean restrictSize) {
     def result = [result: 'OK', dryRun: false]
@@ -57,6 +59,7 @@ class WekbIngestionService {
     ingest_systime = startTime
     def ingestDate = LocalDate.now().toString()
     int batchSize = 100
+    def missedBatches = []
 
     String sourceUrl = pkg_source?.url
     String wekbUUID = extractUUIDFromUrlString(sourceUrl)
@@ -120,10 +123,26 @@ class WekbIngestionService {
 
       try {
         for (int offset = 0; offset < titleCount; offset += batchSize) {
-          def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
+          def tipps = null
 
+          //maximum 5 trials to reach WEKB endpoint
+          int trials = 1
+          do {
+            tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
+            trials++
+            if (!tipps) {
+              log.debug("TIPPS nicht vorhanden --> sleep... Request-Versuch: " + trials )
+              sleep(1500)
+            }
+          } while (!tipps && trials < 6)
 
-          tippBatches.add(tipps)
+          if (tipps) {
+            tippBatches.add(tipps)
+          }
+          else {
+            result.result = 'ERROR'
+            missedBatches.add(offset)
+          }
 
           def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
           log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
@@ -338,9 +357,6 @@ class WekbIngestionService {
               else {
                 log.error("Unable to process wekb TIPP status value ${tipp.status} for TIPP ${tipp.uuid}!")
               }
-
-              //result.report[tipp.status.toString().toLowerCase()]++
-              //importedTipp.setStatus(status_map.get(tipp.status))
 
               if (tippNum % 50 == 0) {
                 session = sessionFactory.getCurrentSession()
