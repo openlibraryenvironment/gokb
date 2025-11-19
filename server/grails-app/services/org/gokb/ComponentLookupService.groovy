@@ -768,12 +768,24 @@ class ComponentLookupService {
         else {
           hqlQry += " AND "
         }
-        hqlQry += '''exists (
-                      select 1 from AllocatedReviewGroup as ag
-                      where ag.review = p
-                      and ag.group IN :alg
-                      and ag.status != :inactive
-                    )'''
+
+        if (params['escalatedOnly']) {
+          hqlQry += '''exists (
+                        select 1 from AllocatedReviewGroup as ag
+                        where ag.review = p
+                        and ag.group IN :alg
+                        and ag.status != :inactive
+                        and ag.escalatedFrom is not null
+                      )'''
+        }
+        else {
+          hqlQry += '''exists (
+                        select 1 from AllocatedReviewGroup as ag
+                        where ag.review = p
+                        and ag.group IN :alg
+                        and ag.status != :inactive
+                      )'''
+        }
 
         qryParams['alg'] = validCgs
         qryParams['inactive'] = inactive

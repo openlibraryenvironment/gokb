@@ -7,7 +7,9 @@ class Note {
   RefdataValue locale
   User creator
   Date dateCreated
-  Date lastUpdated 
+  Date lastUpdated
+
+  Set mentions = []
 
   static hasMany = [
     mentions:NoteMention

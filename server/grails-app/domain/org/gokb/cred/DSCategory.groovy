@@ -8,6 +8,8 @@ class DSCategory {
   String description
   String colour
 
+  Set criterion = []
+
   static mapping = {
     code column:'dscat_code'
     description column:'dscat_desc'

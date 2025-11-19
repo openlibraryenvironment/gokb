@@ -76,7 +76,7 @@ class RestMappingService {
     def nested = params['nested'] ? true : false
     def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
-    def jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
+    Map jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
     def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
@@ -292,6 +292,7 @@ class RestMappingService {
   /**
    *  updateObject : Updates an domain class object based on a provided object map.
    * @param obj : The object to be updated
+   * @param jsonMap : The map of update restrictions for the object class
    * @param reqBody : The map of properties to be updated
    */
 
@@ -302,7 +303,6 @@ class RestMappingService {
 
     def toIgnore = defaultIgnore + (jsonMap?.ignore ?: [])
     def immutable = defaultImmmutable + (jsonMap?.immutable ?: [])
-
     log.debug("Ignore: ${toIgnore}, Immutable: ${immutable}")
 
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
@@ -899,7 +899,6 @@ class RestMappingService {
         if (co instanceof Map) {
           if (co.id) {
             cobj = KBComponentComment.findById(co.id)
-
             if (!cobj || cobj.owner != obj) {
               result.errors << [
                 message: 'Unable to reference existing comment item!',
@@ -908,11 +907,10 @@ class RestMappingService {
             }
           }
           else if (co.language && co.value?.trim()) {
-            def rd_result = lookupRefdataValueForCategory(co.language, cat_lang)
 
+            def rd_result = lookupRefdataValueForCategory(co.language, cat_lang)
             if (rd_result.obj) {
               def existing = KBComponentComment.findByOwnerAndLanguage(obj, rd_result.obj)
-
               if (existing) {
                 result.errors << [
                   message: 'Matched incoming comment without id to existing comment with the same language!',

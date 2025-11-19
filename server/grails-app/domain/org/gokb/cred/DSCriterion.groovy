@@ -10,6 +10,8 @@ class DSCriterion {
   String description
   String explanation
 
+  Set appliedCriterion = []
+
   static mapping = {
     curator column:'dscrit_curator_fk'
     owner column:'dscrit_owner_fk'

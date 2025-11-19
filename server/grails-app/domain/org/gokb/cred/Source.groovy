@@ -67,9 +67,14 @@ class Source extends KBComponent {
       'ruleset',
       'defaultSupplyMethod',
       'defaultDataFormat',
-      'ezbMatch',
       'language',
-      'source'
+      'source',
+      'bulkConfig'
+    ],
+    'admin'        : [
+      'importConfig',
+      'ignoreSizeLimit',
+      'ezbMatch'
     ],
     'es'           : [],
     'defaultLinks' : [
