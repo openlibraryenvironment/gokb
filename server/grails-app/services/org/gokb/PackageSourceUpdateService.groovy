@@ -153,8 +153,8 @@ class PackageSourceUpdateService {
             if ( isFtpTransfer ) {
                 log.debug("Fetch KBART File from FTP Server...")
                 log.debug("##### SOURCE ####: " + pkg_source + ", " + pkg_source.getFtpUrl() + ", " + pkg_source.getWebEndpoint().getBa_username())
-                return
-                file_info = fetchKbartFileFromFTPServer(tmp_file)
+
+                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source)
             }
             else { // start not-FTP
 
@@ -626,22 +626,48 @@ class PackageSourceUpdateService {
     return info_map
   }
 
-  def fetchKbartFileFromFTPServer (File tmp_file ) {
+  def fetchKbartFileFromFTPServer (File tmp_file, Source source) {
 
       def result = [content_mime_type: null, file_name: null]
-
-      //if (src_url.getProtocol() in ['ftp', 'sftp']) {
-
 
       FTPClient ftp = new FTPClient()
       FTPClientConfig config = new FTPClientConfig()
 
-      def hostname = "ftp.epnet.com"
+      /* def hostname = "ftp.epnet.com"
       def username = "jake"
       def password = "gijaq3eV"
       def directory = "/kbart"
-      //def filename = "8gh-kbart2.txt"
-      def filename = "31h-kbart2.txt"
+      def filename = "31h-kbart2.txt" */
+
+      String hostname = source.getWebEndpoint().getUrl()
+      String filename = null
+      String directory = null
+
+      //we dont need the protocol
+      hostname = hostname?.replace("ftp://", "")
+      if (hostname?.contains("/")) {
+        directory = hostname.substring(hostname.indexOf("/"), hostname.length())
+        hostname = hostname.split("/")[0]
+      }
+      log.debug("111 directory: " + directory)
+      log.debug("111 hostname: " + hostname)
+
+      String username = source.getWebEndpoint().getBa_username()
+      String password = source.getWebEndpoint().getBa_password()
+
+      String ftpUrl = source.getFtpUrl()
+      if (ftpUrl?.contains("/")) {
+        String[] parts = ftpUrl.split("/")
+        filename = parts[parts.length - 1]
+        directory = directory + ftpUrl.substring(0, ftpUrl.lastIndexOf("/") + 1)
+      }
+      else {
+        filename = ftpUrl
+      }
+
+      log.debug("222 directory: " + directory)
+      log.debug("222 hostname: " + hostname)
+      log.debug("222 filename: " + filename)
 
       result.file_name = filename
 
@@ -686,7 +712,7 @@ class PackageSourceUpdateService {
           }
 
       } catch (Exception e) {
-          e.printStackTrace()
+          log.error("Fehler beim FTP")
       }
 
       return result

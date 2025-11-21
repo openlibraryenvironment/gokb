@@ -12,5 +12,7 @@
     <dd> <g:xEditable class="ipe" owner="${d}" field="ba_username" /> </dd>
 
     <dt> <g:annotatedLabel owner="${d}" property="ba_password">Passwort</g:annotatedLabel> </dt>
-    <dd> <g:xEditable class="ipe" owner="${d}" field="ba_password" /> </dd>
+    <!-- <dd> <g:xEditable type="password" class="ipe" owner="${d}" field="ba_password" /> </dd> -->
+    <dd> <g:xEditable type="password" class="ipe" owner="${d}" field="ba_password" /> </dd>
+
 </dl>
