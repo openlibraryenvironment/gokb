@@ -639,24 +639,27 @@ class PackageSourceUpdateService {
       def directory = "/kbart"
       def filename = "31h-kbart2.txt" */
 
-      String hostname = source.getWebEndpoint().getUrl()
-      String filename = null
-      String directory = null
-
-      //we dont need the protocol
-      hostname = hostname?.replace("ftp://", "")
-      if (hostname?.contains("/")) {
-        directory = hostname.substring(hostname.indexOf("/"), hostname.length())
-        hostname = hostname.split("/")[0]
-      }
-      log.debug("111 directory: " + directory)
-      log.debug("111 hostname: " + hostname)
-
       String username = source.getWebEndpoint().getBa_username()
       String password = source.getWebEndpoint().getBa_password()
+      //we dont need the protocol
+      String hostname = source.getWebEndpoint().getUrl()?.replace("ftp://", "")
+      String filename = ""
+      String directory = "/"
+
+      if (hostname?.contains("/")) {
+        String[] parts = hostname.split("/")
+        hostname = parts[0]
+        for(int i = 1; i < parts.length; i++){
+          directory = directory.concat(parts[i] + "/")
+        }
+      }
 
       String ftpUrl = source.getFtpUrl()
-      if (ftpUrl?.contains("/")) {
+      if (ftpUrl?.startsWith("/")) {
+        ftpUrl = ftpUrl.substring(1)
+      }
+
+      if(ftpUrl?.contains("/")){
         String[] parts = ftpUrl.split("/")
         filename = parts[parts.length - 1]
         directory = directory + ftpUrl.substring(0, ftpUrl.lastIndexOf("/") + 1)
@@ -712,7 +715,7 @@ class PackageSourceUpdateService {
           }
 
       } catch (Exception e) {
-          log.error("Fehler beim FTP")
+          log.error("Fehler bei FTP-Verbindung: " + e.getMessage())
       }
 
       return result
