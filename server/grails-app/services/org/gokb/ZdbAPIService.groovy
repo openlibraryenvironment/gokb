@@ -89,8 +89,12 @@ class ZdbAPIService {
           log.error("Error fetching ZDB record for '$id' ($e.message)!")
           break
         }
+        catch (java.nio.channels.ClosedChannelException cce) {
+          log.error("Error fetching ZDB record for '$id' ($e.message)!")
+          break
+        }
         catch ( Exception e ) {
-          log.error("Error fetching ZDB record for '$id'!", e)
+          log.error("Error fetching ZDB record for '$id' (${e.class.name})!")
           break
         }
       }

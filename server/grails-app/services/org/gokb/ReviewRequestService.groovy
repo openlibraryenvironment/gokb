@@ -312,7 +312,7 @@ class ReviewRequestService {
     }
 
     Class componentClass = rr.componentToReview?.class
-    String centralGroup = grailsApplication.config.getProperty("gokb.centralGroups.$componentClass")
+    String centralGroup = grailsApplication.config.getProperty("gokb.centralGroups.${componentClass.simpleName}")
 
     CuratoryGroup editorialGroup = centralGroup ? CuratoryGroup.findByNameIlike(centralGroup) : null
 
