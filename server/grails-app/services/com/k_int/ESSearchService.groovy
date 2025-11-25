@@ -636,7 +636,7 @@ class ESSearchService{
     }
   }
 
-  private void processLinkedField(query, field, val) {
+  private void processLinkedField(query, field, val, boolean ) {
     def vals = val instanceof String ? [val] : val
 
     vals.each {
@@ -1056,6 +1056,39 @@ class ESSearchService{
           }
         }
         exactQuery.must(QueryBuilders.termQuery('curatoryGroups', cg_name))
+      }
+      else if (k == 'anyProvider') {
+        def vals = v instanceof String ? [v] : v
+
+        vals.each {
+          if (it?.trim()) {
+            QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+            String sanitized_param = sanitizeParam(it)
+            def finalVal = it
+
+            try {
+              finalVal = KBComponent.get(Long.valueOf(it)).getLogEntityId()
+            }
+            catch (java.lang.NumberFormatException nfe) {
+            }
+
+            if (finalVal == 'null') {
+              finalVal = ""
+            }
+
+            log.debug("process anyProvider: ${finalVal}")
+
+            linkedFieldQuery.should(QueryBuilders.termQuery('provider', finalVal))
+            linkedFieldQuery.should(QueryBuilders.termQuery('providerUuid', sanitized_param))
+            linkedFieldQuery.should(QueryBuilders.termQuery('providerName', sanitized_param))
+            linkedFieldQuery.should(QueryBuilders.termQuery('contentProvider', finalVal))
+            linkedFieldQuery.should(QueryBuilders.termQuery('contentProviderUuid', sanitized_param))
+            linkedFieldQuery.should(QueryBuilders.termQuery('contentProviderName', sanitized_param))
+            linkedFieldQuery.minimumShouldMatch(1)
+
+            exactQuery.must(linkedFieldQuery)
+          }
+        }
       }
       else if (requestMapping.dates && k in requestMapping.dates){
         log.debug("Processing date param ${k}")
