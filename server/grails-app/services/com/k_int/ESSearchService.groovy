@@ -636,7 +636,7 @@ class ESSearchService{
     }
   }
 
-  private void processLinkedField(query, field, val, boolean ) {
+  private void processLinkedField(query, field, val) {
     def vals = val instanceof String ? [val] : val
 
     vals.each {

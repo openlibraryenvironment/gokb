@@ -158,7 +158,7 @@ class PackageUpdateService {
 
     if (reqBody.nominalPlatform != null || reqBody.platform != null) {
       def plt_id = reqBody.nominalPlatform ?: reqBody.platform
-      Platfrom plt
+      Platform plt
 
       try {
         plt = Platform.get(plt_id)
