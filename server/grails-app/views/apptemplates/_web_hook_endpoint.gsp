@@ -16,3 +16,10 @@
     <dd> <g:xEditable type="password" class="ipe" owner="${d}" field="ba_password" /> </dd>
 
 </dl>
+
+<script>
+    const x = document.querySelector('[data-name="ba_password"]')
+    if (x.getHTML().length > 0) {
+        x.innerHTML = "*****"
+    }
+</script>

@@ -193,6 +193,8 @@ class UrlMappings {
       delete "/jobs/$id" (controller: 'jobs', namespace: 'rest', action: 'delete')
 
       get "/web-endpoint"(controller: 'webEndpoint', namespace: 'rest', action: 'index')
+      get "/web-endpoint/$id"(controller: 'webEndpoint', namespace: 'rest', action: 'show')
+      post "/web-endpoint/check"(controller: 'webEndpoint', namespace: 'rest', action: 'check')
     }
     "/$controller/$action?/$id?" {
       constraints {

@@ -28,6 +28,7 @@ class PackageSourceUpdateService {
   def validationService
   WekbIngestionService wekbIngestionService
   boolean isExternalSourceImportOrUpdate
+  WebEndpointService webEndpointService
 
   static Pattern DATE_PLACEHOLDER_PATTERN = ~/[0-9]{4}-[0-9]{2}-[0-9]{2}/
   static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
@@ -151,8 +152,7 @@ class PackageSourceUpdateService {
             pkg_source.save(flush: true)
 
             if ( isFtpTransfer ) {
-                log.debug("Fetch KBART File from FTP Server...")
-                log.debug("##### SOURCE ####: " + pkg_source + ", " + pkg_source.getFtpUrl() + ", " + pkg_source.getWebEndpoint().getBa_username())
+                log.debug("Start FTP Update from Source " + pkg_source )
 
                 file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source)
             }
@@ -633,89 +633,42 @@ class PackageSourceUpdateService {
       FTPClient ftp = new FTPClient()
       FTPClientConfig config = new FTPClientConfig()
 
-      /* def hostname = "ftp.epnet.com"
-      def username = "jake"
-      def password = "gijaq3eV"
-      def directory = "/kbart"
-      def filename = "31h-kbart2.txt" */
-
       String username = source.getWebEndpoint().getBa_username()
       String password = source.getWebEndpoint().getBa_password()
-      //we dont need the protocol
-      String hostname = source.getWebEndpoint().getUrl()?.replace("ftp://", "")
-      String filename = ""
-      String directory = "/"
 
-      if (hostname?.contains("/")) {
-        String[] parts = hostname.split("/")
-        hostname = parts[0]
-        for(int i = 1; i < parts.length; i++){
-          directory = directory.concat(parts[i] + "/")
-        }
-      }
+      def urlParts = webEndpointService.extractFtpUrlParts(source.getWebEndpoint().getUrl(), source.getFtpUrl())
 
-      String ftpUrl = source.getFtpUrl()
-      if (ftpUrl?.startsWith("/")) {
-        ftpUrl = ftpUrl.substring(1)
-      }
-
-      if(ftpUrl?.contains("/")){
-        String[] parts = ftpUrl.split("/")
-        filename = parts[parts.length - 1]
-        directory = directory + ftpUrl.substring(0, ftpUrl.lastIndexOf("/") + 1)
-      }
-      else {
-        filename = ftpUrl
-      }
-
-      log.debug("222 directory: " + directory)
-      log.debug("222 hostname: " + hostname)
-      log.debug("222 filename: " + filename)
+      String hostname = urlParts.hostname
+      String filename = urlParts.filename
+      String directory = urlParts.directory
 
       result.file_name = filename
 
       try {
           ftp.connect(hostname)
           ftp.enterLocalPassiveMode()
-          log.debug("1111 : " + ftp.getReplyString() )
           def loggedIn = ftp.login(username, password)
-          log.debug("+++ EINGELOGGT... : " + loggedIn )
-
 
           if (ftp.isConnected()) {
-              //log.debug(" #### Directories: " + ftp.listDirectories())
 
               ftp.changeWorkingDirectory(directory)
-              log.debug("2222 : " + ftp.getReplyString() )
-              log.debug("##### Files: " + ftp.listFiles())
-              log.debug("3333 : " + ftp.getReplyString() )
 
               InputStream is = ftp.retrieveFileStream(filename)
-
               OutputStream outStream = new FileOutputStream(tmp_file)
-              //ByteArrayOutputStream tmp_result = new ByteArrayOutputStream();
+
               byte[] buffer = new byte[1024];
               for (int length; (length = is.read(buffer)) != -1; ) {
                   outStream.write(buffer, 0, length);
               }
 
-              /* log.debug("###########################################################################################")
-              log.debug(tmp_result.toString(StandardCharsets.UTF_8.name()))
-              log.debug("###########################################################################################")
-              */
-
-              //def file_result = TSVIngestionService.analyseFile(is)
-
               outStream.close()
-
-              log.debug("++++++++ Wrote ${tmp_file?.length()}  ++++++++++++++++++++++++++++")
 
               ftp.logout()
               ftp.disconnect()
           }
 
       } catch (Exception e) {
-          log.error("Fehler bei FTP-Verbindung: " + e.getMessage())
+          log.error("Fehler bei FTP-Verbindung ", e)
       }
 
       return result
