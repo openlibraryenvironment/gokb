@@ -6,7 +6,6 @@ import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import com.k_int.ClassUtils
 
-import java.sql.Ref
 
 @Slf4j
 class Org extends KBComponent {
