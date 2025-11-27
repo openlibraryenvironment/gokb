@@ -521,6 +521,7 @@ class OrgService {
     result
   }
 
+  @Transactional
   def transferPackages(old_provider, new_provider, boolean createNewCombos = true) {
     def result = [result: 'OK', transferred: 0]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')

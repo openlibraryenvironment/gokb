@@ -10,6 +10,7 @@ class AutoUpdatePackagesJob {
   def packageSourceUpdateService
   def curatoryGroupAlertingService
   def sessionFactory
+  def adminAlertingService
   // Allow only one run at a time.
   static concurrent = false
 
@@ -55,6 +56,10 @@ class AutoUpdatePackagesJob {
             }
             else {
               log.warn("No job info for source update for package '${p.name}' (ID ${p.id})")
+            }
+
+            if (result.messageCode == 'kbart.errors.url.fileSize') {
+              adminAlertingService.sendSizeLimitAlert(p)
             }
           }
 
