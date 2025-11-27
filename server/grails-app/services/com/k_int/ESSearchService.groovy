@@ -719,7 +719,7 @@ class ESSearchService{
     }
 
     linkedFieldQuery.minimumShouldMatch(1)
-    exactQuery.must(linkedFieldQuery)
+    query.must(linkedFieldQuery)
   }
 
   /**
@@ -1093,8 +1093,9 @@ class ESSearchService{
       }
       else if (k == 'provider') {
         def vals = v instanceof String ? [v] : v
+        boolean any_provider = params.boolean('anyProvider') ?: false
 
-        addProviderQuery(exactQuery, errors, vals, params.boolean('anyProvider'))
+        addProviderQuery(exactQuery, errors, vals, any_provider)
       }
       else if (requestMapping.dates && k in requestMapping.dates){
         log.debug("Processing date param ${k}")
