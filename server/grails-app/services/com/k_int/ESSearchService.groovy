@@ -45,7 +45,8 @@ class ESSearchService{
           "editionStatement",
           "volumeNumber",
           "firstAuthor",
-          "firstEditor"
+          "firstEditor",
+          "anyProvider"
       ],
       refdata: [
           "listStatus",
@@ -84,7 +85,6 @@ class ESSearchService{
           "subject"
       ],
       linked: [
-          provider: "provider",
           currentPublisher: "publisher",
           linkedPackage: "tippPackage",
           tippPackage: "tippPackage",
@@ -93,8 +93,7 @@ class ESSearchService{
           tippTitle: "tippTitle",
           linkedTitle: "tippTitle",
           title: "tippTitle",
-          publisher: "publisher",
-          contentProvider: "contentProvider"
+          publisher: "publisher"
       ],
       dates: [
           "changedSince",
@@ -687,6 +686,41 @@ class ESSearchService{
     log.debug("Processing platform value ${val} .. ")
   }
 
+  private void addProviderQuery(query, errors, vals, boolean anyProvider = false) {
+    QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+    vals.each {
+      if (it?.trim()) {
+        String sanitized_param = sanitizeParam(it)
+        def finalVal = it
+
+        try {
+          finalVal = KBComponent.get(Long.valueOf(it)).getLogEntityId()
+        }
+        catch (java.lang.NumberFormatException nfe) {
+        }
+
+        if (finalVal == 'null') {
+          finalVal = ""
+        }
+
+        log.debug("process anyProvider: ${finalVal}")
+
+        linkedFieldQuery.should(QueryBuilders.termQuery('provider', finalVal))
+        linkedFieldQuery.should(QueryBuilders.termQuery('providerUuid', sanitized_param))
+        linkedFieldQuery.should(QueryBuilders.termQuery('providerName', sanitized_param))
+
+        if (anyProvider) {
+          linkedFieldQuery.should(QueryBuilders.termQuery('contentProvider', finalVal))
+          linkedFieldQuery.should(QueryBuilders.termQuery('contentProviderUuid', sanitized_param))
+          linkedFieldQuery.should(QueryBuilders.termQuery('contentProviderName', sanitized_param))
+        }
+      }
+    }
+
+    linkedFieldQuery.minimumShouldMatch(1)
+    exactQuery.must(linkedFieldQuery)
+  }
 
   /**
    * scroll : Get large amounts of data from the opensearch index --
@@ -1057,38 +1091,10 @@ class ESSearchService{
         }
         exactQuery.must(QueryBuilders.termQuery('curatoryGroups', cg_name))
       }
-      else if (k == 'anyProvider') {
+      else if (k == 'provider') {
         def vals = v instanceof String ? [v] : v
 
-        vals.each {
-          if (it?.trim()) {
-            QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-            String sanitized_param = sanitizeParam(it)
-            def finalVal = it
-
-            try {
-              finalVal = KBComponent.get(Long.valueOf(it)).getLogEntityId()
-            }
-            catch (java.lang.NumberFormatException nfe) {
-            }
-
-            if (finalVal == 'null') {
-              finalVal = ""
-            }
-
-            log.debug("process anyProvider: ${finalVal}")
-
-            linkedFieldQuery.should(QueryBuilders.termQuery('provider', finalVal))
-            linkedFieldQuery.should(QueryBuilders.termQuery('providerUuid', sanitized_param))
-            linkedFieldQuery.should(QueryBuilders.termQuery('providerName', sanitized_param))
-            linkedFieldQuery.should(QueryBuilders.termQuery('contentProvider', finalVal))
-            linkedFieldQuery.should(QueryBuilders.termQuery('contentProviderUuid', sanitized_param))
-            linkedFieldQuery.should(QueryBuilders.termQuery('contentProviderName', sanitized_param))
-            linkedFieldQuery.minimumShouldMatch(1)
-
-            exactQuery.must(linkedFieldQuery)
-          }
-        }
+        addProviderQuery(exactQuery, errors, vals, params.boolean('anyProvider'))
       }
       else if (requestMapping.dates && k in requestMapping.dates){
         log.debug("Processing date param ${k}")

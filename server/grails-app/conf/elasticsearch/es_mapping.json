@@ -10,15 +10,6 @@
       }
     },
     {
-      "provider": {
-        "match": "contentProvider*",
-        "match_mapping_type": "string",
-        "mapping": {
-          "type": "keyword"
-        }
-      }
-    },
-    {
       "date": {
         "match": "*Date",
         "match_mapping_type": "date",
@@ -330,6 +321,12 @@
     },
     "endYear": {
       "type": "integer"
+    },
+    "contentProvider": {
+      "type": "keyword"
+    },
+    "contentProviderName": {
+      "type": "keyword"
     }
   }
 }
