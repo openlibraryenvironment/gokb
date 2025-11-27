@@ -16,6 +16,29 @@ class Org extends KBComponent {
   IdentifierNamespace titleNamespaceSerial
   IdentifierNamespace titleNamespaceMonograph
   String preferredShortname
+  Boolean supplyKbart
+  Boolean supplyCsv
+  Boolean supplyMarc
+  Boolean supplyOnix
+  RefdataValue preferredSupplyMethod
+  String kbartHostUrl
+  Boolean autoImportSupported
+  Boolean kbartUrlWithDateMask
+  RefdataValue kbartUpdateCycle
+  Boolean kbartExtensionZdbId
+  Boolean kbartExtensionEzbId
+  Boolean kbartExtensionLastChanged
+  Boolean kbartExtensionAccessStartDate
+  Boolean kbartExtensionAccessEndDate
+  Boolean kbartExtensionMedium
+  Boolean kbartExtensionMonographParentCollectionTitle
+  Boolean kbartExtensionSeries
+  Boolean kbartExtensionSubjetArea
+  Date importInfoLastUpdated
+
+
+
+  Set roles = []
 
   def availableActions() {
     [

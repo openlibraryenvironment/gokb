@@ -10,6 +10,8 @@ class IngestionProfile extends KBComponent {
   IdentifierNamespace providerNamespaceSerial
   IdentifierNamespace providerNamespaceMonograph
 
+  Set ingestions = []
+
   static hasMany = [
     ingestions: ComponentIngestionSource
   ]

@@ -473,8 +473,8 @@ class OrgService {
   public def updateRoles(Org org, roles, boolean remove = true) {
     RefdataCategory category = RefdataCategory.findByLabel('Org.Role')
     def result = [changed: false, errors: []]
-    def old_roles = org.roles.toArray()
-    def new_roles = []
+    def old_roles = org.roles?.toArray() ?: []
+    List new_roles = []
 
     roles.each { nr ->
       RefdataValue role_obj = null

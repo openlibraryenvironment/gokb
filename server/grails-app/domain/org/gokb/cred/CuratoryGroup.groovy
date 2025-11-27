@@ -14,6 +14,9 @@ class CuratoryGroup extends KBComponent {
   Boolean newReviewsAlerts = false
   String preferredLocaleString
 
+  Set users = []
+  Set subordinatedGroups = []
+
   static hasMany = [
     users: User,
     subordinatedGroups: CuratoryGroup
@@ -26,7 +29,10 @@ class CuratoryGroup extends KBComponent {
     preferredLocaleString column: 'cg_preferred_locale_string'
   }
 
-  static mappedBy = [users: "curatoryGroups", subordinatedGroups: "superordinatedGroup"]
+  static mappedBy = [
+    users: "curatoryGroups",
+    subordinatedGroups: "superordinatedGroup"
+  ]
 
   static manyByCombo = [
     licenses: License,
@@ -51,8 +57,8 @@ class CuratoryGroup extends KBComponent {
     name (validator: { val, obj ->
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def dupes = CuratoryGroup.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
+          def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+          def dupes = CuratoryGroup.findAllByNameIlikeAndStatusNotEqual(val, status_deleted)
 
           if (dupes?.size() > 0 && dupes.any { it != obj }) {
             return ['notUnique']
