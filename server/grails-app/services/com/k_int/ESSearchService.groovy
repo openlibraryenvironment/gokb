@@ -81,7 +81,8 @@ class ESSearchService{
           "qfields",
           "qsName",
           "subjects",
-          "subject"
+          "subject",
+          //"updateMethod"
       ],
       linked: [
           provider: "provider",
