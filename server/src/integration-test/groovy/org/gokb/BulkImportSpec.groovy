@@ -163,7 +163,13 @@ class BulkImportSpec extends Specification {
                 package_content_type: "Journal",
                 title_id_namespace: "doi",
                 package_created_date: null,
-                package_changed_date: null
+                package_changed_date: null,
+                other_package_identifiers: [
+                  [
+                    namespace: 'isil',
+                    value: 'ZDB-6-234'
+                  ]
+                ]
               ]
             ]
           ]
@@ -189,8 +195,9 @@ class BulkImportSpec extends Specification {
     pkg.provider == Org.findByName('TestBulkOrg')
     pkg.nominalPlatform == Platform.findByName('TestBulkPlt')
     pkg.curatoryGroups[0].name == CuratoryGroup.findByName('TestBulkCG').name
-    pkg.ids.size() == 1
-    pkg.ids[0].namespace.value == 'bulktitlenamespace'
+    pkg.ids.size() == 2
+    pkg.ids.find { it.namespace.value == 'bulktitlenamespace' }
+    pkg.ids.find { it.namespace.value == 'isil' }
   }
 
   void "Test bulk import with changed name"() {
