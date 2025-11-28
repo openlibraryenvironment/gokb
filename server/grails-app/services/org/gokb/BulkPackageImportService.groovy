@@ -44,7 +44,8 @@ class BulkPackageImportService {
     "fixed": [required: false, rdc: 'Package.Fixed'],
     "consistent": [required: false, rdc: 'Package.Consistent'],
     "breakable": [required: false, rdc: 'Package.Breakable'],
-    "scope": [required: false, rdc: 'Package.Scope']
+    "scope": [required: false, rdc: 'Package.Scope'],
+    "other_package_identifiers": [required: false]
   ]
 
   @Transactional
@@ -568,6 +569,61 @@ class BulkPackageImportService {
                     if (collection_id && !obj.ids.contains(collection_id)) {
                       obj.ids << collection_id
                     }
+
+                    item.other_package_identifiers.each { opid ->
+                      Identifier other_id
+
+                      try {
+                        other_id = componentLookupService.lookupOrCreateCanonicalIdentifier(opid.namespace, opid.value)
+                      }
+                      catch (grails.validation.ValidationException ve) {
+                        if (!pkg_result.errors.other_package_identifiers) {
+                          pkg_result.errors.other_package_identifiers = []
+                        }
+
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Invalid additional package identifier!",
+                            messageCode: "import.bulk.error.ids.format",
+                            baddata: opid
+                          ]
+                        ]
+                      }
+                      catch (Exception e) {
+                        if (!pkg_result.errors.other_package_identifiers) {
+                          pkg_result.errors.other_package_identifiers = []
+                        }
+
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Unable to reference additional package identifier!",
+                            messageCode: "import.bulk.error.ids.unknown",
+                            baddata: opid
+                          ]
+                        ]
+                      }
+
+                      RefdataValue ns_type_pkg = RefdataCategory.lookup("IdentifierNamespace.TargetType", "Package")
+
+                      if (other_id && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
+                        obj.ids << other_id
+                      }
+                      else if (other_id) {
+                        if (!pkg_result.errors.other_package_identifiers) {
+                          pkg_result.errors.other_package_identifiers = []
+                        }
+
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Additional identifier namespace '${other_id.namespace.value}' is not permissible for packages!",
+                            messageCode: "import.bulk.error.ids.targetType",
+                            baddata: opid
+                          ]
+                        ]
+                      }
+                    }
+
+
                     RefdataValue type_pc = RefdataCategory.lookup("Combo.Type", "Package.CuratoryGroups")
 
                     def existing_combos_count = Combo.executeQuery('''select count(*) from Combo
@@ -654,13 +710,13 @@ class BulkPackageImportService {
                       source.bulkConfig = listInfo
                       source.targetNamespace = title_id_ns
                       source.url = item.package_titlelist
+                      source.frequency = listInfo.frequency ? RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value) : null
 
-                      if (listInfo.frequency) {
+                      if (listInfo.frequency && source.url) {
                         source.automaticUpdates = listInfo.automatedUpdate
-                        source.frequency = RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value)
                       }
                       else {
-                        log.debug("No frequency for ${item.package_name} - Setting automated source update to 'false'!")
+                        log.debug("No frequency or url for ${item.package_name} - Setting automated source update to 'false'!")
                         source.automaticUpdates = false
                       }
                       source.save()
