@@ -28,7 +28,7 @@ class Source extends KBComponent {
   RefdataValue importConfig
   Boolean ignoreSizeLimit = false
   WebHookEndpoint webEndpoint
-  String ftpUrl
+  String ftpUrl //umbenennen in ftpPath
   RefdataValue transferMethod
 
   static manyByCombo = [
