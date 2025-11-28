@@ -6,6 +6,7 @@ import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import com.k_int.ClassUtils
 
+
 @Slf4j
 class Org extends KBComponent {
 
@@ -34,7 +35,10 @@ class Org extends KBComponent {
   Boolean kbartExtensionMonographParentCollectionTitle
   Boolean kbartExtensionSeries
   Boolean kbartExtensionSubjetArea
+  Boolean kbartExtensionDoiId
   Date importInfoLastUpdated
+  RefdataValue kbartScope
+  RefdataValue kbartPublicationType
 
 
 

@@ -1258,6 +1258,14 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Quarterly', '090').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Yearly', '365').save(flush: true, failOnError: true)
 
+        RefdataCategory.lookupOrCreate('Org.KbartScope', 'Complete').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartScope', 'Subject').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartScope', 'Own').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate('Org.KbartPublicationType', 'BooksAndJournals').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartPublicationType', 'Journals').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartPublicationType', 'Books').save(flush: true, failOnError: true)
+
 
         lookupOrCreateCuratoryGroupTypes()
 

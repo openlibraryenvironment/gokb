@@ -38,7 +38,7 @@ grails.plugin.springsecurity.filterChain.chainMap = [
   [pattern: '/rest/login',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
   [pattern: '/rest/**/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
   [pattern: '/rest/**',                 filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
-  [pattern: '/externalSourceImport/**', filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
+  [pattern: '/externalSource/**',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
   [pattern: '/**',                      filters: 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-restTokenValidationFilter,-restExceptionTranslationFilter'],
 ]
 
@@ -119,7 +119,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/bulkImport/**',                 access: ["hasRole('ROLE_ADMIN') and isFullyAuthenticated()"]],
   [pattern: '/component/**',                  access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
   [pattern: '/resource/**',                   access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
-  [pattern: '/externalSourceImport/**',       access: ["hasRole('ROLE_CONTRIBUTOR') and isFullyAuthenticated()"]]
+  [pattern: '/externalSource/**',             access: ["hasRole('ROLE_CONTRIBUTOR') and isFullyAuthenticated()"]]
 ]
 
 
