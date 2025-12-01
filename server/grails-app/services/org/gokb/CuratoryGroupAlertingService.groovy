@@ -99,7 +99,8 @@ class CuratoryGroupAlertingService {
                                       packageName: job.linkedItemName,
                                       packageId: job.linkedItemId,
                                       editLink: edit_base ? edit_base + "${job.linkedItemId}" : null,
-                                      messageCode: job.messageCode
+                                      messageCode: job.messageCode,
+                                      groupName: obj.name
                                     ] }
 
       result = sendDailyAlertsForGroup(obj, locale, 'jobs', jobs_table)
@@ -171,7 +172,8 @@ class CuratoryGroupAlertingService {
               packageName: pkg.name,
               packageId: pid,
               editLink: edit_base ? edit_base + "${pid}" : null,
-              reviewsTotal: num_new_reviews
+              reviewsTotal: num_new_reviews,
+              groupName: cg.name
             ]
           }
         }
