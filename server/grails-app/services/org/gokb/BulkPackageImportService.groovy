@@ -45,7 +45,9 @@ class BulkPackageImportService {
     "consistent": [required: false, rdc: 'Package.Consistent'],
     "breakable": [required: false, rdc: 'Package.Breakable'],
     "scope": [required: false, rdc: 'Package.Scope'],
-    "other_package_identifiers": [required: false]
+    "other_package_identifiers": [required: false],
+    "start_year": [required: false],
+    "end_year": [required: false],
   ]
 
   @Transactional
@@ -296,6 +298,42 @@ class BulkPackageImportService {
       }
     }
 
+    // Validate years
+
+    if (cobj.containsKey('start_year')) {
+      if (cobj.start_year == null) {
+        // No start year
+      }
+      else if (cobj.start_year instanceof Integer) {
+        if (cobj.start_year < 1700 || cobj.start_year > 9999) {
+          errors['start_year'] = [message: "Package years must be between 1700 and 9999!"]
+        }
+      }
+      else {
+        errors['start_year'] = [message: "Package years must be four digit integers or null!"]
+      }
+    }
+
+    if (cobj.containsKey('end_year')) {
+      if (cobj.end_year == null) {
+        // No end year
+      }
+      else if (end_year instanceof Integer) {
+        if (cobj.end_year < 1700 || cobj.start_year > 9999) {
+          errors['end_year'] = [message: "Package years must be between 1700 and 9999!"]
+        }
+        else if (!cobj.start_year) {
+          errors['end_year'] = [message: "Missing start_year for given end_year!"]
+        }
+        else if (cobj.start_year instanceof Integer && cobj.end_year < cobj.start_year) {
+          errors['end_year'] = [message: "Package end_year must not be earlier than the start_year!"]
+        }
+      }
+      else {
+        errors['end_year'] = [message: "Package years must be four digit integers or null!"]
+      }
+    }
+
     errors
   }
 
@@ -514,6 +552,13 @@ class BulkPackageImportService {
                       catch (Exception e) {
                         log.debug("Errors creating new package!", e)
                         type_results.errors++
+
+                        pkg_result.errors.name = [
+                          [
+                            message: "Unable to save package '${final_name}', as there is already another package with this name!",
+                            baddata: item.package_name
+                          ]
+                        ]
                       }
                     }
                   }
@@ -557,6 +602,35 @@ class BulkPackageImportService {
                         source.name = final_name
                         source.save(flush: true, failOnError: true)
                       }
+                    }
+
+                    if (item.containsKey('end_year')) {
+                      if (item.end_year && item.containsKey('start_year')) {
+                        if (!item.start_year) {
+                          pkg_result.errors.end_year = [
+                            [
+                              message: "Unable to set package end year due to missing start date!",
+                              baddata: item.end_year
+                            ]
+                          ]
+                        }
+                      }
+                      else if (item.end_year && !obj.startYear) {
+                        pkg_result.errors.end_year = [
+                          [
+                            message: "Unable to set package end year due to missing start date!",
+                            baddata: item.end_year
+                          ]
+                        ]
+                      }
+
+                      if (!pkg_result.errors) {
+                        obj.endYear = item.end_year ? item.end_year : null
+                      }
+                    }
+
+                    if (!pkg_result.errors && item.containsKey('start_year')) {
+                      obj.startYear = item.start_year ? item.start_year : null
                     }
 
                     obj.nominalPlatform = platform
