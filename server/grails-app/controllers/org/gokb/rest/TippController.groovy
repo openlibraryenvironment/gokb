@@ -100,6 +100,7 @@ class TippController {
   def save() {
     def result = ['result': 'OK', 'params': params]
     def reqBody = request.JSON
+    Boolean changed = true
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def pkg = null
@@ -121,13 +122,19 @@ class TippController {
           if (obj?.validate()) {
             response.status = 201
 
+            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+            if (variant_result.errors.size() > 0) {
+              errors.variantNames = variant_result.errors
+            }
+
             def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
 
             if (subject_result.errors.size() > 0) {
               errors.subjects = subject_result.errors
             }
 
-            errors << tippService.updateCombos(obj, reqBody)
+            errors << tippService.updateCombos(obj, reqBody, changed)
 
             tippService.touchPackage(obj)
 
@@ -171,7 +178,7 @@ class TippController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = ['result': 'OK', 'params': params]
+    def result = [result: 'OK', params: params, changed: false]
     def reqBody = request.JSON
     def remove = (request.method == 'PUT')
     def errors = [:]
@@ -201,28 +208,30 @@ class TippController {
             }
 
             if (reqBody.status?.name == 'Retired' && obj.status != RefdataValue.get(reqBody.status.id)) {
+              result.changed = true
               set_access_end = true
             }
 
             def jsonMap = obj.jsonMapping
 
-            obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+            result.changed |= restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
             if (set_access_end) {
               log.debug("Setting accessEndDate for newly retired TIPP ..")
               obj.accessEndDate = new Date()
             }
 
-            if (reqBody.variantNames != null) {
-              log.debug("Updating variantNames ..")
-              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
-              if (variant_result.errors.size() > 0) {
-                errors.variantNames = variant_result.errors
-              }
+            result.changed |= variant_result.changed
+
+            if (variant_result.errors.size() > 0) {
+              errors.variantNames = variant_result.errors
             }
 
             def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+
+            result.changed |= subject_result.changed
 
             if (subject_result.errors.size() > 0) {
               errors.subjects = subject_result.errors
@@ -232,21 +241,25 @@ class TippController {
               log.debug("Updating prices ..")
               def prices_result = restMappingService.updatePrices(obj, reqBody.prices, remove)
 
+              result.changed |= prices_result.changed
+
               if (prices_result.errors.size() > 0) {
                 errors.prices = prices_result.errors
               }
             }
 
-            errors << tippService.updateCombos(obj, reqBody)
+            errors << tippService.updateCombos(obj, reqBody, result.changed, remove)
 
             if (obj?.validate()) {
               if (reqBody.coverageStatements != null) {
-                obj = tippService.updateCoverage(obj, reqBody)
+                result.changed |= tippService.updateCoverage(obj, reqBody)
               }
 
-              log.debug("No errors.. saving")
-              obj = obj.merge(flush: true)
-              tippService.touchPackage(obj)
+              if (result.changed) {
+                log.debug("No errors.. saving")
+                obj = obj.merge(flush: true)
+                tippService.touchPackage(obj)
+              }
             }
             else {
               result.result = 'ERROR'

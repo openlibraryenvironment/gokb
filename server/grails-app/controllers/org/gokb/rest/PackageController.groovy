@@ -121,7 +121,8 @@ class PackageController {
   @Transactional
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def save() {
-    def result = ['result': 'OK', 'params': params]
+    def result = [result: 'OK', params: params]
+    Boolean changed = true
     def reqBody = request.JSON
     def request_locale = RequestContextUtils.getLocale(request)
     UpdateToken update_token = null
@@ -185,7 +186,7 @@ class PackageController {
             ]
 
             log.debug("Updating ${obj}")
-            obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+            changed = restMappingService.updateObject(obj, jsonMap, reqBody)
 
             if (obj.validate()) {
               if (errors.size() == 0) {
@@ -212,7 +213,7 @@ class PackageController {
                   reqBody.curatoryGroups = [reqBody.activeGroup]
                 }
 
-                errors << packageUpdateService.updateCombos(obj, reqBody, false, user)
+                errors << packageUpdateService.updateCombos(obj, reqBody, changed, false, user)
 
                 if (errors.size() == 0) {
                   log.debug("No errors: ${errors}")
@@ -276,7 +277,7 @@ class PackageController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = ['result': 'OK', 'params': params]
+    def result = ['result': 'OK', 'params': params, changed: false]
     def reqBody = request.JSON
     def errors = [:]
     def remove = (request.method == 'PUT')
@@ -314,9 +315,11 @@ class PackageController {
             'listStatus'
         ]
 
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+        result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
         def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        result.changed |= variant_result.changed
 
         if (variant_result.errors.size() > 0) {
           errors.variantNames = variant_result.errors
@@ -324,11 +327,13 @@ class PackageController {
 
         def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
 
+        result.changed |= subject_result.changed
+
         if (subject_result.errors.size() > 0) {
           errors.subjects = subject_result.errors
         }
 
-        errors << packageUpdateService.updateCombos(obj, reqBody, remove, user)
+        errors << packageUpdateService.updateCombos(obj, reqBody, result.changed, remove, user)
 
         if (obj.validate()) {
           if (generateToken) {
@@ -341,12 +346,12 @@ class PackageController {
               currentToken.delete(flush: true)
             }
 
-            update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
+            update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true, failOnError: true)
           }
 
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj = obj.merge(flush: true)
+            obj = obj.merge(flush: true, failOnError: true)
             result = restMappingService.mapObjectToJson(obj, params, user)
 
             if (update_token) {

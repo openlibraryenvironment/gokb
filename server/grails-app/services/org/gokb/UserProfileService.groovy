@@ -519,6 +519,7 @@ class UserProfileService {
   }
 
   private void updateRoles(User user, roles_list, errors, boolean isNewUser = true, User adminUser = null) {
+    boolean changed = false
     Set<Role> newRoles = []
     Set<Role> previousRoles = []
 
@@ -567,10 +568,16 @@ class UserProfileService {
       if (newRoles.contains(role)) {
         if (!previousRoles.contains(role)) {
           UserRole.create(user, role, true)
+          changed = true
         }
       } else if (!isNewUser && previousRoles.contains(role)) {
         UserRole.remove(user, role, true)
+        changed = true
       }
+    }
+
+    if (changed) {
+      User.executeUpdate("update User set lastUpdated = :now where id = :uid", [now: new Date(), uid: user.id])
     }
   }
 

@@ -283,7 +283,8 @@ class TippServiceSpec extends Specification {
 
     when:
     def tipp = tippUpsertService.upsertDTO(tmap)
-    tippService.updateCombos(tipp, [identifiers: [[type: 'isbn', value: '9783406730696'], [type: 'pisbn', value: '9783406718175']]])
+    Boolean changed = true
+    tippService.updateCombos(tipp, [identifiers: [[type: 'isbn', value: '9783406730696'], [type: 'pisbn', value: '9783406718175']]], changed)
     sleep(300)
     def result = tippService.matchTitle(tipp.id)
     sleep(300)

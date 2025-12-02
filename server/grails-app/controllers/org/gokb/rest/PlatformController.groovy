@@ -112,7 +112,7 @@ class PlatformController {
   @Transactional
   @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def save() {
-    def result = ['result':'OK', 'params': params]
+    def result = ['result':'OK', 'params': params, changed: true]
     def reqBody = request.JSON
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
@@ -158,20 +158,22 @@ class PlatformController {
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+        result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if (obj.validate()) {
           log.debug("No errors.. saving")
 
           def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
+          result.changed |= variant_result.changed
+
           if (variant_result.errors.size() > 0) {
             errors.variantNames = variant_result.errors
           }
 
-          errors << updateCombos(obj, reqBody)
+          errors << updateCombos(obj, reqBody, result.changed)
 
-          obj.save(flush:true)
+          obj.save(flush:true, failOnError: true)
 
           result = restMappingService.mapObjectToJson(obj, params, user)
         }
@@ -197,7 +199,7 @@ class PlatformController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = ['result':'OK', 'params': params]
+    def result = [result:'OK', params: params, changed: false]
     def reqBody = request.JSON
     def errors = [:]
     def remove = (request.method == 'PUT')
@@ -228,15 +230,17 @@ class PlatformController {
 
         def jsonMap = obj.jsonMapping
 
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+        result.changed = restMappingService.updateObject(obj, jsonMap, reqBody)
 
         def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        result.changed |= variant_result.changed
 
         if (variant_result.errors.size() > 0) {
           errors.variantNames = variant_result.errors
         }
 
-        errors << updateCombos(obj, reqBody, remove)
+        errors << updateCombos(obj, reqBody, result.changed, remove)
 
         if (obj.validate()) {
           if (errors.size() == 0) {
@@ -274,19 +278,21 @@ class PlatformController {
     render result as JSON
   }
 
-  private def updateCombos(obj, reqBody, boolean remove = true) {
+  private def updateCombos(obj, reqBody, changed, boolean remove = true) {
     def errors = [:]
     log.debug("Updating platform combos ..")
 
     if (reqBody.ids || reqBody.identifiers) {
       def idmap = reqBody.ids ?: reqBody.identifiers
-      restMappingService.updateIdentifiers(obj, idmap, remove)
+      changed |= restMappingService.updateIdentifiers(obj, idmap, remove)
     }
 
     if (reqBody.curatoryGroups) {
-      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
-      if (cg_errors.size() > 0) {
+      changed |= cg_result.changed
+
+      if (cg_result.errors.size() > 0) {
         errors['curatoryGroups'] = cg_errors
       }
     }
@@ -301,7 +307,10 @@ class PlatformController {
       }
 
       if (prov) {
-        obj.provider = prov
+        if (prov != obj.provider) {
+          obj.provider = prov
+          changed = true
+        }
       }
       else {
         errors.provider = [[message: "Unable to lookup provider with id ${reqBody.provider}", baddata: reqBody.provider, code: 404]]

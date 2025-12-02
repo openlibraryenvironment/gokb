@@ -10,6 +10,7 @@
 
   <logger name="com.k_int" level="INFO"/>
   <logger name="org.gokb" level="DEBUG"/>
+  <logger name="gokbg3" level="INFO"/>
 
   <logger name="org.gokb.DomainClassExtender" level="WARN"/>
   <logger name="org.gokb.ClassExaminationService" level="WARN"/>

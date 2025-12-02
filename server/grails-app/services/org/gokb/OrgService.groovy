@@ -217,10 +217,9 @@ class OrgService {
   */
 
   @Transactional
-  def updateCombos(obj, reqBody, boolean remove = true) {
+  def updateCombos(obj, reqBody, changed, boolean remove = true) {
     log.debug("Updating org combos ..")
     def errors = [:]
-    def changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
@@ -277,6 +276,7 @@ class OrgService {
     if (changed) {
       obj.lastSeen = System.currentTimeMillis()
     }
+
     log.debug("After update: ${obj}")
     errors
   }
