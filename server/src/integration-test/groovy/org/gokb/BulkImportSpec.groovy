@@ -164,6 +164,7 @@ class BulkImportSpec extends Specification {
                 title_id_namespace: "doi",
                 package_created_date: null,
                 package_changed_date: null,
+                start_year: 2025,
                 other_package_identifiers: [
                   [
                     namespace: 'isil',
