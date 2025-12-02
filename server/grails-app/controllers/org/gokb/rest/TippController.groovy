@@ -124,15 +124,11 @@ class TippController {
 
             def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
-            changed |= variant_result.changed
-
             if (variant_result.errors.size() > 0) {
               errors.variantNames = variant_result.errors
             }
 
             def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
-
-            changed |= subject_result.changed
 
             if (subject_result.errors.size() > 0) {
               errors.subjects = subject_result.errors
@@ -218,7 +214,7 @@ class TippController {
 
             def jsonMap = obj.jsonMapping
 
-            result.changed = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+            result.changed |= restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
             if (set_access_end) {
               log.debug("Setting accessEndDate for newly retired TIPP ..")

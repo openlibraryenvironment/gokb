@@ -168,7 +168,7 @@ class SourcesController {
         fieldConfig.ignore = ['importConfig', 'ignoreSizeLimit', 'ezbMatch']
       }
 
-      result.changed = restMappingService.updateObject(obj, fieldConfig, reqBody)
+      result.changed |= restMappingService.updateObject(obj, fieldConfig, reqBody)
 
       errors << updateCombos(obj, reqBody, result.changed, remove)
 

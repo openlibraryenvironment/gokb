@@ -315,7 +315,7 @@ class PackageController {
             'listStatus'
         ]
 
-        result.changed = restMappingService.updateObject(obj, jsonMap, reqBody)
+        result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
         def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 

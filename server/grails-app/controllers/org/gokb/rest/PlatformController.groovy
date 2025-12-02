@@ -158,7 +158,7 @@ class PlatformController {
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
-        result.changed = restMappingService.updateObject(obj, jsonMap, reqBody)
+        result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if (obj.validate()) {
           log.debug("No errors.. saving")

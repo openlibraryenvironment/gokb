@@ -196,7 +196,7 @@ class TitleController {
           obj = type.newInstance()
           obj.name = reqBody.name.trim()
 
-          changed = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+          changed |= restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
           if ( obj.validate() ) {
             obj.save(flush:true)
@@ -780,7 +780,7 @@ class TitleController {
           render result as JSON
         }
 
-        result.changed = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+        result.changed |= restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
         if ( obj.validate() ) {
           log.debug("No errors.. updating combos..")
