@@ -5,9 +5,6 @@
     <dt> <g:annotatedLabel owner="${d}" property="url">Base URL</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" field="url" /> </dd>
 
-    <dt> <g:annotatedLabel owner="${d}" property="transferMethod">Methode</g:annotatedLabel> </dt>
-    <dd> <g:xEditableRefData owner="${d}" field="transferMethod" config='Source.TransferMethod' /> </dd>
-
     <dt> <g:annotatedLabel owner="${d}" property="ba_username">Benutzername</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" field="ba_username" /> </dd>
 

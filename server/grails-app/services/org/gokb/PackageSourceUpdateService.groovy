@@ -131,7 +131,11 @@ class PackageSourceUpdateService {
 
           }
           else if (isFtpTransfer) {
-
+            // no op here
+            String urlFilePart = pkg_source.getWebEndpoint()?.getUrl()
+            if(urlFilePart =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN){
+              dynamic_date = true
+            }
           }
           else {
             log.debug("No source URL!")

@@ -2,11 +2,21 @@ package org.gokb
 
 import grails.gorm.transactions.Transactional
 
+import java.util.regex.Pattern
+
 @Transactional
 class WebEndpointService {
 
+    static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
+
     def extractFtpUrlParts (String webEndpointUrl, String sourceUrl) {
         def result = [:]
+
+        boolean isDateMasked = false
+        if (sourceUrl =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
+            log.debug("### IS MIT DATUMSMASKIERUNG ###")
+            isDateMasked = true
+        }
 
         //we dont need the protocol
         String hostname = webEndpointUrl.replace("ftp://", "")

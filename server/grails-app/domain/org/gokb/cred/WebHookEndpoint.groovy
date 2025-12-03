@@ -9,7 +9,7 @@ class WebHookEndpoint {
   String url
   Long authmethod //legacy
   RefdataValue supplyMethod //legacy
-  RefdataValue transferMethod //rausnehmen - nur in Source
+  // RefdataValue transferMethod //rausnehmen - nur in Source
   String principal //legacy
   String credentials //legacy
   User owner
@@ -32,7 +32,6 @@ class WebHookEndpoint {
     supplyMethod(nullable:true, blank:true)
     ba_username(nullable:true, blank:true)
     ba_password(nullable:true, blank:true)
-    transferMethod(nullable:true, blank:true)
   }
 
   static def refdataFind(params) {
