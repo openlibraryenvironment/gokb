@@ -864,8 +864,6 @@ class ESSearchService{
     SearchResponse searchResponse = null
     log.debug("find :: ${params}")
 
-    log.debug("11111: " + params)
-
     try {
       def unknown_fields = []
       def component_type = null
