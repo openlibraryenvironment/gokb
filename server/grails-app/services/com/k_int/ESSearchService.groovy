@@ -506,25 +506,40 @@ class ESSearchService{
 
   private void addUpdateMethodQuery(query, errors, qpars) {
     def updateMethod_params = [:]
+
     def val = null
+    String path = "source"
+    String importId = "source.importConfig"
+    String autoId = "source.automaticUpdates"
+    String[] importConfigs = ["wekb", "ezb"]
 
     if (qpars.updateMethod) {
-      val = qpars.subject
+      val = qpars.updateMethod
     }
 
     if ( val?.trim() ) {
-      /*if (val.contains(';')) {
-        subject_params['subjects.scheme'] = val.split(';')[0]
-        subject_params['subjects.heading'] = sanitizeParam(val.split(';')[1])
+      if (importConfigs.contains(val.trim().toLowerCase())) {
+        updateMethod_params[importId] = val
+        query.must(QueryBuilders.nestedQuery(path, addIdQueries(updateMethod_params), ScoreMode.Max))
       }
-      else{
-        subject_params['subjects.heading'] = val
-      }*/
+      else {
+        //Auto-Update
+        updateMethod_params[autoId] = 'true'
 
-      updateMethod_params['updateMethod'] = val
+        QueryBuilder autoQuery = QueryBuilders.nestedQuery(
+                path, addIdQueries(updateMethod_params), ScoreMode.Max
+        )
 
-      log.debug("Query ids for ${updateMethod_params}")
-      query.must(QueryBuilders.nestedQuery("updateMethod", addIdQueries(updateMethod_params), ScoreMode.Max))
+        query.must(autoQuery)
+
+        for(String im : importConfigs){
+          QueryBuilder q = QueryBuilders.nestedQuery(
+                  path, QueryBuilders.termQuery(importId, im), ScoreMode.Max
+          )
+          query.mustNot(q)
+        }
+
+      }
     }
   }
 
@@ -848,6 +863,8 @@ class ESSearchService{
     Integer maxWindowSize = 10000
     SearchResponse searchResponse = null
     log.debug("find :: ${params}")
+
+    log.debug("11111: " + params)
 
     try {
       def unknown_fields = []
