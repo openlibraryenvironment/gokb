@@ -529,7 +529,7 @@ class ESSearchService{
                 path, QueryBuilders.termQuery(autoId, true), ScoreMode.Max
         )
 
-        if ("auto" == val.trim().toLowerCase()) {
+        if ("auto" == val) {
           //Auto-Update
           query.must(autoQuery)
         }
