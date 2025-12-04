@@ -85,10 +85,10 @@ class BulkPackageImportService {
             }
           }
 
-          if (reqBody.active == true) {
+          if (reqBody.automatedUpdate == true) {
             existing_cfg.automatedUpdate = true
           }
-          else if (reqBody.active == false) {
+          else if (reqBody.automatedUpdate == false) {
             existing_cfg.automatedUpdate = false
           }
 
