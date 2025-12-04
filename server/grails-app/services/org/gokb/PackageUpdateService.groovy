@@ -112,7 +112,7 @@ class PackageUpdateService {
     }
 
     if (reqBody.provider instanceof Integer) {
-      def prov = null
+      Org prov
 
       try {
         prov = Org.get(reqBody.provider)
@@ -133,9 +133,31 @@ class PackageUpdateService {
       changed = true
     }
 
+    if (reqBody.contentProvider instanceof Integer) {
+      Org prov
+
+      try {
+        prov = Org.get(reqBody.contentProvider)
+      }
+      catch (Exception e) {
+      }
+
+      if (prov && prov != obj.contentProvider) {
+        obj.contentProvider = prov
+        changed = true
+      }
+      else if (!prov) {
+        errors.contentProvider = [[message: "Could not find content provider Org with id ${reqBody.contentProvider}!", baddata: reqBody.contentProvider]]
+      }
+    }
+    else if (reqBody.contentProvider == null) {
+      obj.contentProvider = null
+      changed = true
+    }
+
     if (reqBody.nominalPlatform != null || reqBody.platform != null) {
       def plt_id = reqBody.nominalPlatform ?: reqBody.platform
-      def plt = null
+      Platform plt
 
       try {
         plt = Platform.get(plt_id)
@@ -211,7 +233,7 @@ class PackageUpdateService {
               log.debug("Ensuring TIPP core data ${tipp_dto}")
               componentUpdateService.ensureCoreData(upserted_tipp, tipp_dto, true, user)
 
-              def tipp_status = null
+              RefdataValue tipp_status
 
               if (tipp_dto.status instanceof String) {
                 tipp_status = RefdataCategory.lookup('KBComponent.Status', tipp_dto.status)

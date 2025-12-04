@@ -18,6 +18,7 @@ class RefdataController {
   def index() {
     def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     def result = [:]
+    boolean skip_deprecated = params.boolean('skipDeprecated')
 
     result['_links'] = ['self': ['href': base + "/refdata/"]]
     result['_embedded'] = [
@@ -43,9 +44,20 @@ class RefdataController {
         rdv['useInstead'] = rv.useInstead ? rv.id : null
         rdv['id'] = rv.id
 
-        rdc['_embedded']['values'] << rdv
+        if ((!params.value || params.value == rv.value) && (!skip_deprecated || rv.deprecated != true)) {
+          rdc['_embedded']['values'] << rdv
+        }
       }
-      result['_embedded']['categories'] << rdc
+
+      if (params.category && rc.label != params.category) {
+        log.debug("Skipped category '${rc.label}' due to category filter")
+      }
+      else if (params.value && !rdc['_embedded']['values']) {
+        log.debug("Skipped category '${rc.label}' due to value filter")
+      }
+      else {
+        result['_embedded']['categories'] << rdc
+      }
     }
     render result as JSON
   }

@@ -32,6 +32,7 @@ class BulkPackageImportService {
     "package_id": [required: false],
     "package_source": [required: false],
     "package_provider": [required: true, cls: Org, field: 'uuid'],
+    "package_content_provider": [required: false, cls: Org, field: 'uuid'],
     "package_nominal_platform": [required: true, cls: Platform, field: 'uuid'],
     "package_curatory_group": [required: true, cls: CuratoryGroup, field: 'name'],
     "package_titlelist": [required: true, validate: 'checkUrl' ],
@@ -442,6 +443,7 @@ class BulkPackageImportService {
               Platform platform = (item.package_nominal_platform || type.package_nominal_platform) ? Platform.findByUuid(item.package_nominal_platform ?: type.package_nominal_platform) : null
               IdentifierNamespace title_id_ns = (item.title_id_namespace || type.title_id_namespace) ? IdentifierNamespace.findByValue(item.title_id_namespace ?: type.title_id_namespace) : null
               Org provider = (item.package_provider || type.package_provider) ? Org.findByUuid(item.package_provider ?: type.package_provider) : null
+              Org contentProvider = (item.package_content_provider || type.package_content_provider) ? Org.findByUuid(item.package_content_provider ?: type.package_content_provider) : null
               Identifier collection_id
 
               if ((item.package_id_namespace || type.package_id_namespace) && item.package_id) {
@@ -635,6 +637,7 @@ class BulkPackageImportService {
 
                     obj.nominalPlatform = platform
                     obj.provider = provider
+                    obj.contentProvider = contentProvider
                     obj.save()
 
                     pkg_result.gokb_uuid = obj.uuid

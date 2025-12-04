@@ -321,6 +321,12 @@
     },
     "endYear": {
       "type": "integer"
+    },
+    "contentProvider": {
+      "type": "keyword"
+    },
+    "contentProviderName": {
+      "type": "keyword"
     }
   }
 }
