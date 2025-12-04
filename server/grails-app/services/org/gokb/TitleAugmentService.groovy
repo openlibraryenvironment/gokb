@@ -878,42 +878,59 @@ class TitleAugmentService {
   public void addPublisher (publisher_name, ti, boolean create = false) {
     if (publisher_name != null && publisher_name.trim()) {
       log.debug("Add publisher ${publisher_name}")
-      Org publisher = Org.findByName(publisher_name)
-      def norm_pub_name = Org.generateNormname(publisher_name);
-      def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
-      def combo_type_pub = RefdataCategory.lookup("TitleInstance.Publisher")
 
-      if (!publisher) {
-        // Lookup using norm name.
-        log.debug("Using normname ${norm_pub_name} for lookup")
-        publisher = Org.findByNormname(norm_pub_name)
-      }
+      List split_vals = publisher_name.split(';')
+      List candidates = []
 
-      if (!publisher || publisher.status == status_deleted) {
-        def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
-        def candidate_orgs = Org.executeQuery('''select distinct o from Org as o join o.variantNames as v
-                                              where v.normVariantName = :nvn
-                                              and o.status != :sd''',
-                                              [nvn: variant_normname, sd: status_deleted])
+      split_vals.each { raw_val ->
+        String cleaned_val = raw_val.trim()
 
-        if (candidate_orgs.size() == 1) {
-          publisher = candidate_orgs[0]
+        if (publisher_name.contains(' (')) {
+          cleaned_val = publisher_name.split(' (')[0]
+        }
+
+        Org publisher = Org.findByName(cleaned_val)
+
+        String norm_pub_name = Org.generateNormname(cleaned_val)
+        RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+        RefdataValue combo_type_pub = RefdataCategory.lookup("TitleInstance.Publisher")
+
+        if (!publisher) {
+          // Lookup using norm name.
+          log.debug("Using normname ${norm_pub_name} for lookup")
+          publisher = Org.findByNormname(norm_pub_name)
+        }
+
+        if (!publisher || publisher.status == status_deleted) {
+          String variant_normname = GOKbTextUtils.normaliseString(cleaned_val)
+          def candidate_orgs = Org.executeQuery('''select distinct o from Org as o join o.variantNames as v
+                                                where v.normVariantName = :nvn
+                                                and o.status != :sd''',
+                                                [nvn: variant_normname, sd: status_deleted])
+
+          if (candidate_orgs.size() == 1) {
+            publisher = candidate_orgs[0]
+          } else {
+            log.debug("Unable to match unique pub ${cleaned_val}")
+          }
+        }
+
+        log.debug("Found publisher ${publisher}")
+
+        def existing_combos = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :pub and type = :ct", [ti: ti, pub: publisher, ct: combo_type_pub])
+
+        if (publisher && existing_combos.size() == 0) {
+          // new Combo(fromComponent: ti, toComponent: publisher, type: combo_type_pub).save(flush: true, failOnError: true)
+          candidates << publisher
+          log.debug("Added new publisher to candidates..")
         } else {
-          log.debug("Unable to match unique pub ${publisher_name}")
+          log.debug("Not adding dupe")
         }
       }
 
-      log.debug("Found publisher ${publisher}")
-
-      def existing_combos = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :pub and type = :ct", [ti: ti, pub: publisher, ct: combo_type_pub])
-
-      if (publisher && existing_combos.size() == 0) {
-        // new Combo(fromComponent: ti, toComponent: publisher, type: combo_type_pub).save(flush: true, failOnError: true)
-        ti.publisher << publisher
+      if (candidates) {
+        ti.publisher << candidates[0]
         ti.save(flush: true)
-        log.debug("Added new publisher ..")
-      } else {
-        log.debug("Not adding dupe")
       }
     }
     else {
