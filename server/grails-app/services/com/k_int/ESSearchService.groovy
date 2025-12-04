@@ -505,7 +505,6 @@ class ESSearchService{
   }
 
   private void addUpdateMethodQuery(query, errors, qpars) {
-    def updateMethod_params = [:]
 
     def val = null
     String path = "source"
@@ -518,19 +517,26 @@ class ESSearchService{
     }
 
     if ( val?.trim() ) {
-      if (importConfigs.contains(val.trim().toLowerCase())) {
-        updateMethod_params[importId] = val
-        query.must(QueryBuilders.nestedQuery(path, addIdQueries(updateMethod_params), ScoreMode.Max))
+
+      val = val.trim().toLowerCase()
+      if (importConfigs.contains(val)) {
+        query.must(QueryBuilders.nestedQuery(
+                path, QueryBuilders.termQuery(importId, val), ScoreMode.Max)
+        )
       }
       else {
-        //Auto-Update
-        updateMethod_params[autoId] = 'true'
-
         QueryBuilder autoQuery = QueryBuilders.nestedQuery(
-                path, addIdQueries(updateMethod_params), ScoreMode.Max
+                path, QueryBuilders.termQuery(autoId, true), ScoreMode.Max
         )
 
-        query.must(autoQuery)
+        if ("auto" == val.trim().toLowerCase()) {
+          //Auto-Update
+          query.must(autoQuery)
+        }
+        else {
+          //no Update at all
+          query.mustNot(autoQuery)
+        }
 
         for(String im : importConfigs){
           QueryBuilder q = QueryBuilders.nestedQuery(
