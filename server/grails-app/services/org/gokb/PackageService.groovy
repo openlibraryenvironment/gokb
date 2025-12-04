@@ -1017,6 +1017,63 @@ class PackageService {
       log.debug("No provider found!")
     }
 
+    if (packageHeaderDTO.contentProvider) {
+
+      Map providerDTO = [:]
+
+      if (packageHeaderDTO.contentProvider instanceof String && packageHeaderDTO.contentProvider.trim()) {
+        providerDTO['name'] = packageHeaderDTO.contentProvider
+      }
+      else if (packageHeaderDTO.contentProvider.name && packageHeaderDTO.contentProvider.name.trim()) {
+        providerDTO = packageHeaderDTO.contentProvider
+      }
+
+      log.debug("Trying to set package provider.. ${providerDTO}")
+      Org prov
+
+      if (providerDTO?.uuid) {
+        prov = Org.findByUuid(providerDTO.uuid)
+      }
+
+      if (providerDTO && !prov) {
+        String norm_prov_name = KBComponent.generateNormname(providerDTO.name)
+
+        prov = Org.findByNormname(norm_prov_name)
+
+        if (!prov) {
+          log.debug("None found by Normname ${norm_prov_name}, trying variants")
+          String variant_normname = GOKbTextUtils.normaliseString(providerDTO.name)
+          List candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = :nvn and o.status = :sd", [nvn: variant_normname, sd: status_deleted])
+
+          if (candidate_orgs.size() == 1) {
+            prov = candidate_orgs[0]
+          }
+          else if (candidate_orgs.size() == 0) {
+            log.debug("No org match for provider ${packageHeaderDTO.contentProvider}. Creating new org..")
+            prov = new Org(name: providerDTO.name, normname: norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush: true, failOnError: true);
+          }
+          else {
+            log.warn("Multiple org matches for provider ${packageHeaderDTO.contentProvider}. Skipping..");
+          }
+        }
+      }
+
+      if (prov) {
+        if (result.contentProvider != prov) {
+          result.contentProvider = prov
+
+          log.debug("Provider ${prov.name} set.")
+          changed = true
+        }
+        else {
+          log.debug("No provider change")
+        }
+      }
+    }
+    else {
+      log.debug("No provider found!")
+    }
+
     // Source
 
     // variantNames are handled in ComponentUpdateService
