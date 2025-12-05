@@ -524,19 +524,12 @@ class ESSearchService{
                 path, QueryBuilders.termQuery(importId, val), ScoreMode.Max)
         )
       }
-      else {
+      else if (val == "auto" || val == "none") {
         QueryBuilder autoQuery = QueryBuilders.nestedQuery(
                 path, QueryBuilders.termQuery(autoId, true), ScoreMode.Max
         )
 
-        if ("auto" == val) {
-          //Auto-Update
-          query.must(autoQuery)
-        }
-        else {
-          //no Update at all
-          query.mustNot(autoQuery)
-        }
+        val == "auto" ? query.must(autoQuery) : query.mustNot(autoQuery)
 
         for(String im : importConfigs){
           QueryBuilder q = QueryBuilders.nestedQuery(
