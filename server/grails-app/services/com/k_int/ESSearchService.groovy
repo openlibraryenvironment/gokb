@@ -182,6 +182,7 @@ class ESSearchService{
         result.firstrec = params.offset + 1
         result.resultsTotal = searchResponse.getHits().getTotalHits().value ?: 0
         result.lastrec = Math.min(params.offset + params.max, result.resultsTotal)
+        result.offset = params.offset
 
         if (searchResponse.getAggregations()) {
           result.facets = [:]
@@ -527,10 +528,12 @@ class ESSearchService{
         log.debug("${phraseQry}")
         labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2f))
         labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
+        labelQuery.should(QueryBuilders.matchPhraseQuery('normname', phraseQry))
       }
       else {
         labelQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
         labelQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
+        labelQuery.should(QueryBuilders.matchQuery('normname', sanitized_param).operator(Operator.AND))
       }
 
       labelQuery.minimumShouldMatch(1)
@@ -563,7 +566,8 @@ class ESSearchService{
     }
     else if (qpars.suggest) {
       def sanitized_param = sanitizeParam(qpars.suggest)
-      query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND).boost(0.6f))
+      query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND))
+      query.must(QueryBuilders.matchQuery('normSuggest', sanitized_param).operator(Operator.AND).boost(0.5f))
     }
     else if (qpars.qsName) {
       def sanitized_param = sanitizeParam(qpars.qsName)
@@ -572,10 +576,11 @@ class ESSearchService{
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
       labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 8f))
       labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 5.2f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("normname", 5f))
 
       // search in OR-mode, but for ALL terms across different name fields
       QueryBuilder splitQuery = QueryBuilders.boolQuery()
-      String[] fields = ['name', 'altname']
+      String[] fields = ['name', 'altname', 'normname']
 
       for (String word in sanitized_param.split(" ")) {
         splitQuery.must(QueryBuilders.multiMatchQuery(word, fields))
@@ -610,7 +615,7 @@ class ESSearchService{
                            requestMapping.complex)
         for (String field in qpars.list('qfields')){
           if (field == "name") {
-            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
+            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(5f))
           }
           else if (field == "altname") {
             genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
@@ -636,10 +641,17 @@ class ESSearchService{
   }
 
   private void processLinkedField(query, field, val) {
-    def vals = val instanceof String ? [val] : val
+    List vals
+
+    if (val instanceof List) {
+      vals = val
+    }
+    else {
+      vals = [val]
+    }
 
     vals.each {
-      if (it?.trim()) {
+      if ((it instanceof String && it.trim()) || it) {
         QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
         def sanitized_param = sanitizeParam(it)
         def finalVal = it
