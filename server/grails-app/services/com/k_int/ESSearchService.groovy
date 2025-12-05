@@ -82,7 +82,8 @@ class ESSearchService{
           "qfields",
           "qsName",
           "subjects",
-          "subject"
+          "subject",
+          "updateMethod"
       ],
       linked: [
           currentPublisher: "publisher",
@@ -504,6 +505,44 @@ class ESSearchService{
     }
   }
 
+  private void addUpdateMethodQuery(query, errors, qpars) {
+
+    def val = null
+    String path = "source"
+    String importId = "source.importConfig"
+    String autoId = "source.automaticUpdates"
+    String[] importConfigs = ["wekb", "ezb"]
+
+    if (qpars.updateMethod) {
+      val = qpars.updateMethod
+    }
+
+    if ( val?.trim() ) {
+
+      val = val.trim().toLowerCase()
+      if (importConfigs.contains(val)) {
+        query.must(QueryBuilders.nestedQuery(
+                path, QueryBuilders.termQuery(importId, val), ScoreMode.Max)
+        )
+      }
+      else if (val == "auto" || val == "none") {
+        QueryBuilder autoQuery = QueryBuilders.nestedQuery(
+                path, QueryBuilders.termQuery(autoId, true), ScoreMode.Max
+        )
+
+        val == "auto" ? query.must(autoQuery) : query.mustNot(autoQuery)
+
+        for(String im : importConfigs){
+          QueryBuilder q = QueryBuilders.nestedQuery(
+                  path, QueryBuilders.termQuery(importId, im), ScoreMode.Max
+          )
+          query.mustNot(q)
+        }
+
+      }
+    }
+  }
+
   private void processNameFields(query, errors, qpars) {
     if (qpars.label) {
       def sanitized_param = sanitizeParam(qpars.label)
@@ -887,6 +926,7 @@ class ESSearchService{
       processGenericFields(exactQuery, errors, params)
       addIdentifierQuery(exactQuery, errors, params)
       addSubjectQuery(exactQuery, errors, params)
+      addUpdateMethodQuery(exactQuery, errors, params)
       specifyQueryWithParams(params, exactQuery, errors, unknown_fields)
 
       if(unknown_fields.size() > 0){

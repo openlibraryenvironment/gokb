@@ -282,6 +282,19 @@
         },
         "url": {
           "type": "keyword"
+        },
+        "automaticUpdates": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "keyword"
+        },
+        "id": {
+          "type": "long"
+        },
+        "importConfig": {
+          "type": "keyword",
+          "normalizer": "lowercase"
         }
       }
     },
