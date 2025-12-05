@@ -66,6 +66,7 @@ class Package extends KBComponent {
     parent         : Package,
     broker         : Org,
     provider       : Org,
+    contentProvider: Org,
     licensor       : Org,
     vendor         : Org,
     nominalPlatform: Platform,
@@ -167,6 +168,9 @@ class Package extends KBComponent {
       'provider'           : "provider.id",
       'providerName'       : "provider.name",
       'providerUuid'       : "provider.uuid",
+      'contentProvider'    : "contentProvider.id",
+      'contentProviderName': "contentProvider.name",
+      'contentProviderUUid': "contentProvider.uuid",
       'paymentType'        : false,
       'listStatus'         : "refdata",
       'contentType'        : "refdata",
@@ -177,7 +181,8 @@ class Package extends KBComponent {
     'defaultLinks' : [
       'provider',
       'nominalPlatform',
-      'curatoryGroups'
+      'curatoryGroups',
+      'contentProvider'
     ],
     'defaultEmbeds': [
       'ids',

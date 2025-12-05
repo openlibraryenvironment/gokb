@@ -505,11 +505,11 @@ class TippService {
    */
 
   @Transactional
-  public def updateCoverage(tipp, reqBody) {
+  public Boolean updateCoverage(tipp, reqBody) {
     def cov_list = reqBody.coverageStatements ?: reqBody.coverage
     def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
 
-    def changed = false
+    Boolean changed = false
 
     cov_list?.each { c ->
       def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
@@ -648,7 +648,7 @@ class TippService {
       tipp.lastSeen = System.currentTimeMillis()
     }
 
-    tipp
+    changed
   }
 
   def matchUnlinkedTipps(def job = null) {
@@ -1955,10 +1955,10 @@ class TippService {
     hasChanged
   }
 
-  def updateCombos(obj, reqBody, boolean remove = true) {
+  def updateCombos(obj, reqBody, changed, boolean remove = true) {
     log.debug("Updating TIPP combos ..")
     def errors = [:]
-    boolean changed = false
+    Boolean needsSave = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
@@ -1969,7 +1969,10 @@ class TippService {
         errors.ids = id_result.errors
       }
 
-      changed = id_result.changed
+      if (id_result.changed) {
+        needsSave = true
+        changed = true
+      }
     }
 
     if (reqBody.title) {
@@ -1991,9 +1994,16 @@ class TippService {
         if (ti) {
           obj.title = ti
           changed = true
+          needsSave = true
         }
         else {
-          errors.title = [[message: "Unable to reference provided reference title!", baddata: reqBody.title, code: 'notFound']]
+          errors.title = [
+            [
+              message: "Unable to reference provided reference title!",
+              baddata: reqBody.title,
+              code: 'notFound'
+              ]
+            ]
         }
       }
     }
@@ -2001,7 +2011,7 @@ class TippService {
       log.debug("No title info given!")
     }
 
-    if (changed) {
+    if (needsSave) {
       obj.lastSeen = System.currentTimeMillis()
       obj.save(flush: true)
     }

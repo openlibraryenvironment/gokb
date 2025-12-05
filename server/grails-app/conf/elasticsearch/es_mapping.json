@@ -330,6 +330,12 @@
       "type": "text",
       "analyzer": "icu_suggest",
       "search_analyzer": "icu"
+    },
+    "contentProvider": {
+      "type": "keyword"
+    },
+    "contentProviderName": {
+      "type": "keyword"
     }
   }
 }

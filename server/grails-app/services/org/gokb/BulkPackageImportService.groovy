@@ -32,6 +32,7 @@ class BulkPackageImportService {
     "package_id": [required: false],
     "package_source": [required: false],
     "package_provider": [required: true, cls: Org, field: 'uuid'],
+    "package_content_provider": [required: false, cls: Org, field: 'uuid'],
     "package_nominal_platform": [required: true, cls: Platform, field: 'uuid'],
     "package_curatory_group": [required: true, cls: CuratoryGroup, field: 'name'],
     "package_titlelist": [required: true, validate: 'checkUrl' ],
@@ -44,7 +45,10 @@ class BulkPackageImportService {
     "fixed": [required: false, rdc: 'Package.Fixed'],
     "consistent": [required: false, rdc: 'Package.Consistent'],
     "breakable": [required: false, rdc: 'Package.Breakable'],
-    "scope": [required: false, rdc: 'Package.Scope']
+    "scope": [required: false, rdc: 'Package.Scope'],
+    "other_package_identifiers": [required: false],
+    "start_year": [required: false],
+    "end_year": [required: false],
   ]
 
   @Transactional
@@ -82,10 +86,10 @@ class BulkPackageImportService {
             }
           }
 
-          if (reqBody.active == true) {
+          if (reqBody.automatedUpdate == true) {
             existing_cfg.automatedUpdate = true
           }
-          else if (reqBody.active == false) {
+          else if (reqBody.automatedUpdate == false) {
             existing_cfg.automatedUpdate = false
           }
 
@@ -295,6 +299,42 @@ class BulkPackageImportService {
       }
     }
 
+    // Validate years
+
+    if (cobj.containsKey('start_year')) {
+      if (cobj.start_year == null) {
+        // No start year
+      }
+      else if (cobj.start_year instanceof Integer) {
+        if (cobj.start_year < 1700 || cobj.start_year > 9999) {
+          errors['start_year'] = [message: "Package years must be between 1700 and 9999!"]
+        }
+      }
+      else {
+        errors['start_year'] = [message: "Package years must be four digit integers or null!"]
+      }
+    }
+
+    if (cobj.containsKey('end_year')) {
+      if (cobj.end_year == null) {
+        // No end year
+      }
+      else if (end_year instanceof Integer) {
+        if (cobj.end_year < 1700 || cobj.start_year > 9999) {
+          errors['end_year'] = [message: "Package years must be between 1700 and 9999!"]
+        }
+        else if (!cobj.start_year) {
+          errors['end_year'] = [message: "Missing start_year for given end_year!"]
+        }
+        else if (cobj.start_year instanceof Integer && cobj.end_year < cobj.start_year) {
+          errors['end_year'] = [message: "Package end_year must not be earlier than the start_year!"]
+        }
+      }
+      else {
+        errors['end_year'] = [message: "Package years must be four digit integers or null!"]
+      }
+    }
+
     errors
   }
 
@@ -403,6 +443,7 @@ class BulkPackageImportService {
               Platform platform = (item.package_nominal_platform || type.package_nominal_platform) ? Platform.findByUuid(item.package_nominal_platform ?: type.package_nominal_platform) : null
               IdentifierNamespace title_id_ns = (item.title_id_namespace || type.title_id_namespace) ? IdentifierNamespace.findByValue(item.title_id_namespace ?: type.title_id_namespace) : null
               Org provider = (item.package_provider || type.package_provider) ? Org.findByUuid(item.package_provider ?: type.package_provider) : null
+              Org contentProvider = (item.package_content_provider || type.package_content_provider) ? Org.findByUuid(item.package_content_provider ?: type.package_content_provider) : null
               Identifier collection_id
 
               if ((item.package_id_namespace || type.package_id_namespace) && item.package_id) {
@@ -513,6 +554,13 @@ class BulkPackageImportService {
                       catch (Exception e) {
                         log.debug("Errors creating new package!", e)
                         type_results.errors++
+
+                        pkg_result.errors.name = [
+                          [
+                            message: "Unable to save package '${final_name}', as there is already another package with this name!",
+                            baddata: item.package_name
+                          ]
+                        ]
                       }
                     }
                   }
@@ -558,8 +606,38 @@ class BulkPackageImportService {
                       }
                     }
 
+                    if (item.containsKey('end_year')) {
+                      if (item.end_year && item.containsKey('start_year')) {
+                        if (!item.start_year) {
+                          pkg_result.errors.end_year = [
+                            [
+                              message: "Unable to set package end year due to missing start date!",
+                              baddata: item.end_year
+                            ]
+                          ]
+                        }
+                      }
+                      else if (item.end_year && !obj.startYear) {
+                        pkg_result.errors.end_year = [
+                          [
+                            message: "Unable to set package end year due to missing start date!",
+                            baddata: item.end_year
+                          ]
+                        ]
+                      }
+
+                      if (!pkg_result.errors) {
+                        obj.endYear = item.end_year ? item.end_year : null
+                      }
+                    }
+
+                    if (!pkg_result.errors && item.containsKey('start_year')) {
+                      obj.startYear = item.start_year ? item.start_year : null
+                    }
+
                     obj.nominalPlatform = platform
                     obj.provider = provider
+                    obj.contentProvider = contentProvider
                     obj.save()
 
                     pkg_result.gokb_uuid = obj.uuid
@@ -568,6 +646,61 @@ class BulkPackageImportService {
                     if (collection_id && !obj.ids.contains(collection_id)) {
                       obj.ids << collection_id
                     }
+
+                    item.other_package_identifiers.each { opid ->
+                      Identifier other_id
+
+                      try {
+                        other_id = componentLookupService.lookupOrCreateCanonicalIdentifier(opid.namespace, opid.value)
+                      }
+                      catch (grails.validation.ValidationException ve) {
+                        if (!pkg_result.errors.other_package_identifiers) {
+                          pkg_result.errors.other_package_identifiers = []
+                        }
+
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Invalid additional package identifier!",
+                            messageCode: "import.bulk.error.ids.format",
+                            baddata: opid
+                          ]
+                        ]
+                      }
+                      catch (Exception e) {
+                        if (!pkg_result.errors.other_package_identifiers) {
+                          pkg_result.errors.other_package_identifiers = []
+                        }
+
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Unable to reference additional package identifier!",
+                            messageCode: "import.bulk.error.ids.unknown",
+                            baddata: opid
+                          ]
+                        ]
+                      }
+
+                      RefdataValue ns_type_pkg = RefdataCategory.lookup("IdentifierNamespace.TargetType", "Package")
+
+                      if (other_id && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
+                        obj.ids << other_id
+                      }
+                      else if (other_id) {
+                        if (!pkg_result.errors.other_package_identifiers) {
+                          pkg_result.errors.other_package_identifiers = []
+                        }
+
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Additional identifier namespace '${other_id.namespace.value}' is not permissible for packages!",
+                            messageCode: "import.bulk.error.ids.targetType",
+                            baddata: opid
+                          ]
+                        ]
+                      }
+                    }
+
+
                     RefdataValue type_pc = RefdataCategory.lookup("Combo.Type", "Package.CuratoryGroups")
 
                     def existing_combos_count = Combo.executeQuery('''select count(*) from Combo
@@ -654,13 +787,13 @@ class BulkPackageImportService {
                       source.bulkConfig = listInfo
                       source.targetNamespace = title_id_ns
                       source.url = item.package_titlelist
+                      source.frequency = listInfo.frequency ? RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value) : null
 
-                      if (listInfo.frequency) {
+                      if (listInfo.frequency && source.url) {
                         source.automaticUpdates = listInfo.automatedUpdate
-                        source.frequency = RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value)
                       }
                       else {
-                        log.debug("No frequency for ${item.package_name} - Setting automated source update to 'false'!")
+                        log.debug("No frequency or url for ${item.package_name} - Setting automated source update to 'false'!")
                         source.automaticUpdates = false
                       }
                       source.save()

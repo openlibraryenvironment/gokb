@@ -297,8 +297,9 @@ class RestMappingService {
    */
 
   @Transactional
-  def updateObject(obj, jsonMap, reqBody) {
+  public Boolean updateObject(obj, jsonMap, reqBody) {
     log.debug("Update object ${obj} - ${reqBody}")
+    Boolean changed = false
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
     def toIgnore = defaultIgnore + (jsonMap?.ignore ?: [])
@@ -313,7 +314,7 @@ class RestMappingService {
 
         if (p instanceof Association) {
           if (p instanceof ManyToOne || p instanceof OneToOne) {
-            updateAssoc(obj, p.name, newVal)
+            changed |= updateAssoc(obj, p.name, newVal)
           }
           else {
             // Add to collection
@@ -348,13 +349,15 @@ class RestMappingService {
         }
       }
     }
+    if (obj.isDirty()) {
+      changed = true
+    }
 
     if (obj.validate()) {
       obj.save()
     }
-    else {
-      obj
-    }
+
+    return changed
   }
 
   def lookupRefdataValueForCategory(value, RefdataCategory category) {
@@ -411,8 +414,9 @@ class RestMappingService {
   }
 
   @Transactional
-  def updateAssoc(obj, prop, val, def cat = null) {
+  public Boolean updateAssoc(obj, prop, val, def cat = null) {
     log.debug("Update association $obj - $prop: $val")
+    Boolean changed = false
     def ptype = grailsApplication.mappingContext.getPersistentEntity(obj.class.name).getPropertyByName(prop).type
 
     if (val != null) {
@@ -485,7 +489,9 @@ class RestMappingService {
         }
 
         if (linkObj) {
-          obj[prop] = linkObj
+          if (linkObj != obj[prop]) {
+            obj[prop] = linkObj
+          }
         }
         else {
           obj.errors.reject(
@@ -500,12 +506,13 @@ class RestMappingService {
         }
       }
     }
-    else {
+    else if (obj[prop] != null) {
       log.debug("Set value to null")
+      changed = true
       obj[prop] = null
     }
 
-    obj
+    changed
   }
 
   @Transactional
@@ -638,21 +645,34 @@ class RestMappingService {
     result
   }
 
-  @Transactional
-  public def updateStatus(obj, val) {
-    if (val == 'Deleted') {
-      obj.deleteSoft()
+  public boolean updateStatus(obj, val) {
+    boolean changed = false
 
-      componentUpdateService.closeConnectedReviews(obj)
+    if (val == 'Deleted') {
+      if (obj.status.value != 'Deleted') {
+        changed = true
+        obj.deleteSoft()
+
+        componentUpdateService.closeConnectedReviews(obj)
+      }
     }
     else if (val == 'Retired') {
-      obj.retire()
+      if (obj.status.value != 'Retired' ) {
+        changed = true
+        obj.retire()
+      }
     }
     else if (val == 'Current') {
-      obj.setActive()
+      if (obj.status.value != 'Current') {
+        changed = true
+        obj.setActive()
+      }
     }
     else if (val == 'Expected') {
-      obj.setExpected()
+      if (obj.status.value != 'Expected') {
+        changed = true
+        obj.setExpected()
+      }
     }
     else {
       obj.errors.reject(
@@ -666,7 +686,7 @@ class RestMappingService {
       )
     }
 
-    obj
+    changed
   }
 
 
@@ -734,7 +754,6 @@ class RestMappingService {
   public def updateVariantNames(obj, vals, boolean remove = true) {
     log.debug("Update Variants ${vals} ..")
     def result = [changed: false, errors: []]
-    def changed = false
     def remaining = []
     def notFound = []
     def toRemove = []
@@ -757,7 +776,7 @@ class RestMappingService {
 
                 if (newVariant) {
                   log.debug("Added variant ${newVariant}")
-                  changed = true
+                  result.changed = true
                   remaining << newVariant
                 }
                 else {
@@ -807,17 +826,17 @@ class RestMappingService {
                 log.debug("Ensured variant: ${newVariant}")
 
                 if (newVariant) {
-                  changed = true
+                  result.changed = true
 
                   if (it.locale) {
-                    newVariant = updateAssoc(newVariant, 'locale', it.locale, RefdataCategory.findByDesc(KBComponent.RD_LANGUAGE))
+                    result.changed |= updateAssoc(newVariant, 'locale', it.locale, RefdataCategory.findByDesc(KBComponent.RD_LANGUAGE))
                   }
                   else {
                     newVariant.locale = null
                   }
 
                   if (it.variantType) {
-                    newVariant = updateAssoc(newVariant, 'variantType', it.variantType)
+                    result.changed |= updateAssoc(newVariant, 'variantType', it.variantType)
                   }
                   else {
                     newVariant.variantType = null
@@ -851,7 +870,7 @@ class RestMappingService {
             obj.variantNames.each { vn ->
               if (!remaining.contains(vn)) {
                 toRemove.add(vn.id)
-                changed = true
+                result.changed = true
               }
             }
 
@@ -870,7 +889,7 @@ class RestMappingService {
           }
         }
 
-        if (changed) {
+        if (result.changed) {
           obj.lastSeen = System.currentTimeMillis()
         }
       }
@@ -1027,6 +1046,7 @@ class RestMappingService {
               ComponentPrice cp_to_delete = ComponentPrice.get(ep)
               obj.removeFromPrices(cp_to_delete)
               cp_to_delete.delete()
+              result.changed = true
             }
           }
         }
@@ -1205,7 +1225,7 @@ class RestMappingService {
     result
   }
 
-  public def updateLongField(obj, prop, val) {
+  public void updateLongField(obj, prop, val) {
     log.debug("Set simple prop ${prop} = ${val} (as Long)")
 
     try {
@@ -1222,7 +1242,6 @@ class RestMappingService {
           'typeMismatch.java.lang.Long'
       )
     }
-    obj
   }
 
   public def updateIntField(obj, prop, val) {
@@ -1268,7 +1287,6 @@ class RestMappingService {
       }
       log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))")
     }
-    obj
   }
 
   /**
