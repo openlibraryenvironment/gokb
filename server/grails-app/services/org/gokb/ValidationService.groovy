@@ -465,10 +465,16 @@ class ValidationService {
             args: []
         ]
       }
+      else if (trimmed_val =~ /\p{Cc}/) {
+        result.errors[key] = [
+            message: "Value contains UTF-8 control characters!",
+            messageCode: "kbart.errors.controlCharsVal",
+            args: []
+        ]
+      }
       else if (trimmed_val?.contains('¶') ||
           trimmed_val?.contains('¦') ||
           trimmed_val?.contains('¤') ||
-          trimmed_val ==~ /\p{Cc}/ ||
           trimmed_val?.contains('Ãƒ')
       ) {
         result.warnings[key] = [

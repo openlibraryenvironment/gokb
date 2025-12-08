@@ -107,6 +107,9 @@ class FTUpdateService {
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerName = kbc.provider?.name ?: ""
         result.providerUuid = kbc.provider?.uuid ?: ""
+        result.contentProvider = kbc.contentProvider ? kbc.contentProvider.getLogEntityId() : ""
+        result.contentProviderName = kbc.contentProvider?.name ?: ""
+        result.contentProviderUuid = kbc.contentProvider?.uuid ?: ""
         result.nominalPlatform = kbc.nominalPlatform ? kbc.nominalPlatform.getLogEntityId() : ""
         result.nominalPlatformName = kbc.nominalPlatform?.name ?: ""
         result.nominalPlatformUrl = kbc.nominalPlatform?.primaryUrl ?: ""
@@ -124,6 +127,7 @@ class FTUpdateService {
             automaticUpdates: kbc.source.automaticUpdates,
             url             : kbc.source.url,
             frequency       : (kbc.source.frequency?.value ?: ""),
+            importConfig    : (kbc.source.importConfig?.value ?: "")
           ]
           if (kbc.source.lastRun)
             result.source.lastRun = dateFormatService.formatIsoTimestamp(kbc.source.lastRun)

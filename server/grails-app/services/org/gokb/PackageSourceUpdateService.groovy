@@ -7,14 +7,21 @@ import groovy.util.logging.Slf4j
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPClientConfig
 
-import java.net.http.*
-import java.net.http.HttpResponse.BodyHandlers
-import java.net.http.HttpRequest.BodyPublishers
+import org.apache.http.HttpEntity
+import org.apache.http.HttpHeaders
+import org.apache.http.util.EntityUtils
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.client.methods.HttpHead
+import org.apache.http.client.config.RequestConfig
+import org.apache.http.impl.client.CloseableHttpClient
+import org.apache.http.impl.client.HttpClientBuilder
+import org.apache.http.impl.client.HttpClients
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
 import org.gokb.cred.*

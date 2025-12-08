@@ -323,9 +323,24 @@ class ComponentUpdateService {
     log.info("Bulk update for ${cls.name}: ${params}")
     def result = [total: 0, errors: 0]
     def field = params['_field']
+    boolean pkg_tipps_changed = false
     int offset = 0
     int max = 50
     def value = null
+    def pkg = null
+
+    if (params.pkg) {
+      pkg = Package.get(params.int('pkg'))
+
+      if (!pkg) {
+        result.result = 'ERROR'
+        result.status = 404
+        result.message = "Unable to look up package!"
+        result.errors++
+
+        return result
+      }
+    }
 
     result.total = componentLookupService.restLookup(user, cls, params, null, true)._pagination.total
 
@@ -334,12 +349,12 @@ class ComponentUpdateService {
 
       def items = componentLookupService.restLookup(user, cls, params, null, true).data
 
-      if (cls == TitleInstancePackagePlatform && params.pkg?.trim() && field == 'status') {
-        def pkg = Package.get(params.int('pkg'))
+      if (cls == TitleInstancePackagePlatform && tipps_pkg && field == 'status') {
         def status_rdv = params.int('_value') ? RefdataValue.get(params.int('_value')) : RefdataCategory.lookup('KBComponent.Status', params['_value'])
 
         if (pkg && isUserCurator(pkg, user) && status_rdv?.owner?.label == 'KBComponent.Status') {
           TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set status = :status, lastUpdated = :date where id IN (:ids)", [status: status_rdv, ids: items, date: new Date()])
+          pkg_tipps_changed = true
           offset += max
         }
         else {
@@ -351,11 +366,12 @@ class ComponentUpdateService {
         items.each {
           def obj = cls.get(it)
           def reqBody = [:]
+          boolean changed = false
 
           reqBody[field] = params['_value']
 
           if (isUserCurator(obj, user)) {
-            obj = restMappingService.updateObject(obj, null, reqBody)
+            changed = restMappingService.updateObject(obj, null, reqBody)
 
             if (obj.hasErrors()) {
               result.errors++
@@ -373,6 +389,11 @@ class ComponentUpdateService {
       log.debug("Finished ${offset}/${result.total}")
       cleanUpGorm()
     }
+
+    if (pkg_tipps_changed) {
+      Package.executeUpdate("update Package set lastUpdated = :date where id = :pid", [date: new Date(), pid: pkg.id])
+    }
+
     result
   }
 

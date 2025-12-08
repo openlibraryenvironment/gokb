@@ -31,6 +31,7 @@ class PackageController {
   def TSVIngestionService
   def packageUpdateService
   def tippUpsertService
+  def adminAlertingService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -120,7 +121,8 @@ class PackageController {
   @Transactional
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def save() {
-    def result = ['result': 'OK', 'params': params]
+    def result = [result: 'OK', params: params]
+    Boolean changed = true
     def reqBody = request.JSON
     def request_locale = RequestContextUtils.getLocale(request)
     UpdateToken update_token = null
@@ -184,7 +186,7 @@ class PackageController {
             ]
 
             log.debug("Updating ${obj}")
-            obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+            changed = restMappingService.updateObject(obj, jsonMap, reqBody)
 
             if (obj.validate()) {
               if (errors.size() == 0) {
@@ -211,7 +213,7 @@ class PackageController {
                   reqBody.curatoryGroups = [reqBody.activeGroup]
                 }
 
-                errors << packageUpdateService.updateCombos(obj, reqBody, false, user)
+                errors << packageUpdateService.updateCombos(obj, reqBody, changed, false, user)
 
                 if (errors.size() == 0) {
                   log.debug("No errors: ${errors}")
@@ -275,7 +277,7 @@ class PackageController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = ['result': 'OK', 'params': params]
+    def result = ['result': 'OK', 'params': params, changed: false]
     def reqBody = request.JSON
     def errors = [:]
     def remove = (request.method == 'PUT')
@@ -313,9 +315,11 @@ class PackageController {
             'listStatus'
         ]
 
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+        result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
         def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        result.changed |= variant_result.changed
 
         if (variant_result.errors.size() > 0) {
           errors.variantNames = variant_result.errors
@@ -323,11 +327,13 @@ class PackageController {
 
         def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
 
+        result.changed |= subject_result.changed
+
         if (subject_result.errors.size() > 0) {
           errors.subjects = subject_result.errors
         }
 
-        errors << packageUpdateService.updateCombos(obj, reqBody, remove, user)
+        errors << packageUpdateService.updateCombos(obj, reqBody, result.changed, remove, user)
 
         if (obj.validate()) {
           if (generateToken) {
@@ -340,12 +346,12 @@ class PackageController {
               currentToken.delete(flush: true)
             }
 
-            update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
+            update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true, failOnError: true)
           }
 
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj = obj.merge(flush: true)
+            obj = obj.merge(flush: true, failOnError: true)
             result = restMappingService.mapObjectToJson(obj, params, user)
 
             if (update_token) {
@@ -662,6 +668,7 @@ class PackageController {
     def title_ns_id = null
     def title_ns_serial_id = null
     def title_ns_mono_id = null
+    Source source = pkg.source
 
     if (params.activeGroup) {
       CuratoryGroup active_group
@@ -743,72 +750,85 @@ class PackageController {
       Boolean dry_run = params.boolean('dryRun') ?: false
       Boolean skip_invalid = params.boolean('skipInvalid') ?: false
       Boolean delete_missing = params.boolean('deleteMissing') ?: false
-      def info = TSVIngestionService.analyseFile(temp_file)
       Boolean async = params.async ? params.boolean('async') : true
+      Long max_file_length = 20971520L
 
-      log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
-      datafile = DataFile.findByMd5(info.md5sumHex)
+      def info = TSVIngestionService.analyseFile(temp_file)
 
-      if (!datafile) {
-        log.debug("Create new datafile")
-        DataFile.withNewTransaction {
-          datafile = new DataFile(
-            guid:deposit_token,
-            md5:info.md5sumHex,
-            uploadName:upload_filename,
-            name:upload_filename,
-            filesize:info.filesize,
-            encoding:info.encoding,
-            uploadMimeType:upload_mime_type
-          ).save()
+      if (!source || source?.ignoreSizeLimit || user.isAdmin() || info.filesize <= max_file_length) {
+        log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
+        datafile = DataFile.findByMd5(info.md5sumHex)
 
-          datafile.fileData = temp_file.getBytes()
-          datafile.save(failOnError:true,flush:true)
-          log.debug("Saved new datafile : ${datafile.id} -- ${datafile.uploadName}")
-        }
-      }
+        if (!datafile) {
+          log.debug("Create new datafile")
+          DataFile.withNewTransaction {
+            datafile = new DataFile(
+              guid:deposit_token,
+              md5:info.md5sumHex,
+              uploadName:upload_filename,
+              name:upload_filename,
+              filesize:info.filesize,
+              encoding:info.encoding,
+              uploadMimeType:upload_mime_type
+            ).save()
 
-      if (datafile) {
-        Job background_job = concurrencyManagerService.createJob { Job job ->
-          TSVIngestionService.updatePackage(pkg.id,
-            datafile.id,
-            title_ns_id,
-            async,
-            add_only,
-            user.id,
-            active_group_id,
-            dry_run,
-            skip_invalid,
-            delete_missing,
-            job,
-            title_ns_serial_id,
-            title_ns_mono_id
-          )
+            datafile.fileData = temp_file.getBytes()
+            datafile.save(failOnError:true,flush:true)
+            log.debug("Saved new datafile : ${datafile.id} -- ${datafile.uploadName}")
+          }
         }
 
-        if (active_group_id) {
-          background_job.groupId = active_group_id
-        }
-        background_job.ownerId = user.id
-        background_job.description = "KBART REST ingest (${pkgInfo.name})".toString()
-        background_job.type = RefdataCategory.lookup('Job.Type', (dry_run ? 'KBARTIngestDryRun' : 'KBARTIngest'))
-        background_job.linkedItem = pkgInfo
-        background_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
-        background_job.startOrQueue()
-        background_job.startTime = new Date()
+        if (datafile) {
+          Job background_job = concurrencyManagerService.createJob { Job job ->
+            TSVIngestionService.updatePackage(pkg.id,
+              datafile.id,
+              title_ns_id,
+              async,
+              add_only,
+              user.id,
+              active_group_id,
+              dry_run,
+              skip_invalid,
+              delete_missing,
+              job,
+              title_ns_serial_id,
+              title_ns_mono_id
+            )
+          }
 
-        if (async) {
-          result.jobId = background_job.uuid
+          if (active_group_id) {
+            background_job.groupId = active_group_id
+          }
+          background_job.ownerId = user.id
+          background_job.description = "KBART REST ingest (${pkgInfo.name})".toString()
+          background_job.type = RefdataCategory.lookup('Job.Type', (dry_run ? 'KBARTIngestDryRun' : 'KBARTIngest'))
+          background_job.linkedItem = pkgInfo
+          background_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
+          background_job.startOrQueue()
+          background_job.startTime = new Date()
+
+          if (async) {
+            result.jobId = background_job.uuid
+          }
+          else {
+            result.job_result = background_job.get()
+          }
         }
         else {
-          result.job_result = background_job.get()
+          log.debug("Unable to reference DataFile!")
+          result.result = 'ERROR'
+          response.status = 500
+          result.message = "There has been an error processing the KBART file!"
         }
       }
-      else {
-        log.debug("Unable to reference DataFile!")
+      else if (source) {
+        log.warn("KBART import failed for ${pkg} due to filesize restrictions!")
         result.result = 'ERROR'
-        response.status = 500
-        result.message = "There has been an error processing the KBART file!"
+        response.status = 413
+        result.message = "The provided file is too big!"
+        result.messageCode = "kbart.errors.fileSize"
+
+        adminAlertingService.sendSizeLimitAlert(pkg)
       }
     }
     else if (pkg?.id) {

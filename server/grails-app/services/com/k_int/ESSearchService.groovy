@@ -45,7 +45,8 @@ class ESSearchService{
           "editionStatement",
           "volumeNumber",
           "firstAuthor",
-          "firstEditor"
+          "firstEditor",
+          "anyProvider"
       ],
       refdata: [
           "listStatus",
@@ -81,10 +82,10 @@ class ESSearchService{
           "qfields",
           "qsName",
           "subjects",
-          "subject"
+          "subject",
+          "updateMethod"
       ],
       linked: [
-          provider: "provider",
           currentPublisher: "publisher",
           linkedPackage: "tippPackage",
           tippPackage: "tippPackage",
@@ -182,6 +183,7 @@ class ESSearchService{
         result.firstrec = params.offset + 1
         result.resultsTotal = searchResponse.getHits().getTotalHits().value ?: 0
         result.lastrec = Math.min(params.offset + params.max, result.resultsTotal)
+        result.offset = params.offset
 
         if (searchResponse.getAggregations()) {
           result.facets = [:]
@@ -503,6 +505,44 @@ class ESSearchService{
     }
   }
 
+  private void addUpdateMethodQuery(query, errors, qpars) {
+
+    def val = null
+    String path = "source"
+    String importId = "source.importConfig"
+    String autoId = "source.automaticUpdates"
+    String[] importConfigs = ["wekb", "ezb"]
+
+    if (qpars.updateMethod) {
+      val = qpars.updateMethod
+    }
+
+    if ( val?.trim() ) {
+
+      val = val.trim().toLowerCase()
+      if (importConfigs.contains(val)) {
+        query.must(QueryBuilders.nestedQuery(
+                path, QueryBuilders.termQuery(importId, val), ScoreMode.Max)
+        )
+      }
+      else if (val == "auto" || val == "none") {
+        QueryBuilder autoQuery = QueryBuilders.nestedQuery(
+                path, QueryBuilders.termQuery(autoId, true), ScoreMode.Max
+        )
+
+        val == "auto" ? query.must(autoQuery) : query.mustNot(autoQuery)
+
+        for(String im : importConfigs){
+          QueryBuilder q = QueryBuilders.nestedQuery(
+                  path, QueryBuilders.termQuery(importId, im), ScoreMode.Max
+          )
+          query.mustNot(q)
+        }
+
+      }
+    }
+  }
+
   private void processNameFields(query, errors, qpars) {
     if (qpars.label) {
       def sanitized_param = sanitizeParam(qpars.label)
@@ -527,10 +567,12 @@ class ESSearchService{
         log.debug("${phraseQry}")
         labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2f))
         labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
+        labelQuery.should(QueryBuilders.matchPhraseQuery('normname', phraseQry))
       }
       else {
         labelQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
         labelQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
+        labelQuery.should(QueryBuilders.matchQuery('normname', sanitized_param).operator(Operator.AND))
       }
 
       labelQuery.minimumShouldMatch(1)
@@ -563,7 +605,8 @@ class ESSearchService{
     }
     else if (qpars.suggest) {
       def sanitized_param = sanitizeParam(qpars.suggest)
-      query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND).boost(0.6f))
+      query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND))
+      query.must(QueryBuilders.matchQuery('normSuggest', sanitized_param).operator(Operator.AND).boost(0.5f))
     }
     else if (qpars.qsName) {
       def sanitized_param = sanitizeParam(qpars.qsName)
@@ -572,10 +615,11 @@ class ESSearchService{
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
       labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 8f))
       labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 5.2f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("normname", 5f))
 
       // search in OR-mode, but for ALL terms across different name fields
       QueryBuilder splitQuery = QueryBuilders.boolQuery()
-      String[] fields = ['name', 'altname']
+      String[] fields = ['name', 'altname', 'normname']
 
       for (String word in sanitized_param.split(" ")) {
         splitQuery.must(QueryBuilders.multiMatchQuery(word, fields))
@@ -610,7 +654,7 @@ class ESSearchService{
                            requestMapping.complex)
         for (String field in qpars.list('qfields')){
           if (field == "name") {
-            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
+            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(5f))
           }
           else if (field == "altname") {
             genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
@@ -636,10 +680,17 @@ class ESSearchService{
   }
 
   private void processLinkedField(query, field, val) {
-    def vals = val instanceof String ? [val] : val
+    List vals
+
+    if (val instanceof List) {
+      vals = val
+    }
+    else {
+      vals = [val]
+    }
 
     vals.each {
-      if (it?.trim()) {
+      if ((it instanceof String && it.trim()) || it) {
         QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
         def sanitized_param = sanitizeParam(it)
         def finalVal = it
@@ -686,6 +737,41 @@ class ESSearchService{
     log.debug("Processing platform value ${val} .. ")
   }
 
+  private void addProviderQuery(query, errors, vals, boolean anyProvider = false) {
+    QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+    vals.each {
+      if (it?.trim()) {
+        String sanitized_param = sanitizeParam(it)
+        def finalVal = it
+
+        try {
+          finalVal = KBComponent.get(Long.valueOf(it)).getLogEntityId()
+        }
+        catch (java.lang.NumberFormatException nfe) {
+        }
+
+        if (finalVal == 'null') {
+          finalVal = ""
+        }
+
+        log.debug("process anyProvider: ${finalVal}")
+
+        linkedFieldQuery.should(QueryBuilders.termQuery('provider', finalVal))
+        linkedFieldQuery.should(QueryBuilders.termQuery('providerUuid', sanitized_param))
+        linkedFieldQuery.should(QueryBuilders.termQuery('providerName', sanitized_param))
+
+        if (anyProvider) {
+          linkedFieldQuery.should(QueryBuilders.termQuery('contentProvider', finalVal))
+          linkedFieldQuery.should(QueryBuilders.termQuery('contentProviderUuid', sanitized_param))
+          linkedFieldQuery.should(QueryBuilders.termQuery('contentProviderName', sanitized_param))
+        }
+      }
+    }
+
+    linkedFieldQuery.minimumShouldMatch(1)
+    query.must(linkedFieldQuery)
+  }
 
   /**
    * scroll : Get large amounts of data from the opensearch index --
@@ -840,6 +926,7 @@ class ESSearchService{
       processGenericFields(exactQuery, errors, params)
       addIdentifierQuery(exactQuery, errors, params)
       addSubjectQuery(exactQuery, errors, params)
+      addUpdateMethodQuery(exactQuery, errors, params)
       specifyQueryWithParams(params, exactQuery, errors, unknown_fields)
 
       if(unknown_fields.size() > 0){
@@ -1055,6 +1142,12 @@ class ESSearchService{
           }
         }
         exactQuery.must(QueryBuilders.termQuery('curatoryGroups', cg_name))
+      }
+      else if (k == 'provider') {
+        def vals = v instanceof String ? [v] : v
+        boolean any_provider = params.boolean('anyProvider') ?: false
+
+        addProviderQuery(exactQuery, errors, vals, any_provider)
       }
       else if (requestMapping.dates && k in requestMapping.dates){
         log.debug("Processing date param ${k}")

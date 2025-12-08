@@ -196,6 +196,15 @@ class PackageCachingService {
                   }
                 }
 
+                if (item.contentProvider) {
+                  'contentProvider'(id: item.contentProvider.id, uuid: item.contentProvider.uuid) {
+                    'name'(item.contentProvider.name)
+                  }
+                }
+                else {
+                  'contentProvider'()
+                }
+
                 'listVerifiedDate'(item.listVerifiedDate ? dateFormatService.formatIsoTimestamp(item.listVerifiedDate) : null)
 
                 'curatoryGroups' {
