@@ -103,18 +103,10 @@ class OaiController {
     }
   }
 
-  private def buildMetadata (subject, builder, config) {
+  private void buildMetadata (subject, builder, config) {
     log.debug("buildMetadata....");
 
-    def attr = [:]
-    def newCache = false
-    File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
-
-    if (!dir.exists()) {
-      dir.mkdirs()
-    }
-
-    def cachedXml = null
+    Map attr = [:]
 
     config.metadataNamespaces.each {ns, url ->
       ns = (ns == '_default_' ? '' : ":${ns}")
@@ -127,21 +119,32 @@ class OaiController {
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
       if (subject.class == Package && grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
-        def currentFile = null
+        File cache_dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
 
-        while (!currentFile) {
-          for (File file : dir.listFiles()) {
-            if (file.name.contains(subject.uuid)) {
-              currentFile = file
+        if (cache_dir.exists()) {
+          int tries = 0
+          File currentFile
+
+          while (!currentFile && tries < 10) {
+            for (File file : cache_dir.listFiles()) {
+              if (file.name.contains(subject.uuid)) {
+                currentFile = file
+              }
             }
-          }
+            tries++
 
-          if(!currentFile) {
-            sleep(1000)
+            if(!currentFile) {
+              sleep(1000)
+            }
           }
         }
 
-        mkp.yieldUnescaped XmlUtil.serialize(new XmlParser(false, false).parse(currentFile)).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
+        if (currentFile) {
+          mkp.yieldUnescaped XmlUtil.serialize(new XmlParser(false, false).parse(currentFile)).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
+        }
+        else {
+          throw new RuntimeException("Unable to find cached file!")
+        }
       }
       else {
         subject."${config.methodName}" (builder, attr)
@@ -226,8 +229,16 @@ class OaiController {
         if (!record && errors.size() == 0) {
           errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown or illegal in this repository.'])
         }
-        else if (record && cachedPackageResponse && !record.lastCachedDate) {
-          errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The requested resource is not yet ready for exchange. Please try again later.'])
+        else if (record && cachedPackageResponse) {
+          boolean has_cached_file = OAIService.verifyCachedPackageFile(record)
+
+          if (!record.lastCachedDate || !has_cached_file) {
+            errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The requested resource is not yet ready for exchange. Please try again later.'])
+          }
+
+          if (record.lastCachedDate && !has_cached_file) {
+            log.warn("getRecord :: ${record} has a lastCachedDate (${record.lastCachedDate}) but no file can be found!")
+          }
         }
       }
       else {

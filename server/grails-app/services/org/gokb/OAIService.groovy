@@ -89,6 +89,15 @@ class OAIService {
         result.rec_count = new_rec_count + pagination.offset
       }
 
+      if (config.oaiConfig.id == 'packages' && config.oaiConfig.cachedPackageResponse)
+      result.records.each { pkg ->
+        boolean has_file = verifyCachedPackageFile(pkg)
+
+        if (!has_file) {
+          result.errors << [code:'idDoesNotExist', name: 'identifier', expl: 'The requested resource is not yet ready for exchange. Please try again later.']
+        }
+      }
+
       log.debug("${result.query} rec_count is ${result.rec_count}, records_size=${result.records.size()}")
 
       if ((!pagination.no_offset_rt && (pagination.offset + result.records.size() < result.rec_count)) || result.records.size() < new_rec_count) {
@@ -102,6 +111,21 @@ class OAIService {
     }
 
     result
+  }
+
+  private boolean verifyCachedPackageFile(pkg) {
+    File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
+    boolean found = false
+
+    if (dir.exists()) {
+      for (File file : dir.listFiles()) {
+        if (file.name.contains(pkg.uuid)) {
+          found = true
+        }
+      }
+    }
+
+    found
   }
 
   private void processStatusFilter(result, status_filter) {
