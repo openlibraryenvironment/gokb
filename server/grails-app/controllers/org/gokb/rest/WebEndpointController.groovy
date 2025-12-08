@@ -42,9 +42,9 @@ class WebEndpointController {
             resultList*.remove('ba_password')
             resultList*.remove('ba_username')
 
-            if (params['method']) {
+            /* if (params['method']) {
                 resultList = resultList.findAll( x -> x.transferMethod?.name == params['method'])
-            }
+            } */
 
             result.data = resultList
         }

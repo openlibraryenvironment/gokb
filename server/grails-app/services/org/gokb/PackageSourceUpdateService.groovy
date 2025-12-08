@@ -6,7 +6,6 @@ import grails.converters.JSON
 import groovy.util.logging.Slf4j
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPClientConfig
-
 import org.apache.http.HttpEntity
 import org.apache.http.HttpHeaders
 import org.apache.http.util.EntityUtils
@@ -443,120 +442,115 @@ class PackageSourceUpdateService {
 
   def fetchKbartFile(File tmp_file, URL src_url, boolean restrictSize = true) {
     def result = [content_mime_type: null, file_name: null]
-    HttpClient client = HttpClient.newBuilder()
-      .connectTimeout(Duration.ofSeconds(30))
-      .followRedirects(HttpClient.Redirect.NORMAL)
-      .build()
-
     Long max_length = 20971520L // 1024 * 1024 * 20
     Long content_length
 
-    try {
-      HttpRequest head_request = HttpRequest.newBuilder()
-        .uri(src_url.toURI())
-        .header("User-Agent", "GOKb KBART Updater")
-        .method('HEAD', BodyPublishers.noBody())
-        .build()
+    RequestConfig requestConfig = RequestConfig.custom()
+            .setConnectionRequestTimeout(10000)
+            .setSocketTimeout(30000)
+            .build()
 
-      def head_response = client.send(head_request, BodyHandlers.discarding())
+    HttpClientBuilder builder = HttpClients.custom()
+            .setDefaultRequestConfig(requestConfig)
 
-      if (head_response?.statusCode() == 405) {
-        log.debug("Unable to send HEAD request ..")
-      }
-      else if (head_response?.statusCode()) {
-        HttpHeaders test_headers = head_response.headers()
-        content_length = test_headers.firstValue('Content-Length').isPresent() ? Long.valueOf(test_headers.firstValue('Content-Length').get()) : null
+    try (CloseableHttpClient httpClient = builder.build()) {
+      HttpHead httpHead = new HttpHead(src_url.toURI())
+      HttpGet httpGet = new HttpGet(src_url.toURI())
 
-        log.debug("Got HEAD result headers: ${test_headers}")
+      httpHead.setHeader(HttpHeaders.USER_AGENT, "GOKb KBART Updater")
+      httpGet.setHeader(HttpHeaders.USER_AGENT, "GOKb KBART Updater")
+
+      httpClient.execute(httpHead, classicHttpResponse -> {
+        int code = classicHttpResponse.getStatusLine().getStatusCode()
+
+        if (code == 405) {
+          log.debug("Unable to send HEAD request ..")
+        }
+        else if (code) {
+          content_length = classicHttpResponse.containsHeader('Content-Length') ? Long.valueOf(classicHttpResponse.getFirstHeader('Content-Length').getValue()) : null
+        }
 
         // reject files bigger than 20 MB
         if (restrictSize && content_length && content_length > max_length) {
           result.fileSizeError = true
           return result
         }
-      }
+      })
 
-      HttpRequest request = HttpRequest.newBuilder()
-              .uri(src_url.toURI())
-              .header("User-Agent", "GOKb KBART Updater")
-              .build()
+      httpClient.execute(httpGet, classicHttpResponse -> {
+        int code = classicHttpResponse.getStatusLine().getStatusCode()
 
-      HttpResponse<InputStream> response = client.send(request, BodyHandlers.ofInputStream())
-      HttpHeaders headers = response.headers()
+        String file_name = classicHttpResponse.containsHeader('Content-Disposition') ? classicHttpResponse.getFirstHeader('Content-Disposition').getValue() : null
 
-      log.debug("Got HEAD result headers: ${headers}")
+        if (file_name?.contains('filename=')) {
+          file_name = file_name.split('filename=')[1]
+        }
+        else if (file_name?.contains('filename*=')) {
+          file_name = file_name.split('filename*=')[1].split("'")[2]
+        }
 
-      def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
+        result.content_mime_type = classicHttpResponse.getFirstHeader('Content-Type').getValue()
 
-      if (file_name?.contains('filename=')) {
-        file_name = file_name.split('filename=')[1]
-      }
-      else if (file_name?.contains('filename*=')) {
-        file_name = file_name.split('filename*=')[1].split("'")[2]
-      }
+        if (code > 400) {
+          log.debug("KBART fetch status: ${code}")
+        }
+        else if (!file_name && result.content_mime_type?.startsWith('text/plain')) {
+          file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
+        }
+        else if (!file_name && result.content_mime_type?.startsWith('text/html')) {
+          log.warn("Got HTML result at KBART URL ${src_url}!")
+          result.accessError = true
+          return result
+        }
 
-      result.content_mime_type = headers.firstValue('Content-Type').isPresent() ? headers.firstValue('Content-Type').get() : null
+        content_length = classicHttpResponse.containsHeader('Content-Length') ? Long.valueOf(classicHttpResponse.getFirstHeader('Content-Length').getValue()) : null
 
-      if (response.statusCode() >= 400) {
-        log.debug("KBART fetch status: ${response.statusCode()}")
-      }
-      else if (!file_name && result.content_mime_type?.startsWith('text/plain')) {
-        file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
-      }
-      else if (!file_name && result.content_mime_type?.startsWith('text/html')) {
-        log.warn("Got HTML result at KBART URL ${src_url}!")
-        result.accessError = true
-        return result
-      }
+        if (restrictSize && content_length && content_length > max_length) {
+          result.fileSizeError = true
+        }
+        else if (file_name?.trim()) {
+          file_name = file_name.replaceAll(/\"/, '')
 
-      content_length = headers.firstValue('Content-Length').isPresent() ? Long.valueOf(headers.firstValue('Content-Length').get()) : null
+          if ((file_name?.trim()?.endsWith('.tsv') || file_name?.trim()?.endsWith('.txt') || file_name?.trim()?.endsWith('.kbart')) &&
+                  (result.content_mime_type?.startsWith("text/plain") ||
+                          result.content_mime_type?.startsWith("text/csv") ||
+                          result.content_mime_type?.startsWith("text/tab-separated-values") ||
+                          result.content_mime_type == 'application/octet-stream')) {
+            HttpEntity entity = classicHttpResponse.getEntity();
+            result.file_name = file_name
 
-      if (restrictSize && content_length && content_length > max_length) {
-        response.body().close()
-        result.fileSizeError = true
-      }
-      else if (file_name?.trim()) {
-        file_name = file_name.replaceAll(/\"/, '')
+            if (entity != null) {
+              try (InputStream inputStream = entity.getContent(); FileOutputStream fileOutputStream = new FileOutputStream(tmp_file)) {
+                byte[] dataBuffer = new byte[1024];
+                int bytesRead;
+                Long current_total = 0;
 
-        if ((file_name?.trim()?.endsWith('.tsv') || file_name?.trim()?.endsWith('.txt') || file_name?.trim()?.endsWith('.kbart')) &&
-            (result.content_mime_type?.startsWith("text/plain") ||
-            result.content_mime_type?.startsWith("text/csv") ||
-            result.content_mime_type?.startsWith("text/tab-separated-values") ||
-            result.content_mime_type == 'application/octet-stream')) {
-          log.debug("${result.content_mime_type} ${headers.map()}")
-          result.file_name = file_name
+                while((bytesRead = inputStream.read(dataBuffer)) != -1) {
+                  fileOutputStream.write(dataBuffer, 0, bytesRead);
 
-          OutputStream outStream = new FileOutputStream(tmp_file)
+                  current_total += bytesRead
 
-          byte[] buffer = new byte[8 * 1024]
-          int bytesRead
-          Long current_total = 0
+                  if (restrictSize && !content_length && current_total > max_length) {
+                    result.fileSizeError = true
+                    break
+                  }
+                }
 
-          while ((bytesRead = response.body().read(buffer)) != -1) {
-            outStream.write(buffer, 0, bytesRead)
+                if (!result.fileSizeError) {
+                  EntityUtils.consume(entity)
+                }
+              }
 
-            current_total += bytesRead
-
-            if (!content_length && current_total > max_length) {
-              result.fileSizeError = true
-              response.body().close()
-              break
+              if (result.fileSizeError) {
+                tmp_file.delete()
+              }
             }
           }
-
-          outStream.close()
-
-          log.debug("Wrote ${tmp_file?.length()}")
-
-          if (result.fileSizeError) {
-            tmp_file.delete()
+          else {
+            result.mimeTypeError = true
           }
         }
-        else {
-          result.mimeTypeError = true
-          response.body().close()
-        }
-      }
+      })
     }
     catch (Exception e) {
       result.connectError = true
