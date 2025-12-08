@@ -115,7 +115,8 @@ class ESSearchService{
           "order",
           "_embed",
           "_include",
-          "_exclude"
+          "_exclude",
+          "defaultOr"
       ],
       number: [
         [
@@ -544,6 +545,8 @@ class ESSearchService{
   }
 
   private void processNameFields(query, errors, qpars) {
+    boolean defaultOr = qpars.boolean('defaultOr')
+
     if (qpars.label) {
       def sanitized_param = sanitizeParam(qpars.label)
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
@@ -570,9 +573,9 @@ class ESSearchService{
         labelQuery.should(QueryBuilders.matchPhraseQuery('normname', phraseQry))
       }
       else {
-        labelQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
-        labelQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
-        labelQuery.should(QueryBuilders.matchQuery('normname', sanitized_param).operator(Operator.AND))
+        labelQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(2f))
+        labelQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(1.3f))
+        labelQuery.should(QueryBuilders.matchQuery('normname', sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
       }
 
       labelQuery.minimumShouldMatch(1)
@@ -588,7 +591,8 @@ class ESSearchService{
         query.must(QueryBuilders.matchPhraseQuery('name', phraseQry))
       }
       else {
-        query.must(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND))
+        query.must(QueryBuilders.matchQuery("name", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
+        query.must(QueryBuilders.matchQuery("normname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND)).boost(0.5f)
       }
     }
     else if (qpars.altname) {
@@ -600,31 +604,35 @@ class ESSearchService{
         query.must(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        query.must(QueryBuilders.matchQuery('altname', sanitized_param).operator(Operator.AND))
+        query.must(QueryBuilders.matchQuery('altname', sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
       }
     }
     else if (qpars.suggest) {
       def sanitized_param = sanitizeParam(qpars.suggest)
-      query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND))
-      query.must(QueryBuilders.matchQuery('normSuggest', sanitized_param).operator(Operator.AND).boost(0.5f))
+      query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
+      query.must(QueryBuilders.matchQuery('normSuggest', sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(0.5f))
     }
     else if (qpars.qsName) {
       def sanitized_param = sanitizeParam(qpars.qsName)
       sanitized_param = escapeQueryString(sanitized_param)
 
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 8f))
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 5.2f))
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("normname", 5f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("name", 8f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("altname", 5.2f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("normname", 6f))
 
-      // search in OR-mode, but for ALL terms across different name fields
-      QueryBuilder splitQuery = QueryBuilders.boolQuery()
-      String[] fields = ['name', 'altname', 'normname']
+      if (!defaultOr) {
+        // search in OR-mode, but for ALL terms across different name fields
 
-      for (String word in sanitized_param.split(" ")) {
-        splitQuery.must(QueryBuilders.multiMatchQuery(word, fields))
+        QueryBuilder splitQuery = QueryBuilders.boolQuery()
+        String[] fields = ['name', 'altname', 'normname']
+
+        for (String word in sanitized_param.split(" ")) {
+          splitQuery.must(QueryBuilders.multiMatchQuery(word, fields))
+        }
+
+        labelQuery.should(splitQuery)
       }
-      labelQuery.should(splitQuery)
 
       labelQuery.minimumShouldMatch(1)
 
@@ -633,6 +641,8 @@ class ESSearchService{
   }
 
   private void processGenericFields(query, errors, qpars) {
+    boolean defaultOr = qpars.boolean('defaultOr')
+
     if (qpars.q?.trim()) {
       QueryBuilder genericQuery = QueryBuilders.boolQuery()
       def id_params = ['identifiers.value': sanitizeParam(qpars.q)]
@@ -654,23 +664,27 @@ class ESSearchService{
                            requestMapping.complex)
         for (String field in qpars.list('qfields')){
           if (field == "name") {
-            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(5f))
+            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(5f))
+            genericQuery.should(QueryBuilders.matchQuery("normname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(2.5f))
           }
           else if (field == "altname") {
-            genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
+            genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(1.3f))
           }
           else if (field == "suggest") {
-            genericQuery.should(QueryBuilders.matchQuery("suggest", sanitized_param).operator(Operator.AND).boost(0.6f))
+            genericQuery.should(QueryBuilders.matchQuery("suggest", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(0.6f))
+            genericQuery.should(QueryBuilders.matchQuery("normSuggest", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(0.6f))
           }
           else if (field in allQFields){
-            genericQuery.should(QueryBuilders.matchQuery(field, sanitized_param).operator(Operator.AND))
+            genericQuery.should(QueryBuilders.matchQuery(field, sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
           }
         }
       }
       else{
-        genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
-        genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
-        genericQuery.should(QueryBuilders.matchQuery("suggest", sanitized_param).operator(Operator.AND).boost(0.6f))
+        genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(2f))
+        genericQuery.should(QueryBuilders.matchQuery("normname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(1.5f))
+        genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(1.3f))
+        genericQuery.should(QueryBuilders.matchQuery("suggest", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(0.6f))
+        genericQuery.should(QueryBuilders.matchQuery("normSuggest", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(0.4f))
         genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
       }
       genericQuery.minimumShouldMatch(1)
@@ -1085,7 +1099,8 @@ class ESSearchService{
 
 
   private void specifyQueryWithParams(params, QueryBuilder exactQuery, errors, unknown_fields){
-    def platformParam = null
+    String platformParam
+
     params.each{ k, v ->
       if (requestMapping.generic && k in requestMapping.generic){
         def final_val = v
