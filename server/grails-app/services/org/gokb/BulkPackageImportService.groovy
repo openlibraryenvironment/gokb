@@ -581,15 +581,15 @@ class BulkPackageImportService {
                     }
 
                     if (item.fixed != null || type.fixed != null) {
-                      obj.fixed = setPackageBinaryRefdata(obj, 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
+                      setPackageBinaryRefdata(obj, 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
                     }
 
                     if (item.breakable != null || type.breakable  != null) {
-                      obj.breakable = setPackageBinaryRefdata(obj, 'Package.Breakable', item.breakable != null ? item.breakable : type.breakable)
+                      setPackageBinaryRefdata(obj, 'Package.Breakable', item.breakable != null ? item.breakable : type.breakable)
                     }
 
                     if (item.consistent != null || type.consistent != null) {
-                      obj.consistent = setPackageBinaryRefdata(obj, 'Package.Consistent', item.consistent != null ? item.consistent : type.consistent)
+                      setPackageBinaryRefdata(obj, 'Package.Consistent', item.consistent != null ? item.consistent : type.consistent)
                     }
 
                     if (item.scope || type.scope) {
