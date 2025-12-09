@@ -42,9 +42,9 @@ class BulkPackageImportService {
     "global": [required: false, rdc: 'Package.Global'],
     "package_created_date": [required: false, validate: 'checkTimestamp'],
     "package_changed_date": [required: false, validate: 'checkTimestamp'],
-    "fixed": [required: false, rdc: 'Package.Fixed'],
-    "consistent": [required: false, rdc: 'Package.Consistent'],
-    "breakable": [required: false, rdc: 'Package.Breakable'],
+    "fixed": [required: false, type: Boolean],
+    "consistent": [required: false, type: Boolean],
+    "breakable": [required: false, type: Boolean],
     "scope": [required: false, rdc: 'Package.Scope'],
     "other_package_identifiers": [required: false],
     "start_year": [required: false],
@@ -296,6 +296,9 @@ class BulkPackageImportService {
       }
       else if (cfg.validate && cobj[fname] && !validationService."${cfg.validate}"(cobj[fname])) {
         errors[fname] = [message: "Unable to lookup refdata ${fname}:${cobj[fname]}!"]
+      }
+      else if (cfg.type && cobj.containsKey(fname) && cobj[fname] != null && cobj[fname].class != cfg.type) {
+        errors[fname] = [message: "Entry for field ${fname} must be of type ${cfg.type}!"]
       }
     }
 
@@ -572,28 +575,39 @@ class BulkPackageImportService {
                   if (obj) {
                     source = obj.source
 
-                    if (!obj.contentType && (item.content_type || type.content_type)) {
-                      obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
+                    if (item.content_type || type.content_type) {
+                      if (!obj.contentType) {
+                        obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
+                      }
+                      else {
+                        log.debug("Not updating existing contentType ..")
+                      }
                     }
 
                     if (item.global || type.global) {
                       obj.global = RefdataCategory.lookup('Package.Global', item.global ?: type.global)
                     }
 
-                    if (item.fixed != null || type.fixed != null) {
-                      setPackageBinaryRefdata(obj, 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
-                    }
+                    try {
 
-                    if (item.breakable != null || type.breakable  != null) {
-                      setPackageBinaryRefdata(obj, 'Package.Breakable', item.breakable != null ? item.breakable : type.breakable)
-                    }
+                      if (item.containsKey('fixed') || type.fixed != null) {
+                        setPackageBinaryRefdata(obj, 'fixed', 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
+                      }
 
-                    if (item.consistent != null || type.consistent != null) {
-                      setPackageBinaryRefdata(obj, 'Package.Consistent', item.consistent != null ? item.consistent : type.consistent)
-                    }
+                      if (item.containsKey('breakable') || type.breakable != null) {
+                        setPackageBinaryRefdata(obj, 'breakable', 'Package.Breakable', item.breakable != null ? item.breakable : type.breakable)
+                      }
 
-                    if (item.scope || type.scope) {
-                      obj.consistent = RefdataCategory.lookup('Package.Scope', item.scope ?: type.scope)
+                      if (item.containsKey('consistent') || type.consistent != null) {
+                        setPackageBinaryRefdata(obj, 'consistent', 'Package.Consistent', item.consistent != null ? item.consistent : type.consistent)
+                      }
+
+                      if (item.scope || type.scope) {
+                        obj.scope = RefdataCategory.lookup('Package.Scope', item.scope ?: type.scope)
+                      }
+                    }
+                    catch (Exception e) {
+                      log.debug("FAIL: ", e)
                     }
 
                     if (listInfo.updateNames && final_name != obj.name) {
@@ -933,15 +947,15 @@ class BulkPackageImportService {
     result
   }
 
-  private void setPackageBinaryRefdata(Package obj, String prop, boolean val) {
+  private void setPackageBinaryRefdata(Package obj, String prop, String category, boolean val) {
     if (val == true) {
-      obj[prop] = RefdataCategory.lookup(prop, "Yes")
+      obj[prop] = RefdataCategory.lookup(category, "Yes")
     }
     else if (val == false) {
-      obj[prop] = RefdataCategory.lookup(prop, "No")
+      obj[prop] = RefdataCategory.lookup(category, "No")
     }
     else {
-      obj[prop] = RefdataCategory.lookup(prop, "Unknown")
+      obj[prop] = RefdataCategory.lookup(category, "Unknown")
     }
   }
 
