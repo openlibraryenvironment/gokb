@@ -86,8 +86,8 @@ class BulkImportSpec extends Specification {
             collection_name: "test_bulk_import_collection",
             scope: null,
             content_type: null,
-            breakable: null,
-            consistent: null,
+            breakable: false,
+            consistent: true,
             fixed: null,
             package_id_namespace: "bulktitlenamespace",
             title_id_namespace: null,
@@ -104,6 +104,7 @@ class BulkImportSpec extends Specification {
                 package_source: "kbplus",
                 package_provider: Org.findByName('TestBulkOrg').uuid,
                 package_nominal_platform: Platform.findByName('TestBulkPlt').uuid,
+                consistent: false,
                 package_curatory_group: 'TestBulkCG',
                 package_titlelist: "https://gokb.org/gokb/packages/kbart/60264065?exportType=tipp",
                 package_id_namespace: null,
@@ -120,7 +121,14 @@ class BulkImportSpec extends Specification {
     when: "Caller asks for this bulk config to be created"
 
     HttpRequest request = HttpRequest.POST(getUrlPath() + "/bulkImport/assertBulkConfig", json_record).basicAuth('admin', 'admin')
-    def resp =  client.exchange(request, Map)
+    HttpResponse resp
+
+    try {
+      resp = client.exchange(request, Map)
+    }
+    catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      resp = e.response
+    }
 
     then: "The request is successful"
     resp.status == HttpStatus.OK
@@ -138,9 +146,9 @@ class BulkImportSpec extends Specification {
           [
             collection_name: "test_bulk_import_collection",
             scope: null,
-            content_type: null,
-            breakable: null,
-            consistent: null,
+            content_type: false,
+            breakable: true,
+            consistent: true,
             fixed: null,
             package_id_namespace: "bulktitlenamespace",
             title_id_namespace: null,
@@ -160,6 +168,7 @@ class BulkImportSpec extends Specification {
                 package_curatory_group: 'TestBulkCG',
                 package_titlelist: "https://gokb.org/gokb/packages/kbart/60264065?exportType=tipp",
                 package_id_namespace: null,
+                breakable: true,
                 package_content_type: "Journal",
                 title_id_namespace: "doi",
                 package_created_date: null,
@@ -180,10 +189,19 @@ class BulkImportSpec extends Specification {
     when: "Caller asks for this bulk config to be processed"
 
     HttpRequest init_request = HttpRequest.POST(getUrlPath() + "/bulkImport/assertBulkConfig", json_record).basicAuth('admin', 'admin')
-    client.exchange(init_request, Map)
+
+    try {
+      client.exchange(init_request, Map)
+    }
+    catch (Exception e) {}
 
     HttpRequest request = HttpRequest.GET(getUrlPath() + "/bulkImport/runBulkUpdate?dryRun=false&async=false&code=testbulkimport").basicAuth('admin', 'admin')
-    HttpResponse resp = client.exchange(request, Map)
+    HttpResponse resp
+
+    try {
+      resp = client.exchange(request, Map)
+    }
+    catch (Exception e) {}
 
     then: "The request is successful"
     resp.status == HttpStatus.OK
@@ -212,8 +230,8 @@ class BulkImportSpec extends Specification {
             collection_name: "test_bulk_import_collection",
             scope: null,
             content_type: null,
-            breakable: null,
-            consistent: null,
+            breakable: false,
+            consistent: true,
             fixed: null,
             package_id_namespace: "bulktitlenamespace",
             title_id_namespace: null,
@@ -233,6 +251,7 @@ class BulkImportSpec extends Specification {
                 package_curatory_group: 'TestBulkCG',
                 package_titlelist: "https://gokb.org/gokb/packages/kbart/60264065?exportType=tipp",
                 package_id_namespace: null,
+                consistent: false,
                 package_content_type: "Journal",
                 title_id_namespace: "doi",
                 package_created_date: null,
@@ -263,7 +282,14 @@ class BulkImportSpec extends Specification {
     client.exchange(init_request, Map)
 
     HttpRequest request = HttpRequest.GET(getUrlPath() + "/bulkImport/runBulkUpdate?dryRun=false&async=false&code=testbulkimport").basicAuth('admin', 'admin')
-    HttpResponse resp = client.exchange(request, Map)
+    HttpResponse resp
+
+    try {
+      resp = client.exchange(request, Map)
+    }
+    catch (Exception e) {
+      resp = e.response
+    }
 
     then: "The request is successful"
     resp.status == HttpStatus.OK
@@ -278,6 +304,9 @@ class BulkImportSpec extends Specification {
     pkg.curatoryGroups[0].name == CuratoryGroup.findByName('TestBulkCG').name
     pkg.ids.size() == 1
     pkg.ids[0].namespace.value == 'bulktitlenamespace'
+    pkg.consistent?.value == 'No'
+    pkg.breakable?.value == 'No'
+    pkg.fixed?.value == 'Unknown'
     def pkg_updated = Package.findByName('TestBulkPkgNew')
   }
 
@@ -343,9 +372,17 @@ class BulkImportSpec extends Specification {
     client.exchange(init_request, Map)
 
     HttpRequest request = HttpRequest.GET(getUrlPath() + "/bulkImport/runBulkUpdate?dryRun=false&async=false&code=testbulkimport").basicAuth('admin', 'admin')
-    HttpResponse resp = client.exchange(request, Map)
+    HttpResponse resp
+
+    try {
+      resp = client.exchange(request, Map)
+    }
+    catch (Exception e) {
+
+    }
 
     then: "The request is successful"
+    resp.body().error == null
     resp.status == HttpStatus.OK
 
     expect:
