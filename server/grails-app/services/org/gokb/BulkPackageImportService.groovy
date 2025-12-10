@@ -118,7 +118,7 @@ class BulkPackageImportService {
             RefdataValue policy_val = RefdataCategory.lookup('BulkImportListConfig.CuratorPolicy', reqBody.curatorPolicy)
 
             if (policy_val) {
-              existing_cfg.frequency = policy_val
+              existing_cfg.curatorPolicy = policy_val
             }
             else {
               log.warn("Unable to reference bulk curator policy ${reqBody.curatorPolicy}")
