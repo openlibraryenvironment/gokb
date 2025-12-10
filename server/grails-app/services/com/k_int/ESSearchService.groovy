@@ -664,18 +664,26 @@ class ESSearchService{
                            requestMapping.complex)
         for (String field in qpars.list('qfields')){
           if (field == "name") {
-            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(5f))
-            genericQuery.should(QueryBuilders.matchQuery("normname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(2.5f))
+            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(qpars.primaryUrl ? 1000f : 8f))
+            genericQuery.should(QueryBuilders.matchQuery("normname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(2f))
           }
           else if (field == "altname") {
-            genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(1.3f))
+            genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
           }
           else if (field == "suggest") {
             genericQuery.should(QueryBuilders.matchQuery("suggest", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(0.6f))
             genericQuery.should(QueryBuilders.matchQuery("normSuggest", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(0.6f))
           }
           else if (field in allQFields){
-            genericQuery.should(QueryBuilders.matchQuery(field, sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
+            if (field.contains('Url')) {
+              String final_url_qry = sanitizeParam(qpars.q.startsWith('https') ? qpars.q.replace(/https?(:\/\/)?/, '') : qpars.q)
+
+              genericQuery.should(QueryBuilders.matchQuery(field, final_url_qry).boost(0.5f).fuzzyTranspositions(false).autoGenerateSynonymsPhraseQuery(false))
+              genericQuery.should(QueryBuilders.matchPhraseQuery(field, sanitized_param).boost(4f))
+            }
+            else {
+              genericQuery.should(QueryBuilders.matchQuery(field, sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
+            }
           }
         }
       }
@@ -996,7 +1004,7 @@ class ESSearchService{
 
         if (!errors) {
           searchRequest.source(searchSourceBuilder)
-          // log.debug("opensearch Query using Java Client API:\n${searchRequest.source().toString()}")
+          log.debug("opensearch Query using Java Client API:\n${searchRequest.source().toString()}")
           searchResponse = ESWrapperService.getClient().search(searchRequest, RequestOptions.DEFAULT)
         }
       }
@@ -1018,7 +1026,7 @@ class ESSearchService{
           else {
             response_record.id = r.id
 
-            if (response_record.score && response_record.score != Float.NaN) {
+            if (r.score && r.score != Float.NaN) {
               response_record.score = r.score
             }
 
