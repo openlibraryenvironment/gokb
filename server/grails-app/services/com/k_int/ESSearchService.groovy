@@ -1032,7 +1032,7 @@ class ESSearchService{
 
         if (!errors) {
           searchRequest.source(searchSourceBuilder)
-          log.debug("opensearch Query using Java Client API:\n${searchRequest.source().toString()}")
+          // log.debug("opensearch Query using Java Client API:\n${searchRequest.source().toString()}")
           searchResponse = ESWrapperService.getClient().search(searchRequest, RequestOptions.DEFAULT)
         }
       }
