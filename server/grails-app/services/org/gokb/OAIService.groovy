@@ -8,6 +8,7 @@ import org.gokb.cred.*
 class OAIService {
   def dateFormatService
   def genericOIDService
+  def grailsApplication
 
   def fetchRecordList(params, config) {
     Map result = [

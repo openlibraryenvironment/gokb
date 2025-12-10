@@ -545,7 +545,7 @@ class ESSearchService{
   }
 
   private void processNameFields(query, errors, qpars) {
-    boolean defaultOr = qpars.boolean('defaultOr')
+    boolean defaultOr = (qpars.defaultOr == 'true')
 
     if (qpars.label) {
       def sanitized_param = sanitizeParam(qpars.label)
@@ -641,7 +641,7 @@ class ESSearchService{
   }
 
   private void processGenericFields(query, errors, qpars) {
-    boolean defaultOr = qpars.boolean('defaultOr')
+    boolean defaultOr = (qpars.defaultOr == 'true')
 
     if (qpars.q?.trim()) {
       QueryBuilder genericQuery = QueryBuilders.boolQuery()
