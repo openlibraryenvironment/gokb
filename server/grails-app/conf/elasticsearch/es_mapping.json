@@ -321,7 +321,8 @@
     },
     "primaryUrl" : {
       "type" : "text",
-      "analyzer" : "url"
+      "analyzer" : "url",
+      "search_analyzer": "standard"
     },
     "publishedFrom": {
       "type": "date"

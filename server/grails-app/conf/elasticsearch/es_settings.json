@@ -39,8 +39,7 @@
           "type":      "custom",
           "tokenizer": "url_tokenizer",
           "filter": [
-            "lowercase",
-            "autocomplete_filter"
+            "lowercase"
           ]
         },
         "icu": {
