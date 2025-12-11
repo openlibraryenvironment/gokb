@@ -95,6 +95,7 @@ class OAIService {
         boolean has_file = verifyCachedPackageFile(pkg)
 
         if (!has_file) {
+          log.warn("fetchRecordList :: ${pkg} has a lastCachedDate (${pkg.lastCachedDate}) but no file can be found!")
           result.errors << [code:'idDoesNotExist', name: 'identifier', expl: 'The requested resource is not yet ready for exchange. Please try again later.', value: pkg.uuid]
         }
       }
