@@ -478,11 +478,24 @@ class AdminController {
     log.debug("Manual package caching for ID ${params.id}")
     def result = [params: params, result: null]
 
-    if (params.int('id')) {
-      result.result = packageCachingService.cacheSinglePackage(params.int('id'), true)
+    def pkg = Package.findByUuid(params.id)
+
+    if (!pkg && params.long('id')) {
+      pkg = Package.get(params.long('id'))
     }
 
-    render result as JSON
+    if (pkg) {
+      Job j = concurrencyManagerService.createJob {
+        packageCachingService.cacheSinglePackage(pkg.id, true)
+      }.startOrQueue()
+
+      j.description = "Rewrite cache files for package ${params.id}"
+      j.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+      j.type = RefdataCategory.lookupOrCreate('Job.Type', 'ForcePackageCaching')
+      j.startTime = new Date()
+    }
+
+    render(view: "logViewer", model: logViewer())
   }
 
   def deduplicatePackageTipps() {

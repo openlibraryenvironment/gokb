@@ -29,6 +29,8 @@ class PackageCachingService {
 
   static boolean activeCaching = false
 
+  static Long currentId = null
+
   def synchronized cachePackages(boolean force = false, Job job = null) {
     def result = null
 
@@ -58,18 +60,23 @@ class PackageCachingService {
       def ids = Package.executeQuery("select id from Package")
 
       for (id in ids) {
+        currentId = id
+
         def single_result = cacheSinglePackage(id, force)
 
         session.flush()
         session.clear()
 
         if (single_result == 'CANCELLED' || Thread.currentThread().isInterrupted()) {
+          currentId = null
           log.debug("Job was cancelled..")
           cancelled = true
           result = 'CANCELLED'
           break
         }
       }
+
+      currentId = null
     }
     job?.endTime = new Date()
 
@@ -83,11 +90,14 @@ class PackageCachingService {
     RefdataValue status_checked = RefdataCategory.lookup('Package.ListStatus', 'Checked')
     Package item = Package.get(id)
     def session = sessionFactory.currentSession
-    boolean activeComponentJobs = concurrencyManagerService.getComponentJobs(id)?.data?.size() > 0
-    def activeScheduledJobs = jobManagerService.runningJobs?.findAll { it.jobDetail.key.name == 'org.gokb.AutoCachePackagesJob'} ?: null
+
+    List activeComponentJobs = concurrencyManagerService.getComponentJobs(id)?.data ?: []
+    boolean hasManualCachingJobs = (activeComponentJobs.find { cj -> cj.type.value == 'ForcePackageCaching'} != null)
+    boolean hasOtherActiveComponentJobs = (activeComponentJobs.find { cj -> cj.type.value != 'ForcePackageCaching' } != null)
+    boolean skipSingleForcedJob = (job?.type?.value == 'ForcePackageCaching' && currentId == id)
     boolean cancelled = false
 
-    if (item && (force || !activeScheduledJobs) && !activeComponentJobs && (force || item.listStatus == status_checked)) {
+    if (item && !skipSingleForcedJob && !hasOtherActiveComponentJobs && (force || !hasManualCachingJobs) && (force || item.listStatus == status_checked)) {
       try {
         if (!dir.exists()) {
           dir.mkdirs()
@@ -383,10 +393,10 @@ class PackageCachingService {
       result = 'ERROR'
       log.debug("Unable to reference package by id!")
     }
-    else if (activeScheduledJobs) {
+    else if (hasManualCachingJobs || skipSingleForcedJob) {
       result = 'SKIPPED_ACTIVE_JOB'
     }
-    else if (activeComponentJobs) {
+    else if (hasOtherActiveComponentJobs) {
       result = 'SKIPPED_CURRENTLY_CHANGING'
     }
     else {
