@@ -93,7 +93,7 @@ class PackageCachingService {
 
     List activeComponentJobs = concurrencyManagerService.getComponentJobs(id)?.data ?: []
     boolean hasManualCachingJobs = (activeComponentJobs.find { cj -> cj.type.value == 'ForcePackageCaching'} != null)
-    boolean hasOtherActiveComponentJobs = (activeComponentJobs.find { cj -> cj.type.value != 'ForcePackageCaching' } != null)
+    boolean hasOtherActiveComponentJobs = (activeComponentJobs.find { cj -> cj.type.value != 'ForcePackageCaching' && cj.type.value != 'Package Re-Caching' } != null)
     boolean skipSingleForcedJob = (job?.type?.value == 'ForcePackageCaching' && currentId == id)
     boolean cancelled = false
 
@@ -386,7 +386,7 @@ class PackageCachingService {
       }
 
       if (result != 'CANCELLED' && (force || result != 'SKIPPED_CURRENTLY_CHANGING')) {
-        result = packageCSVExportService.updateExportFiles(item, force)
+        result = packageCSVExportService.updateExportFiles(item, force, job)
       }
     }
     else if (!item) {

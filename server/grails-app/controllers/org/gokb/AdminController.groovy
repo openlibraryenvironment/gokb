@@ -485,8 +485,10 @@ class AdminController {
     }
 
     if (pkg) {
-      Job j = concurrencyManagerService.createJob {
-        packageCachingService.cacheSinglePackage(pkg.id, true)
+      Job j = concurrencyManagerService.createJob { job ->
+        Package.withNewSession {
+          packageCachingService.cacheSinglePackage(pkg.id, true, job)
+        }
       }.startOrQueue()
 
       j.description = "Rewrite cache files for package ${params.id}"
