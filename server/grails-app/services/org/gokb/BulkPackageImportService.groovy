@@ -378,17 +378,17 @@ class BulkPackageImportService {
     result
   }
 
-  private def fetchUpdatedLists (BulkImportListConfig listInfo, Boolean dryRun, Job job) {
+  private def fetchUpdatedLists (BulkImportListConfig list_info, Boolean dryRun, Job job) {
     def result = [result: 'OK', report: [:]]
     def allCollections = []
     boolean cancelled = false
 
-    if (listInfo.url) {
-      log.debug("Fetching config from ${listInfo.url} ..")
+    if (list_info.url) {
+      log.debug("Fetching config from ${list_info.url} ..")
     }
-    else if (listInfo.cfg != null) {
+    else if (list_info.cfg != null) {
       log.debug("Parsing static config ..")
-      def local_cfg = JSON.parse(listInfo.cfg)
+      def local_cfg = JSON.parse(list_info.cfg)
 
       if (local_cfg) {
         log.debug("Parsed successfully: ${local_cfg}")
@@ -430,6 +430,7 @@ class BulkPackageImportService {
             Package.withNewSession { session ->
               type_results.total++
               CuratoryGroup curator
+              BulkImportListConfig listInfo = BulkImportListConfig.get(list_info.id)
 
               if (item.package_curatory_group || type.package_curatory_group) {
                 curator = CuratoryGroup.findByNameIlike(item.package_curatory_group ?: type.package_curatory_group)
