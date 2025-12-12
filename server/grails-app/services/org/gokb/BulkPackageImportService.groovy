@@ -697,21 +697,28 @@ class BulkPackageImportService {
 
                       RefdataValue ns_type_pkg = RefdataCategory.lookup("IdentifierNamespace.TargetType", "Package")
 
-                      if (other_id && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
-                        obj.ids << other_id
-                      }
-                      else if (other_id) {
-                        if (!pkg_result.errors.other_package_identifiers) {
-                          pkg_result.errors.other_package_identifiers = []
-                        }
+                      if (other_id) {
+                        boolean already_linked = obj.ids?.contains(other_id)
 
-                        pkg_result.errors.other_package_identifiers << [
-                          [
-                            message: "Additional identifier namespace '${other_id.namespace.value}' is not permissible for packages!",
-                            messageCode: "import.bulk.error.ids.targetType",
-                            baddata: opid
+                        if (!already_linked && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
+                          obj.ids << other_id
+                        }
+                        else if (already_linked) {
+                          log.debug("Skipping existing id ${other_id}")
+                        }
+                        else {
+                          if (!pkg_result.errors.other_package_identifiers) {
+                            pkg_result.errors.other_package_identifiers = []
+                          }
+
+                          pkg_result.errors.other_package_identifiers << [
+                            [
+                              message: "Additional identifier namespace '${other_id.namespace.value}' is not permissible for packages!",
+                              messageCode: "import.bulk.error.ids.targetType",
+                              baddata: opid
+                            ]
                           ]
-                        ]
+                        }
                       }
                     }
 
