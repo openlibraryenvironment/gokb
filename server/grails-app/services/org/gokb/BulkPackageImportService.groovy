@@ -696,9 +696,10 @@ class BulkPackageImportService {
                       }
 
                       RefdataValue ns_type_pkg = RefdataCategory.lookup("IdentifierNamespace.TargetType", "Package")
-                      boolean already_linked = obj.ids.contains(other_id)
 
                       if (other_id) {
+                        boolean already_linked = obj.ids.contains(other_id)
+
                         if (!already_linked && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
                           obj.ids << other_id
                         }
