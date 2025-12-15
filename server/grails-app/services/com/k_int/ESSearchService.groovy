@@ -5,6 +5,7 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.uri.UriBuilder
 
 import org.apache.lucene.search.join.ScoreMode
+import org.grails.web.json.JSONException
 import org.opensearch.action.search.*
 import org.opensearch.client.*
 import org.opensearch.index.query.*
@@ -83,7 +84,8 @@ class ESSearchService{
           "qsName",
           "subjects",
           "subject",
-          "updateMethod"
+          "updateMethod",
+          "packageYear"
       ],
       linked: [
           currentPublisher: "publisher",
@@ -544,6 +546,27 @@ class ESSearchService{
     }
   }
 
+  private void addPackageYearQuery(query, errors, qpars) {
+
+    if(qpars.packageYear) {
+      try {
+        Integer val = qpars.getInt('packageYear')
+        if (val == null || val < 1900 || val > 2100) {
+          errors["packageYear"] = "The filter param packageYear is not valid."
+          return
+        }
+
+        query.must(QueryBuilders.rangeQuery("startYear").lte(val)).must(QueryBuilders.rangeQuery("endYear").gte(val))
+
+      } catch (Exception e) {
+        // No handling because Parse Exception is never been thrown
+        // getInt method sets val to null in case of Non-Integer-Inputs
+      }
+    }
+
+  }
+
+
   private void processNameFields(query, errors, qpars) {
     boolean defaultOr = (qpars.defaultOr == 'true')
 
@@ -977,6 +1000,7 @@ class ESSearchService{
       addIdentifierQuery(exactQuery, errors, params)
       addSubjectQuery(exactQuery, errors, params)
       addUpdateMethodQuery(exactQuery, errors, params)
+      addPackageYearQuery(exactQuery, errors, params)
       specifyQueryWithParams(params, exactQuery, errors, unknown_fields)
 
       if(unknown_fields.size() > 0){
