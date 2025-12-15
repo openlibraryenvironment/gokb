@@ -551,13 +551,16 @@ class ESSearchService{
     if(qpars.packageYear) {
       try {
         Integer val = qpars.getInt('packageYear')
-        if (val < 1900 || val > 2100) {
-          // not a realistic year number
+        if (val == null || val < 1900 || val > 2100) {
+          errors["packageYear"] = "The filter param packageYear is not valid."
           return
         }
+
         query.must(QueryBuilders.rangeQuery("startYear").lte(val)).must(QueryBuilders.rangeQuery("endYear").gte(val))
 
       } catch (Exception e) {
+        // No handling because Parse Exception is never been thrown
+        // getInt method sets val to null in case of Non-Integer-Inputs
       }
     }
 
