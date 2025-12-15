@@ -172,11 +172,14 @@ class FTUpdateService {
 
         kbc.providedPlatforms?.each { plt ->
           def pobj = Platform.get(plt.id)
-          def platform = [:]
-          platform.uuid = pobj.uuid ?: ""
-          platform.url = pobj.primaryUrl ?: ""
-          platform.name = pobj.name ?: ""
-          result.platforms.add(platform)
+
+          if (pobj.status.value == 'Current') {
+            def platform = [:]
+            platform.uuid = pobj.uuid ?: ""
+            platform.url = pobj.primaryUrl ?: ""
+            platform.name = pobj.name ?: ""
+            result.platforms.add(platform)
+          }
         }
 
         break
