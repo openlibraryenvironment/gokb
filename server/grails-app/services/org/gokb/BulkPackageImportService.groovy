@@ -322,7 +322,7 @@ class BulkPackageImportService {
       if (cobj.end_year == null) {
         // No end year
       }
-      else if (end_year instanceof Integer) {
+      else if (cobj.end_year instanceof Integer) {
         if (cobj.end_year < 1700 || cobj.start_year > 9999) {
           errors['end_year'] = [message: "Package years must be between 1700 and 9999!"]
         }
