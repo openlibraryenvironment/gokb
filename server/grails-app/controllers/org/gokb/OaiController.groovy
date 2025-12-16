@@ -103,7 +103,7 @@ class OaiController {
     }
   }
 
-  private void buildMetadata (subject, builder, config) {
+  private def buildMetadata (subject, builder, config) {
     log.debug("buildMetadata....");
 
     Map attr = [:]
@@ -120,10 +120,10 @@ class OaiController {
     builder.'metadata'() {
       if (subject.class == Package && grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
         File cache_dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
+        File currentFile = null
 
         if (cache_dir.exists()) {
           int tries = 0
-          File currentFile
 
           while (!currentFile && tries < 10) {
             for (File file : cache_dir.listFiles()) {
@@ -133,18 +133,13 @@ class OaiController {
             }
             tries++
 
-            if(!currentFile) {
+            if (!currentFile) {
               sleep(1000)
             }
           }
         }
 
-        if (currentFile) {
-          mkp.yieldUnescaped XmlUtil.serialize(new XmlParser(false, false).parse(currentFile)).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
-        }
-        else {
-          throw new RuntimeException("Unable to find cached file!")
-        }
+        mkp.yieldUnescaped XmlUtil.serialize(new XmlParser(false, false).parse(currentFile)).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
       }
       else {
         subject."${config.methodName}" (builder, attr)
