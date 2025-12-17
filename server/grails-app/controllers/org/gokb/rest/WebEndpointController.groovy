@@ -11,6 +11,7 @@ import org.gokb.cred.WebHookEndpoint
 
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.regex.Pattern
 
 class WebEndpointController {
 
@@ -19,6 +20,9 @@ class WebEndpointController {
     def componentLookupService
     def springSecurityService
     WebEndpointService webEndpointService
+
+    static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
+    static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
 
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def index() {
@@ -98,6 +102,10 @@ class WebEndpointController {
             filename = parts.filename
         }
 
+        boolean isDateMasked = (filename =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN)
+
+        log.debug("11111: " + filename + ", " + isDateMasked)
+
         FTPClient ftp = new FTPClient()
         FTPClientConfig config = new FTPClientConfig()
 
@@ -108,18 +116,45 @@ class WebEndpointController {
 
             if (ftp.isConnected()) {
 
-                FTPFile[] files = ftp.listFiles(directory + filename)
-                if(files.length > 0 && files[0].size > 0){
-                    result.result = "success"
-                    result.message = "success"
+                FTPFile[] files
+                if(isDateMasked) {
+                    String fixedPart = filename.split("\\{")[0]
+                    files = ftp.listFiles(directory)
+
+                    boolean found = false
+
+                    for (FTPFile file : files) {
+
+                        log.debug("+++ " + file.name)
+
+                        if(file.name.startsWith(fixedPart)){
+                            result.result = "success"
+                            //TODO: message
+                            result.message = "success, file found with name: ${file.name}"
+                            found = true
+                            break
+                        }
+                    }
+                    if(!found){
+                        result.result = "error"
+                        //TODO: message
+                        result.message = "dateMaskNotFound"
+                    }
                 }
                 else {
-                    result.result = "error"
-                    result.message = "partlySuccessful"
-                }
+                    files = ftp.listFiles(directory + filename)
+                    if (files.length > 0 && files[0].size > 0) {
 
-                ftp.logout()
-                ftp.disconnect()
+                        result.result = "success"
+                        result.message = "success"
+                    } else {
+                        result.result = "error"
+                        result.message = "partlySuccessful"
+                    }
+
+                    ftp.logout()
+                    ftp.disconnect()
+                }
             }
             else {
                 result.result = "error"
