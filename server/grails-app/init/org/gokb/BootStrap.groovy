@@ -1240,6 +1240,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'BulkPackageIngest').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'Admin Org Merge').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'Admin Platform Merge').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'ForcePackageCaching').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)

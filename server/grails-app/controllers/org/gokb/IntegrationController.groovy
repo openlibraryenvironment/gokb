@@ -304,7 +304,17 @@ class IntegrationController {
 
     try {
       Org.withTransaction {
-        def located_or_new_org = resolveOrgUsingPrivateIdentifiers(jsonOrg.identifiers)
+
+
+        Org located_or_new_org
+
+        if (jsonOrg.uuid) {
+          located_or_new_org = Org.findByUuid(jsonOrg.uuid)
+        }
+
+        if (!located_or_new_org) {
+          located_or_new_org = resolveOrgUsingPrivateIdentifiers(jsonOrg.identifiers)
+        }
 
         if (located_or_new_org == null) {
           if (jsonOrg.name) {

@@ -42,9 +42,9 @@ class BulkPackageImportService {
     "global": [required: false, rdc: 'Package.Global'],
     "package_created_date": [required: false, validate: 'checkTimestamp'],
     "package_changed_date": [required: false, validate: 'checkTimestamp'],
-    "fixed": [required: false, rdc: 'Package.Fixed'],
-    "consistent": [required: false, rdc: 'Package.Consistent'],
-    "breakable": [required: false, rdc: 'Package.Breakable'],
+    "fixed": [required: false, type: Boolean],
+    "consistent": [required: false, type: Boolean],
+    "breakable": [required: false, type: Boolean],
     "scope": [required: false, rdc: 'Package.Scope'],
     "other_package_identifiers": [required: false],
     "start_year": [required: false],
@@ -118,7 +118,7 @@ class BulkPackageImportService {
             RefdataValue policy_val = RefdataCategory.lookup('BulkImportListConfig.CuratorPolicy', reqBody.curatorPolicy)
 
             if (policy_val) {
-              existing_cfg.frequency = policy_val
+              existing_cfg.curatorPolicy = policy_val
             }
             else {
               log.warn("Unable to reference bulk curator policy ${reqBody.curatorPolicy}")
@@ -297,6 +297,9 @@ class BulkPackageImportService {
       else if (cfg.validate && cobj[fname] && !validationService."${cfg.validate}"(cobj[fname])) {
         errors[fname] = [message: "Unable to lookup refdata ${fname}:${cobj[fname]}!"]
       }
+      else if (cfg.type && cobj.containsKey(fname) && cobj[fname] != null && cobj[fname].class != cfg.type) {
+        errors[fname] = [message: "Entry for field ${fname} must be of type ${cfg.type}!"]
+      }
     }
 
     // Validate years
@@ -319,7 +322,7 @@ class BulkPackageImportService {
       if (cobj.end_year == null) {
         // No end year
       }
-      else if (end_year instanceof Integer) {
+      else if (cobj.end_year instanceof Integer) {
         if (cobj.end_year < 1700 || cobj.start_year > 9999) {
           errors['end_year'] = [message: "Package years must be between 1700 and 9999!"]
         }
@@ -375,17 +378,17 @@ class BulkPackageImportService {
     result
   }
 
-  private def fetchUpdatedLists (BulkImportListConfig listInfo, Boolean dryRun, Job job) {
+  private def fetchUpdatedLists (BulkImportListConfig list_info, Boolean dryRun, Job job) {
     def result = [result: 'OK', report: [:]]
     def allCollections = []
     boolean cancelled = false
 
-    if (listInfo.url) {
-      log.debug("Fetching config from ${listInfo.url} ..")
+    if (list_info.url) {
+      log.debug("Fetching config from ${list_info.url} ..")
     }
-    else if (listInfo.cfg != null) {
+    else if (list_info.cfg != null) {
       log.debug("Parsing static config ..")
-      def local_cfg = JSON.parse(listInfo.cfg)
+      def local_cfg = JSON.parse(list_info.cfg)
 
       if (local_cfg) {
         log.debug("Parsed successfully: ${local_cfg}")
@@ -427,6 +430,7 @@ class BulkPackageImportService {
             Package.withNewSession { session ->
               type_results.total++
               CuratoryGroup curator
+              BulkImportListConfig listInfo = BulkImportListConfig.get(list_info.id)
 
               if (item.package_curatory_group || type.package_curatory_group) {
                 curator = CuratoryGroup.findByNameIlike(item.package_curatory_group ?: type.package_curatory_group)
@@ -572,28 +576,39 @@ class BulkPackageImportService {
                   if (obj) {
                     source = obj.source
 
-                    if (!obj.contentType && (item.content_type || type.content_type)) {
-                      obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
+                    if (item.content_type || type.content_type) {
+                      if (!obj.contentType) {
+                        obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
+                      }
+                      else {
+                        log.debug("Not updating existing contentType ..")
+                      }
                     }
 
                     if (item.global || type.global) {
                       obj.global = RefdataCategory.lookup('Package.Global', item.global ?: type.global)
                     }
 
-                    if (item.fixed != null || type.fixed != null) {
-                      obj.fixed = setPackageBinaryRefdata(obj, 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
-                    }
+                    try {
 
-                    if (item.breakable != null || type.breakable  != null) {
-                      obj.breakable = setPackageBinaryRefdata(obj, 'Package.Breakable', item.breakable != null ? item.breakable : type.breakable)
-                    }
+                      if (item.containsKey('fixed') || type.fixed != null) {
+                        setPackageBinaryRefdata(obj, 'fixed', 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
+                      }
 
-                    if (item.consistent != null || type.consistent != null) {
-                      obj.consistent = setPackageBinaryRefdata(obj, 'Package.Consistent', item.consistent != null ? item.consistent : type.consistent)
-                    }
+                      if (item.containsKey('breakable') || type.breakable != null) {
+                        setPackageBinaryRefdata(obj, 'breakable', 'Package.Breakable', item.breakable != null ? item.breakable : type.breakable)
+                      }
 
-                    if (item.scope || type.scope) {
-                      obj.consistent = RefdataCategory.lookup('Package.Scope', item.scope ?: type.scope)
+                      if (item.containsKey('consistent') || type.consistent != null) {
+                        setPackageBinaryRefdata(obj, 'consistent', 'Package.Consistent', item.consistent != null ? item.consistent : type.consistent)
+                      }
+
+                      if (item.scope || type.scope) {
+                        obj.scope = RefdataCategory.lookup('Package.Scope', item.scope ?: type.scope)
+                      }
+                    }
+                    catch (Exception e) {
+                      log.debug("FAIL: ", e)
                     }
 
                     if (listInfo.updateNames && final_name != obj.name) {
@@ -682,21 +697,28 @@ class BulkPackageImportService {
 
                       RefdataValue ns_type_pkg = RefdataCategory.lookup("IdentifierNamespace.TargetType", "Package")
 
-                      if (other_id && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
-                        obj.ids << other_id
-                      }
-                      else if (other_id) {
-                        if (!pkg_result.errors.other_package_identifiers) {
-                          pkg_result.errors.other_package_identifiers = []
-                        }
+                      if (other_id) {
+                        boolean already_linked = obj.ids?.contains(other_id)
 
-                        pkg_result.errors.other_package_identifiers << [
-                          [
-                            message: "Additional identifier namespace '${other_id.namespace.value}' is not permissible for packages!",
-                            messageCode: "import.bulk.error.ids.targetType",
-                            baddata: opid
+                        if (!already_linked && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
+                          obj.ids << other_id
+                        }
+                        else if (already_linked) {
+                          log.debug("Skipping existing id ${other_id}")
+                        }
+                        else {
+                          if (!pkg_result.errors.other_package_identifiers) {
+                            pkg_result.errors.other_package_identifiers = []
+                          }
+
+                          pkg_result.errors.other_package_identifiers << [
+                            [
+                              message: "Additional identifier namespace '${other_id.namespace.value}' is not permissible for packages!",
+                              messageCode: "import.bulk.error.ids.targetType",
+                              baddata: opid
+                            ]
                           ]
-                        ]
+                        }
                       }
                     }
 
@@ -933,15 +955,15 @@ class BulkPackageImportService {
     result
   }
 
-  private void setPackageBinaryRefdata(Package obj, String prop, boolean val) {
+  private void setPackageBinaryRefdata(Package obj, String prop, String category, boolean val) {
     if (val == true) {
-      obj[prop] = RefdataCategory.lookup(prop, "Yes")
+      obj[prop] = RefdataCategory.lookup(category, "Yes")
     }
     else if (val == false) {
-      obj[prop] = RefdataCategory.lookup(prop, "No")
+      obj[prop] = RefdataCategory.lookup(category, "No")
     }
     else {
-      obj[prop] = RefdataCategory.lookup(prop, "Unknown")
+      obj[prop] = RefdataCategory.lookup(category, "Unknown")
     }
   }
 
