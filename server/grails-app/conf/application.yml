@@ -169,6 +169,9 @@ environments:
             packageUpdate:
                 cron: "0 0 6 * * ? *"
                 enabled: false
+            reviewRequestNotification:
+                cron: "0 0 20 * * ? *"
+                enabled: false
             packageOaiCaching:
                 enabled: false
             tippMatching:
@@ -201,6 +204,7 @@ environments:
                     platforms: gokbplatforms
             centralGroups:
                 JournalInstance: 'Journal Central Curators'
+                admin: 'GOKB Team'
         cache:
             headers:
                 enabled: false
@@ -237,6 +241,9 @@ environments:
             packageUpdate:
                 cron: "0 0 6 * * ? *"
                 enabled: false
+            reviewRequestNotification:
+                cron: "0 0 20 * * ? *"
+                enabled: false
             packageOaiCaching:
                 enabled: false
             tippMatching:
@@ -266,6 +273,7 @@ environments:
                     platforms: gokbplatformstest
             centralGroups:
                 JournalInstance: 'Journal Central Curators'
+                admin: 'GOKB Team'
             ezbOpenCollections:
                 enabled: false
                 url: https://ezb-api.ur.de/collections/v1/
@@ -309,6 +317,9 @@ environments:
             packageUpdate:
                 cron: "0 0 6 * * ? *"
                 enabled: false
+            reviewRequestNotification:
+                cron: "0 0 20 * * ? *"
+                enabled: false
             packageOaiCaching:
                 enabled: true
             tippMatching:
@@ -340,6 +351,7 @@ environments:
                     platforms: gokbplatforms
             centralGroups:
                 JournalInstance: 'Journal Central Curators'
+                admin: 'GOKB Team'
         logging:
             config: classpath:logback-prod.xml
 gokb:
@@ -349,6 +361,7 @@ gokb:
         active: false
         otherVoters: false
     costInfo: false
+    cancelledJobsNotifications: false
     baseTempDirectory: '/tmp/gokb/'
     tsvExportTempDirectory: '/tmp/gokb/export'
     packageXmlCacheDirectory: '/tmp/gokb/oai/'

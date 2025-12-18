@@ -46,6 +46,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     def ns_eissn = IdentifierNamespace.findByValue('eissn')
     def new_id = Identifier.findByValue('2345-2331') ?: new Identifier(value: '2345-2331', namespace: ns_eissn).save(flush:true)
     def new_org = Org.findByName('TestTitleOrg') ?: new Org(name: 'TestTitleOrg').save(flush:true)
+    def new_update_org = Org.findByName('TestTitleOrgUpdate') ?: new Org(name: 'TestTitleOrgUpdate').save(flush:true)
     def old_id = Identifier.findByValue('2345-2323') ?: new Identifier(value: '2345-2323', namespace: ns_eissn).save(flush:true)
 
     if (!JournalInstance.findByName("TitleTestJournal")) {
@@ -53,6 +54,9 @@ class TitleTestSpec extends AbstractAuthSpec {
       def id_combo = new Combo(fromComponent: test_ti, toComponent: old_id, type: RefdataCategory.lookup('Combo.Type','KBComponent.Ids')).save(flush:true)
       RefdataValue ddc_schema = RefdataCategory.lookup('Subject.Scheme', 'DDC')
       def ddc_test = Subject.findBySchemeAndHeading(ddc_schema, '001')
+
+      test_ti.publisher << new_org
+      test_ti.save()
 
       if (!ddc_test) {
         ddc_test = new Subject(scheme: ddc_schema, heading: '001').save(flush:true)
@@ -102,6 +106,7 @@ class TitleTestSpec extends AbstractAuthSpec {
       Package.findByName("TestTitleMergePackage")?.refresh()?.expunge()
       Platform.findByName("TestTitleMergePlatform")?.refresh()?.expunge()
       Org.findByName("TestTitleOrg")?.refresh()?.expunge()
+      Org.findByName('TestTitleOrgUpdate')?.refresh()?.expunge()
     }
   }
 
@@ -324,5 +329,32 @@ class TitleTestSpec extends AbstractAuthSpec {
     target.refresh().status.value == 'Current'
     target.tipps.size() == 1
     target.ids.size() == 2
+  }
+
+ void "test update publisher"() {
+    def urlPath = getUrlPath()
+    def ti = JournalInstance.findByName("TitleTestJournal")
+    def new_pub = Org.findByName('TestTitleOrgUpdate')
+
+    when:
+    def json_record = [
+      publisher: [
+        new_pub.id
+      ]
+    ]
+
+    String accessToken = getAccessToken()
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/${ti.id}", json_record)
+      .bearerAuth(accessToken)
+    HttpResponse resp = client.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    sleep(300)
+    ti.refresh()
+    ti.publisher.size() == 1
+    ti.publisher[0].id == new_pub.id
+    resp.body()?._embedded?.publisher?.size() == 1
+    resp.body()._embedded.publisher[0].id == new_pub.id
   }
 }

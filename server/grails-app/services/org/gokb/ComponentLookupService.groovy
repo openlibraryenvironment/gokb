@@ -232,25 +232,22 @@ class ComponentLookupService {
     def max = params.limit ? params.long('limit') : 10
     def offset = params.offset ? params.long('offset') : 0
     def first = true
-    def cls_obj = (cls == KBComponent) ?: grailsApplication.getArtefact("Domain",cls.name).newInstance()
     def sort = null
     def sortField = null
     def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
-    def genericTerm = params.q ?: null
 
     if ( KBComponent.isAssignableFrom(cls) ) {
-      def comboJoinStr = ""
       def comboFilterStr = ""
 
       // Check params for known combo properties
       if (cls != KBComponent) {
+        def cls_obj = grailsApplication.getArtefact("Domain", cls.name).newInstance()
         def comboProps = cls_obj.allComboPropertyNames
 
-        comboProps.each { c ->
-
-          if (params[c] || params['_sort'] == c) {
-            boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
-            log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
+        comboProps.each { propName ->
+          if (params[propName] || params['_sort'] == propName) {
+            boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, propName)
+            log.debug("Combo prop ${propName}: ${incoming ? 'incoming' : 'outgoing'}")
 
             if (first) {
               comboFilterStr += " WHERE "
@@ -260,19 +257,19 @@ class ComponentLookupService {
               comboFilterStr += " AND "
             }
 
-            comboFilterStr += "EXISTS (SELECT ${c}combo FROM Combo as ${c}combo WHERE ${incoming ? 'toComponent' : 'fromComponent'} = p"
+            comboFilterStr += "EXISTS (SELECT ${propName}combo FROM Combo as ${propName}combo WHERE ${incoming ? 'toComponent' : 'fromComponent'} = p"
+            comboFilterStr += " AND type = :${propName}type AND "
+            comboFilterStr += "status = :${propName}status "
 
-            comboFilterStr += " AND type = :${c}type AND "
-            qryParams["${c}type"] = RefdataCategory.lookupOrCreate ("Combo.Type", cls.getComboTypeValueFor(cls, c))
-            comboFilterStr += "status = :${c}status "
-            qryParams["${c}status"] = DomainClassExtender.comboStatusActive
+            qryParams["${propName}type"] = RefdataCategory.lookupOrCreate ("Combo.Type", cls.getComboTypeValueFor(cls, propName))
+            qryParams["${propName}status"] = DomainClassExtender.comboStatusActive
 
             def validLong = []
             def validStr = []
             def paramStr = ""
 
-            if (params[c]) {
-              params.list(c)?.each { a ->
+            if (params[propName]) {
+              params.list(propName)?.each { a ->
                 def addedLong = false
 
                 try {
@@ -283,7 +280,7 @@ class ComponentLookupService {
                 }
 
                 if (a instanceof String && a?.trim() ) {
-                  if (c == 'ids') {
+                  if (propName == 'ids') {
                     validStr.add(Identifier.normalizeIdentifier(a))
                   }
                   else {
@@ -295,30 +292,31 @@ class ComponentLookupService {
               if (validStr.size() > 0 || validLong.size() > 0) {
                 paramStr += " AND ("
 
-                if (c != 'ids' && validLong.size() > 0) {
-                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.id IN :${c}"
-                  qryParams["${c}"] = validLong
+                if (propName != 'ids' && validLong.size() > 0) {
+                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.id IN :${propName}"
+                  qryParams["${propName}"] = validLong
                 }
 
                 if (validStr.size() > 0) {
-                  if (c != 'ids' && validLong.size() > 0) {
+                  if (propName != 'ids' && validLong.size() > 0) {
                     paramStr += " OR "
                   }
-                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.uuid IN :${c}_str OR "
+                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.uuid IN :${propName}_str OR "
 
-                  if (c == 'ids') {
-                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.normname) IN :${c}_str"
+                  if (propName == 'ids') {
+                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.normname) IN :${propName}_str"
                   }
                   else {
-                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.name) IN :${c}_str"
+                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.name) IN :${propName}_str"
                   }
-                  qryParams["${c}_str"] = validStr
+                  qryParams["${propName}_str"] = validStr
                 }
                 paramStr += "))"
                 comboFilterStr += paramStr
               }
             }
             else {
+              comboFilterStr += ")"
               sortField = "${incoming ? 'fromComponent' : 'toComponent'}.name"
               sort = " order by ${incoming ? 'fromComponent' : 'toComponent'}.name ${order ?: ''}"
             }
@@ -326,50 +324,63 @@ class ComponentLookupService {
         }
       }
 
-      if (genericTerm?.trim()) {
-        log.debug("Using generic term search with '${genericTerm}'..")
+      if (params.q?.trim()) {
+        log.debug("Using generic term search with '${params.q}'..")
 
         def validLong = null
 
         try {
-          validLong = Long.valueOf(genericTerm)
+          validLong = Long.valueOf(params.q)
         }
         catch (java.lang.NumberFormatException nfe) {
         }
 
         if (first) {
           comboFilterStr += " WHERE "
-        }
-        else {
-          comboFilterStr += " AND ("
-        }
-
-        comboFilterStr += "lower(p.name) like lower(:qname) OR p.uuid = :idqval"
-        comboFilterStr += " OR EXISTS (select ci from Combo as ci where ci.type = :idtype and ci.fromComponent = p and lower(ci.toComponent.value) like lower(:idqval) and ci.status = :idqstatus)"
-        comboFilterStr += " OR EXISTS (select an from KBComponentVariantName as an where lower(an.variantName) like lower(:qname) and an.owner = p)"
-
-        if (validLong) {
-          qryParams["qid"] = validLong
-          comboFilterStr += " OR p.id = :qid"
-        }
-
-        if (first) {
           first = false
         }
         else {
-          comboFilterStr += ")"
+          comboFilterStr += " AND "
         }
 
-        qryParams['qname'] = "%${genericTerm}%"
-        qryParams['idqval'] = genericTerm
-        qryParams['idtype'] = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
-        qryParams['idqstatus'] = RefdataCategory.lookup('Combo.Status', 'Active')
+        if (params.q ==~ /^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/) {
+          comboFilterStr += "p.uuid = :idqval"
+        }
+        else {
+          comboFilterStr += "("
+          comboFilterStr += '''lower(p.name) like lower(:qname)
+                                OR EXISTS (
+                                  select ci from Combo as ci
+                                  where ci.type = :idtype
+                                  and ci.fromComponent = p
+                                  and lower(ci.toComponent.value) like lower(:idqval)
+                                  and ci.status = :idqstatus
+                                )
+                                OR EXISTS (
+                                  select an from KBComponentVariantName as an
+                                  where lower(an.variantName) like lower(:qname)
+                                  and an.owner = p
+                                )'''
+
+          if (validLong) {
+            qryParams["qid"] = validLong
+            comboFilterStr += " OR p.id = :qid"
+          }
+
+          comboFilterStr += ")"
+
+          qryParams['idtype'] = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+          qryParams['idqstatus'] = RefdataCategory.lookup('Combo.Status', 'Active')
+          qryParams['qname'] = "%${params.q}%"
+        }
+
+        qryParams['idqval'] = params.q
       }
+
+      hqlQry += comboFilterStr
 
       log.debug("comboFilterString: ${comboFilterStr}")
       log.debug("Params: ${qryParams}")
-
-      hqlQry += comboJoinStr + comboFilterStr
     }
 
     // Check params for persistent properties
@@ -430,7 +441,6 @@ class ComponentLookupService {
                       select 1 from ReviewRequest
                       where id = p.id
                       and componentToReview = tipp
-
                     )'''
 
                 qryParams['ctr'] = ctr
@@ -531,10 +541,45 @@ class ComponentLookupService {
               idx++
             }
           }
+          else if (p instanceof ManyToMany) {
+            if (validLong.size() > 0) {
+              boolean failed_lookup = false
+
+              qryParams[p.name] = p.type.get(validLong[0])
+
+              if (qryParams[p.name]) {
+                paramStr += ":${p.name} member of p.${p.name}"
+              }
+              else {
+                failed_lookup = true
+              }
+
+              if (validLong.size() > 1) {
+                for (int i = 1; i < validLong.size(); i++) {
+                  qryParams["${p.name}${i}"] = p.type.get(validLong[i])
+                  paramStr += " OR :${p.name}${i} member of p.${p.name}"
+                }
+              }
+            }
+          }
         }
         else if (p.type == Long) {
           qryParams[p.name] = alts.collect { Long.valueOf(it) }
           paramStr += "p.${p.name} IN :${p.name}"
+        }
+        else if (p.type == Integer) {
+          if (alts.size() == 1 && p.name.startsWith('start')) {
+            qryParams[p.name] = Integer.parseInt(alts[0])
+            paramStr += "p.${p.name} >= :${p.name}"
+          }
+          else if (alts.size() == 1 && p.name.startsWith('end')) {
+            qryParams[p.name] = Integer.parseInt(alts[0])
+            paramStr += "p.${p.name} <= :${p.name}"
+          }
+          else {
+            qryParams[p.name] = alts.collect { Integer.parseInt(it) }
+            paramStr += "p.${p.name} IN :${p.name}"
+          }
         }
         else if (p.name == 'name'){
           paramStr += "lower(p.${p.name}) like lower(:${p.name})"
@@ -723,7 +768,25 @@ class ComponentLookupService {
         else {
           hqlQry += " AND "
         }
-        hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg and ag.status != :inactive)"
+
+        if (params['escalatedOnly']) {
+          hqlQry += '''exists (
+                        select 1 from AllocatedReviewGroup as ag
+                        where ag.review = p
+                        and ag.group IN :alg
+                        and ag.status != :inactive
+                        and ag.escalatedFrom is not null
+                      )'''
+        }
+        else {
+          hqlQry += '''exists (
+                        select 1 from AllocatedReviewGroup as ag
+                        where ag.review = p
+                        and ag.group IN :alg
+                        and ag.status != :inactive
+                      )'''
+        }
+
         qryParams['alg'] = validCgs
         qryParams['inactive'] = inactive
       }
@@ -751,15 +814,48 @@ class ComponentLookupService {
           hqlQry += "exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id)"
         }
         else if (lct == 'Journal') {
-          hqlQry += "(exists (select 1 from JournalInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          hqlQry += '''(
+                        exists (
+                          select 1 from JournalInstance
+                          where id = p.componentToReview.id
+                        )
+                        or exists (
+                          select 1 from TitleInstancePackagePlatform
+                          where id = p.componentToReview.id
+                          and publicationType = :ctrpubtype
+                        )
+                      )'''
+
           qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Serial')
         }
         else if (lct == 'Monograph') {
-          hqlQry += "(exists (select 1 from BookInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          hqlQry += '''(
+                        exists (
+                          select 1 from BookInstance
+                          where id = p.componentToReview.id
+                        )
+                        or exists (
+                          select 1 from TitleInstancePackagePlatform
+                          where id = p.componentToReview.id
+                          and publicationType = :ctrpubtype
+                        )
+                      )'''
+
           qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Monograph')
         }
         else if (lct == 'Database') {
-          hqlQry += "(exists (select 1 from DatabaseInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          hqlQry += '''(
+                        exists (
+                          select 1 from DatabaseInstance
+                          where id = p.componentToReview.id
+                        )
+                        or exists (
+                          select 1 from TitleInstancePackagePlatform
+                          where id = p.componentToReview.id
+                          and publicationType = :ctrpubtype
+                        )
+                      )'''
+
           qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Database')
         }
       }
@@ -768,8 +864,8 @@ class ComponentLookupService {
       }
     }
 
-    def hqlCount = "select ${genericTerm ? 'distinct': ''} count(p.id) ${hqlQry}".toString()
-    def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sortField ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
+    def hqlCount = "select count(p.id) ${hqlQry}".toString()
+    def hqlFinal = "select p ${sortField ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
     log.debug("Final qry: ${hqlFinal}")
 

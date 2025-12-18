@@ -16,10 +16,167 @@ class UserProfileService {
   def passwordEncoder
   def mailService
   def messageSource
+  def dateFormatService
+  def componentLookupService
   PageRenderer groovyPageRenderer
 
 	static final String EMAIL_LAYOUT = "/layouts/email"
   static final String ACTIVATION_NOTICE_TEMPLATE = "/register/_activationNoticeMail"
+
+  def restLookup(user, params) {
+    def result = [data: [], errors: [:]]
+    boolean first = true
+    int offset = params.offset ? params.int('offset') : 0
+    int limit = params.limit ? params.int('limit') : (user.defaultPageSize > 0 ? user.defaultPageSize : 10)
+    String[] sortFields = null, sortOrders = null
+
+    if (params['_sort']) {
+      sortFields = params['_sort'].split(',')
+    }
+
+    if (params['_order']) {
+      sortOrders = params['_order'].split(',')
+    }
+
+    def qry_params = [:]
+    def qry_str = "from User as u "
+
+    if (params.roleId) {
+      def roles = []
+
+      params.roleId.split(',').each { rid ->
+        def role_obj = Role.get(rid as Long)
+
+        if (role_obj) {
+          roles << role_obj
+        }
+        else {
+          if (!result.errors['roleId']) {
+            result.errors['roleId'] = []
+          }
+
+          result.errors['roleId'] << [
+            message: "Unable to reference role for ID $rid!",
+            data: rid,
+            code: 400
+          ]
+        }
+      }
+
+      qry_str += "where exists (select 1 from UserRole where role in (:roles) and user = u)"
+
+      qry_params.roles = roles
+      first = false
+    }
+
+    if (params.curatoryGroupId) {
+      def groups = []
+
+      if (!first) {
+        qry_str += " and ("
+      }
+      else {
+        qry_str += " where ("
+      }
+
+      params.curatoryGroupId.split(',').eachWithIndex { grp, idx ->
+
+        if (idx > 0) {
+          qry_str += " or "
+        }
+
+        CuratoryGroup cg = CuratoryGroup.findById(grp as Long)
+
+        if (cg) {
+          qry_str += ":cg_$grp in elements (u.curatoryGroups)"
+
+          qry_params["cg_$grp"] = cg
+        } else {
+          if (!result.errors['curatoryGroupId']) {
+            result.errors['curatoryGroupId'] = []
+          }
+
+          result.errors['curatoryGroupId'] << [
+            message: "Unable to reference group for ID $grp!",
+            data: grp,
+            code: 400
+          ]
+        }
+
+        first = false
+      }
+
+      qry_str += ")"
+    }
+
+    if (params.name) {
+      if (!first) {
+        qry_str += " and "
+      }
+      else {
+        qry_str += " where "
+      }
+
+      qry_str += "lower(u.username) like lower(:name)"
+      qry_params.name = "%$params.name%"
+
+      first = false
+    }
+
+    if (params.containsKey("status")) {
+      if (!first) {
+        qry_str += " and "
+      }
+      else {
+        qry_str += " where "
+      }
+
+      if (params.status == "true") {
+        qry_str += " u.enabled = true and u.accountLocked = false and u.accountExpired = false and u.passwordExpired = false"
+      } else {
+        qry_str += " (u.enabled = false or u.accountLocked = true or u.accountExpired = true or u.passwordExpired = true)"
+      }
+
+      first = false
+    }
+
+    def qry_sort =  ""
+
+    if (sortOrders && sortFields) {
+      for (int i = 0; i < sortFields.size(); i++) {
+        if (i == 0) {
+          qry_sort += " order by"
+        }
+        else {
+          qry_sort += " ,"
+        }
+
+        qry_sort += " u.${sortFields[i]}"
+        qry_sort += ((sortOrders[i] != null) && ("desc" != sortOrders[i].toLowerCase())) ? " asc" : " desc"
+      }
+    }
+
+    if (result.errors) {
+      return result
+    }
+
+    def count = User.executeQuery("select count(*) ${qry_str}".toString(), qry_params)[0]
+    def users = User.executeQuery("select u ${qry_str} ${qry_sort}".toString(), qry_params, [max: limit, offset: offset])
+
+    users.each { ures ->
+      result.data.add(collectUserProps(ures, params))
+    }
+
+    result['_pagination'] = [
+      offset: offset,
+      limit : limit,
+      total : count
+    ]
+
+    componentLookupService.generateLinks(result, User, null, params, limit, offset, count)
+
+    return result
+  }
 
   def delete(User user_to_delete) {
     def result = [:]
@@ -362,6 +519,7 @@ class UserProfileService {
   }
 
   private void updateRoles(User user, roles_list, errors, boolean isNewUser = true, User adminUser = null) {
+    boolean changed = false
     Set<Role> newRoles = []
     Set<Role> previousRoles = []
 
@@ -410,10 +568,16 @@ class UserProfileService {
       if (newRoles.contains(role)) {
         if (!previousRoles.contains(role)) {
           UserRole.create(user, role, true)
+          changed = true
         }
       } else if (!isNewUser && previousRoles.contains(role)) {
         UserRole.remove(user, role, true)
+        changed = true
       }
+    }
+
+    if (changed) {
+      User.executeUpdate("update User set lastUpdated = :now where id = :uid", [now: new Date(), uid: user.id])
     }
   }
 
@@ -463,17 +627,19 @@ class UserProfileService {
     def includes = []
     def excludes = []
     def newUserData = [
-      id             : user.id,
-      username       : user.username,
-      displayName    : user.displayName,
-      email          : user.email,
-      preferredLocaleString: user.preferredLocaleString,
-      enabled        : user.enabled,
-      accountExpired : user.accountExpired,
-      accountLocked  : user.accountLocked,
-      passwordExpired: user.passwordExpired,
-      status         : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
-      defaultPageSize: user.defaultPageSize
+      id                    : user.id,
+      username              : user.username,
+      displayName           : user.displayName,
+      email                 : user.email,
+      preferredLocaleString : user.preferredLocaleString,
+      enabled               : user.enabled,
+      accountExpired        : user.accountExpired,
+      accountLocked         : user.accountLocked,
+      passwordExpired       : user.passwordExpired,
+      status                : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
+      defaultPageSize       : user.defaultPageSize,
+      dateCreated           : user.dateCreated ? dateFormatService.formatIsoTimestamp(user.dateCreated) : null,
+      lastUpdated           : user.lastUpdated ? dateFormatService.formatIsoTimestamp(user.lastUpdated) : null
     ]
 
     if (params._include)
@@ -495,8 +661,17 @@ class UserProfileService {
         newUserData.curatoryGroups += [
           id    : group.id,
           name  : group.name,
+          email : group.email,
           _links: [
-            'self': [href: base + "/curatoryGroups/$group.id"]
+            self: [
+              href: base + "/curatoryGroups/$group.id",
+            ],
+            update: [
+              href: (group.owner == user || user.isAdmin()) ? base + "/curatoryGroups/$group.id" : null
+            ],
+            delete: [
+              href: (user.superUserStatus) ? base + "/curatoryGroups/$group.id" : null
+            ]
           ]
         ]
       }

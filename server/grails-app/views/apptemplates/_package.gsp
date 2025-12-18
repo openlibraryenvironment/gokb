@@ -20,10 +20,18 @@
     </dd>
 
     <dt>
-      <g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel>
+      <g:annotatedLabel owner="${d}" property="provider">Platform Provider</g:annotatedLabel>
     </dt>
     <dd>
       <g:manyToOneReferenceTypedown owner="${d}" field="provider" baseClass="org.gokb.cred.Org">${d.provider?.name}</g:manyToOneReferenceTypedown>
+    </dd>
+
+
+    <dt>
+      <g:annotatedLabel owner="${d}" property="contentProvider">Content Provider</g:annotatedLabel>
+    </dt>
+    <dd>
+      <g:manyToOneReferenceTypedown owner="${d}" field="contentProvider" baseClass="org.gokb.cred.Org">${d.contentProvider?.name}</g:manyToOneReferenceTypedown>
     </dd>
 
     <dt>
@@ -90,9 +98,18 @@
       <g:if test="${d.id}">
         <li role="presentation"><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${d.currentTitleCount}/ ${d.currentTippCount} </span></a></li>
         <li role="presentation"><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a></li>
-        <li role="presentation"><a href="#altnames" data-toggle="tab">Alternate Names
-          <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
-        </a></li>
+        <li role="presentation">
+          <a href="#altnames" data-toggle="tab">
+            Alternate Names
+            <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
+          </a
+        ></li>
+        <li role="presentation">
+          <a href="#comments" data-toggle="tab">
+            Comments
+            <span class="badge badge-warning"> ${d.comments?.size() ?: '0'}</span>
+          </a
+        ></li>
         <li role="presentation"><a href="#subjects" data-toggle="tab">Subjects
           <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'}</span>
         </a></li>
@@ -111,6 +128,7 @@
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Identifiers </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Subjects </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Comments </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Relations </span></li>
         <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}">
           <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
@@ -194,6 +212,8 @@
       </div>
 
       <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+
+      <g:render template="/tabTemplates/showComments" model="${[d:displayobj, showActions:true]}" />
 
       <div class="tab-pane" id="identifiers">
         <dl>

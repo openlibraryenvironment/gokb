@@ -36,7 +36,7 @@ class PackagesController {
     result
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()")
   def compareContents() {
     log.debug("compareContents")
     def result = [params: params, result: 'OK']
@@ -69,7 +69,7 @@ class PackagesController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()")
   def connectedRRs() {
     log.debug("connectedRRs::${params}")
     def result = [:]
@@ -95,7 +95,7 @@ class PackagesController {
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()")
   @Transactional
   def preflight() {
     def result = [:]
@@ -150,7 +150,7 @@ class PackagesController {
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()")
   @Transactional
   def deposit() {
     def result = [:]

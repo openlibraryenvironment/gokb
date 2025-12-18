@@ -227,7 +227,7 @@
       "type" : "text",
       "analyzer" : "custom_chars_analyzer",
       "search_analyzer" : "custom_chars_analyzer",
-      "copy_to" : "suggest",
+      "copy_to" : ["suggest", "normname", "normSuggest"],
       "fields" : {
         "name" : {
           "type" : "text"
@@ -282,6 +282,19 @@
         },
         "url": {
           "type": "keyword"
+        },
+        "automaticUpdates": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "keyword"
+        },
+        "id": {
+          "type": "long"
+        },
+        "importConfig": {
+          "type": "keyword",
+          "normalizer": "lowercase"
         }
       }
     },
@@ -308,13 +321,35 @@
     },
     "primaryUrl" : {
       "type" : "text",
-      "analyzer" : "url"
+      "analyzer" : "url",
+      "search_analyzer": "standard"
     },
     "publishedFrom": {
       "type": "date"
     },
     "publishedTo": {
       "type": "date"
+    },
+    "startYear": {
+      "type": "integer"
+    },
+    "endYear": {
+      "type": "integer"
+    },
+    "normname": {
+      "type" : "text",
+      "analyzer" : "icu"
+    },
+    "normSuggest": {
+      "type": "text",
+      "analyzer": "icu_suggest",
+      "search_analyzer": "icu"
+    },
+    "contentProvider": {
+      "type": "keyword"
+    },
+    "contentProviderName": {
+      "type": "keyword"
     }
   }
 }

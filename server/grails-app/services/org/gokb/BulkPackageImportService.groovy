@@ -32,6 +32,7 @@ class BulkPackageImportService {
     "package_id": [required: false],
     "package_source": [required: false],
     "package_provider": [required: true, cls: Org, field: 'uuid'],
+    "package_content_provider": [required: false, cls: Org, field: 'uuid'],
     "package_nominal_platform": [required: true, cls: Platform, field: 'uuid'],
     "package_curatory_group": [required: true, cls: CuratoryGroup, field: 'name'],
     "package_titlelist": [required: true, validate: 'checkUrl' ],
@@ -41,10 +42,13 @@ class BulkPackageImportService {
     "global": [required: false, rdc: 'Package.Global'],
     "package_created_date": [required: false, validate: 'checkTimestamp'],
     "package_changed_date": [required: false, validate: 'checkTimestamp'],
-    "fixed": [required: false, rdc: 'Package.Fixed'],
-    "consistent": [required: false, rdc: 'Package.Consistent'],
-    "breakable": [required: false, rdc: 'Package.Breakable'],
-    "scope": [required: false, rdc: 'Package.Scope']
+    "fixed": [required: false, type: Boolean],
+    "consistent": [required: false, type: Boolean],
+    "breakable": [required: false, type: Boolean],
+    "scope": [required: false, rdc: 'Package.Scope'],
+    "other_package_identifiers": [required: false],
+    "start_year": [required: false],
+    "end_year": [required: false],
   ]
 
   @Transactional
@@ -72,16 +76,56 @@ class BulkPackageImportService {
           }
 
           if (reqBody.frequency) {
-            existing_cfg.frequency = RefdataCategory.lookup('BulkImportListConfig.Frequency', reqBody.frequency)
+            RefdataValue frequency_val = RefdataCategory.lookup('BulkImportListConfig.Frequency', reqBody.frequency)
+
+            if (frequency_val) {
+              existing_cfg.frequency = frequency_val
+            }
+            else {
+              log.warn("Unable to reference bulk frequency ${reqBody.frequency}")
+            }
           }
 
-          if (reqBody.active == true) {
+          if (reqBody.automatedUpdate == true) {
             existing_cfg.automatedUpdate = true
           }
-          else if (reqBody.active == false) {
+          else if (reqBody.automatedUpdate == false) {
             existing_cfg.automatedUpdate = false
           }
-          existing_cfg.save(flush: true)
+
+          if (reqBody.updateOnly == true) {
+            existing_cfg.updateOnly = true
+          }
+          else if (reqBody.updateOnly == false) {
+            existing_cfg.updateOnly = false
+          }
+
+          if (reqBody.prependProviderName == true) {
+            existing_cfg.prependProviderName = true
+          }
+          else if (reqBody.prependProviderName == false) {
+            existing_cfg.prependProviderName = false
+          }
+
+          if (reqBody.updateNames == true) {
+            existing_cfg.updateNames = true
+          }
+          else if (reqBody.updateNames == false) {
+            existing_cfg.updateNames = false
+          }
+
+          if (reqBody.curatorPolicy) {
+            RefdataValue policy_val = RefdataCategory.lookup('BulkImportListConfig.CuratorPolicy', reqBody.curatorPolicy)
+
+            if (policy_val) {
+              existing_cfg.curatorPolicy = policy_val
+            }
+            else {
+              log.warn("Unable to reference bulk curator policy ${reqBody.curatorPolicy}")
+            }
+          }
+
+          existing_cfg.save(flush: true, failOnError: true)
         }
       }
       else {
@@ -91,7 +135,11 @@ class BulkPackageImportService {
           frequency: (reqBody.frequency ? RefdataCategory.lookup('BulkImportListConfig.Frequency', reqBody.frequency) : null),
           owner: user,
           url: reqBody.url,
-          automatedUpdate: reqBody.automatedUpdate
+          automatedUpdate: reqBody.automatedUpdate,
+          updateOnly: reqBody.updateOnly,
+          prependProviderName: reqBody.prependProviderName,
+          updateNames: reqBody.updateNames,
+          curatorPolicy: (reqBody.curatorPolicy ? RefdataCategory.lookup('BulkImportListConfig.CuratorPolicy', reqBody.curatorPolicy) : null)
         ]
 
         existing_cfg = new BulkImportListConfig(info)
@@ -106,7 +154,7 @@ class BulkPackageImportService {
     result
   }
 
-  private def validateConfig (config) {
+  private def validateConfig (Map config) {
     def result = [valid: true, errors:[:]]
 
     if (!config.code || !config.code.trim()) {
@@ -183,7 +231,7 @@ class BulkPackageImportService {
     result
   }
 
-  private def validateCollection(col) {
+  private def validateCollection(Map col) {
     log.debug("Checking collection info: ${col}")
     def errors = [:]
     def col_errors = checkConfigItem(col, false)
@@ -208,7 +256,7 @@ class BulkPackageImportService {
     errors
   }
 
-  private def fetchRemoteConfig(url) {
+  private def fetchRemoteConfig(String url) {
     try {
       def resp = HttpClient.create(new URL(url)).toBlocking().retrieve(HttpRequest.GET("/"), Map.class)
 
@@ -219,7 +267,7 @@ class BulkPackageImportService {
     }
   }
 
-  private def checkConfigItem(cobj, boolean specific = false) {
+  private def checkConfigItem(Map cobj, boolean specific = false) {
     def errors = [:]
 
     KNOWN_CONFIG_FIELDS.each { fname, cfg ->
@@ -249,13 +297,52 @@ class BulkPackageImportService {
       else if (cfg.validate && cobj[fname] && !validationService."${cfg.validate}"(cobj[fname])) {
         errors[fname] = [message: "Unable to lookup refdata ${fname}:${cobj[fname]}!"]
       }
+      else if (cfg.type && cobj.containsKey(fname) && cobj[fname] != null && cobj[fname].class != cfg.type) {
+        errors[fname] = [message: "Entry for field ${fname} must be of type ${cfg.type}!"]
+      }
+    }
+
+    // Validate years
+
+    if (cobj.containsKey('start_year')) {
+      if (cobj.start_year == null) {
+        // No start year
+      }
+      else if (cobj.start_year instanceof Integer) {
+        if (cobj.start_year < 1700 || cobj.start_year > 9999) {
+          errors['start_year'] = [message: "Package years must be between 1700 and 9999!"]
+        }
+      }
+      else {
+        errors['start_year'] = [message: "Package years must be four digit integers or null!"]
+      }
+    }
+
+    if (cobj.containsKey('end_year')) {
+      if (cobj.end_year == null) {
+        // No end year
+      }
+      else if (cobj.end_year instanceof Integer) {
+        if (cobj.end_year < 1700 || cobj.start_year > 9999) {
+          errors['end_year'] = [message: "Package years must be between 1700 and 9999!"]
+        }
+        else if (!cobj.start_year) {
+          errors['end_year'] = [message: "Missing start_year for given end_year!"]
+        }
+        else if (cobj.start_year instanceof Integer && cobj.end_year < cobj.start_year) {
+          errors['end_year'] = [message: "Package end_year must not be earlier than the start_year!"]
+        }
+      }
+      else {
+        errors['end_year'] = [message: "Package years must be four digit integers or null!"]
+      }
     }
 
     errors
   }
 
   @Transactional
-  def startUpdate(listInfo, dryRun, async, User user = null) {
+  def startUpdate(BulkImportListConfig listInfo, Boolean dryRun, Boolean async, User user = null) {
     def result = [result: 'OK']
     def job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
     def running_jobs = concurrencyManagerService.getActiveJobsForType(job_rdv)
@@ -291,17 +378,17 @@ class BulkPackageImportService {
     result
   }
 
-  private def fetchUpdatedLists (listInfo, dryRun, job) {
+  private def fetchUpdatedLists (BulkImportListConfig list_info, Boolean dryRun, Job job) {
     def result = [result: 'OK', report: [:]]
     def allCollections = []
     boolean cancelled = false
 
-    if (listInfo.url) {
-      log.debug("Fetching config from ${listInfo.url} ..")
+    if (list_info.url) {
+      log.debug("Fetching config from ${list_info.url} ..")
     }
-    else if (listInfo.cfg != null) {
+    else if (list_info.cfg != null) {
       log.debug("Parsing static config ..")
-      def local_cfg = JSON.parse(listInfo.cfg)
+      def local_cfg = JSON.parse(list_info.cfg)
 
       if (local_cfg) {
         log.debug("Parsed successfully: ${local_cfg}")
@@ -343,6 +430,7 @@ class BulkPackageImportService {
             Package.withNewSession { session ->
               type_results.total++
               CuratoryGroup curator
+              BulkImportListConfig listInfo = BulkImportListConfig.get(list_info.id)
 
               if (item.package_curatory_group || type.package_curatory_group) {
                 curator = CuratoryGroup.findByNameIlike(item.package_curatory_group ?: type.package_curatory_group)
@@ -359,6 +447,7 @@ class BulkPackageImportService {
               Platform platform = (item.package_nominal_platform || type.package_nominal_platform) ? Platform.findByUuid(item.package_nominal_platform ?: type.package_nominal_platform) : null
               IdentifierNamespace title_id_ns = (item.title_id_namespace || type.title_id_namespace) ? IdentifierNamespace.findByValue(item.title_id_namespace ?: type.title_id_namespace) : null
               Org provider = (item.package_provider || type.package_provider) ? Org.findByUuid(item.package_provider ?: type.package_provider) : null
+              Org contentProvider = (item.package_content_provider || type.package_content_provider) ? Org.findByUuid(item.package_content_provider ?: type.package_content_provider) : null
               Identifier collection_id
 
               if ((item.package_id_namespace || type.package_id_namespace) && item.package_id) {
@@ -380,7 +469,7 @@ class BulkPackageImportService {
                 skip = true
                 pkg_result.errors.curatoryGroup = [
                   [
-                    message: "Config owner does not have the permission!",
+                    message: "Config owner does not have the permission to create package with defined curator!",
                     messageCode: "import.bulk.error.curator.permissions"
                   ]
                 ]
@@ -393,22 +482,16 @@ class BulkPackageImportService {
                   obj = Package.findByUuid(item.package_uuid)
                 }
 
-                if (!obj) {
-                  obj = Package.findByNormname(KBComponent.generateNormname(item.package_name))
-                }
-
                 if (!obj && collection_id) {
-                  def candidates = Package.executeQuery('''from Package as p
-                                                          where exists (select 1 from Combo where fromComponent = p and toComponent = :cg)
-                                                          and exists (select 1 from Combo where fromComponent = p and toComponent = :cid)''', [cg: curator, cid: collection_id])
+                  def candidates = collection_id.getActiveIdentifiedComponents('Package')
 
                   if (candidates.size() == 1) {
-                    obj = candidates[0]
+                    obj = KBComponent.deproxy(candidates[0])
                     log.debug("Found package ${obj} via id ${collection_id} and curatoryGroup ${curator}")
                   }
                   else if (candidates.size() > 1) {
                     log.warn("Found ${candidates} as possible package candidates!")
-                    type_results.error++
+                    type_results.errors++
                     pkg_result.result = 'ERROR'
                     pkg_result.errors.matching = [
                       [
@@ -418,9 +501,16 @@ class BulkPackageImportService {
                     ]
                     skip = true
                   }
-                } else if (obj && !obj.curatoryGroups.contains(curator)) {
+                }
+
+                if (!obj) {
+                  obj = Package.findByNormname(KBComponent.generateNormname(item.package_name))
+                }
+
+                if (obj && !obj.curatoryGroups.contains(curator) && listInfo.curatorPolicy?.value == 'Skip') {
                   log.warn("Matched package has other curators!")
-                  type_results.error++
+
+                  type_results.errors++
                   pkg_result.result = 'ERROR'
                   pkg_result.errors.matching = [
                     [
@@ -433,9 +523,10 @@ class BulkPackageImportService {
 
                 if (obj?.source?.bulkConfig && obj.source.bulkConfig.id != listInfo.id) {
                   log.warn("Matched package ${obj} already has another bulk config (${obj.source.bulkConfig.id}) assigned!")
+
                   pkg_result.errors.matching = [
                     [
-                      message: "A single package has been matched, but its source is already connected to antother bulk config!",
+                      message: "A single package has been matched, but its source is already connected to another bulk config!",
                       messageCode: "import.bulk.error.matched.sourceBulkConfig.label",
                     ]
                   ]
@@ -443,16 +534,38 @@ class BulkPackageImportService {
                 }
 
                 if (!skip) {
-                  if (!obj) {
-                    log.debug("Creating new Package ..")
+                  boolean pkg_created = false
+                  String provider_prefix = provider.preferredShortname ?: provider.name
+                  String final_name = item.package_name
 
-                    try {
-                      obj = new Package(name: item.package_name).save(flush: true, failOnError: true)
-                      type_results.created++
+                  if (listInfo.prependProviderName) {
+                    final_name = "${provider_prefix}: ${final_name}"
+                  }
+
+                  if (!obj) {
+                    if (listInfo.updateOnly) {
+                      log.debug("Skipping existing Package due to config ..")
+                      skip = true
                     }
-                    catch (Exception e) {
-                      log.debug("Errors creating new package!", e)
-                      type_results.errors++
+                    else {
+                      log.debug("Creating new Package ..")
+
+                      try {
+                        obj = new Package(name: final_name).save(flush: true, failOnError: true)
+                        type_results.created++
+                        pkg_created = true
+                      }
+                      catch (Exception e) {
+                        log.debug("Errors creating new package!", e)
+                        type_results.errors++
+
+                        pkg_result.errors.name = [
+                          [
+                            message: "Unable to save package '${final_name}', as there is already another package with this name!",
+                            baddata: item.package_name
+                          ]
+                        ]
+                      }
                     }
                   }
                   else {
@@ -461,32 +574,85 @@ class BulkPackageImportService {
                   }
 
                   if (obj) {
-                    if (!obj.contentType && (item.content_type || type.content_type)) {
-                      obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
+                    source = obj.source
+
+                    if (item.content_type || type.content_type) {
+                      if (!obj.contentType) {
+                        obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
+                      }
+                      else {
+                        log.debug("Not updating existing contentType ..")
+                      }
                     }
 
                     if (item.global || type.global) {
                       obj.global = RefdataCategory.lookup('Package.Global', item.global ?: type.global)
                     }
 
-                    if (item.fixed != null || type.fixed != null) {
-                      obj.fixed = setPackageBinaryRefdata(obj, 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
+                    try {
+
+                      if (item.containsKey('fixed') || type.fixed != null) {
+                        setPackageBinaryRefdata(obj, 'fixed', 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
+                      }
+
+                      if (item.containsKey('breakable') || type.breakable != null) {
+                        setPackageBinaryRefdata(obj, 'breakable', 'Package.Breakable', item.breakable != null ? item.breakable : type.breakable)
+                      }
+
+                      if (item.containsKey('consistent') || type.consistent != null) {
+                        setPackageBinaryRefdata(obj, 'consistent', 'Package.Consistent', item.consistent != null ? item.consistent : type.consistent)
+                      }
+
+                      if (item.scope || type.scope) {
+                        obj.scope = RefdataCategory.lookup('Package.Scope', item.scope ?: type.scope)
+                      }
+                    }
+                    catch (Exception e) {
+                      log.debug("FAIL: ", e)
                     }
 
-                    if (item.breakable != null || type.breakable  != null) {
-                      obj.breakable = setPackageBinaryRefdata(obj, 'Package.Breakable', item.breakable != null ? item.breakable : type.breakable)
+                    if (listInfo.updateNames && final_name != obj.name) {
+                      obj.name = final_name
+                      obj.save(flush: true, failOnError: true)
+
+                      if (source) {
+                        source.name = final_name
+                        source.save(flush: true, failOnError: true)
+                      }
                     }
 
-                    if (item.consistent != null || type.consistent != null) {
-                      obj.consistent = setPackageBinaryRefdata(obj, 'Package.Consistent', item.consistent != null ? item.consistent : type.consistent)
+                    if (item.containsKey('end_year')) {
+                      if (item.end_year && item.containsKey('start_year')) {
+                        if (!item.start_year) {
+                          pkg_result.errors.end_year = [
+                            [
+                              message: "Unable to set package end year due to missing start date!",
+                              baddata: item.end_year
+                            ]
+                          ]
+                        }
+                      }
+                      else if (item.end_year && !obj.startYear) {
+                        pkg_result.errors.end_year = [
+                          [
+                            message: "Unable to set package end year due to missing start date!",
+                            baddata: item.end_year
+                          ]
+                        ]
+                      }
+
+                      if (!pkg_result.errors) {
+                        obj.endYear = item.end_year ? item.end_year : null
+                      }
                     }
 
-                    if (item.scope || type.scope) {
-                      obj.consistent = RefdataCategory.lookup('Package.Scope', item.scope ?: type.scope)
+                    if (!pkg_result.errors && item.containsKey('start_year')) {
+                      obj.startYear = item.start_year ? item.start_year : null
                     }
 
                     obj.nominalPlatform = platform
                     obj.provider = provider
+                    obj.contentProvider = contentProvider
                     obj.save()
 
                     pkg_result.gokb_uuid = obj.uuid
@@ -496,25 +662,114 @@ class BulkPackageImportService {
                       obj.ids << collection_id
                     }
 
-                    if (!obj.curatoryGroups.contains(curator)) {
-                      obj.curatoryGroups << curator
+                    item.other_package_identifiers.each { opid ->
+                      Identifier other_id
+
+                      try {
+                        other_id = componentLookupService.lookupOrCreateCanonicalIdentifier(opid.namespace, opid.value)
+                      }
+                      catch (grails.validation.ValidationException ve) {
+                        if (!pkg_result.errors.other_package_identifiers) {
+                          pkg_result.errors.other_package_identifiers = []
+                        }
+
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Invalid additional package identifier!",
+                            messageCode: "import.bulk.error.ids.format",
+                            baddata: opid
+                          ]
+                        ]
+                      }
+                      catch (Exception e) {
+                        if (!pkg_result.errors.other_package_identifiers) {
+                          pkg_result.errors.other_package_identifiers = []
+                        }
+
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Unable to reference additional package identifier!",
+                            messageCode: "import.bulk.error.ids.unknown",
+                            baddata: opid
+                          ]
+                        ]
+                      }
+
+                      RefdataValue ns_type_pkg = RefdataCategory.lookup("IdentifierNamespace.TargetType", "Package")
+
+                      if (other_id) {
+                        boolean already_linked = obj.ids?.contains(other_id)
+
+                        if (!already_linked && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
+                          obj.ids << other_id
+                        }
+                        else if (already_linked) {
+                          log.debug("Skipping existing id ${other_id}")
+                        }
+                        else {
+                          if (!pkg_result.errors.other_package_identifiers) {
+                            pkg_result.errors.other_package_identifiers = []
+                          }
+
+                          pkg_result.errors.other_package_identifiers << [
+                            [
+                              message: "Additional identifier namespace '${other_id.namespace.value}' is not permissible for packages!",
+                              messageCode: "import.bulk.error.ids.targetType",
+                              baddata: opid
+                            ]
+                          ]
+                        }
+                      }
                     }
 
-                    obj.save()
 
-                    source = obj.source
+                    RefdataValue type_pc = RefdataCategory.lookup("Combo.Type", "Package.CuratoryGroups")
+
+                    def existing_combos_count = Combo.executeQuery('''select count(*) from Combo
+                                                                      where type = :ct
+                                                                      and fromComponent = :pkg
+                                                                      and toComponent = :ncg
+                                                                  ''', [
+                                                                    ct: type_pc,
+                                                                    pkg: obj,
+                                                                    ncg: curator
+                                                                  ])[0]
+
+                    if (existing_combos_count == 0) {
+                      log.debug("Handling changed curator ..")
+
+                      if (pkg_created || listInfo.curatorPolicy?.value == 'Add' || listInfo.curatorPolicy?.value == 'New') {
+                        log.debug("Adding new curator ${curator}")
+
+                        obj.curatoryGroups << curator
+                        obj.save(flush: true)
+
+                        if (listInfo.curatorPolicy?.value == 'New') {
+                          log.debug("Removing old groups ..")
+                          obj.curatoryGroups.retainAll([curator])
+                        }
+                      }
+                      else if (listInfo.curatorPolicy?.value == 'Old') {
+                        log.debug("Not changing existing package curator ..")
+                      }
+
+                      log.debug("New curator list: ${obj.curatoryGroups}")
+                    }
+
+                    obj.save(flush: true, failOnError: true)
+
 
                     if (!source) {
                       log.debug("Setting new package source..")
 
                       try {
-                        def dupe = Source.findByName(item.package_name)
+                        def dupe = Source.findByName(final_name)
 
                         if (!dupe) {
-                          source = new Source(name: item.package_name).save(flush:true, failOnError: true)
+                          source = new Source(name: final_name).save(flush:true, failOnError: true)
                         }
                         else {
-                          log.warn("Found existing source with package name ${item.package_name}!")
+                          log.warn("Found existing source with package name ${final_name}!")
                           source = dupe
                         }
                       }
@@ -531,19 +786,36 @@ class BulkPackageImportService {
                         obj.save(flush: true)
                       }
                     }
+                    else {
+                      if (source.curatoryGroups == obj.curatoryGroups) {
+                        log.debug("Not updating source curators ..")
+                      }
+                      else {
+                        obj.curatoryGroups.each { pcg ->
+                          if (!source.curatoryGroups.contains(pcg)) {
+                            source.curatoryGroups << pcg
+                          }
+                        }
+
+                        source.save(flush: true)
+
+                        source.curatoryGroups.retainAll(obj.curatoryGroups)
+                        source.save(flush: true)
+                      }
+                    }
 
                     if (source) {
                       log.debug("Setting source info ..")
                       source.bulkConfig = listInfo
                       source.targetNamespace = title_id_ns
                       source.url = item.package_titlelist
+                      source.frequency = listInfo.frequency ? RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value) : null
 
-                      if (listInfo.frequency) {
+                      if (listInfo.frequency && source.url) {
                         source.automaticUpdates = listInfo.automatedUpdate
-                        source.frequency = RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value)
                       }
                       else {
-                        log.debug("No frequency for ${item.package_name} - Setting automated source update to 'false'!")
+                        log.debug("No frequency or url for ${item.package_name} - Setting automated source update to 'false'!")
                         source.automaticUpdates = false
                       }
                       source.save()
@@ -683,19 +955,19 @@ class BulkPackageImportService {
     result
   }
 
-  private void setPackageBinaryRefdata(obj, prop, val) {
+  private void setPackageBinaryRefdata(Package obj, String prop, String category, boolean val) {
     if (val == true) {
-      obj[prop] = RefdataCategory.lookup(prop, "Yes")
+      obj[prop] = RefdataCategory.lookup(category, "Yes")
     }
     else if (val == false) {
-      obj[prop] = RefdataCategory.lookup(prop, "No")
+      obj[prop] = RefdataCategory.lookup(category, "No")
     }
     else {
-      obj[prop] = RefdataCategory.lookup(prop, "Unknown")
+      obj[prop] = RefdataCategory.lookup(category, "Unknown")
     }
   }
 
-  private boolean hasChangedFile(pid, item) {
+  private boolean hasChangedFile(Long pid, Map item) {
     Package.withNewSession {
       boolean result = false
       def deposit_token = java.util.UUID.randomUUID().toString()

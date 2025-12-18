@@ -17,7 +17,6 @@ class HomeController {
   static stats_cache = null;
   static stats_timestamp = null;
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def dashboard() {
     if ( ( stats_timestamp == null )|| ( System.currentTimeMillis() - stats_timestamp > 3600000 ) || params.reset) {
       stats_timestamp = System.currentTimeMillis()
@@ -32,7 +31,6 @@ class HomeController {
     return stats_cache
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index () {
     log.debug("Home::index -- ${params}")
 
@@ -44,14 +42,11 @@ class HomeController {
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def userdash() {
     def result = [:]
     result
   }
 
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def calculate() {
     log.debug("Calculating stats...");
 
@@ -154,8 +149,6 @@ class HomeController {
     ["widgets" : result]
   }
 
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def dash() {
     def result=[:]
 
@@ -177,14 +170,13 @@ class HomeController {
     result
   }
 
-  @Secured(['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured("hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()")
   def about() {
   }
 
   def releaseNotes() {
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def profile() {
     def result = [:]
     User user = springSecurityService.currentUser
@@ -209,7 +201,6 @@ class HomeController {
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def preferences() {
     def result = [:]
     User user = springSecurityService.currentUser
@@ -217,7 +208,6 @@ class HomeController {
     result
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def changePass() {
     if ( params.newpass == params.repeatpass ) {
       User user = springSecurityService.currentUser
@@ -236,8 +226,6 @@ class HomeController {
     redirect(action:'profile')
   }
 
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def sendAlerts() {
     flash.message ="Alerts email sent, please check your email shortly";
     User user = springSecurityService.currentUser

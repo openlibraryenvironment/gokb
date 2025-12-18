@@ -12,7 +12,6 @@ class BulkImportController {
   def springSecurityService
   def bulkPackageImportService
 
-  @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def assertBulkConfig () {
     def result = [result: 'OK']
     def rjson = request.JSON
@@ -43,7 +42,6 @@ class BulkImportController {
     render result as JSON
   }
 
-  @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'])
   def runBulkUpdate() {
     def result = [result: 'OK']
     def user = springSecurityService.currentUser

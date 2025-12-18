@@ -4,34 +4,19 @@ import org.gokb.cred.*
 
 class ReviewRequestNotificationJob {
 
-  // Every five minutes
+  def curatoryGroupAlertingService
+  // Allow only one run at a time.
+  static concurrent = false
+
   static triggers = {
-    cron name: 'ReviewRequestNotificationJobTrigger', cronExpression: "0 0/5 * * * ?", startDelay:500000
+    // Set from Bootstrap
   }
 
   def execute() {
-    sendEmails();
-  }
-
-  def sendEmails() {
-    def pendingRequests = ReviewRequest.findAllByNeedsNotify(Boolean.TRUE)
-
-    def usermap = [:]
-
-    pendingRequests.each { pr ->
-      if ( usermap[pr.allocatedTo.id] == null ) {
-        usermap[pr.allocatedTo.id] = []
-      }
-
-      usermap[pr.allocatedTo.id].add(pr);
-    }
-
-    usermap.each { k,v ->
-      v.each { pr ->
-        println("Email user ${k} about ${pr}");
-        pr.needsNotify=Boolean.FALSE
-        pr.save()
-      }
+    if (grailsApplication.config.getProperty('gokb.reviewRequestNotification.enabled', Boolean, false)) {
+      curatoryGroupAlertingService.triggerDailyReviewsAlerts()
+    } else {
+      log.debug("daily reviews notification is not enabled - set gokb.reviewRequestNotification.enabled = true in app config to enable")
     }
   }
 }

@@ -75,6 +75,7 @@ class BootStrap {
             def adminRole = Role.findByAuthority('ROLE_ADMIN') ?: new Role(authority: 'ROLE_ADMIN', roleType: 'global').save(failOnError: true)
             def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType: 'global').save(failOnError: true)
             def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType: 'global').save(failOnError: true)
+            def puRole = Role.findByAuthority('ROLE_POWERUSER') ?: new Role(authority: 'ROLE_POWERUSER', roleType: 'global').save(failOnError: true)
 
             log.debug("Create admin user...");
             def adminUser = User.findByUsername('admin')
@@ -148,6 +149,7 @@ class BootStrap {
 
         ensureCuratoryGroup(grailsApplication.config.getProperty('gokb.defaultCuratoryGroup'))
         ensureCuratoryGroup(grailsApplication.config.getProperty('gokb.centralGroups.JournalInstance'))
+        ensureCuratoryGroup(grailsApplication.config.getProperty('gokb.centralGroups.admin'))
 
         KBComponent.withTransaction {
             log.info("GOKB missing normalised component names")
@@ -446,12 +448,15 @@ class BootStrap {
         log.info("GoKB Init complete")
     }
 
-    private Object ensureCuratoryGroup(String groupName){
+    def ensureCuratoryGroup(String groupName){
+        CuratoryGroup obj
+
         if (groupName != null){
             log.debug("Ensure curatory group: ${groupName}");
-            def local_cg = CuratoryGroup.findByName(groupName) ?:
-                new CuratoryGroup(name: groupName).save(flush: true, failOnError: true);
+            obj = CuratoryGroup.findByName(groupName) ?: new CuratoryGroup(name: groupName).save(flush: true, failOnError: true);
         }
+
+        obj
     }
 
     def defaultBulkLoaderConfig() {
@@ -542,6 +547,7 @@ class BootStrap {
             AclSid sidContributor = AclSid.findBySid('ROLE_CONTRIBUTOR') ?: new AclSid(sid: 'ROLE_CONTRIBUTOR', principal: false).save(flush: true)
             AclSid sidEditor = AclSid.findBySid('ROLE_EDITOR') ?: new AclSid(sid: 'ROLE_EDITOR', principal: false).save(flush: true)
             AclSid sidApi = AclSid.findBySid('ROLE_API') ?: new AclSid(sid: 'ROLE_API', principal: false).save(flush: true)
+            AclSid sidPowerUser = AclSid.findBySid('ROLE_POWERUSER') ?: new AclSid(sid: 'ROLE_POWERUSER', principal: false).save(flush: true)
 
             RefdataValue std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save(flush: true, failOnError: true)
             grailsApplication.domainClasses.each { dc ->
@@ -1084,6 +1090,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Duplicate Title Info").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Matching Conflict").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Missing TIPP Name").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "External Editorial Request").save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Activity.Status', 'Complete').save(flush: true, failOnError: true)
@@ -1120,6 +1127,11 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('BulkImportListConfig.Frequency', 'Monthly', '030').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('BulkImportListConfig.Frequency', 'Quarterly', '090').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('BulkImportListConfig.Frequency', 'Yearly', '365').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate('BulkImportListConfig.CuratorPolicy', 'Add').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('BulkImportListConfig.CuratorPolicy', 'Skip').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('BulkImportListConfig.CuratorPolicy', 'New').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('BulkImportListConfig.CuratorPolicy', 'Old').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('RDFDataType', 'uri').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('RDFDataType', 'string').save(flush: true, failOnError: true)
@@ -1160,6 +1172,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Combo.Type', 'Org.CuratoryGroups').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Org.Imprint').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Provider').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.ContentProvider').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Package.CuratoryGroups').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.Type', 'Package.NominalPlatform').save(flush: true, failOnError: true)
@@ -1224,6 +1237,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'BulkPackageIngest').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'Admin Org Merge').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'Admin Platform Merge').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'ForcePackageCaching').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)
@@ -1235,6 +1249,26 @@ class BootStrap {
 
         RefdataCategory.lookupOrCreate('Source.ImportConfig', 'WEKB').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Source.ImportConfig', 'EZB').save(flush: true, failOnError: true)
+
+
+        RefdataCategory.lookupOrCreate('Org.PreferredSupplyMethod', 'FTP').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.PreferredSupplyMethod', 'HTTPSAuth').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.PreferredSupplyMethod', 'HTTPSNoAuth').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Daily', '001').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Weekly', '007').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Monthly', '030').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Quarterly', '090').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartUpdateCycle', 'Yearly', '365').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate('Org.KbartScope', 'Complete').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartScope', 'Subject').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartScope', 'Own').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate('Org.KbartPublicationType', 'BooksAndJournals').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartPublicationType', 'Journals').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Org.KbartPublicationType', 'Books').save(flush: true, failOnError: true)
+
 
         lookupOrCreateCuratoryGroupTypes()
 
@@ -1453,9 +1487,8 @@ class BootStrap {
 
     def ensureEsIndex(String indexName, def esClient) {
         log.debug("ensureESIndex for ${indexName}");
-        def request = new GetIndexRequest(indexName)
 
-        if (!esClient.indices().exists(request, RequestOptions.DEFAULT)) {
+        if (!esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT)) {
             log.debug("ES index ${indexName} did not exist, creating..")
             CreateIndexRequest createRequest = new CreateIndexRequest(indexName)
             log.debug("Adding index settings..")
@@ -1481,7 +1514,40 @@ class BootStrap {
         }
         else {
             log.debug("ES index ${indexName} already exists..")
+            verifyMapping(indexName, esClient)
             // Validate settings & mappings
+        }
+    }
+
+    private void verifyMapping(String indexName, def esClient) {
+        def existingMappings = esClient.indices().get(new GetIndexRequest(indexName), RequestOptions.DEFAULT).getMappings()[indexName].sourceAsMap()
+
+        log.debug("Got existing mapping: ${existingMappings}")
+
+        def new_mapping = ESWrapperService.mapping
+        def new_props = [properties: [:]]
+
+        log.debug("handling new mapping: ${new_mapping}")
+
+        new_mapping.properties.each { key, val ->
+            if (existingMappings['properties'][key]) {
+                log.debug("Property for $key already exists!")
+            }
+            else {
+                new_props.properties[key] = val
+            }
+        }
+
+        if (new_props.properties) {
+            PutMappingRequest mr = new PutMappingRequest(indexName).source(new_props)
+            def mappingResponse = esClient.indices().putMapping(mr, RequestOptions.DEFAULT)
+
+            if (mappingResponse.isAcknowledged()) {
+                log.debug("Added new mapping properties for index $indexName")
+            }
+            else {
+                log.error("Unable to add new mapping fields to index $indexName")
+            }
         }
     }
 

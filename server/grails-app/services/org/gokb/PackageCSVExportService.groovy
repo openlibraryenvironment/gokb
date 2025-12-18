@@ -1,6 +1,7 @@
 package org.gokb
 
 import com.k_int.ClassUtils
+import com.k_int.ConcurrencyManagerService.Job
 
 import com.opencsv.CSVReader
 import com.opencsv.CSVReaderBuilder
@@ -70,12 +71,13 @@ class PackageCSVExportService {
     KBART_TIPP, KBART_TITLE, TSV
   }
 
-  public String updateExportFiles(Package pkg, boolean force = false) {
+  public String updateExportFiles(Package pkg, boolean force = false, Job job = null) {
     //log.info("Caching KBART & CSV for ${pkg}..")
     String result = 'OK'
-    boolean activeJobs = concurrencyManagerService.getComponentJobs(pkg.id)?.data?.size() > 0
+    List activeJobs = concurrencyManagerService.getComponentJobs(pkg.id)?.data ?: []
+    boolean hasActiveImportJobs = (activeJobs.find { cj -> cj.type.value != 'ForcePackageCaching' && cj.type.value != 'Package Re-Caching' } != null)
 
-    if (!activeJobs) {
+    if (!hasActiveImportJobs) {
       result = createKbartExport(pkg, ExportType.KBART_TIPP, force)
 
       if (result == 'OK') {
@@ -104,9 +106,11 @@ class PackageCSVExportService {
       String oldExportFileName = generateExportFileName(pkg, exportType, false)
       String exportFileName = generateExportFileName(pkg, exportType)
       String path = exportFilePath()
-      boolean activeJobs = concurrencyManagerService.getComponentJobs(pkg.id)?.data?.size() > 0
 
-      if (!activeJobs) {
+      List activeJobs = concurrencyManagerService.getComponentJobs(pkg.id)?.data ?: []
+      boolean hasActiveImportJobs = (activeJobs.find { cj -> cj.type.value != 'ForcePackageCaching' && cj.type.value != 'Package Re-Caching' } != null)
+
+      if (!hasActiveImportJobs) {
         try {
           boolean selectiveUpdate = false
           boolean cancelled = false

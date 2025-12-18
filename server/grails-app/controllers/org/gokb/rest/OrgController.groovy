@@ -106,12 +106,13 @@ class OrgController {
   @Transactional
   @Secured(value = ["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def save() {
-    def result = ['result': 'OK', 'params': params]
+    def result = [result: 'OK', params: params]
+    Boolean changed = true
     def reqBody = request.JSON
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
+    Org obj = null
 
-    def obj = null
     if (reqBody) {
       def lookup_result = orgService.restLookup(reqBody)
 
@@ -152,7 +153,7 @@ class OrgController {
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+        changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if (obj.validate()) {
           log.debug("No errors.. saving")
@@ -164,8 +165,15 @@ class OrgController {
             errors.variantNames = variant_result.errors
           }
 
-          errors << orgService.updateCombos(obj, reqBody)
-          if(errors) {
+          def comments_result = restMappingService.updateComments(obj, reqBody.comments)
+
+          if (comments_result.errors.size() > 0) {
+            errors.comments = comments_result.errors
+          }
+
+          errors << orgService.updateCombos(obj, reqBody, changed)
+
+          if (errors) {
             obj.expunge()
           }
         }
@@ -195,12 +203,13 @@ class OrgController {
   @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = ['result': 'OK', 'params': params]
+    def result = [result: 'OK', params: params, changed: false]
     def reqBody = request.JSON
     def errors = [:]
     def remove = (request.method == 'PUT')
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id)
+    Org obj = Org.findByUuid(params.id)
+    String old_name
 
     if (!obj) {
       obj = Org.get(genericOIDService.oidToId(params.id))
@@ -208,6 +217,8 @@ class OrgController {
 
     if (obj && reqBody) {
       def editable = obj.isEditable()
+
+      old_name = obj.name
 
       if (editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
         def cur = user.curatoryGroups*.id.intersect(obj.curatoryGroups*.id)
@@ -227,15 +238,25 @@ class OrgController {
 
         def jsonMap = obj.jsonMapping
 
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+        result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
         def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        result.changed |= variant_result.changed
 
         if (variant_result.errors.size() > 0) {
           errors.variantNames = variant_result.errors
         }
 
-        errors << orgService.updateCombos(obj, reqBody, remove)
+        def comments_result = restMappingService.updateComments(obj, reqBody.comments, remove)
+
+        if (comments_result.errors.size() > 0) {
+          errors.comments = comments_result.errors
+        }
+
+        result.changed |= comments_result.changed
+
+        errors << orgService.updateCombos(obj, reqBody, result.changed, remove)
 
         if (obj.validate()) {
           if (errors.size() == 0) {
@@ -254,7 +275,7 @@ class OrgController {
           response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
+        if (result.changed && reqBody.name && reqBody.name != old_name && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           obj.providedPackages.each {
             FTUpdateService.updateSingleItem(it)
           }

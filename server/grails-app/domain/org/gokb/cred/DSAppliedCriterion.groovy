@@ -9,6 +9,8 @@ class DSAppliedCriterion {
   RefdataValue value //colour Red, Green, Amber, null = undecided
   User user  //Addition so each user can have a say on decisions
 
+  Set notes = []
+
   static hasMany = [
     notes: DSNote
   ]

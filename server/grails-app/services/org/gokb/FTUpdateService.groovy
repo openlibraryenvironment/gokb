@@ -107,10 +107,15 @@ class FTUpdateService {
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerName = kbc.provider?.name ?: ""
         result.providerUuid = kbc.provider?.uuid ?: ""
+        result.contentProvider = kbc.contentProvider ? kbc.contentProvider.getLogEntityId() : ""
+        result.contentProviderName = kbc.contentProvider?.name ?: ""
+        result.contentProviderUuid = kbc.contentProvider?.uuid ?: ""
         result.nominalPlatform = kbc.nominalPlatform ? kbc.nominalPlatform.getLogEntityId() : ""
         result.nominalPlatformName = kbc.nominalPlatform?.name ?: ""
         result.nominalPlatformUrl = kbc.nominalPlatform?.primaryUrl ?: ""
         result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
+        result.startYear = kbc.startYear
+        result.endYear = kbc.endYear
 
         if (kbc.listVerifiedDate)
           result.listVerifiedDate = dateFormatService.formatIsoTimestamp(kbc.listVerifiedDate)
@@ -122,6 +127,7 @@ class FTUpdateService {
             automaticUpdates: kbc.source.automaticUpdates,
             url             : kbc.source.url,
             frequency       : (kbc.source.frequency?.value ?: ""),
+            importConfig    : (kbc.source.importConfig?.value ?: "")
           ]
           if (kbc.source.lastRun)
             result.source.lastRun = dateFormatService.formatIsoTimestamp(kbc.source.lastRun)
@@ -166,11 +172,14 @@ class FTUpdateService {
 
         kbc.providedPlatforms?.each { plt ->
           def pobj = Platform.get(plt.id)
-          def platform = [:]
-          platform.uuid = pobj.uuid ?: ""
-          platform.url = pobj.primaryUrl ?: ""
-          platform.name = pobj.name ?: ""
-          result.platforms.add(platform)
+
+          if (pobj.status.value == 'Current') {
+            def platform = [:]
+            platform.uuid = pobj.uuid ?: ""
+            platform.url = pobj.primaryUrl ?: ""
+            platform.name = pobj.name ?: ""
+            result.platforms.add(platform)
+          }
         }
 
         break
@@ -560,12 +569,12 @@ class FTUpdateService {
 
         def total = 0
         Date from = new Date(latest_ft_record.lastTimestamp)
-        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ", [ts: from], [readonly: true])[0]
+        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) ", [ts: from, lid: latest_ft_record.lastId], [readonly: true])[0]
 
         if (job) job.message("Indexing start for ${countq} ${domain.simpleName} ..".toString())
 
         log.debug("Will process ${countq} records")
-        def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true])
+        def q = domain.executeQuery("select o.id from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id", [ts: from, lid: latest_ft_record.lastId], [readonly: true])
         log.debug("Query completed.. processing rows...")
         BulkRequest bulkRequest = new BulkRequest()
 

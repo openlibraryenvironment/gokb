@@ -26,7 +26,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 @Slf4j
-@Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
 class RegisterController extends grails.plugin.springsecurity.ui.RegisterController {
 
   /** Dependency injection for the 'uiMailStrategy' bean. */
@@ -138,7 +137,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     def secFailed = false
     def agrFailed = false
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-    def groups = CuratoryGroup.executeQuery("select id, name from CuratoryGroup where status = :cs", [cs: status_current])
+    def groups = CuratoryGroup.executeQuery("select id, name from CuratoryGroup where status = :cs order by name", [cs: status_current])
     CuratoryGroup selectedGroup = params.int('selectedGroup') ? CuratoryGroup.get(params.int('selectedGroup')) : null
     Locale locale = params.lang ? new Locale(params.lang) : request.locale
 

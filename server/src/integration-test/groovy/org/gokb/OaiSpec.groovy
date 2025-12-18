@@ -56,13 +56,13 @@ class OaiSpec extends Specification {
     IdentifierNamespace ttl_ns = IdentifierNamespace.findByName('Test Title NS') ?: new IdentifierNamespace(name: 'Test Title NS', value: 'titleNStest')
     IdentifierNamespace pkg_ns = IdentifierNamespace.findByName('Test Package NS') ?: new IdentifierNamespace(name: 'Test Package NS', value: 'packageNStest')
 
-    test_plt = Platform.findByName('Test Platform') ?: new Platform(name: 'Test Platform').save(flush: true)
-
     test_org = Org.findByName("OAI Test Org") ?: new Org(
       name: 'OAI Test Org',
       titleNamespace: ttl_ns,
       packageNamespace: pkg_ns
     )
+
+    test_plt = Platform.findByName('Test Platform') ?: new Platform(name: 'Test Platform', provider: test_org).save(flush: true)
 
     Source testSource = Source.findByName("PackTestSource") ?: new Source(
       name: "PackTestSource",
@@ -267,7 +267,7 @@ class OaiSpec extends Specification {
     org_node.name == 'OAI Test Org'
     org_node.titleNamespace.@namespaceName == 'Test Title NS'
     org_node.packageNamespace.@value == 'packagenstest'
-    org_node.providedPackages.size() == 1
+    org_node.providedPlatforms?.size() == 1
   }
 
   void "test GetRecord package response"() {
