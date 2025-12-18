@@ -212,12 +212,12 @@ class PackageUpdateService {
 
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp_dto, java.util.Locale.ENGLISH)
 
-        if (ti_errors?.size > 0 || !tipp_validation.valid) {
+        if (ti_errors?.size() > 0 || !tipp_validation.valid) {
           if (!errors.tipps) {
             errors.tipps = []
           }
 
-          if (ti_errors?.size > 0) {
+          if (ti_errors?.size() > 0) {
             errors.tipps << ti_errors
           }
 

@@ -13,12 +13,15 @@ buildscript {
         classpath "org.grails.plugins:hibernate5:${gormVersion}"
         classpath "com.bmuschko:gradle-docker-plugin:6.7.0"
         classpath "com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1"
-        classpath "gradle.plugin.com.github.erdi.webdriver-binaries:webdriver-binaries-gradle-plugin:2.7"
         // Fixing too long classpath in Windows development environment
         classpath "gradle.plugin.ua.eshepelyuk:ManifestClasspath:1.0.0"
         classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:4.5.2'
         classpath 'com.bertramlabs.plugins:less-asset-pipeline:4.5.2'
     }
+}
+
+plugins {
+  id 'org.ysb33r.webdriver-binaries' version '4.0.1'
 }
 
 version appVersion
@@ -29,7 +32,6 @@ apply plugin:"idea"
 apply plugin:"war"
 apply plugin:"asset-pipeline"
 apply plugin:"com.gorylenko.gradle-git-properties"
-apply plugin:"com.github.erdi.webdriver-binaries"
 apply plugin:"org.grails.grails-web"
 apply plugin:"org.grails.grails-gsp"
 apply plugin:"com.bmuschko.docker-remote-api"
@@ -76,7 +78,7 @@ dependencies {
     implementation "org.grails.plugins:async"
     implementation "org.grails.plugins:scaffolding"
     implementation "org.grails.plugins:events"
-    implementation("org.quartz-scheduler:quartz:2.4.0") {
+    implementation("org.quartz-scheduler:quartz:2.5.2") {
         exclude group: 'slf4j-api', module: 'c3p0'
     }
     implementation "org.grails.plugins:quartz:3.0.0"
@@ -88,7 +90,7 @@ dependencies {
     implementation ('org.grails.plugins:database-migration:4.2.1')
 
     implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
-    implementation 'net.bull.javamelody:javamelody-core:1.99.3'
+    implementation 'net.bull.javamelody:javamelody-core:1.99.4'
 
     runtimeOnly 'com.bertramlabs.plugins:asset-pipeline-gradle:4.5.2'
     runtimeOnly 'com.bertramlabs.plugins:less-asset-pipeline:4.5.2'
@@ -99,20 +101,20 @@ dependencies {
     implementation 'org.grails.plugins:spring-security-acl:4.0.0.M2'
     implementation 'org.grails.plugins:spring-security-ui:4.0.0.M1'
     implementation 'org.grails.plugins:spring-security-rest:5.0.1'
-    implementation 'commons-fileupload:commons-fileupload:1.5'
+    implementation 'commons-fileupload:commons-fileupload:1.6.0'
 
-    implementation 'commons-io:commons-io:2.19.0'
-    implementation 'org.apache.commons:commons-compress:1.27.1'
-    implementation 'commons-validator:commons-validator:1.9.0'
-    implementation 'com.opencsv:opencsv:5.11'
-    implementation 'com.github.ladutsko:isbn-core:1.5.3'
+    implementation 'commons-io:commons-io:2.21.0'
+    implementation 'org.apache.commons:commons-compress:1.28.0'
+    implementation 'commons-validator:commons-validator:1.10.1'
+    implementation 'com.opencsv:opencsv:5.12.0'
+    implementation 'com.github.ladutsko:isbn-core:2.0.0'
     implementation 'joda-time:joda-time:2.14.0'
     implementation 'org.opensearch:opensearch:2.19.1'
     implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.19.1'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.19.0'
     implementation 'org.locationtech.spatial4j:spatial4j:0.8'
     implementation 'org.slf4j:log4j-over-slf4j:2.0.17'
-    implementation 'org.apache.tika:tika-core:2.9.4'
+    implementation 'org.apache.tika:tika-core:3.2.3'
     implementation 'dk.glasius:external-config:4.0.0'
 
     implementation 'org.apache.httpcomponents:httpclient:4.5.14'
@@ -120,12 +122,13 @@ dependencies {
     implementation "io.micronaut:micronaut-http-client"
     // implementation 'io.micronaut.xml:micronaut-jackson-xml:4.4.0'
     implementation 'com.github.albfernandez:juniversalchardet:2.5.0'
-    implementation 'org.postgresql:postgresql:42.7.5'
+    implementation 'org.postgresql:postgresql:42.7.8'
     runtimeOnly "com.h2database:h2"
     runtimeOnly "org.apache.tomcat:tomcat-jdbc"
 
     testImplementation 'io.github.gpc:greenmail:5.0.0'
     testImplementation "org.springframework.boot:spring-boot-starter-tomcat"
+    testImplementation 'org.ysb33r.gradle:webdriver-binaries-gradle-plugin:4.0.1'
     testImplementation "org.grails:grails-gorm-testing-support"
     testImplementation "org.grails:grails-web-testing-support"
     testImplementation "org.grails.plugins:geb"
@@ -192,8 +195,12 @@ assets {
 }
 
 webdriverBinaries {
-    chromedriver "$chromeDriverVersion"
-    geckodriver "$geckoDriverVersion"
+    chromedriver {
+        useLatestVersion()
+    }
+    geckodriver {
+        useLatestVersion()
+    }
 }
 
 sourceSets {
