@@ -25,7 +25,16 @@ class WebHookEndpoint {
 
   static constraints = {
     name(nullable:false, blank:false)
-    url(nullable:false, blank:false)
+    url(validator: {val, obj ->
+      if(val) {
+        if(!val.startsWith("ftp://") && !val.startsWith("http://") && !val.startsWith("https://")){
+          return ['webEndpointUrl.missingProtocol']
+        }
+      }
+      else {
+        return ['webEndpointUrl.notNull']
+      }
+    })
     authmethod(nullable:true, blank:true)
     principal(nullable:true, blank:true)
     credentials(nullable:true, blank:true)
