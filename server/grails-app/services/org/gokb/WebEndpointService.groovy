@@ -8,15 +8,10 @@ import java.util.regex.Pattern
 class WebEndpointService {
 
     static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
+    static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
 
-    def extractFtpUrlParts (String webEndpointUrl, String sourceUrl) {
+    def extractFtpUrlParts (String webEndpointUrl, String sourceUrl, boolean dynamic_date) {
         def result = [:]
-
-        boolean isDateMasked = false
-        if (sourceUrl =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
-            log.debug("### IS MIT DATUMSMASKIERUNG ###")
-            isDateMasked = true
-        }
 
         //we dont need the protocol
         String hostname = webEndpointUrl.replace("ftp://", "")

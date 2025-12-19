@@ -6,6 +6,7 @@ import grails.converters.JSON
 import groovy.util.logging.Slf4j
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPClientConfig
+import org.apache.commons.net.ftp.FTPFile
 import org.apache.http.HttpEntity
 import org.apache.http.HttpHeaders
 import org.apache.http.util.EntityUtils
@@ -26,6 +27,8 @@ import java.util.regex.Pattern
 import org.gokb.cred.*
 import org.mozilla.universalchardet.UniversalDetector
 import org.apache.commons.net.*
+
+import java.util.stream.Collectors
 
 @Slf4j
 class PackageSourceUpdateService {
@@ -164,105 +167,105 @@ class PackageSourceUpdateService {
             if ( isFtpTransfer ) {
                 log.debug("Start FTP Update from Source " + pkg_source )
 
-                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source)
+                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, dynamic_date)
             }
             else { // start not-FTP
 
-                if (!extracted_date || !lastRunLocal || extracted_date > lastRunLocal) {
-                    log.debug("Request initial URL..")
-                    file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-                }
-
-                if (file_info.connectError) {
-                    result.result = 'ERROR'
-                    result.messageCode = 'kbart.errors.url.connection'
-                    result.message = "There was an error trying to fetch KBART via URL!"
-                    result.exceptionMsg = file_info.exceptionMsg
-
-              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-                    return result
-                }
-
-            if (file_info.fileSizeError) {
-              result.result = 'ERROR'
-              result.messageCode = 'kbart.errors.url.fileSize'
-              result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
-
-              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-              return result
-            }
-
-            if (file_info.accessError) {
-              result.result = 'ERROR'
-              result.messageCode = 'kbart.errors.url.html'
-              result.message = "URL returned HTML, indicating provider configuration issues!"
-
-              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-              return result
-            } else if (file_info.mimeTypeError) {
-              result.result = 'ERROR'
-              result.messageCode = 'kbart.errors.url.mimeType'
-              result.message = "KBART URL returned a wrong content type!"
-              log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
-
-              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-              return result
-            } else if (file_info.status == 403) {
-              log.debug("URL request failed!")
-              result.result = 'ERROR'
-              result.messageCode = 'kbart.errors.url.denied'
-              result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
-
-              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-              return result
-            }
-
-            if (!file_info.file_name && (dynamic_date || extracted_date)) {
-              LocalDate active_date = LocalDate.now()
-              boolean skipLookupByDate = false
-              src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-              log.debug("Fetching dated URL for today..")
-              file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-
-              // Look at first of this month
-              if (!file_info.file_name) {
-                sleep(500)
-                log.debug("Fetching first of the month..")
-                def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
-                file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
+              if (!extracted_date || !lastRunLocal || extracted_date > lastRunLocal) {
+                log.debug("Request initial URL..")
+                file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
               }
 
-              // Check all days of this month
-              while (!skipLookupByDate && active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
-                active_date = active_date.minusDays(1)
+              if (file_info.connectError) {
+                result.result = 'ERROR'
+                result.messageCode = 'kbart.errors.url.connection'
+                result.message = "There was an error trying to fetch KBART via URL!"
+                result.exceptionMsg = file_info.exceptionMsg
+
+                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+                return result
+              }
+
+              if (file_info.fileSizeError) {
+                result.result = 'ERROR'
+                result.messageCode = 'kbart.errors.url.fileSize'
+                result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
+
+                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+                return result
+              }
+
+              if (file_info.accessError) {
+                result.result = 'ERROR'
+                result.messageCode = 'kbart.errors.url.html'
+                result.message = "URL returned HTML, indicating provider configuration issues!"
+
+                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+                return result
+              } else if (file_info.mimeTypeError) {
+                result.result = 'ERROR'
+                result.messageCode = 'kbart.errors.url.mimeType'
+                result.message = "KBART URL returned a wrong content type!"
+                log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+                return result
+              } else if (file_info.status == 403) {
+                log.debug("URL request failed!")
+                result.result = 'ERROR'
+                result.messageCode = 'kbart.errors.url.denied'
+                result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
+
+                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+                return result
+              }
+
+              if (!file_info.file_name && (dynamic_date || extracted_date)) {
+                LocalDate active_date = LocalDate.now()
+                boolean skipLookupByDate = false
                 src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-                log.debug("Fetching dated URL for date ${active_date}")
-                sleep(500)
+                log.debug("Fetching dated URL for today..")
                 file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
-                if (file_info.mimeTypeError) {
-                  skipLookupByDate = true
+                // Look at first of this month
+                if (!file_info.file_name) {
+                  sleep(500)
+                  log.debug("Fetching first of the month..")
+                  def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
+                  file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
+                }
+
+                // Check all days of this month
+                while (!skipLookupByDate && active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
+                  active_date = active_date.minusDays(1)
+                  src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
+                  log.debug("Fetching dated URL for date ${active_date}")
+                  sleep(500)
+                  file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
+
+                  if (file_info.mimeTypeError) {
+                    skipLookupByDate = true
+                  }
                 }
               }
-            }
 
-            if (file_info.mimeTypeError) {
-              result.result = 'ERROR'
-              result.messageCode = 'kbart.errors.url.mimeType'
-              result.message = "KBART URL returned a wrong content type!"
-              log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+              if (file_info.mimeTypeError) {
+                result.result = 'ERROR'
+                result.messageCode = 'kbart.errors.url.mimeType'
+                result.message = "KBART URL returned a wrong content type!"
+                log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
-              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
-              return result
-            }
+                return result
+              }
 
-            log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
+              log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
             } // end not-FTP
             if (file_info.file_name) {
@@ -631,7 +634,7 @@ class PackageSourceUpdateService {
     return info_map
   }
 
-  def fetchKbartFileFromFTPServer (File tmp_file, Source source) {
+  def fetchKbartFileFromFTPServer (File tmp_file, Source source, boolean dynamic_date) {
 
       def result = [content_mime_type: null, file_name: null]
 
@@ -641,36 +644,50 @@ class PackageSourceUpdateService {
       String username = source.getWebEndpoint().getBa_username()
       String password = source.getWebEndpoint().getBa_password()
 
-      def urlParts = webEndpointService.extractFtpUrlParts(source.getWebEndpoint().getUrl(), source.getFtpUrl())
+      def urlParts = webEndpointService.extractFtpUrlParts(source.getWebEndpoint().getUrl(), source.getFtpUrl(), dynamic_date)
 
       String hostname = urlParts.hostname
       String filename = urlParts.filename
       String directory = urlParts.directory
 
-      result.file_name = filename
 
       try {
-          ftp.connect(hostname)
-          ftp.enterLocalPassiveMode()
-          def loggedIn = ftp.login(username, password)
+        ftp.connect(hostname)
+        ftp.enterLocalPassiveMode()
+        def loggedIn = ftp.login(username, password)
 
-          if (ftp.isConnected()) {
+        if (ftp.isConnected()) {
 
-              ftp.changeWorkingDirectory(directory)
+          ftp.changeWorkingDirectory(directory)
 
-              InputStream is = ftp.retrieveFileStream(filename)
-              OutputStream outStream = new FileOutputStream(tmp_file)
+          //TODO: if dynamic_date, find file with latest date
 
-              byte[] buffer = new byte[1024];
-              for (int length; (length = is.read(buffer)) != -1; ) {
-                  outStream.write(buffer, 0, length);
-              }
-
-              outStream.close()
-
-              ftp.logout()
-              ftp.disconnect()
+          if(dynamic_date) {
+            String fixFilenamePart = filename.split("\\{")[0]
+            List files = ftp.listFiles().toList()
+            List res = files.stream().filter(f -> f.name =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN && f.name.startsWith(fixFilenamePart)).collect(Collectors.toList()).sort()
+            // file with latest date is the last in list res
+            if(res.size() > 0) {
+              filename = res.get(res.size() - 1)
+            }
           }
+          //TODO: check if filename date is later than last update-date
+          //TODO: set needed result attributes
+          result.file_name = filename
+
+          InputStream is = ftp.retrieveFileStream(filename)
+          OutputStream outStream = new FileOutputStream(tmp_file)
+
+          byte[] buffer = new byte[1024];
+          for (int length; (length = is.read(buffer)) != -1; ) {
+              outStream.write(buffer, 0, length);
+          }
+
+          outStream.close()
+
+          ftp.logout()
+          ftp.disconnect()
+        }
 
       } catch (Exception e) {
           log.error("Fehler bei FTP-Verbindung ", e)

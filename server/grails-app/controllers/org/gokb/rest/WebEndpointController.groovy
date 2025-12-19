@@ -104,9 +104,10 @@ class WebEndpointController {
             filename = parts.filename
         }
 
-        boolean isDateMasked = (filename =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN)
+        def dateMaskMatch = (filename =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN)
 
-        log.debug("11111: " + filename + ", " + isDateMasked)
+        log.debug("11111: " + filename + ", " + dateMask)
+        log.debug("22222: " + dateMask.size() + ", " + dateMask[0] )
 
         FTPClient ftp = new FTPClient()
         FTPClientConfig config = new FTPClientConfig()
@@ -119,7 +120,7 @@ class WebEndpointController {
             if (ftp.isConnected()) {
 
                 FTPFile[] files
-                if(isDateMasked) {
+                if(dateMaskMatch.size() > 0) {
                     String fixedPart = filename.split("\\{")[0]
                     files = ftp.listFiles(directory)
 
