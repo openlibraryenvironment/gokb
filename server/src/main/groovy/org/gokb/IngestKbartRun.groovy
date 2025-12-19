@@ -196,8 +196,8 @@ class IngestKbartRun {
 
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                               'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                              'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
-                            [pkg: pkg_info.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+                              'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status != :sd',
+                            [pkg: pkg_info.id, sd: RefdataCategory.lookup('KBComponent.Status', 'Deleted')])[0]
 
         result.report = [
           numRows: file_info.rows.total,
