@@ -466,12 +466,13 @@ class ValidationService {
         ]
       }
       else if (trimmed_val =~ /\p{Cc}/) {
-        def bytes = trimmed_val.getBytes()
         String final_string = ""
 
         trimmed_val.each { c ->
-          if (c =~ /\p{Cc}/) {
-            final_string += "(\\${c.charAt(0)})"
+          char chr = c.charAt(0)
+
+          if (Character.isISOControl(chr)) {
+            final_string += "(\\${c})"
           }
           else {
             final_string += c
