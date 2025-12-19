@@ -466,10 +466,23 @@ class ValidationService {
         ]
       }
       else if (trimmed_val =~ /\p{Cc}/) {
-        result.errors[key] = [
-            message: "Value contains UTF-8 control characters!",
+        String final_string = ""
+
+        trimmed_val.each { c ->
+          char chr = c.charAt(0)
+
+          if (Character.isISOControl(chr)) {
+            final_string += "(\\${c})"
+          }
+          else {
+            final_string += c
+          }
+        }
+
+        result.warnings[key] = [
+            message: "Value '${final_string}' contains UTF-8 control characters!",
             messageCode: "kbart.errors.controlCharsVal",
-            args: []
+            args: [final_string]
         ]
       }
       else if (trimmed_val?.contains('¶') ||
