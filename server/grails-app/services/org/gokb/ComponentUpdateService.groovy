@@ -126,9 +126,34 @@ class ComponentUpdateService {
     def variants = component.variantNames.collect { [id: it.id, variantName: it.variantName] }
 
     // Variant names.
+
     if (data.variantNames) {
-      for (String name : data.variantNames) {
-        if (name?.trim() && !variants.find { it.variantName == name }) {
+      for (def variant : data.variantNames) {
+        if (variant instanceof Map) {
+          if (variant.variantName) {
+            RefdataValue locale = null
+            RefdataValue type = null
+
+            if (variant.locale) {
+              locale = RefdataCategory.lookup('KBComponent.Language', variant.locale)
+
+              if (!locale) {
+                log.debug("Unable to reference language code ${variant.locale}")
+              }
+            }
+
+            if (variant.type) {
+              type = RefdataCategory.lookup('KBComponentVariantName.VariantType', variant.type)
+
+              if (!type) {
+                log.debug("Unable to reference variant type ${variant.type}")
+              }
+            }
+
+            def new_variant_name = component.ensureVariantName(variant.variantName, type, locale)
+          }
+        }
+        else if (variant instanceof String && variant.trim() && !variants.find { it.variantName == name }) {
           // Add the variant name.
           log.debug("Adding variantName ${name} to ${component} ..")
 
