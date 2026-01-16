@@ -86,6 +86,7 @@ class IntegrationController {
         result.result = 'ERROR'
 
         render result as JSON
+        return
       }
     }
     else {
