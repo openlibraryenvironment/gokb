@@ -23,6 +23,7 @@ class ExternalSourceImportController {
       //log.debug("RESULT: " + result)
       if (result) {
         render result as JSON
+        return
       }
     }
 
@@ -40,6 +41,7 @@ class ExternalSourceImportController {
       //log.debug("RESULT : " + result)
       if (result) {
         render result as JSON
+        return
       }
     }
 
@@ -57,6 +59,7 @@ class ExternalSourceImportController {
       //log.debug("RESULT : " + result)
       if (result) {
         render result as JSON
+        return
       }
     }
 
@@ -73,6 +76,7 @@ class ExternalSourceImportController {
       def result = orgService.restLookup(reqBody)
       if (result) {
         render result as JSON
+        return
       }
     }
 
@@ -113,6 +117,7 @@ class ExternalSourceImportController {
       //log.debug("RESULT : " + result)
       if (result) {
         render result as JSON
+        return
       }
     }
 
