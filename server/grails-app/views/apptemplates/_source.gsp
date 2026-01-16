@@ -60,7 +60,7 @@
 		</dd>
 		<sec:ifAnyGranted roles="ROLE_ADMIN">
 			<dt>
-				<g:annotatedLabel owner="${d}" property="">Ignore KBART Size Limit</g:annotatedLabel>
+				<g:annotatedLabel owner="${d}" property="ignoreSizeLimit">Ignore KBART Size Limit</g:annotatedLabel>
 			</dt>
 			<dd>
 				<g:xEditableBoolean owner="${d}" field="ignoreSizeLimit" />
