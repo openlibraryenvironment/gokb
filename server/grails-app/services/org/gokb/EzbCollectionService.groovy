@@ -616,6 +616,7 @@ class EzbCollectionService {
 
     if (source && !source.importConfig) {
       source.importConfig = RefdataCategory.lookup('Source.ImportConfig', 'EZB')
+      source.save()
     }
 
     if (source && source.url != item.ezb_collection_titlelist) {
