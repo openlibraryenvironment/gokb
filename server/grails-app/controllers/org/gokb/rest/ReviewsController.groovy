@@ -94,6 +94,7 @@ class ReviewsController {
           response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
+          return
         }
 
         def update_result = reviewRequestService.restUpdate(obj, reqBody)

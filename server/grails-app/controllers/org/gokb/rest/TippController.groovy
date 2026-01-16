@@ -205,6 +205,7 @@ class TippController {
               response.status = 409
               result.message = message(code: "default.update.errors.message")
               render result as JSON
+              return
             }
 
             if (reqBody.status?.name == 'Retired' && obj.status != RefdataValue.get(reqBody.status.id)) {

@@ -207,6 +207,7 @@ class JobsController {
             result.message = 'Unable to parse provided date parameter!'
 
             render result as JSON
+            return
           }
         }
 
