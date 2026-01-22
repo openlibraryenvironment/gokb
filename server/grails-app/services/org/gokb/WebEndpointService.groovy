@@ -7,16 +7,26 @@ import java.util.regex.Pattern
 @Transactional
 class WebEndpointService {
 
-    static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
+    /*static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
     static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
+     */
 
-    def extractFtpUrlParts (String webEndpointUrl, String sourceUrl, boolean dynamic_date) {
+    def extractFtpUrlParts (String webEndpointUrl, String sourceUrl) {
         def result = [:]
 
+        String protocol = ""
+        if(webEndpointUrl.startsWith("ftp://")){
+            protocol = "ftp://"
+        }
+        else if(webEndpointUrl.startsWith("ftps://")){
+            protocol = "ftps://"
+        }
+
         //we dont need the protocol
-        String hostname = webEndpointUrl.replace("ftp://", "")
+        String hostname = webEndpointUrl.replace(protocol, "")
         String filename = ""
         String directory = "/"
+        String completeUrl = ""
 
         if (hostname?.contains("/")) {
             String[] parts = hostname.split("/")
@@ -39,9 +49,12 @@ class WebEndpointService {
             filename = sourceUrl
         }
 
+        completeUrl = protocol + hostname + directory + filename
+
         result.hostname = hostname
         result.filename = filename
         result.directory = directory
+        result.complete = completeUrl
 
 
         result

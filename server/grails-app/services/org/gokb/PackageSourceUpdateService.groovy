@@ -40,8 +40,8 @@ class PackageSourceUpdateService {
   WebEndpointService webEndpointService
 
   static Pattern DATE_PLACEHOLDER_PATTERN = ~/[0-9]{4}-[0-9]{2}-[0-9]{2}/
-  static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
-  static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
+  static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)(\?.*)$/
+  static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)(\?.*)$/
 
   @javax.annotation.PostConstruct
   def init() {
@@ -81,6 +81,7 @@ class PackageSourceUpdateService {
     Boolean deleteMissing = false
     def pkgInfo = [:]
     def startTime = new Date()
+    def ftpUrlParts
 
     Package.withNewSession {
       Package p = Package.get(pid)
@@ -111,10 +112,19 @@ class PackageSourceUpdateService {
         def rdv_FTP = RefdataCategory.lookup('Source.TransferMethod', 'FTP')
         boolean isFtpTransfer = (transferMethod == rdv_FTP)
 
-        if (pkg_source?.url || isFtpTransfer) {
+        if (pkg_source?.url || (isFtpTransfer && pkg_source?.ftpUrl)) {
           URL src_url = null
           Boolean dynamic_date = false
-          def valid_url_string = validationService.checkUrl(pkg_source?.url, true)
+          String completeFtpUrl = null
+          if(isFtpTransfer){
+            ftpUrlParts = webEndpointService.extractFtpUrlParts(pkg_source.getWebEndpoint()?.getUrl(), pkg_source.getFtpUrl())
+
+            completeFtpUrl = ftpUrlParts.complete
+            log.debug("++++ " + completeFtpUrl)
+          }
+          def valid_url_string = validationService.checkUrl(isFtpTransfer ? completeFtpUrl : pkg_source?.url, true)
+          log.debug("##############: " + valid_url_string)
+          // return
           LocalDate extracted_date
           skipInvalid = pkg_source.skipInvalid ?: false
           def file_info = [:]
@@ -139,13 +149,13 @@ class PackageSourceUpdateService {
             }
 
           }
-          else if (isFtpTransfer) {
+          /* else if (isFtpTransfer) {
             // no op here
             String urlFilePart = pkg_source.getWebEndpoint()?.getUrl()
             if(urlFilePart =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN){
               dynamic_date = true
             }
-          }
+          } */
           else {
             log.debug("No source URL!")
             result.result = 'ERROR'
@@ -166,8 +176,9 @@ class PackageSourceUpdateService {
 
             if ( isFtpTransfer ) {
                 log.debug("Start FTP Update from Source " + pkg_source )
-
-                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, dynamic_date)
+                ftpUrlParts["complete"] = src_url.toString()
+                log.debug("xxxxxxxx: " + src_url + ", " + ftpUrlParts)
+                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, dynamic_date)
             }
             else { // start not-FTP
 
@@ -634,7 +645,7 @@ class PackageSourceUpdateService {
     return info_map
   }
 
-  def fetchKbartFileFromFTPServer (File tmp_file, Source source, boolean dynamic_date) {
+  def fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean dynamic_date) {
 
       def result = [content_mime_type: null, file_name: null]
 
@@ -644,13 +655,20 @@ class PackageSourceUpdateService {
       String username = source.getWebEndpoint().getBa_username()
       String password = source.getWebEndpoint().getBa_password()
 
-      def urlParts = webEndpointService.extractFtpUrlParts(source.getWebEndpoint().getUrl(), source.getFtpUrl(), dynamic_date)
+      // def urlParts = webEndpointService.extractFtpUrlParts(source.getWebEndpoint().getUrl(), source.getFtpUrl(), dynamic_date)
 
       String hostname = urlParts.hostname
-      String filename = urlParts.filename
       String directory = urlParts.directory
+      String filename = urlParts.filename
 
+      if(dynamic_date){
+        String[] parts = urlParts.complete.split("/")
+        filename = parts[parts.length - 1]
+      }
 
+      log.debug("+++++ FILENAME: " + filename)
+
+      return
       try {
         ftp.connect(hostname)
         ftp.enterLocalPassiveMode()

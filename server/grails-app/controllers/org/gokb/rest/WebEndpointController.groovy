@@ -106,8 +106,8 @@ class WebEndpointController {
 
         def dateMaskMatch = (filename =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN)
 
-        log.debug("11111: " + filename + ", " + dateMask)
-        log.debug("22222: " + dateMask.size() + ", " + dateMask[0] )
+        log.debug("11111: " + filename + ", " + dateMaskMatch)
+
 
         FTPClient ftp = new FTPClient()
         FTPClientConfig config = new FTPClientConfig()
@@ -121,7 +121,9 @@ class WebEndpointController {
 
                 FTPFile[] files
                 if(dateMaskMatch.size() > 0) {
+                    log.debug("22222: " + dateMaskMatch.size() + ", " + dateMaskMatch[0] )
                     String fixedPart = filename.split("\\{")[0]
+                    log.debug("33333: " + fixedPart )
                     files = ftp.listFiles(directory)
 
                     boolean found = false
