@@ -48,7 +48,6 @@ class WebEndpointController {
 
             if (params['method']) {
                 //resultList = resultList.findAll( x -> x.transferMethod?.name == params['method'])
-                log.debug("1111: " + params['method'])
                 resultList = resultList.findAll( x -> x.url.startsWith(params['method'].toLowerCase()) )
             }
 
@@ -98,16 +97,12 @@ class WebEndpointController {
 
         if(whe){
             def parts= webEndpointService.extractFtpUrlParts(whe.getUrl(), path)
-            log.debug("*** " + parts.hostname + ", " + parts.directory + ", " + parts.filename)
             hostname = parts.hostname
             directory = parts.directory
             filename = parts.filename
         }
 
         def dateMaskMatch = (filename =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN)
-
-        log.debug("11111: " + filename + ", " + dateMaskMatch)
-
 
         FTPClient ftp = new FTPClient()
         FTPClientConfig config = new FTPClientConfig()
@@ -121,28 +116,22 @@ class WebEndpointController {
 
                 FTPFile[] files
                 if(dateMaskMatch.size() > 0) {
-                    log.debug("22222: " + dateMaskMatch.size() + ", " + dateMaskMatch[0] )
                     String fixedPart = filename.split("\\{")[0]
-                    log.debug("33333: " + fixedPart )
                     files = ftp.listFiles(directory)
 
                     boolean found = false
 
                     for (FTPFile file : files) {
 
-                        log.debug("+++ " + file.name)
-
                         if(file.name.startsWith(fixedPart)){
                             result.result = "success"
-                            //TODO: message
-                            result.message = "success, file found with name: ${file.name}"
+                            result.message = "dateMaskFound"
                             found = true
                             break
                         }
                     }
                     if(!found){
                         result.result = "error"
-                        //TODO: message
                         result.message = "dateMaskNotFound"
                     }
                 }

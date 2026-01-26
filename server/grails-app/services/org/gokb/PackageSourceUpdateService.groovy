@@ -116,15 +116,14 @@ class PackageSourceUpdateService {
           URL src_url = null
           Boolean dynamic_date = false
           String completeFtpUrl = null
+
           if(isFtpTransfer){
             ftpUrlParts = webEndpointService.extractFtpUrlParts(pkg_source.getWebEndpoint()?.getUrl(), pkg_source.getFtpUrl())
-
             completeFtpUrl = ftpUrlParts.complete
-            log.debug("++++ " + completeFtpUrl)
           }
+
           def valid_url_string = validationService.checkUrl(isFtpTransfer ? completeFtpUrl : pkg_source?.url, true)
-          log.debug("##############: " + valid_url_string)
-          // return
+
           LocalDate extracted_date
           skipInvalid = pkg_source.skipInvalid ?: false
           def file_info = [:]
@@ -149,13 +148,6 @@ class PackageSourceUpdateService {
             }
 
           }
-          /* else if (isFtpTransfer) {
-            // no op here
-            String urlFilePart = pkg_source.getWebEndpoint()?.getUrl()
-            if(urlFilePart =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN){
-              dynamic_date = true
-            }
-          } */
           else {
             log.debug("No source URL!")
             result.result = 'ERROR'
@@ -177,8 +169,8 @@ class PackageSourceUpdateService {
             if ( isFtpTransfer ) {
                 log.debug("Start FTP Update from Source " + pkg_source )
                 ftpUrlParts["complete"] = src_url.toString()
-                log.debug("xxxxxxxx: " + src_url + ", " + ftpUrlParts)
-                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, dynamic_date)
+                log.debug("URL: " + src_url + ", " + ftpUrlParts)
+                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, dynamic_date, extracted_date, restrictSize)
             }
             else { // start not-FTP
 
@@ -645,9 +637,11 @@ class PackageSourceUpdateService {
     return info_map
   }
 
-  def fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean dynamic_date) {
+  def fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean dynamic_date, LocalDate extracted_date, boolean restrictSize = true) {
 
       def result = [content_mime_type: null, file_name: null]
+      Long max_length = 20971520L // 1024 * 1024 * 20
+      LocalDate lastRunLocal = source.lastRun ? source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
 
       FTPClient ftp = new FTPClient()
       FTPClientConfig config = new FTPClientConfig()
@@ -655,20 +649,18 @@ class PackageSourceUpdateService {
       String username = source.getWebEndpoint().getBa_username()
       String password = source.getWebEndpoint().getBa_password()
 
-      // def urlParts = webEndpointService.extractFtpUrlParts(source.getWebEndpoint().getUrl(), source.getFtpUrl(), dynamic_date)
-
       String hostname = urlParts.hostname
       String directory = urlParts.directory
       String filename = urlParts.filename
+      String foundFileName = null
+      FTPFile foundFile = null
 
       if(dynamic_date){
+        // in case of dynamic_date, in the filename the pattern is already replaced by the actual date
         String[] parts = urlParts.complete.split("/")
         filename = parts[parts.length - 1]
       }
 
-      log.debug("+++++ FILENAME: " + filename)
-
-      return
       try {
         ftp.connect(hostname)
         ftp.enterLocalPassiveMode()
@@ -677,31 +669,61 @@ class PackageSourceUpdateService {
         if (ftp.isConnected()) {
 
           ftp.changeWorkingDirectory(directory)
+          List files
 
-          //TODO: if dynamic_date, find file with latest date
-
-          if(dynamic_date) {
+          if(dynamic_date || extracted_date) {
             String fixFilenamePart = filename.split("\\{")[0]
-            List files = ftp.listFiles().toList()
+            files = ftp.listFiles().toList()
             List res = files.stream().filter(f -> f.name =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN && f.name.startsWith(fixFilenamePart)).collect(Collectors.toList()).sort()
             // file with latest date is the last in list res
             if(res.size() > 0) {
-              filename = res.get(res.size() - 1)
+              foundFile = res.get(res.size() - 1)
+              foundFileName = foundFile.name
             }
           }
-          //TODO: check if filename date is later than last update-date
-          //TODO: set needed result attributes
-          result.file_name = filename
-
-          InputStream is = ftp.retrieveFileStream(filename)
-          OutputStream outStream = new FileOutputStream(tmp_file)
-
-          byte[] buffer = new byte[1024];
-          for (int length; (length = is.read(buffer)) != -1; ) {
-              outStream.write(buffer, 0, length);
+          else {
+            files = ftp.listFiles(filename).toList()
+            if(files.size() > 0) {
+              foundFile = files.get(0)
+              foundFileName = filename
+            }
           }
 
-          outStream.close()
+
+          if(foundFile){
+            LocalDate foundFileDate = LocalDate.ofInstant(foundFile.getTimestampInstant(), ZoneId.systemDefault())
+            if(lastRunLocal && (lastRunLocal > foundFileDate)){
+              // no update needed
+              return result
+            }
+
+            Long foundFileSize = foundFile.getSize()
+            if(foundFileSize > max_length && restrictSize){
+              result.fileSizeError = true
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.fileSize'
+              result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
+              //result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              tmp_file.delete()
+              return result
+            }
+
+            result.file_name = foundFileName
+
+            InputStream is = ftp.retrieveFileStream(foundFileName)
+            OutputStream outStream = new FileOutputStream(tmp_file)
+
+            byte[] buffer = new byte[1024];
+            for (int length; (length = is.read(buffer)) != -1; ) {
+              outStream.write(buffer, 0, length);
+            }
+
+            outStream.close()
+
+          }
+          else {
+            // no filename --> handled in calling method
+          }
 
           ftp.logout()
           ftp.disconnect()
@@ -709,6 +731,7 @@ class PackageSourceUpdateService {
 
       } catch (Exception e) {
           log.error("Fehler bei FTP-Verbindung ", e)
+
       }
 
       return result
