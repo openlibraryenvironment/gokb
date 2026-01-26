@@ -460,16 +460,29 @@ class ValidationService {
 
       if (trimmed_val?.contains('�') && !result.errors["replacementChars"]) {
         result.errors["replacementChars"] = [
-            message: "Value contains UTF-8 replacement characters!",
+            message: "Value in column ${key} contains UTF-8 replacement characters!",
             messageCode: "kbart.errors.replacementCharsRow",
-            args: []
+            args: [key]
         ]
       }
       else if (trimmed_val =~ /\p{Cc}/) {
-        result.errors[key] = [
-            message: "Value contains UTF-8 control characters!",
+        String final_string = ""
+
+        trimmed_val.each { c ->
+          char chr = c.charAt(0)
+
+          if (Character.isISOControl(chr)) {
+            final_string += "[\\${c}]"
+          }
+          else {
+            final_string += c
+          }
+        }
+
+        result.warnings["controlChars"] = [
+            message: "Value '${final_string}' in column ${key} contains UTF-8 control characters!",
             messageCode: "kbart.errors.controlCharsVal",
-            args: []
+            args: [final_string, key]
         ]
       }
       else if (trimmed_val?.contains('¶') ||

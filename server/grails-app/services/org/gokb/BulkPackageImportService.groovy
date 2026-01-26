@@ -204,9 +204,15 @@ class BulkPackageImportService {
       }
     }
 
-    if (config.frequency && !RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency)) {
+    if (config.frequency && (!RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency) || config.frequency == 'Daily')) {
       result.valid = false
-      result.errors.frequency = [message: "Unable to lookup frequency ${config.frequency}!", value: config.frequency]
+
+      if (config.frequency == 'Daily') {
+        result.errors.frequency = [message: "Frequency ${config.frequency} is not valid!", value: config.frequency]
+      }
+      else {
+        result.errors.frequency = [message: "Unable to lookup frequency ${config.frequency}!", value: config.frequency]
+      }
     }
 
     if (config.cfg) {

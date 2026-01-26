@@ -1,7 +1,7 @@
 <p/>
 <g:message code="curatoryGroup.alert.daily.greeting"/>
 <p/>
-<g:if test="jobs">
+<g:if test="${jobs}">
   <g:message code="curatoryGroup.alert.daily.jobs.intro" locale="${locale ?: 'en'}" args="${[groupName]}" />
   <p/>
   <table>
@@ -31,7 +31,7 @@
   <p/>
   <g:message code="curatoryGroup.alert.daily.jobs.support" locale="${locale ?: 'en'}"/> <a href="mailto:${supportAddress}">${supportAddress}</a>.
 </g:if>
-<g:if test="reviews">
+<g:if test="${reviews}">
   <g:message code="curatoryGroup.alert.daily.reviews.intro" locale="${locale ?: 'en'}" args="${[groupName]}" />
   <p/>
   <table>

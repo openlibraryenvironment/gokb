@@ -258,6 +258,8 @@ class GOKbTextUtils {
       if (title?.indexOf('@') > 0 && title?.indexOf(' @') < 8) {
         title = title.replaceFirst(/\s@/, ' ')
       }
+
+      title = removeControlChars(title)
     }
 
     return title
@@ -292,5 +294,26 @@ class GOKbTextUtils {
       return str
     }
     return str.replaceAll("\b", "\\\\b").replaceAll("\n", "\\\\n")
+  }
+
+  /**
+   * Removes unicode control characters (including tabs and newlines).
+   * Returns null if null given.
+   * Returns "" if empty string given
+   *
+   * @param str
+   * @param strict
+   * @return
+   */
+  static String removeControlChars(String str, boolean strict = true) {
+    if (!str) {
+      return str
+    }
+
+    if (strict) {
+      return str.replaceAll("\\p{Cc}", "")
+    } else {
+      return str.replaceAll("[\\p{Cc}&&[^\\n\\r]]", '')
+    }
   }
 }

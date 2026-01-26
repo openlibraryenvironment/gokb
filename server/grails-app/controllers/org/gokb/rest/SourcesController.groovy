@@ -160,6 +160,7 @@ class SourcesController {
         response.status = 409
         result.message = message(code: "default.update.errors.message")
         render result as JSON
+        return
       }
 
       Map fieldConfig = [:]
