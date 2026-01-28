@@ -24,6 +24,8 @@ class WebEndpointService {
         String directory = "/"
         String completeUrl = ""
 
+        // leading and trailing slashes that could be part of host or filename
+        // are set in the directory part
         if (hostname?.contains("/")) {
             String[] parts = hostname.split("/")
             hostname = parts[0]
