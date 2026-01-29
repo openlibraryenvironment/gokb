@@ -153,11 +153,11 @@ class ComponentUpdateService {
             def new_variant_name = component.ensureVariantName(variant.variantName, type, locale)
           }
         }
-        else if (variant instanceof String && variant.trim() && !variants.find { it.variantName == name }) {
+        else if (variant instanceof String && variant.trim() && !variants.find { it.variantName == variant }) {
           // Add the variant name.
-          log.debug("Adding variantName ${name} to ${component} ..")
+          log.debug("Adding variantName ${variant} to ${component} ..")
 
-          def new_variant_name = component.ensureVariantName(name)
+          def new_variant_name = component.ensureVariantName(variant)
 
           // Add to collection.
           if (new_variant_name) {
@@ -333,6 +333,11 @@ class ComponentUpdateService {
         }
       }
     }
+
+    if (hasChanged) {
+      component.lastSeen = new Date().getTime()
+    }
+
     hasChanged
   }
 
@@ -355,7 +360,7 @@ class ComponentUpdateService {
     def pkg = null
 
     if (params.pkg) {
-      pkg = Package.get(params.int('pkg'))
+      pkg = Package.findByUuid(params.pkg) ?: Package.get(params.int('pkg'))
 
       if (!pkg) {
         result.result = 'ERROR'
@@ -374,7 +379,7 @@ class ComponentUpdateService {
 
       def items = componentLookupService.restLookup(user, cls, params, null, true).data
 
-      if (cls == TitleInstancePackagePlatform && tipps_pkg && field == 'status') {
+      if (cls == TitleInstancePackagePlatform && pkg && field == 'status') {
         def status_rdv = params.int('_value') ? RefdataValue.get(params.int('_value')) : RefdataCategory.lookup('KBComponent.Status', params['_value'])
 
         if (pkg && isUserCurator(pkg, user) && status_rdv?.owner?.label == 'KBComponent.Status') {

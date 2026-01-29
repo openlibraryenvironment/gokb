@@ -213,6 +213,7 @@ class EzbCollectionService {
             def date_changed = item.ezb_collection_deactivated_date.substring(0, 10) + ' 00:00:00'
 
             obj.retireAt(dateFormatService.parseTimestamp(date_changed))
+            obj.save(flush: true)
 
             result.report[ARCHIVED_TYPE].retired++
           }
