@@ -1,5 +1,6 @@
 package org.gokb
 
+import com.k_int.ConcurrencyManagerService
 import grails.core.GrailsApplication
 import grails.gorm.transactions.Rollback
 import grails.testing.mixin.integration.Integration
@@ -16,10 +17,12 @@ import org.gokb.cred.WebHookEndpoint
 import org.mockftpserver.fake.*
 import org.mockftpserver.fake.filesystem.*
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.WebApplicationContext
 import spock.lang.Specification
 
 @Integration
+// @Transactional
 @Rollback
 class UpdatePackageRunFTPSpec extends Specification{
 
@@ -27,6 +30,9 @@ class UpdatePackageRunFTPSpec extends Specification{
 
   @Autowired
   WebApplicationContext ctx
+
+
+  def concurrencyManagerService
 
   BlockingHttpClient http
 
@@ -68,7 +74,23 @@ class UpdatePackageRunFTPSpec extends Specification{
     WebHookEndpoint whe = new WebHookEndpoint(name: "MOCK FTP on Localhost" ,url: "ftp://localhost", ba_username: USER, ba_password: PASSWORD).save(flush: true)
     Source mock_src = new Source(webEndpoint: whe, ftpUrl: FILE, transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     // TODO: Pflichtfelder
-    Package pckg = new Package(name: "Update Package", source: mock_src).save(flush: true)
+    Package pckg = Package.findByName("Update Package") ?: new Package(name: "Update Package").save(flush: true)
+    pckg.setSource(mock_src)
+    pckg.save(flush: true)
+
+    PackageSourceUpdateService service = new PackageSourceUpdateService()
+
+    System.out.println("111111: " + pckg.lastUpdated)
+
+    ConcurrencyManagerService.Job pkg_job = concurrencyManagerService.createJob { pjob ->
+      service.updateFromSource(pckg.id, null, pkg_job, new_cg.id, false, true)
+    }
+
+    System.out.println("222222: " + pckg.lastUpdated)
+
+    sleep(15000)
+
+    System.out.println("333333: " + pckg.lastUpdated)
 
   }
 
