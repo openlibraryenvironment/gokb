@@ -50,8 +50,9 @@ class PackageSourceUpdateService {
 
   def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false, boolean restrictSize = true) {
     log.debug("updateFromSource ${pkgId}")
+    log.info("111111111111111111111111111111111111111111111111111111111111111111111111111111111")
     def result = [result: 'OK']
-    def activeJobs = concurrencyManagerService.getComponentJobs(pkgId)
+    def activeJobs = concurrencyManagerService?.getComponentJobs(pkgId)
 
     if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
@@ -70,6 +71,7 @@ class PackageSourceUpdateService {
 
   private def startSourceUpdate(pid, user, job, activeGroupId, dryRun, restrictSize) {
     log.debug("Source update start..")
+    log.info("22222222222222222222222222222222222222222222222222222222222222222222")
     def result = [result: 'OK', dryRun: dryRun]
     Boolean async = (user ? true : false)
     def preferred_group
@@ -120,10 +122,11 @@ class PackageSourceUpdateService {
           if(isFtpTransfer){
             ftpUrlParts = webEndpointService.extractFtpUrlParts(pkg_source.getWebEndpoint()?.getUrl(), pkg_source.getFtpUrl())
             completeFtpUrl = ftpUrlParts.complete
+            log.debug("xxxxxxxx: " + ftpUrlParts)
           }
 
           def valid_url_string = validationService.checkUrl(isFtpTransfer ? completeFtpUrl : pkg_source?.url, true)
-
+          log.debug("yyyyyyy: " + valid_url_string)
           LocalDate extracted_date
           skipInvalid = pkg_source.skipInvalid ?: false
           def file_info = [:]

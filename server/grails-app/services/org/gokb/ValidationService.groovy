@@ -925,7 +925,7 @@ class ValidationService {
 
     // log.debug("Final URL to check: ${final_val}")
 
-    return new UrlValidator().isValid(final_val) ? value : null
+    return new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid(final_val) ? value : null
   }
 
   private String encodeUrlPart(String value) {
