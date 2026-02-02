@@ -24,19 +24,21 @@ class OrgRolesService {
                         )
                         and :rp not member of o.roles'''
 
-    List missing_provider_orgs = Org.executeQuery(qry_string, [sc: status_current, ct: combo_plt_provider, rp: role_provider])
+    List missing_provider_orgs = Org.executeQuery(qry_string, [sc: status_current, ct: combo_plt_provider, rp: rdv_platform_provider])
 
     missing_provider_orgs.each { org ->
       org.addToRoles(rdv_platform_provider)
+      org.lastSeen = System.currentTimeMillis()
       org.save(flush: true)
     }
 
     result.new_providers = missing_provider_orgs.size()
 
-    List missing_publisher_orgs = Org.executeQuery(qry_string, [sc: status_current, ct: combo_publisher, rp: role_publisher])
+    List missing_publisher_orgs = Org.executeQuery(qry_string, [sc: status_current, ct: combo_publisher, rp: rdv_publisher])
 
     missing_publisher_orgs.each { org ->
       org.addToRoles(rdv_publisher)
+      org.lastSeen = System.currentTimeMillis()
       org.save(flush: true)
     }
 
