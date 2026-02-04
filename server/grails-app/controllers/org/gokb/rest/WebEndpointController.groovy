@@ -33,13 +33,10 @@ class WebEndpointController {
         if (springSecurityService.isLoggedIn()) {
             user = User.get(springSecurityService.principal?.id)
         }
-        def start_db = LocalDateTime.now()
-
 
         params['_embed'] = params['_embed'] ?: 'identifiedComponents'
 
         result = componentLookupService.restLookup(user, WebHookEndpoint, params)
-        //log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
 
         if (result.data) {
             def resultList = result.data

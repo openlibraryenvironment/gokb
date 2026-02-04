@@ -3,6 +3,7 @@ package org.gokb
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
+import grails.util.Environment
 import groovy.util.logging.Slf4j
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPClientConfig
@@ -40,8 +41,9 @@ class PackageSourceUpdateService {
   WebEndpointService webEndpointService
 
   static Pattern DATE_PLACEHOLDER_PATTERN = ~/[0-9]{4}-[0-9]{2}-[0-9]{2}/
-  static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)(\?.*)$/
-  static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)(\?.*)$/
+  static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)(\?.*)?$/
+  static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)(\?.*)?$/
+
 
   @javax.annotation.PostConstruct
   def init() {
@@ -50,7 +52,6 @@ class PackageSourceUpdateService {
 
   def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false, boolean restrictSize = true) {
     log.debug("updateFromSource ${pkgId}")
-    log.info("111111111111111111111111111111111111111111111111111111111111111111111111111111111")
     def result = [result: 'OK']
     def activeJobs = concurrencyManagerService?.getComponentJobs(pkgId)
 
@@ -71,7 +72,6 @@ class PackageSourceUpdateService {
 
   private def startSourceUpdate(pid, user, job, activeGroupId, dryRun, restrictSize) {
     log.debug("Source update start..")
-    log.info("22222222222222222222222222222222222222222222222222222222222222222222")
     def result = [result: 'OK', dryRun: dryRun]
     Boolean async = (user ? true : false)
     def preferred_group
@@ -122,11 +122,9 @@ class PackageSourceUpdateService {
           if(isFtpTransfer){
             ftpUrlParts = webEndpointService.extractFtpUrlParts(pkg_source.getWebEndpoint()?.getUrl(), pkg_source.getFtpUrl())
             completeFtpUrl = ftpUrlParts.complete
-            log.debug("xxxxxxxx: " + ftpUrlParts)
           }
 
           def valid_url_string = validationService.checkUrl(isFtpTransfer ? completeFtpUrl : pkg_source?.url, true)
-          log.debug("yyyyyyy: " + valid_url_string)
           LocalDate extracted_date
           skipInvalid = pkg_source.skipInvalid ?: false
           def file_info = [:]
@@ -172,8 +170,7 @@ class PackageSourceUpdateService {
             if ( isFtpTransfer ) {
                 log.debug("Start FTP Update from Source " + pkg_source )
                 ftpUrlParts["complete"] = src_url.toString()
-                log.debug("URL: " + src_url + ", " + ftpUrlParts)
-                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, dynamic_date, extracted_date, restrictSize)
+                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, dynamic_date, extracted_date, lastRunLocal, restrictSize)
             }
             else { // start not-FTP
 
@@ -640,11 +637,10 @@ class PackageSourceUpdateService {
     return info_map
   }
 
-  def fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean dynamic_date, LocalDate extracted_date, boolean restrictSize = true) {
+  def fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean dynamic_date, LocalDate extracted_date, LocalDate lastRunLocal, boolean restrictSize = true) {
 
       def result = [content_mime_type: null, file_name: null]
       Long max_length = 20971520L // 1024 * 1024 * 20
-      LocalDate lastRunLocal = source.lastRun ? source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
 
       FTPClient ftp = new FTPClient()
       FTPClientConfig config = new FTPClientConfig()
@@ -665,7 +661,13 @@ class PackageSourceUpdateService {
       }
 
       try {
-        ftp.connect(hostname)
+        // for integration test purpose
+        if (Environment.current == Environment.TEST) {
+          ftp.connect(hostname, 12345)
+        }
+        else {
+          ftp.connect(hostname)
+        }
         ftp.enterLocalPassiveMode()
         def loggedIn = ftp.login(username, password)
 
@@ -675,9 +677,17 @@ class PackageSourceUpdateService {
           List files
 
           if(dynamic_date || extracted_date) {
-            String fixFilenamePart = filename.split("\\{")[0]
+
+            def dateMaskMatch = (filename =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
+            String matchedDate = dateMaskMatch[0][1]
+            String fixFilenamePart = filename.substring(0, filename.indexOf(matchedDate))
+
             files = ftp.listFiles().toList()
-            List res = files.stream().filter(f -> f.name =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN && f.name.startsWith(fixFilenamePart)).collect(Collectors.toList()).sort()
+            List unorderedRes = files.stream().filter(f ->
+                    f.name =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN && f.name.startsWith(fixFilenamePart))
+                    .collect(Collectors.toList())
+            List res = unorderedRes.sort((f1, f2) -> f1.getName().compareTo(f2.getName()))
+
             // file with latest date is the last in list res
             if(res.size() > 0) {
               foundFile = res.get(res.size() - 1)
@@ -727,6 +737,7 @@ class PackageSourceUpdateService {
           }
           else {
             // no filename --> handled in calling method
+
           }
 
           ftp.logout()

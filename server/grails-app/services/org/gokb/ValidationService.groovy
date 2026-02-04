@@ -6,6 +6,7 @@ import com.opencsv.CSVReader
 import com.opencsv.CSVReaderBuilder
 import com.opencsv.CSVParser
 import com.opencsv.CSVParserBuilder
+import grails.util.Environment
 import grails.validation.ValidationException
 import java.time.LocalDate
 import org.apache.commons.io.ByteOrderMark
@@ -925,7 +926,13 @@ class ValidationService {
 
     // log.debug("Final URL to check: ${final_val}")
 
-    return new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid(final_val) ? value : null
+    // needed for FTP integration Tests to allow FTP URLS from FTP Mock Server
+    if (Environment.current == Environment.TEST) {
+      return new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid(final_val) ? value : null
+    }
+    else {
+      return new UrlValidator().isValid(final_val) ? value : null
+    }
   }
 
   private String encodeUrlPart(String value) {
