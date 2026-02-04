@@ -57,6 +57,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/register/start',                access: ['permitAll']],
   [pattern: '/register/forgotPassword',       access: ['permitAll']],
   [pattern: '/register/forgotPasswordExt',    access: ['permitAll']],
+  [pattern: '/register/resetPasswordExt',     access: ['permitAll']],
   [pattern: '/public/**',                     access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
   [pattern: '/package/**',                    access: ['permitAll']],
   [pattern: '/packages/**',                   access: ['permitAll']],
@@ -379,6 +380,8 @@ globalSearchTemplates = [
         [heading:'Primary URL', property:'primaryUrl'],
         [heading:'Provider', property:'provider?.name', link:true],
         [heading:'Status', property:'status?.value',sort:'status'],
+        [heading:'Date Created', property:'dateCreated',sort:'dateCreated'],
+        [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
       ]
     ]
   ],

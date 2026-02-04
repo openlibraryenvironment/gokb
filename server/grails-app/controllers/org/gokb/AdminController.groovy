@@ -31,6 +31,7 @@ class AdminController {
   def uploadAnalysisService
   def jobManagerService
   def curatoryGroupAlertingService
+  def orgRolesService
   CleanupService cleanupService
   ConcurrencyManagerService concurrencyManagerService
   TippService tippService
@@ -569,6 +570,14 @@ class AdminController {
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
+  }
+
+  def addMissingOrgRoles() {
+    log.debug("Adding missing Org roles based on existing component links")
+
+    def result = orgRolesService.addMissingRoles()
+
+    render result as JSON
   }
 
 

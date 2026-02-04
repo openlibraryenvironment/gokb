@@ -943,7 +943,7 @@ class IngestKbartRun {
       log.debug("TIPP ${tipp.id} info check: ${tipp.name}, ${tipp.url}")
 
       if (tipp.validate()) {
-        if (ingest_systime) {
+        if (ingest_systime && ingest_systime > tipp.lastSeen) {
           log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date} (${tipp.lastSeen} -> ${ingest_systime})")
           tippService.updateLastSeen(tipp, ingest_systime)
         }
