@@ -24,7 +24,7 @@ class WebEndpointController {
     static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
     static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
     def index() {
         def result = [:]
         def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
@@ -54,7 +54,7 @@ class WebEndpointController {
         render result as JSON
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
     def show() {
         def result = [:]
         def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
@@ -81,7 +81,7 @@ class WebEndpointController {
         render result as JSON
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
     def check() {
         def result = [:]
         def reqBody = request.JSON
