@@ -96,7 +96,8 @@ class ESSearchService{
           tippTitle: "tippTitle",
           linkedTitle: "tippTitle",
           title: "tippTitle",
-          publisher: "publisher"
+          publisher: "publisher",
+          contentProvider: "contentProvider"
       ],
       dates: [
           "changedSince",

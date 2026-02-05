@@ -171,7 +171,7 @@ class CuratoryGroupsController {
     User user = User.get(springSecurityService.principal.id)
 
     if (group) {
-      boolean editable = user.hasRole('ROLE_ADMIN') || group.owner == user
+      boolean editable = user.hasRole('ROLE_ADMIN') || group.owner?.id == user.id
 
       if (editable) {
         result.changed = restMappingService.updateObject(group, null, reqBody)
