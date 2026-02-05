@@ -1867,8 +1867,17 @@ class TippService {
 
     log.debug("Update simple fields: ${tippInfo}")
 
-    ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
-    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
+    // These values can be changed to empty Strings
+    ['parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
+     'volumeNumber', 'editionStatement', 'firstEditor', 'subjectArea', 'series'].each { propName ->
+      if (tippInfo[propName]?.trim() != tipp[propName]) {
+        tipp[propName] = tippInfo[propName]?.trim()
+        hasChanged = true
+      }
+    }
+
+    //Name, URL are only overwritten by a real value
+    ['name', 'url'].each { propName ->
       if (tippInfo[propName] && tippInfo[propName].trim() != tipp[propName]) {
         tipp[propName] = tippInfo[propName].trim()
         hasChanged = true
