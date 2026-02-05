@@ -34,14 +34,14 @@ class WebEndpointController {
             user = User.get(springSecurityService.principal?.id)
         }
 
-        params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+        // params['_embed'] = params['_embed'] ?: 'identifiedComponents'
 
         result = componentLookupService.restLookup(user, WebHookEndpoint, params)
 
         if (result.data) {
             def resultList = result.data
-            resultList*.remove('ba_password')
-            resultList*.remove('ba_username')
+            resultList*.remove('epPassword')
+            resultList*.remove('epUsername')
 
             if (params['method']) {
                 //resultList = resultList.findAll( x -> x.transferMethod?.name == params['method'])
@@ -65,15 +65,15 @@ class WebEndpointController {
         }
         def start_db = LocalDateTime.now()
 
-        params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+        // params['_embed'] = params['_embed'] ?: 'identifiedComponents'
 
         result = componentLookupService.restLookup(user, WebHookEndpoint, params)
 
         def resultList = result.data
 
         if(resultList.size() > 0){
-            resultList*.remove('ba_password')
-            resultList*.remove('ba_username')
+            resultList*.remove('epPassword')
+            resultList*.remove('epUsername')
 
             result.data = resultList.get(0)
         }
@@ -107,7 +107,7 @@ class WebEndpointController {
         try {
             ftp.connect(hostname)
             ftp.enterLocalPassiveMode()
-            def loggedIn = ftp.login(whe.getBa_username(), whe.getBa_password())
+            def loggedIn = ftp.login(whe.getEpUsername(), whe.getEpPassword())
 
             if (ftp.isConnected()) {
 

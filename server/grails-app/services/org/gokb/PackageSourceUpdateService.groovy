@@ -645,8 +645,8 @@ class PackageSourceUpdateService {
       FTPClient ftp = new FTPClient()
       FTPClientConfig config = new FTPClientConfig()
 
-      String username = source.getWebEndpoint().getBa_username()
-      String password = source.getWebEndpoint().getBa_password()
+      String username = source.getWebEndpoint().getEpUsername()
+      String password = source.getWebEndpoint().getEpPassword()
 
       String hostname = urlParts.hostname
       String directory = urlParts.directory

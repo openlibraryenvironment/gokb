@@ -13,8 +13,8 @@ class WebHookEndpoint {
   String principal //legacy
   String credentials //legacy
   User owner
-  String ba_username
-  String ba_password
+  String epUsername
+  String epPassword
 
   static mapping = {
     url column:'ep_url'
@@ -39,9 +39,18 @@ class WebHookEndpoint {
     principal(nullable:true, blank:true)
     credentials(nullable:true, blank:true)
     supplyMethod(nullable:true, blank:true)
-    ba_username(nullable:true, blank:true)
-    ba_password(nullable:true, blank:true)
+    epUsername(nullable:true, blank:true)
+    epPassword(nullable:true, blank:true)
   }
+
+  static jsonMapping = [
+          'ignore'       : [
+                  'epPassword',
+                  'epUsername',
+                  'credentials',
+                  'authmethod'
+          ]
+  ]
 
   static def refdataFind(params) {
 

@@ -55,25 +55,25 @@ class UpdatePackageRunFTPSpec extends Specification{
 
     Org provider = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
     Platform.findByName("Test Platform") ?: new Platform(name: "Test Platform", primaryUrl: "https://search.ebscohost.com", provider: provider).save(flush: true)
-    WebHookEndpoint.findByName("whe1") ?: new WebHookEndpoint(name: "whe1" ,url: "ftp://localhost/dir", ba_username: USER, ba_password: PASSWORD).save(flush: true)
+    WebHookEndpoint.findByName("whe1") ?: new WebHookEndpoint(name: "whe1" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
     Source.findByName("source1") ?: new Source(name: "source1", webEndpoint: WebHookEndpoint.findByName("whe1"), ftpUrl: "/kbart.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     Package.findByName("package1") ?: new Package(name: "package1").save(flush: true)
     Package.findByName("package1").setSource(Source.findByName("source1"))
     Package.findByName("package1").save(flush: true)
 
-    WebHookEndpoint.findByName("whe2") ?: new WebHookEndpoint(name: "whe2" ,url: "ftp://localhost/dir", ba_username: USER, ba_password: PASSWORD).save(flush: true)
+    WebHookEndpoint.findByName("whe2") ?: new WebHookEndpoint(name: "whe2" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
     Source.findByName("source2") ?: new Source(name: "source2", webEndpoint: WebHookEndpoint.findByName("whe2"), ftpUrl: "/kbart_not_exists.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     Package.findByName("package2") ?: new Package(name: "package2").save(flush: true)
     Package.findByName("package2").setSource(Source.findByName("source2"))
     Package.findByName("package2").save(flush: true)
 
-    WebHookEndpoint.findByName("whe3") ?: new WebHookEndpoint(name: "whe3" ,url: "ftp://localhost/dir", ba_username: USER, ba_password: PASSWORD).save(flush: true)
+    WebHookEndpoint.findByName("whe3") ?: new WebHookEndpoint(name: "whe3" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
     Source.findByName("source3") ?: new Source(name: "source3", webEndpoint: WebHookEndpoint.findByName("whe3"), ftpUrl: "/kbart_{YYYY-MM-DD}.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     Package.findByName("package3") ?: new Package(name: "package3").save(flush: true)
     Package.findByName("package3").setSource(Source.findByName("source3"))
     Package.findByName("package3").save(flush: true)
 
-    WebHookEndpoint.findByName("whe4") ?: new WebHookEndpoint(name: "whe4" ,url: "ftp://localhost/dir", ba_username: USER, ba_password: PASSWORD).save(flush: true)
+    WebHookEndpoint.findByName("whe4") ?: new WebHookEndpoint(name: "whe4" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
     Source.findByName("source4") ?: new Source(name: "source4", webEndpoint: WebHookEndpoint.findByName("whe4"), ftpUrl: "/kbart_2026-01-11.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     Package.findByName("package4") ?: new Package(name: "package4").save(flush: true)
     Package.findByName("package4").setSource(Source.findByName("source4"))
@@ -112,6 +112,9 @@ class UpdatePackageRunFTPSpec extends Specification{
     ftpClient.login(USER, PASSWORD);
 
     expect: "Directory exists"
+    for (FTPFile f: ftpClient.listDirectories()) {
+      System.out.println("####### " + f.name + ", " + f.isDirectory())
+    }
     ftpClient.listDirectories().length > 0
     ftpServer.getServerControlPort() == MOCKSERVER_PORT
 
