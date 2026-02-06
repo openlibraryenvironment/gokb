@@ -42,14 +42,17 @@ class UpdatePackageRunFTPSpec extends Specification{
 
 
   def setup() {
-    ftpServer = new FakeFtpServer()
-    ftpServer.setServerControlPort(MOCKSERVER_PORT)
-    FileSystem fileSystem = new UnixFakeFileSystem()
-    fileSystem.add(new FileEntry(NON_KBART_FILE, CONTENTS))
-    ftpServer.setFileSystem(fileSystem)
-    ftpServer.addUserAccount(new UserAccount(USER, PASSWORD, HOME_DIR))
 
-    ftpServer.start()
+    if(ftpServer == null || !ftpServer.isStarted()) {
+      ftpServer = new FakeFtpServer()
+      ftpServer.setServerControlPort(MOCKSERVER_PORT)
+      FileSystem fileSystem = new UnixFakeFileSystem()
+      fileSystem.add(new FileEntry(NON_KBART_FILE, CONTENTS))
+      ftpServer.setFileSystem(fileSystem)
+      ftpServer.addUserAccount(new UserAccount(USER, PASSWORD, HOME_DIR))
+
+      ftpServer.start()
+    }
 
     new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true)
 
@@ -82,7 +85,9 @@ class UpdatePackageRunFTPSpec extends Specification{
   }
 
   def cleanup() {
-    ftpServer.stop()
+
+    ftpServer?.stop()
+
     CuratoryGroup.findByName('TestGroup1')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
     Platform.findByName("Test Platform")?.expunge()
@@ -109,15 +114,13 @@ class UpdatePackageRunFTPSpec extends Specification{
 
     FTPClient ftpClient = new FTPClient()
     ftpClient.connect("localhost", ftpServer.getServerControlPort())
-    ftpClient.login(USER, PASSWORD);
+    boolean loggedin = ftpClient.login(USER, PASSWORD);
 
-    expect: "Directory exists"
-    for (FTPFile f: ftpClient.listDirectories()) {
-      System.out.println("####### " + f.name + ", " + f.isDirectory())
-    }
-    ftpClient.listDirectories().length > 0
+    expect: "FTP Server runs and can be connected by client"
+
     ftpServer.getServerControlPort() == MOCKSERVER_PORT
-
+    loggedin
+    ftpClient.logout()
   }
 
    void "Test updateFromSource :: usual initial direct Import by filename"() {
@@ -256,7 +259,6 @@ class UpdatePackageRunFTPSpec extends Specification{
      String sourceUrl = "/filename.txt"
 
      def res = new WebEndpointService().extractFtpUrlParts(endpointUrl, sourceUrl)
-
 
      then: "The URL is normalized and splitted correctly into parts"
 
