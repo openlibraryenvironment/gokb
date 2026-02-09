@@ -3,6 +3,8 @@ package org.gokb.cred
 import groovy.time.TimeCategory
 
 import javax.persistence.Transient
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -176,7 +178,12 @@ class Source extends KBComponent {
     }
     else if (frequency) {
       use(TimeCategory) {
-        if (lastRun + intervals.get(frequency.value).days < new Date()) {
+        if (frequency == RefdataCategory.lookup("Source.Frequency", "Monthly")) {
+          LocalDate oneMonthAgo = LocalDate.ofInstant(new Date().toInstant(), ZoneId.systemDefault()).minusMonths(1)
+          // we need >= comparison here
+          result = !(LocalDate.ofInstant(lastRun.toInstant(), ZoneId.systemDefault()).isAfter(oneMonthAgo))
+        }
+        else (lastRun + intervals.get(frequency.value).days < new Date()) {
           result = true
         }
       }
