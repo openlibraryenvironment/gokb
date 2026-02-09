@@ -177,16 +177,28 @@ class Source extends KBComponent {
       result = true
     }
     else if (frequency) {
-      use(TimeCategory) {
-        if (frequency == RefdataCategory.lookup("Source.Frequency", "Monthly")) {
-          LocalDate oneMonthAgo = LocalDate.ofInstant(new Date().toInstant(), ZoneId.systemDefault()).minusMonths(1)
-          // we need >= comparison here
-          result = !(LocalDate.ofInstant(lastRun.toInstant(), ZoneId.systemDefault()).isAfter(oneMonthAgo))
-        }
-        else (lastRun + intervals.get(frequency.value).days < new Date()) {
-          result = true
-        }
+
+      LocalDate lastRunDate = LocalDate.ofInstant(lastRun.toInstant(), ZoneId.systemDefault())
+      LocalDate now = LocalDate.ofInstant(new Date().toInstant(), ZoneId.systemDefault())
+      LocalDate compareDate
+
+      if (frequency == RefdataCategory.lookup("Source.Frequency", "Monthly")) {
+        compareDate = now.minusMonths(1)
       }
+      else if (frequency == RefdataCategory.lookup("Source.Frequency", "Quarterly")) {
+        compareDate = now.minusMonths(3)
+      }
+      else if (frequency == RefdataCategory.lookup("Source.Frequency", "Yearly")) {
+        compareDate = now.minusYears(1)
+      }
+      else {
+        //daily or weekly
+        compareDate = now.minusDays(intervals.get(frequency.value))
+      }
+
+      // we need >= comparison here
+      result = !lastRunDate.isAfter(compareDate)
+
     }
     result
   }
