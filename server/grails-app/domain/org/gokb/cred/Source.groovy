@@ -183,21 +183,21 @@ class Source extends KBComponent {
       LocalDate compareDate
 
       if (frequency == RefdataCategory.lookup("Source.Frequency", "Monthly")) {
-        compareDate = now.minusMonths(1)
+        compareDate = lastRunDate.plusMonths(1)
       }
       else if (frequency == RefdataCategory.lookup("Source.Frequency", "Quarterly")) {
-        compareDate = now.minusMonths(3)
+        compareDate = lastRunDate.plusMonths(3)
       }
       else if (frequency == RefdataCategory.lookup("Source.Frequency", "Yearly")) {
-        compareDate = now.minusYears(1)
+        compareDate = lastRunDate.plusYears(1)
       }
       else {
         //daily or weekly
-        compareDate = now.minusDays(intervals.get(frequency.value))
+        compareDate = lastRunDate.plusDays(intervals.get(frequency.value))
       }
 
       // we need >= comparison here
-      result = !lastRunDate.isAfter(compareDate)
+      result = !now.isBefore(compareDate)
 
     }
     result
