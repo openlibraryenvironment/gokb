@@ -111,16 +111,22 @@ class ValidationController {
     def reqBody = request.JSON
 
     if (reqBody && reqBody.value) {
-      def validation_result = validationService.checkUrl(reqBody.value, params.boolean('replaceDate') ?: true)
-
-      if (!validation_result) {
+      if (params.boolean('rejectFtpUrl') && reqBody.value.startsWith("ftp")) {
         result.result = 'ERROR'
-        result.errors = [value: [message: "Provided value ${reqBody.value} is not a valid URL", messageCode: "validation.urlForm", pars: [reqBody.value]]]
+        result.errors = [value: [message: "Provided value ${reqBody.value} is not a valid URL", messageCode: "validation.ftpUrlRejected", pars: [reqBody.value]]]
+      }
+      else {
+        def validation_result = validationService.checkUrl(reqBody.value, params.boolean('replaceDate') ?: true)
+
+        if (!validation_result) {
+          result.result = 'ERROR'
+          result.errors = [value: [message: "Provided value ${reqBody.value} is not a valid URL", messageCode: "validation.urlForm", pars: [reqBody.value]]]
+        }
       }
     }
     else {
       result.result = 'ERROR'
-      result.result = [value: [message: "No value provided via JSON object!"]]
+      result.result = [value: [message: "No value provided via JSON object!", messageCode: "validation.urlForm", pars: [reqBody.value]]]
     }
 
     render result as JSON

@@ -59,25 +59,25 @@ class UpdatePackageRunFTPSpec extends Specification{
     Org provider = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
     Platform.findByName("Test Platform") ?: new Platform(name: "Test Platform", primaryUrl: "https://search.ebscohost.com", provider: provider).save(flush: true)
     WebHookEndpoint.findByName("whe1") ?: new WebHookEndpoint(name: "whe1" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
-    Source.findByName("source1") ?: new Source(name: "source1", webEndpoint: WebHookEndpoint.findByName("whe1"), ftpUrl: "/kbart.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
+    Source.findByName("source1") ?: new Source(name: "source1", webEndpoint: WebHookEndpoint.findByName("whe1"), ftpPath: "/kbart.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     Package.findByName("package1") ?: new Package(name: "package1").save(flush: true)
     Package.findByName("package1").setSource(Source.findByName("source1"))
     Package.findByName("package1").save(flush: true)
 
     WebHookEndpoint.findByName("whe2") ?: new WebHookEndpoint(name: "whe2" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
-    Source.findByName("source2") ?: new Source(name: "source2", webEndpoint: WebHookEndpoint.findByName("whe2"), ftpUrl: "/kbart_not_exists.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
+    Source.findByName("source2") ?: new Source(name: "source2", webEndpoint: WebHookEndpoint.findByName("whe2"), ftpPath: "/kbart_not_exists.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     Package.findByName("package2") ?: new Package(name: "package2").save(flush: true)
     Package.findByName("package2").setSource(Source.findByName("source2"))
     Package.findByName("package2").save(flush: true)
 
     WebHookEndpoint.findByName("whe3") ?: new WebHookEndpoint(name: "whe3" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
-    Source.findByName("source3") ?: new Source(name: "source3", webEndpoint: WebHookEndpoint.findByName("whe3"), ftpUrl: "/kbart_{YYYY-MM-DD}.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
+    Source.findByName("source3") ?: new Source(name: "source3", webEndpoint: WebHookEndpoint.findByName("whe3"), ftpPath: "/kbart_{YYYY-MM-DD}.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     Package.findByName("package3") ?: new Package(name: "package3").save(flush: true)
     Package.findByName("package3").setSource(Source.findByName("source3"))
     Package.findByName("package3").save(flush: true)
 
     WebHookEndpoint.findByName("whe4") ?: new WebHookEndpoint(name: "whe4" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
-    Source.findByName("source4") ?: new Source(name: "source4", webEndpoint: WebHookEndpoint.findByName("whe4"), ftpUrl: "/kbart_2026-01-11.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
+    Source.findByName("source4") ?: new Source(name: "source4", webEndpoint: WebHookEndpoint.findByName("whe4"), ftpPath: "/kbart_2026-01-11.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     Package.findByName("package4") ?: new Package(name: "package4").save(flush: true)
     Package.findByName("package4").setSource(Source.findByName("source4"))
     Package.findByName("package4").save(flush: true)
@@ -176,7 +176,7 @@ class UpdatePackageRunFTPSpec extends Specification{
 
   void "Test updateFromSource :: KBART with latest date mask is found"() {
     given: "FTP URL with date mask configured, several files with dates exist"
-    // source.ftpUrl = "kbart_{YYYY-MM-DD}.txt"
+    // source.ftpPath = "kbart_{YYYY-MM-DD}.txt"
     def kbart_file = new ClassPathResource("/test_ftp_kbart_update.txt")
     try(FileInputStream fis = new FileInputStream(kbart_file.getFile())){
       String fileContent = IOUtils.toString(fis, Charset.defaultCharset())
@@ -200,7 +200,7 @@ class UpdatePackageRunFTPSpec extends Specification{
 
   void "Test updateFromSource :: KBART with specified date is found"() {
     given: "FTP URL with specific date configured, several files with dates exist"
-    // source.ftpUrl = "kbart_2026-01-11.txt"
+    // source.ftpPath = "kbart_2026-01-11.txt"
     def kbart_file = new ClassPathResource("/test_ftp_kbart_update.txt")
     try(FileInputStream fis = new FileInputStream(kbart_file.getFile())){
       String fileContent = IOUtils.toString(fis, Charset.defaultCharset())
@@ -222,7 +222,7 @@ class UpdatePackageRunFTPSpec extends Specification{
 
    void "Test updateFromSource :: Package is updated"() {
      given: "Package is imported initially"
-     //source.ftpUrl = "/kbart_{YYYY-MM-DD}.txt"
+     //source.ftpPath = "/kbart_{YYYY-MM-DD}.txt"
      def kbart_file = new ClassPathResource("/test_ftp_kbart_update.txt")
      try(FileInputStream fis = new FileInputStream(kbart_file.getFile())){
        String fileContent = IOUtils.toString(fis, Charset.defaultCharset())

@@ -114,13 +114,13 @@ class PackageSourceUpdateService {
         def rdv_FTP = RefdataCategory.lookup('Source.TransferMethod', 'FTP')
         boolean isFtpTransfer = (transferMethod == rdv_FTP)
 
-        if (pkg_source?.url || (isFtpTransfer && pkg_source?.ftpUrl)) {
+        if (pkg_source?.url || (isFtpTransfer && pkg_source?.ftpPath)) {
           URL src_url = null
           Boolean dynamic_date = false
           String completeFtpUrl = null
 
           if(isFtpTransfer){
-            ftpUrlParts = webEndpointService.extractFtpUrlParts(pkg_source.getWebEndpoint()?.getUrl(), pkg_source.getFtpUrl())
+            ftpUrlParts = webEndpointService.extractFtpUrlParts(pkg_source.getWebEndpoint()?.getUrl(), pkg_source.getFtpPath())
             completeFtpUrl = ftpUrlParts.complete
           }
 

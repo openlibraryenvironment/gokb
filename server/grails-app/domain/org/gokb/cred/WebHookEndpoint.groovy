@@ -9,7 +9,6 @@ class WebHookEndpoint {
   String url
   Long authmethod //legacy
   RefdataValue supplyMethod //legacy
-  // RefdataValue transferMethod //rausnehmen - nur in Source
   String principal //legacy
   String credentials //legacy
   User owner
