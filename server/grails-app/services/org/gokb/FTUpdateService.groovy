@@ -68,7 +68,8 @@ class FTUpdateService {
         value        : id_obj.value,
         namespaceName: id_obj.namespace.name ?: "",
         baseUrl      : id_obj.namespace.baseUrl ?: "",
-        type         : id_obj.namespace.family ?: ""
+        type         : id_obj.namespace.family ?: "",
+        normval      : id_obj.normname
       ])
     }
     result.componentType = kbc.class.simpleName

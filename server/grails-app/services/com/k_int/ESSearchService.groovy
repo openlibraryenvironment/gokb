@@ -1,5 +1,7 @@
 package com.k_int
 
+import com.github.ladutsko.isbn.*
+
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.uri.UriBuilder
@@ -43,11 +45,13 @@ class ESSearchService{
           "uuid",
           "importId",
           "primaryUrl",
-          "editionStatement",
-          "volumeNumber",
-          "firstAuthor",
-          "firstEditor",
           "anyProvider"
+      ],
+      queryString: [
+        "firstAuthor",
+        "firstEditor",
+        "editionStatement",
+        "volumeNumber",
       ],
       refdata: [
           "listStatus",
@@ -457,30 +461,68 @@ class ESSearchService{
   }
 
   private void addIdentifierQuery(query, errors, qpars) {
-    def id_params = [:]
-    def val = null
+    def id_qrys = null
 
     if (qpars.identifier) {
-      val = qpars.identifier
+      id_qrys = qpars.identifier
     }
     else if (qpars.ids) {
-      val = qpars.ids
+      id_qrys = qpars.ids
     }
     else if (qpars.identifiers) {
-      val = qpars.identifiers
+      id_qrys = qpars.identifiers
     }
 
-    if ( val?.trim() ) {
-      if (val.contains(',')) {
-        id_params['identifiers.namespace'] = val.split(',')[0]
-        id_params['identifiers.value'] = sanitizeParam(val.split(',')[1])
-      }
-      else{
-        id_params['identifiers.value'] = val
-      }
+    if (id_qrys instanceof String) {
+      id_qrys = [id_qrys]
+    }
 
-      log.debug("Query ids for ${id_params}")
-      query.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.Max))
+    QueryBuilder idsQuery = QueryBuilders.boolQuery().minimumShouldMatch(1)
+    boolean valid_entries = false
+    ISBNFormat isbn_hyphenated = new ISBNFormat()
+
+    id_qrys.each { val ->
+      def id_params = [:]
+
+      if ( val?.trim() ) {
+        if (val.contains(',')) {
+          List split_val = val.split(',')
+
+          id_params['identifiers.namespace'] = split_val[0]
+          id_params['identifiers.value'] = split_val[1]
+
+          if (split_val[0].contains('isbn')) {
+            Map alt_format = ['identifiers.namespace': split_val[0]]
+
+            if (split_val[1] ==~ /^[0-9]{13}$/) {
+              alt_format['identifiers.value'] = isbn_hyphenated.format(ISBN.parseIsbn(split_val[1]).getIsbn13())
+            }
+            else {
+              alt_format['identifiers.value'] = split_val[1].replaceAll('-', '')
+            }
+
+            idsQuery.should(QueryBuilders.nestedQuery("identifiers", addIdQueries(alt_format), ScoreMode.Max))
+          }
+        }
+        else {
+          id_params['identifiers.value'] = val
+
+          if (val ==~ /^[0-9]{13}$/) {
+            idsQuery.should(QueryBuilders.nestedQuery("identifiers", QueryBuilders.termQuery('identifiers.value', isbn_hyphenated.format(ISBN.parseIsbn(val).getIsbn13())), ScoreMode.Max))
+          }
+          else if (val ==~ /^97[89]-[0-9]{1,5}-[0-9]+-[0-9]+-[0-9]$/) {
+            idsQuery.should(QueryBuilders.nestedQuery("identifiers", QueryBuilders.termQuery('identifiers.value', val.replaceAll('-', '')), ScoreMode.Max))
+          }
+        }
+
+        log.debug("Query ids for ${id_params}")
+        idsQuery.should(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.Max))
+        valid_entries = true
+      }
+    }
+
+    if (valid_entries) {
+      query.must(idsQuery)
     }
   }
 
@@ -498,7 +540,7 @@ class ESSearchService{
     if ( val?.trim() ) {
       if (val.contains(';')) {
         subject_params['subjects.scheme'] = val.split(';')[0]
-        subject_params['subjects.heading'] = sanitizeParam(val.split(';')[1])
+        subject_params['subjects.heading'] = val.split(';')[1]
       }
       else{
         subject_params['subjects.heading'] = val
@@ -615,8 +657,14 @@ class ESSearchService{
         query.must(QueryBuilders.matchPhraseQuery('name', phraseQry))
       }
       else {
-        query.must(QueryBuilders.matchQuery("name", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
-        query.must(QueryBuilders.matchQuery("normname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND)).boost(0.5f)
+        QueryBuilder nameQuery = QueryBuilders.boolQuery()
+
+        nameQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
+        nameQuery.should(QueryBuilders.matchQuery("normname", sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND)).boost(0.5f)
+
+        nameQuery.minimumShouldMatch(1)
+
+        query.must(nameQuery)
       }
     }
     else if (qpars.altname) {
@@ -633,8 +681,14 @@ class ESSearchService{
     }
     else if (qpars.suggest) {
       def sanitized_param = sanitizeParam(qpars.suggest)
-      query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
-      query.must(QueryBuilders.matchQuery('normSuggest', sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(0.5f))
+      QueryBuilder suggestQuery = QueryBuilders.boolQuery()
+
+      suggestQuery.should(QueryBuilders.matchQuery('suggest', sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND))
+      suggestQuery.should(QueryBuilders.matchQuery('normSuggest', sanitized_param).operator(defaultOr ? Operator.OR : Operator.AND).boost(0.5f))
+
+      suggestQuery.minimumShouldMatch(1)
+
+      query.must(suggestQuery)
     }
     else if (qpars.qsName) {
       def sanitized_param = sanitizeParam(qpars.qsName)
@@ -1161,6 +1215,7 @@ class ESSearchService{
 
   private void specifyQueryWithParams(params, QueryBuilder exactQuery, errors, unknown_fields){
     String platformParam
+    boolean defaultOr = (params.defaultOr == 'true')
 
     params.each{ k, v ->
       if (requestMapping.generic && k in requestMapping.generic){
@@ -1178,6 +1233,9 @@ class ESSearchService{
           }
 
         }
+      }
+      else if (requestMapping.queryString.contains(k)){
+        exactQuery.must(QueryBuilders.queryStringQuery(sanitizeParam(v)).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field(k, 1f))
       }
       else if (requestMapping.simpleMap?.containsKey(k)){
         exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v).operator(Operator.AND))
