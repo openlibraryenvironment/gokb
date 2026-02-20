@@ -479,7 +479,7 @@ class ESSearchService{
 
     QueryBuilder idsQuery = QueryBuilders.boolQuery().minimumShouldMatch(1)
     boolean valid_entries = false
-    ISBNFormat isbn_hyphenated = new ISBNFormat()
+    ISBNFormat format_hyphenated = new ISBNFormat()
 
     id_qrys.each { val ->
       def id_params = [:]
@@ -494,8 +494,19 @@ class ESSearchService{
           if (split_val[0].contains('isbn')) {
             Map alt_format = ['identifiers.namespace': split_val[0]]
 
-            if (split_val[1] ==~ /^[0-9]{13}$/) {
-              alt_format['identifiers.value'] = isbn_hyphenated.format(ISBN.parseIsbn(split_val[1]).getIsbn13())
+            if (split_val[1] ==~ /^97[89][0-9]{10}$/) {
+              ISBN isbn
+
+              try {
+                isbn = ISBN.parseIsbn(split_val[1])
+              }
+              catch (ISBNException ie) {
+                log.debug("Ignoring invalid ISBN ${split_val[1]} for reformatting ..")
+              }
+
+              if (isbn) {
+                alt_format['identifiers.value'] = format_hyphenated.format(isbn.getIsbn13())
+              }
             }
             else {
               alt_format['identifiers.value'] = split_val[1].replaceAll('-', '')
@@ -507,8 +518,19 @@ class ESSearchService{
         else {
           id_params['identifiers.value'] = val
 
-          if (val ==~ /^[0-9]{13}$/) {
-            idsQuery.should(QueryBuilders.nestedQuery("identifiers", QueryBuilders.termQuery('identifiers.value', isbn_hyphenated.format(ISBN.parseIsbn(val).getIsbn13())), ScoreMode.Max))
+          if (val ==~ /^97[89][0-9]{10}$/) {
+            ISBN isbn
+
+            try {
+              isbn = ISBN.parseIsbn(val)
+            }
+            catch (ISBNException ie) {
+              log.debug("Ignoring invalid ISBN ${val} for reformatting ..")
+            }
+
+            if (isbn) {
+              idsQuery.should(QueryBuilders.nestedQuery("identifiers", QueryBuilders.termQuery('identifiers.value', format_hyphenated.format(isbn.getIsbn13())), ScoreMode.Max))
+            }
           }
           else if (val ==~ /^97[89]-[0-9]{1,5}-[0-9]+-[0-9]+-[0-9]$/) {
             idsQuery.should(QueryBuilders.nestedQuery("identifiers", QueryBuilders.termQuery('identifiers.value', val.replaceAll('-', '')), ScoreMode.Max))
