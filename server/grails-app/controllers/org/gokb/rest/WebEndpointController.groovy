@@ -34,14 +34,10 @@ class WebEndpointController {
             user = User.get(springSecurityService.principal?.id)
         }
 
-        // params['_embed'] = params['_embed'] ?: 'identifiedComponents'
-
         result = componentLookupService.restLookup(user, WebHookEndpoint, params)
 
         if (result.data) {
             def resultList = result.data
-            resultList*.remove('epPassword')
-            resultList*.remove('epUsername')
 
             if (params['method']) {
                 //resultList = resultList.findAll( x -> x.transferMethod?.name == params['method'])
@@ -65,16 +61,11 @@ class WebEndpointController {
         }
         def start_db = LocalDateTime.now()
 
-        // params['_embed'] = params['_embed'] ?: 'identifiedComponents'
-
         result = componentLookupService.restLookup(user, WebHookEndpoint, params)
 
         def resultList = result.data
 
         if(resultList.size() > 0){
-            resultList*.remove('epPassword')
-            resultList*.remove('epUsername')
-
             result.data = resultList.get(0)
         }
 
