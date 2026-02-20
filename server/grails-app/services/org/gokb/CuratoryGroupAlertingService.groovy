@@ -189,7 +189,7 @@ class CuratoryGroupAlertingService {
         }
 
         if (table_items.size() > 0) {
-          result.report[cg.name] = sendDailyAlertsForGroup(cg, locale, DAILY_GROUP_REVIEWS_ALERT_TEMPLATE, table_items)
+          result.report[cg.name] = sendDailyAlertsForGroup(cg, locale, 'reviews', table_items)
         }
       }
 
