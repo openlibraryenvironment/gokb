@@ -126,7 +126,7 @@ class ValidationController {
     }
     else {
       result.result = 'ERROR'
-      result.result = [value: [message: "No value provided via JSON object!", messageCode: "validation.urlForm", pars: [reqBody.value]]]
+      result.result = [value: [message: "No value provided via JSON object!", messageCode: "validation.urlEmpty"]]
     }
 
     render result as JSON

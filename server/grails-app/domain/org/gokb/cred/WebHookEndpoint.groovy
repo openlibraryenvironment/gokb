@@ -23,7 +23,17 @@ class WebHookEndpoint {
   }
 
   static constraints = {
-    name(nullable:false, blank:false)
+    name(validator: { val, obj ->
+      if (val && val.trim()) {
+        List<WebHookEndpoint> dupes = WebHookEndpoint.findAllByNameIlike(val);
+
+        if (dupes?.size() > 0 && dupes.any { it != obj }) {
+          return ['notUnique']
+        }
+      } else {
+        return ['notNull']
+      }
+    })
     url(validator: {val, obj ->
       if(val) {
         if(!val.startsWith("ftp://") && !val.startsWith("http://") && !val.startsWith("https://")){
