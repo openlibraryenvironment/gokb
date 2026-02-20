@@ -34,18 +34,21 @@ class WebEndpointController {
             user = User.get(springSecurityService.principal?.id)
         }
 
-        result = componentLookupService.restLookup(user, WebHookEndpoint, params)
+        // result = componentLookupService.restLookup(user, WebHookEndpoint, params)
+        result = webEndpointService.lookupWebendpoints(user, params)
 
+        /*
         if (result.data) {
             def resultList = result.data
 
             if (params['method']) {
-                //resultList = resultList.findAll( x -> x.transferMethod?.name == params['method'])
                 resultList = resultList.findAll( x -> x.url.startsWith(params['method'].toLowerCase()) )
             }
 
             result.data = resultList
         }
+
+         */
 
         render result as JSON
     }
@@ -62,6 +65,7 @@ class WebEndpointController {
         def start_db = LocalDateTime.now()
 
         result = componentLookupService.restLookup(user, WebHookEndpoint, params)
+
 
         def resultList = result.data
 
