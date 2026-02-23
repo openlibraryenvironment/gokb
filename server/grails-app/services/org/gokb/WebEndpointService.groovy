@@ -24,8 +24,9 @@ class WebEndpointService {
         def queryParams = [:]
 
         if (params['method']) {
-            query += 'where whe.url like :method'
-            countQuery += 'where whe.url like :method'
+            whereClause = 'where whe.url like :method'
+            query += whereClause
+            countQuery += whereClause
             queryParams['method'] = params['method'].toString().toLowerCase() + '%'
         }
 
@@ -45,7 +46,6 @@ class WebEndpointService {
 
         result = componentLookupService.generateLinks(result, WebHookEndpoint, null, params, max, offset, count)
 
-        log.debug("+++++++++++++ " + result)
         return result
     }
 
@@ -53,10 +53,10 @@ class WebEndpointService {
         def result = [:]
 
         String protocol = ""
-        if(webEndpointUrl.startsWith("ftp://")){
+        if (webEndpointUrl.startsWith("ftp://")){
             protocol = "ftp://"
         }
-        else if(webEndpointUrl.startsWith("ftps://")){
+        else if (webEndpointUrl.startsWith("ftps://")) {
             protocol = "ftps://"
         }
 
@@ -80,7 +80,7 @@ class WebEndpointService {
             sourceUrl = sourceUrl.substring(1)
         }
 
-        if(sourceUrl?.contains("/")){
+        if (sourceUrl?.contains("/")) {
             String[] parts = sourceUrl.split("/")
             filename = parts[parts.length - 1]
             directory = directory + sourceUrl.substring(0, sourceUrl.lastIndexOf("/") + 1)
@@ -95,7 +95,6 @@ class WebEndpointService {
         result.filename = filename
         result.directory = directory
         result.complete = completeUrl
-
 
         result
 

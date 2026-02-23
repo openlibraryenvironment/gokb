@@ -1,5 +1,6 @@
 package org.gokb.rest
 
+import gokbg3.RestMappingService
 import grails.converters.JSON
 import grails.plugin.springsecurity.annotation.Secured
 import org.apache.commons.net.ftp.FTPClient
@@ -20,6 +21,7 @@ class WebEndpointController {
     def componentLookupService
     def springSecurityService
     WebEndpointService webEndpointService
+    RestMappingService restMappingService
 
     static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
     static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
@@ -34,21 +36,7 @@ class WebEndpointController {
             user = User.get(springSecurityService.principal?.id)
         }
 
-        // result = componentLookupService.restLookup(user, WebHookEndpoint, params)
         result = webEndpointService.lookupWebendpoints(user, params)
-
-        /*
-        if (result.data) {
-            def resultList = result.data
-
-            if (params['method']) {
-                resultList = resultList.findAll( x -> x.url.startsWith(params['method'].toLowerCase()) )
-            }
-
-            result.data = resultList
-        }
-
-         */
 
         render result as JSON
     }
@@ -62,15 +50,13 @@ class WebEndpointController {
         if (springSecurityService.isLoggedIn()) {
             user = User.get(springSecurityService.principal?.id)
         }
-        def start_db = LocalDateTime.now()
 
-        result = componentLookupService.restLookup(user, WebHookEndpoint, params)
-
-
-        def resultList = result.data
-
-        if(resultList.size() > 0){
-            result.data = resultList.get(0)
+        WebHookEndpoint we = null
+        if ( params.id ) {
+            we = WebHookEndpoint.findById(params.id)
+        }
+        if ( we ) {
+            result.data = restMappingService.mapObjectToJson(we, params, user)
         }
 
         render result as JSON
