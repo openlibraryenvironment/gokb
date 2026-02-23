@@ -21,10 +21,10 @@ class WebEndpointService {
         def webEndpoints = []
         def query = 'select whe from WebHookEndpoint whe '
         def countQuery = 'select count(whe.id) from WebHookEndpoint whe '
+        def whereClause = 'where whe.url like :method'
         def queryParams = [:]
 
         if (params['method']) {
-            whereClause = 'where whe.url like :method'
             query += whereClause
             countQuery += whereClause
             queryParams['method'] = params['method'].toString().toLowerCase() + '%'
