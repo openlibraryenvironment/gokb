@@ -18,7 +18,17 @@ class CuratoryGroupAlertingService {
 
 	static final String EMAIL_LAYOUT = "/layouts/email"
   static final String JOB_CANCELLATION_ALERT_TEMPLATE = "/group/_cancelledJobAlert"
-  static final String DAILY_GROUP_ALERT_TEMPLATE = "/group/_dailyAlerts"
+  static final Map DAILY_EMAIL_TYPES = [
+    reviews: [
+      template: "/group/_dailyJobReviewsAlerts"
+    ],
+    jobs: [
+      template: "/group/_dailyCancelledJobsAlerts"
+    ],
+    externalRequests: [
+      template: "/group/_dailyEditorialRequestAlerts"
+    ]
+  ]
 
   def sendJobFailureAlert(JobResult jr) {
     log.debug("sendJobFailureAlert...");
@@ -99,8 +109,7 @@ class CuratoryGroupAlertingService {
                                       packageName: job.linkedItemName,
                                       packageId: job.linkedItemId,
                                       editLink: edit_base ? edit_base + "${job.linkedItemId}" : null,
-                                      messageCode: job.messageCode,
-                                      groupName: obj.name
+                                      messageCode: job.messageCode
                                     ] }
 
       result = sendDailyAlertsForGroup(obj, locale, 'jobs', jobs_table)
@@ -120,6 +129,8 @@ class CuratoryGroupAlertingService {
     Date lastDayDate = Date.from(LocalDateTime.now().minusHours(24).atZone(ZoneId.systemDefault()).toInstant())
     RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
     RefdataValue combo_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+    CuratoryGroup zdb_admin = grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators")) : null
+    CuratoryGroup ezb_admin = grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators")) : null
     def session = sessionFactory.currentSession
 
     def completed_jobs = JobResult.executeQuery('''select groupId, linkedItemId from JobResult
@@ -172,8 +183,7 @@ class CuratoryGroupAlertingService {
               packageName: pkg.name,
               packageId: pid,
               editLink: edit_base ? edit_base + "${pid}" : null,
-              reviewsTotal: num_new_reviews,
-              groupName: cg.name
+              reviewsTotal: num_new_reviews
             ]
           }
         }
@@ -187,6 +197,53 @@ class CuratoryGroupAlertingService {
       session.clear()
     }
 
+    if (zdb_admin && zdb_admin.newReviewsAlerts) {
+      result.report['zdb_editorial_reviews'] = processExternalEditorialReviews(zdb_admin)
+    }
+
+    if (ezb_admin && ezb_admin.newReviewsAlerts) {
+      result.report['ezb_editorial_reviews'] = processExternalEditorialReviews(ezb_admin)
+    }
+
+    result
+  }
+
+  def processExternalEditorialReviews(group) {
+    def result = [result: 'OK']
+    RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+    Locale locale = new Locale(group.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
+    Date lastDayDate = Date.from(LocalDateTime.now().minusHours(24).atZone(ZoneId.systemDefault()).toInstant())
+    String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'review/' : null
+
+    def new_requests = ReviewRequest.executeQuery('''from ReviewRequest as rr
+                                                     where status = :open
+                                                     and stdDesc = :type
+                                                     and exists (
+                                                       select 1 from TitleInstance
+                                                       where id = rr.componentToReview.id
+                                                     )
+                                                     and exists (
+                                                       select 1 from AllocatedReviewGroup
+                                                       where group = :grp
+                                                       and review = rr
+                                                     )
+                                                     and dateCreated > :lastDay
+                                                     ''',
+                                                     [lastDay: lastDayDate, open: rr_open, type: type_ext, grp: group])
+
+    if (new_requests.size() > 0) {
+      def table_items = new_requests.collect { nr ->
+        [
+          editLink: edit_base ? edit_base + "${nr.id}" : null
+        ]
+      }
+
+      result = sendDailyAlertsForGroup(group, locale, 'externalRequest', table_items)
+    }
+    else {
+      result.result = 'SKIPPED_NO_REVIEWS'
+    }
+
     result
   }
 
@@ -197,17 +254,12 @@ class CuratoryGroupAlertingService {
 
     def template_params = [
       supportAddress: support_address,
-      locale: locale
+      locale: locale,
+      items: items,
+      groupName: group.name
     ]
 
-    if (type == 'jobs') {
-      template_params.jobs = items
-    }
-    else if (type == 'reviews') {
-      template_params.reviews = items
-    }
-
-    def content = renderEmail(DAILY_GROUP_ALERT_TEMPLATE, EMAIL_LAYOUT, template_params)
+    def content = renderEmail(DAILY_EMAIL_TYPES[type].template, EMAIL_LAYOUT, template_params)
 
     EmailValidator validator = EmailValidator.getInstance()
 
