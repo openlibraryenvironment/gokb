@@ -7,7 +7,7 @@
 <p/>
 
 <g:each in="${items}" var="review">
-  <a href="review.editLink" target="_blank"> ${review.editLink} </a>
+  <a href="review.editLink" target="_blank"> ${review.editLink} </a> <br/>
 </g:each>
 
 <p/>
