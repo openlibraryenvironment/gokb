@@ -3,6 +3,8 @@ package org.gokb.cred
 import groovy.time.TimeCategory
 
 import javax.persistence.Transient
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -175,11 +177,28 @@ class Source extends KBComponent {
       result = true
     }
     else if (frequency) {
-      use(TimeCategory) {
-        if (lastRun + intervals.get(frequency.value).days < new Date()) {
-          result = true
-        }
+
+      LocalDate lastRunDate = LocalDate.ofInstant(lastRun.toInstant(), ZoneId.systemDefault())
+      LocalDate now = LocalDate.now()
+      LocalDate compareDate
+
+      if (frequency == RefdataCategory.lookup("Source.Frequency", "Monthly")) {
+        compareDate = lastRunDate.plusMonths(1)
       }
+      else if (frequency == RefdataCategory.lookup("Source.Frequency", "Quarterly")) {
+        compareDate = lastRunDate.plusMonths(3)
+      }
+      else if (frequency == RefdataCategory.lookup("Source.Frequency", "Yearly")) {
+        compareDate = lastRunDate.plusYears(1)
+      }
+      else {
+        //daily or weekly
+        compareDate = lastRunDate.plusDays(intervals.get(frequency.value))
+      }
+
+      // we need >= comparison here
+      result = !now.isBefore(compareDate)
+
     }
     result
   }
