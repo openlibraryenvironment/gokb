@@ -179,7 +179,7 @@ class Source extends KBComponent {
     else if (frequency) {
 
       LocalDate lastRunDate = LocalDate.ofInstant(lastRun.toInstant(), ZoneId.systemDefault())
-      LocalDate now = LocalDate.ofInstant(new Date().toInstant(), ZoneId.systemDefault())
+      LocalDate now = LocalDate.now()
       LocalDate compareDate
 
       if (frequency == RefdataCategory.lookup("Source.Frequency", "Monthly")) {
