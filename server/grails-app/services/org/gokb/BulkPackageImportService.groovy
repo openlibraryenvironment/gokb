@@ -35,7 +35,7 @@ class BulkPackageImportService {
     "package_content_provider": [required: false, cls: Org, field: 'uuid'],
     "package_nominal_platform": [required: true, cls: Platform, field: 'uuid'],
     "package_curatory_group": [required: true, cls: CuratoryGroup, field: 'name'],
-    "package_titlelist": [required: true, validate: 'checkUrl' ],
+    "package_titlelist": [required: false, validate: 'checkUrl' ],
     "package_id_namespace": [required: false, cls: IdentifierNamespace, field: 'value'],
     "content_type": [required: false, rdc: 'Package.ContentType'],
     "title_id_namespace": [required: false, cls: IdentifierNamespace, field: 'value'],
@@ -250,7 +250,7 @@ class BulkPackageImportService {
 
     col.package_list.eachWithIndex { info, idx ->
       log.debug("Checking package info: ${info}")
-      def pkg_errors = checkConfigItem(info, true)
+      def pkg_errors = checkConfigItem(info, true, (col.ftp_config != null))
 
       if (pkg_errors.size() > 0) {
         if (!errors.packages) {
@@ -275,7 +275,7 @@ class BulkPackageImportService {
     }
   }
 
-  private def checkConfigItem(Map cobj, boolean specific = false) {
+  private def checkConfigItem(Map cobj, boolean specific = false, boolean collection_ftp_config = false) {
     def errors = [:]
 
     KNOWN_CONFIG_FIELDS.each { fname, cfg ->
@@ -343,6 +343,20 @@ class BulkPackageImportService {
       }
       else {
         errors['end_year'] = [message: "Package years must be four digit integers or null!"]
+      }
+    }
+
+    if (specific) {
+      if (collection_ftp_config) {
+        if (!cobj.package_titlelist_ftppath && !cobj.package_titlelist) {
+          errors['package_titlelist_ftppath'] = [message: "Package is missing a URL or a file path for its collection-wide ftp_config!"]
+        }
+      }
+      else if (cobj.ftp_config && !cobj.package_titlelist_ftppath) {
+        errors['package_titlelist_ftppath'] = [message: "Package is missing a file path for its configured ftp_config!"]
+      }
+      else if (!cobj.package_titlelist) {
+        errors['package_titlelist'] = [message: "Package entry is missing its KBART url!"]
       }
     }
 
