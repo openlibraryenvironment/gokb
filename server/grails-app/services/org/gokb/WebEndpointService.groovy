@@ -24,10 +24,11 @@ class WebEndpointService {
         def whereClause = 'where whe.url like :method'
         def queryParams = [:]
 
+
         if (params['method']) {
             query += whereClause
             countQuery += whereClause
-            queryParams['method'] = params['method'].toString().toLowerCase() + '%'
+            queryParams['method'] = params['method'].toString().trim().toLowerCase().equals("ftp") ? 'ftp%' : 'http%'
         }
 
         webEndpoints = WebHookEndpoint.executeQuery(query, queryParams, [max: max, offset: offset, readOnly: true])
