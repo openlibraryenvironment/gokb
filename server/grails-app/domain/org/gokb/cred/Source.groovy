@@ -29,6 +29,9 @@ class Source extends KBComponent {
   BulkImportListConfig bulkConfig
   RefdataValue importConfig
   Boolean ignoreSizeLimit = false
+  WebHookEndpoint webEndpoint
+  String ftpPath
+  RefdataValue transferMethod
 
   static manyByCombo = [
     curatoryGroups: CuratoryGroup
@@ -60,6 +63,9 @@ class Source extends KBComponent {
     bulkConfig(nullable: true, blank: false)
     importConfig(nullable: true, blank: true)
     ignoreSizeLimit(nullable: true, blank: true)
+    webEndpoint(nullable: true, blank: true)
+    ftpPath(nullable: true, blank: true)
+    transferMethod(nullable: true, blank: true)
   }
 
   public static final String restPath = "/sources"
