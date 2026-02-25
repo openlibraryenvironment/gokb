@@ -35,7 +35,7 @@ class BulkPackageImportService {
     "package_content_provider": [required: false, cls: Org, field: 'uuid'],
     "package_nominal_platform": [required: true, cls: Platform, field: 'uuid'],
     "package_curatory_group": [required: true, cls: CuratoryGroup, field: 'name'],
-    "package_titlelist": [required: true, validate: 'checkUrl' ],
+    "package_titlelist": [required: false, validate: 'checkUrl' ],
     "package_id_namespace": [required: false, cls: IdentifierNamespace, field: 'value'],
     "content_type": [required: false, rdc: 'Package.ContentType'],
     "title_id_namespace": [required: false, cls: IdentifierNamespace, field: 'value'],
@@ -49,6 +49,8 @@ class BulkPackageImportService {
     "other_package_identifiers": [required: false],
     "start_year": [required: false],
     "end_year": [required: false],
+    "ftp_config": [required: false, cls: WebHookEndpoint, field: 'name'],
+    "package_titlelist_ftppath": [required: false]
   ]
 
   @Transactional
@@ -248,7 +250,7 @@ class BulkPackageImportService {
 
     col.package_list.eachWithIndex { info, idx ->
       log.debug("Checking package info: ${info}")
-      def pkg_errors = checkConfigItem(info, true)
+      def pkg_errors = checkConfigItem(info, true, (col.ftp_config != null))
 
       if (pkg_errors.size() > 0) {
         if (!errors.packages) {
@@ -273,7 +275,7 @@ class BulkPackageImportService {
     }
   }
 
-  private def checkConfigItem(Map cobj, boolean specific = false) {
+  private def checkConfigItem(Map cobj, boolean specific = false, boolean collection_ftp_config = false) {
     def errors = [:]
 
     KNOWN_CONFIG_FIELDS.each { fname, cfg ->
@@ -341,6 +343,20 @@ class BulkPackageImportService {
       }
       else {
         errors['end_year'] = [message: "Package years must be four digit integers or null!"]
+      }
+    }
+
+    if (specific) {
+      if (collection_ftp_config) {
+        if (!cobj.package_titlelist_ftppath && !cobj.package_titlelist) {
+          errors['package_titlelist_ftppath'] = [message: "Package is missing a URL or a file path for its collection-wide ftp_config!"]
+        }
+      }
+      else if (cobj.ftp_config && !cobj.package_titlelist_ftppath) {
+        errors['package_titlelist_ftppath'] = [message: "Package is missing a file path for its configured ftp_config!"]
+      }
+      else if (!cobj.package_titlelist) {
+        errors['package_titlelist'] = [message: "Package entry is missing its KBART url!"]
       }
     }
 
@@ -816,15 +832,36 @@ class BulkPackageImportService {
                       source.targetNamespace = title_id_ns
                       source.url = item.package_titlelist
                       source.frequency = listInfo.frequency ? RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value) : null
+                      source.ftpPath = item.package_titlelist_ftppath
 
-                      if (listInfo.frequency && source.url) {
+                      if (item.ftp_config) {
+                        source.webEndpoint = WebHookEndpoint.findByName(item.ftp_config)
+                      }
+                      else if (type.ftp_config) {
+                        source.webEndpoint = WebHookEndpoint.findByName(type.ftp_config)
+                      }
+                      else {
+                        source.webEndpoint = null
+                      }
+
+                      if ((item.ftp_config || type.ftp_config) && item.package_titlelist_ftppath) {
+                        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'FTP')
+                      }
+                      else if (item.package_titlelist) {
+                        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'HTTP')
+                      }
+                      else {
+                        source.transferMethod = null
+                      }
+
+                      if (listInfo.frequency && (source.url || source.transferMethod?.value == 'FTP')) {
                         source.automaticUpdates = listInfo.automatedUpdate
                       }
                       else {
                         log.debug("No frequency or url for ${item.package_name} - Setting automated source update to 'false'!")
                         source.automaticUpdates = false
                       }
-                      source.save()
+                      source.save(flush: true)
                     }
                   }
                 }
