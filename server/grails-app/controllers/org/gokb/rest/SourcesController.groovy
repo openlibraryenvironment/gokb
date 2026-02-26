@@ -22,6 +22,7 @@ class SourcesController {
   def ESSearchService
   def restMappingService
   def componentLookupService
+  def messageService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
