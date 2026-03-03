@@ -234,6 +234,7 @@ class OrgController {
           response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
+          return
         }
 
         def jsonMap = obj.jsonMapping

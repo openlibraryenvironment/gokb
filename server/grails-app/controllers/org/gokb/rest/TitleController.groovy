@@ -778,6 +778,7 @@ class TitleController {
           response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
+          return
         }
 
         result.changed |= restMappingService.updateObject(obj, obj.jsonMapping, reqBody)

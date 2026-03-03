@@ -52,7 +52,7 @@ class PackageCSVExportService {
      'title_id',
      'embargo_info',
      'coverage_depth',
-     'coverage_notes',
+     'notes',
      'publisher_name',
      'preceding_publication_title_id',
      'date_monograph_published_print',
@@ -885,7 +885,7 @@ class PackageCSVExportService {
         record.num_last_vol_online = cst.endVolume
         record.embargo_info = cst.embargo
         record.coverage_depth = cst.coverageDepth ? cst.coverageDepth.value.toLowerCase() : null
-        record.coverage_notes = cst.coverageNote
+        record.notes = cst.coverageNote
 
         recordList << record.clone()
       }
@@ -900,7 +900,7 @@ class PackageCSVExportService {
       record.num_last_vol_online = tipp.endVolume
       record.embargo_info = tipp.embargo
       record.coverage_depth = tipp.coverageDepth ? tipp.coverageDepth.value.toLowerCase() : null
-      record.coverage_notes = tipp.coverageNote
+      record.notes = tipp.coverageNote
 
       recordList << record
     }

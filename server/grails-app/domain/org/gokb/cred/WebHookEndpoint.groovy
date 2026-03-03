@@ -7,10 +7,13 @@ import groovy.util.logging.*
 class WebHookEndpoint {
   String name
   String url
-  Long authmethod
-  String principal
-  String credentials
+  Long authmethod //legacy
+  RefdataValue supplyMethod //legacy
+  String principal //legacy
+  String credentials //legacy
   User owner
+  String epUsername
+  String epPassword
 
   static mapping = {
     url column:'ep_url'
@@ -20,12 +23,43 @@ class WebHookEndpoint {
   }
 
   static constraints = {
-    name(nullable:false, blank:false)
-    url(nullable:false, blank:false)
+    name(validator: { val, obj ->
+      if (val && val.trim()) {
+        List<WebHookEndpoint> dupes = WebHookEndpoint.findAllByNameIlike(val);
+
+        if (dupes?.size() > 0 && dupes.any { it != obj }) {
+          return ['notUnique']
+        }
+      } else {
+        return ['notNull']
+      }
+    })
+    url(validator: {val, obj ->
+      if(val) {
+        if(!val.startsWith("ftp://") && !val.startsWith("http://") && !val.startsWith("https://")){
+          return ['webEndpointUrl.missingProtocol']
+        }
+      }
+      else {
+        return ['webEndpointUrl.notNull']
+      }
+    })
     authmethod(nullable:true, blank:true)
     principal(nullable:true, blank:true)
     credentials(nullable:true, blank:true)
+    supplyMethod(nullable:true, blank:true)
+    epUsername(nullable:true, blank:true)
+    epPassword(nullable:true, blank:true)
   }
+
+  static jsonMapping = [
+          'ignore'       : [
+                  'epPassword',
+                  'epUsername',
+                  'credentials',
+                  'authmethod'
+          ]
+  ]
 
   static def refdataFind(params) {
 

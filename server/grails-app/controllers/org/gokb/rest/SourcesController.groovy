@@ -22,6 +22,7 @@ class SourcesController {
   def ESSearchService
   def restMappingService
   def componentLookupService
+  def messageService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -160,6 +161,7 @@ class SourcesController {
         response.status = 409
         result.message = message(code: "default.update.errors.message")
         render result as JSON
+        return
       }
 
       Map fieldConfig = [:]

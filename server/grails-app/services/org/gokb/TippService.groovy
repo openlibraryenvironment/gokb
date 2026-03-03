@@ -845,13 +845,15 @@ class TippService {
   }
 
   public Boolean hasOpenReviews(pid) {
+    int total = 0
+
     ReviewRequest.withNewSession {
       RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
       RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
       RefdataValue manual_review_type = RefdataCategory.lookup("ReviewRequest.StdDesc", 'Manual Request')
 
       def qry = '''select count(*) from ReviewRequest as rr
-                    where (
+                    where ((
                       rr.componentToReview.id = :pid
                       and rr.stdDesc != :mr
                     )
@@ -865,13 +867,13 @@ class TippService {
                           and type = :ct
                         )
                       )
-                    )
+                    ))
                     and rr.status = :so'''
 
-      def total = ReviewRequest.executeQuery(qry, [pid: pid, mr: manual_review_type, ct: combo_tipps, so: status_open])[0]
-
-      return total > 0
+      total = ReviewRequest.executeQuery(qry, [pid: pid, mr: manual_review_type, ct: combo_tipps, so: status_open])[0]
     }
+
+    return total > 0
   }
 
   @Transactional
@@ -1865,8 +1867,17 @@ class TippService {
 
     log.debug("Update simple fields: ${tippInfo}")
 
-    ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
-    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
+    // These values can be changed to empty Strings
+    ['parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
+     'volumeNumber', 'editionStatement', 'firstEditor', 'subjectArea', 'series'].each { propName ->
+      if (tippInfo[propName]?.trim() != tipp[propName]) {
+        tipp[propName] = tippInfo[propName]?.trim()
+        hasChanged = true
+      }
+    }
+
+    //Name, URL are only overwritten by a real value
+    ['name', 'url'].each { propName ->
       if (tippInfo[propName] && tippInfo[propName].trim() != tipp[propName]) {
         tipp[propName] = tippInfo[propName].trim()
         hasChanged = true

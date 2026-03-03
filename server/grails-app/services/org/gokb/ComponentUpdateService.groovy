@@ -126,13 +126,38 @@ class ComponentUpdateService {
     def variants = component.variantNames.collect { [id: it.id, variantName: it.variantName] }
 
     // Variant names.
-    if (data.variantNames) {
-      for (String name : data.variantNames) {
-        if (name?.trim() && !variants.find { it.variantName == name }) {
-          // Add the variant name.
-          log.debug("Adding variantName ${name} to ${component} ..")
 
-          def new_variant_name = component.ensureVariantName(name)
+    if (data.variantNames) {
+      for (def variant : data.variantNames) {
+        if (variant instanceof Map) {
+          if (variant.variantName) {
+            RefdataValue locale = null
+            RefdataValue type = null
+
+            if (variant.locale) {
+              locale = RefdataCategory.lookup('KBComponent.Language', variant.locale)
+
+              if (!locale) {
+                log.debug("Unable to reference language code ${variant.locale}")
+              }
+            }
+
+            if (variant.type) {
+              type = RefdataCategory.lookup('KBComponentVariantName.VariantType', variant.type)
+
+              if (!type) {
+                log.debug("Unable to reference variant type ${variant.type}")
+              }
+            }
+
+            def new_variant_name = component.ensureVariantName(variant.variantName, type, locale)
+          }
+        }
+        else if (variant instanceof String && variant.trim() && !variants.find { it.variantName == variant }) {
+          // Add the variant name.
+          log.debug("Adding variantName ${variant} to ${component} ..")
+
+          def new_variant_name = component.ensureVariantName(variant)
 
           // Add to collection.
           if (new_variant_name) {
@@ -308,6 +333,11 @@ class ComponentUpdateService {
         }
       }
     }
+
+    if (hasChanged) {
+      component.lastSeen = new Date().getTime()
+    }
+
     hasChanged
   }
 
@@ -330,7 +360,7 @@ class ComponentUpdateService {
     def pkg = null
 
     if (params.pkg) {
-      pkg = Package.get(params.int('pkg'))
+      pkg = Package.findByUuid(params.pkg) ?: Package.get(params.int('pkg'))
 
       if (!pkg) {
         result.result = 'ERROR'
@@ -349,7 +379,7 @@ class ComponentUpdateService {
 
       def items = componentLookupService.restLookup(user, cls, params, null, true).data
 
-      if (cls == TitleInstancePackagePlatform && tipps_pkg && field == 'status') {
+      if (cls == TitleInstancePackagePlatform && pkg && field == 'status') {
         def status_rdv = params.int('_value') ? RefdataValue.get(params.int('_value')) : RefdataCategory.lookup('KBComponent.Status', params['_value'])
 
         if (pkg && isUserCurator(pkg, user) && status_rdv?.owner?.label == 'KBComponent.Status') {

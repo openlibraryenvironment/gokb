@@ -93,8 +93,8 @@ class WekbIngestionService {
               where c.fromComponent.id = :pkg
               and c.toComponent = tipp
               and c.type = :ct
-              and tipp.status = :sc''',
-              [pkg: pkg.id, ct: combo_pkg, sc: rdv_current])[0]
+              and tipp.status != :sd''',
+              [pkg: pkg.id, ct: combo_pkg, sd: rdv_deleted])[0]
 
       result.report = [
         numRows : titleCount,

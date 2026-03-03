@@ -107,6 +107,7 @@ class ProfileController {
         response.status = 400
         result.errors = [password: [message: "wrong password - profile unchanged", code: null]]
         render result as JSON
+        return
       }
     }
     reqData.remove('new_password')

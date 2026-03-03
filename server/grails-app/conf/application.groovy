@@ -57,6 +57,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/register/start',                access: ['permitAll']],
   [pattern: '/register/forgotPassword',       access: ['permitAll']],
   [pattern: '/register/forgotPasswordExt',    access: ['permitAll']],
+  [pattern: '/register/resetPasswordExt',     access: ['permitAll']],
   [pattern: '/public/**',                     access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
   [pattern: '/package/**',                    access: ['permitAll']],
   [pattern: '/packages/**',                   access: ['permitAll']],
@@ -379,6 +380,8 @@ globalSearchTemplates = [
         [heading:'Primary URL', property:'primaryUrl'],
         [heading:'Provider', property:'provider?.name', link:true],
         [heading:'Status', property:'status?.value',sort:'status'],
+        [heading:'Date Created', property:'dateCreated',sort:'dateCreated'],
+        [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
       ]
     ]
   ],
@@ -1269,6 +1272,30 @@ globalSearchTemplates = [
         [heading:'Last Run', property:'lastRun',sort:'lastRun'],
       ]
     ]
+  ],
+  'WebHookEndpoints':[
+          baseclass:'org.gokb.cred.WebHookEndpoint',
+          title:'Web Endpoints',
+          group:'Secondary',
+          defaultSort:'id',
+          defaultOrder:'desc',
+          qbeConfig:[
+                  qbeForm:[
+                          [
+                                  prompt:'Name',
+                                  qparam:'qp_name',
+                                  placeholder:'Name of Web Endpoint',
+                                  contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
+                          ],
+                  ],
+                  qbeGlobals:[
+                  ],
+                  qbeResults:[
+                          [heading:'Name', property:'name', link:[controller:'resource', action:'show', id:'x.r.uuid'] ],
+                          [heading:'URL', property:'url'],
+                          [heading:'Methode', property:'supplyMethod'],
+                  ]
+          ]
   ],
 
 ]

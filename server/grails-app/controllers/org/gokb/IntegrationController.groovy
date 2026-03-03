@@ -86,6 +86,7 @@ class IntegrationController {
         result.result = 'ERROR'
 
         render result as JSON
+        return
       }
     }
     else {
@@ -301,11 +302,14 @@ class IntegrationController {
     def user = springSecurityService.currentUser
     def assert_errors = false;
     def jsonOrg = request.JSON
+    boolean fullsync = false
+
+    if (params.fullsync == "true" && user.adminStatus) {
+      fullsync = true
+    }
 
     try {
       Org.withTransaction {
-
-
         Org located_or_new_org
 
         if (jsonOrg.uuid) {
@@ -435,6 +439,8 @@ class IntegrationController {
 
         // roles
         log.debug("Role Processing: ${jsonOrg.roles}");
+        def existing_roles = located_or_new_org.roles
+
         jsonOrg.roles.each { r ->
           log.debug("Adding role ${r}");
           def role = RefdataCategory.lookup("Org.Role", r)
@@ -444,8 +450,16 @@ class IntegrationController {
           }
         }
 
+        if (fullsync) {
+          existing_roles.each { r ->
+            if (!jsonOrg.roles.contains(r.value)) {
+              located_or_new_org.removeFromRoles(r)
+            }
+          }
+        }
+
         // Core data...
-        componentUpdateService.ensureCoreData(located_or_new_org, jsonOrg, false, user)
+        componentUpdateService.ensureCoreData(located_or_new_org, jsonOrg, fullsync, user)
 
         log.debug("Attempt to save - validate: ${located_or_new_org}");
 

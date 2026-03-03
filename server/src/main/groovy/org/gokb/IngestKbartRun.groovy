@@ -196,8 +196,8 @@ class IngestKbartRun {
 
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                               'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                              'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
-                            [pkg: pkg_info.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+                              'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status != :sd',
+                            [pkg: pkg_info.id, sd: RefdataCategory.lookup('KBComponent.Status', 'Deleted')])[0]
 
         result.report = [
           numRows: file_info.rows.total,
@@ -673,7 +673,7 @@ class IngestKbartRun {
         [
           embargo: the_kbart.embargo_info?.trim(),
           coverageDepth: the_kbart.coverage_depth?.trim(),
-          coverageNote: the_kbart.coverage_note?.trim(),
+          coverageNote: GOKbTextUtils.removeControlChars(the_kbart.notes?.trim(), false),
           startDate: the_kbart.date_first_issue_online?.trim(),
           startVolume: the_kbart.num_first_vol_online?.trim(),
           startIssue: the_kbart.num_first_issue_online?.trim(),
@@ -683,19 +683,19 @@ class IngestKbartRun {
         ]
       ],
       importId: the_kbart.title_id?.trim(),
-      name: the_kbart.publication_title?.trim(),
+      name: GOKbTextUtils.removeControlChars(the_kbart.publication_title?.trim()),
       publicationType: the_kbart.publication_type?.trim(),
       parentPublicationTitleId: the_kbart.parent_publication_title_id?.trim(),
       precedingPublicationTitleId: the_kbart.preceding_publication_title_id?.trim(),
-      firstAuthor: the_kbart.first_author?.trim(),
-      publisherName: the_kbart.publisher_name?.trim(),
-      volumeNumber: the_kbart.monograph_volume?.trim(),
-      editionStatement: the_kbart.monograph_edition?.trim(),
+      firstAuthor: GOKbTextUtils.removeControlChars(the_kbart.first_author?.trim()),
+      publisherName: GOKbTextUtils.removeControlChars(the_kbart.publisher_name?.trim()),
+      volumeNumber: GOKbTextUtils.removeControlChars(the_kbart.monograph_volume?.trim()),
+      editionStatement: GOKbTextUtils.removeControlChars(the_kbart.monograph_edition?.trim()),
       dateFirstInPrint: the_kbart.date_monograph_published_print?.trim(),
       dateFirstOnline: the_kbart.date_monograph_published_online?.trim(),
-      firstEditor: the_kbart.first_editor?.trim(),
-      subjectArea: the_kbart.subject_area?.trim() ?: (the_kbart.subject?.trim() ?: the_kbart.primary_subject?.trim()),
-      series: (the_kbart.monograph_parent_collection_title ?: the_kbart.series?.trim()),
+      firstEditor: GOKbTextUtils.removeControlChars(the_kbart.first_editor?.trim()),
+      subjectArea: GOKbTextUtils.removeControlChars(the_kbart.subject_area?.trim() ?: (the_kbart.subject?.trim() ?: the_kbart.primary_subject?.trim())),
+      series: GOKbTextUtils.removeControlChars((the_kbart.monograph_parent_collection_title ?: the_kbart.series?.trim())),
       language: the_kbart.language?.trim(),
       medium: the_kbart.medium?.trim(),
       accessStartDate:the_kbart.access_start_date?.trim(),
@@ -943,7 +943,7 @@ class IngestKbartRun {
       log.debug("TIPP ${tipp.id} info check: ${tipp.name}, ${tipp.url}")
 
       if (tipp.validate()) {
-        if (ingest_systime) {
+        if (ingest_systime && ingest_systime > tipp.lastSeen) {
           log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date} (${tipp.lastSeen} -> ${ingest_systime})")
           tippService.updateLastSeen(tipp, ingest_systime)
         }
