@@ -301,7 +301,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
   @Override
   protected void sendVerifyRegistrationMail(RegistrationCode registrationCode, user, String email) {
-      String url = super.generateLink('verifyRegistration', [t: registrationCode.token])
+      String url = super.generateLink('verifyRegistration', [t: registrationCode.token], true)
 
       String body = super.renderRegistrationMailBody(url, user)
 
@@ -340,7 +340,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 		uiRegistrationCodeStrategy.sendForgotPasswordMail(
 				forgotPasswordCommand.username, email) { String registrationCodeToken ->
 
-			String url = generateLink('resetPassword', [t: registrationCodeToken])
+			String url = generateLink('resetPassword', [t: registrationCodeToken], true)
 			String body = forgotPasswordEmailBody
 
 			if (!body) {
@@ -431,7 +431,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         uiRegistrationCodeStrategy.sendForgotPasswordMail(
             forgotPasswordCommand.username, email) { String registrationCodeToken ->
 
-          String url = generateLink('resetPasswordExt', [t: registrationCodeToken, lang: locale.toString()])
+          String url = generateLink('resetPasswordExt', [t: registrationCodeToken, lang: locale.toString()], true)
           String body = forgotPasswordEmailBody
 
           if (!body) {
