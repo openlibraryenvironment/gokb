@@ -24,14 +24,16 @@ class WebHookEndpoint {
 
   static constraints = {
     name(validator: { val, obj ->
-      if (val && val.trim()) {
-        List<WebHookEndpoint> dupes = WebHookEndpoint.findAllByNameIlike(val);
+      if (obj.hasChanged('name')) {
+        if (val && val.trim()) {
+          List<WebHookEndpoint> dupes = WebHookEndpoint.findAllByNameIlike(val);
 
-        if (dupes?.size() > 0 && dupes.any { it != obj }) {
-          return ['notUnique']
+          if (dupes?.size() > 0 && dupes.any { it != obj }) {
+            return ['notUnique']
+          }
+        } else {
+          return ['notNull']
         }
-      } else {
-        return ['notNull']
       }
     })
     url(validator: {val, obj ->

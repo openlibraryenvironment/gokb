@@ -704,12 +704,15 @@ class PackageSourceUpdateService {
 
 
           if(foundFile){
+            /*
             LocalDate foundFileDate = LocalDate.ofInstant(foundFile.getTimestampInstant(), ZoneId.systemDefault())
+
             if(lastRunLocal && (lastRunLocal > foundFileDate)){
               // no update needed
               tmp_file.delete()
               return result
             }
+            */
 
             Long foundFileSize = foundFile.getSize()
             if(foundFileSize > max_length && restrictSize){
