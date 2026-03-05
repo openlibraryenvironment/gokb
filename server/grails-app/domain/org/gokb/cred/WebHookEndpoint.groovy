@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import groovy.util.logging.*
+import org.hibernate.proxy.HibernateProxy
 
 
 @Slf4j
@@ -24,16 +25,14 @@ class WebHookEndpoint {
 
   static constraints = {
     name(validator: { val, obj ->
-      if (obj.hasChanged('name')) {
-        if (val && val.trim()) {
-          List<WebHookEndpoint> dupes = WebHookEndpoint.findAllByNameIlike(val);
+      if (val && val.trim()) {
+        List<WebHookEndpoint> dupes = WebHookEndpoint.findAllByNameIlike(val);
 
-          if (dupes?.size() > 0 && dupes.any { it != obj }) {
-            return ['notUnique']
-          }
-        } else {
-          return ['notNull']
+        if (dupes?.size() > 0 && dupes.any { it != obj }) {
+          return ['notUnique']
         }
+      } else {
+        return ['notNull']
       }
     })
     url(validator: {val, obj ->
@@ -87,6 +86,18 @@ class WebHookEndpoint {
     }
 
     result
+  }
+
+  @Override
+  public boolean equals (Object o) {
+
+    if (o != null) {
+      if (o instanceof WebHookEndpoint) {
+        return o.id == id
+      }
+    }
+
+    return false
   }
 
 }
