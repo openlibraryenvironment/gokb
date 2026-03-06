@@ -1,7 +1,6 @@
 package org.gokb.cred
 
 import groovy.util.logging.*
-import org.hibernate.proxy.HibernateProxy
 
 
 @Slf4j
