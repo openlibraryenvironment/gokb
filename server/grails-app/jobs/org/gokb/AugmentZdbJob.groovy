@@ -50,11 +50,11 @@ class AugmentZdbJob implements InterruptableJob {
 
   static final String query_new_only = '''from JournalInstance as ti
                               where ti.status = :current
-                              ti.dateCreated > :lastRun'''
+                              and ti.dateCreated > :lastRun'''
 
   public void execute(JobExecutionContext context) {
     if (grailsApplication.config.getProperty('gokb.zdbAugment.enabled', Boolean.class)) {
-      def active_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup("Job.Type", "Sync ZDB data"))
+      List active_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup("Job.Type", "Sync ZDB data"))
 
       if (!active_jobs) {
         Map result = [
@@ -68,11 +68,11 @@ class AugmentZdbJob implements InterruptableJob {
 
         log.info("Starting ZDB augment job.")
         Float reduced_rate = null
-        def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-        def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-        def combo_active = RefdataCategory.lookup("Combo.Status", "Active")
-        def zdbNs = IdentifierNamespace.findByValue('zdb')d
-        def issnNs = []
+        RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+        RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+        RefdataValue combo_active = RefdataCategory.lookup("Combo.Status", "Active")
+        IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
+        List issnNs = []
         issnNs << IdentifierNamespace.findByValue('issn')
         issnNs << IdentifierNamespace.findByValue('eissn')
         int offset = 0
@@ -82,12 +82,19 @@ class AugmentZdbJob implements InterruptableJob {
 
         def qry_params = [
           current: status_current,
-          ctype: idComboType,
-          cstatus: combo_active,
-          ns: zdbNs,
-          issns: issnNs,
           lastRun: lastStart
         ]
+
+        if (run_full_update) {
+          qry_params = [
+            current: status_current,
+            lastRun: lastStart,
+            ctype: idComboType,
+            cstatus: combo_active,
+            ns: zdbNs,
+            issns: issnNs
+          ]
+        }
 
         def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${run_full_update ? query_full : query_new_only}".toString(), qry_params)[0]
         def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${run_full_update ? query_full : query_new_only}".toString(), qry_params)
@@ -95,7 +102,7 @@ class AugmentZdbJob implements InterruptableJob {
         log.debug("Processing ${count_journals_without_zdb_id}")
 
         for (ti_id in journals_without_zdb_id) {
-          def ti = TitleInstance.get(ti_id)
+          TitleInstance ti = TitleInstance.get(ti_id)
           log.debug("Attempting augment on ${ti.id} ${ti.name}")
 
           if (reduced_rate) {

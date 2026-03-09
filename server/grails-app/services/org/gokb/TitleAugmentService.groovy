@@ -80,7 +80,7 @@ class TitleAugmentService {
 
         def lookup_result = zdbAPIService.lookup(titleInstance.name, ids)
 
-        if (lookup_result.result = 'ERROR') {
+        if (lookup_result.result.startsWith('ERROR')) {
           result = lookup_result
 
           return result
