@@ -27,8 +27,9 @@ class TitleAugmentService {
   def ezbAPIService
 
 
-  def augmentZdb(titleInstance) {
+  public Map augmentZdb(titleInstance) {
     log.debug("Augment ZDB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
+    Map result = [result: 'OK']
     RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
     RefdataValue status_active = DomainClassExtender.comboStatusActive
     def group_name = grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')
@@ -77,7 +78,15 @@ class TitleAugmentService {
                                             and status = :sca
                                           )''', [ti: titleInstance, sca: status_active])
 
-        def candidates = zdbAPIService.lookup(titleInstance.name, ids)
+        def lookup_result = zdbAPIService.lookup(titleInstance.name, ids)
+
+        if (lookup_result.result = 'ERROR') {
+          result = lookup_result
+
+          return result
+        }
+
+        def candidates = lookup_result.candidates
 
         if (candidates.size() == 1) {
           if (num_existing_zdb_ids == 0) {
@@ -115,6 +124,9 @@ class TitleAugmentService {
                 rr_in_use,
                 editorialGroup
               )
+
+              result.result = 'SKIPPED_NEW_REVIEW_IN_USE'
+              result.new_review = rr_in_use.value
             }
             else if (new_id) {
               log.debug("Adding new ZDB-ID ${new_id}")
@@ -131,10 +143,16 @@ class TitleAugmentService {
                 it.status = rr_status_closed
                 it.save()
               }
+
+              result.result = 'ID_LINKED'
             }
             else {
               log.error("Unable to get ZDB-ID to link!")
             }
+          }
+          else {
+            log.debug("Found record for existing ZDB-ID..")
+            result.result = 'MATCH_UPDATED'
           }
 
           setNewTitleInfo(titleInstance, candidates[0])
@@ -155,6 +173,8 @@ class TitleAugmentService {
             //     editorialGroup
             //   )
             // }
+
+            result.result = 'NO_MATCH'
           }
         }
         else {
@@ -202,6 +222,9 @@ class TitleAugmentService {
                 rr_in_use,
                 editorialGroup
               )
+
+              result.result = 'SKIPPED_NEW_REVIEW_IN_USE'
+              result.new_review = rr_in_use.value
             }
             else {
               if (num_existing_zdb_ids == 0) {
@@ -241,6 +264,12 @@ class TitleAugmentService {
               rr_multiple,
               editorialGroup
             )
+
+            result.result = 'SKIPPED_NEW_REVIEW_MULTIPLE_CANDIDATES'
+            result.new_review = rr_multiple.value
+          }
+          else {
+            result.result = 'SKIPPED_EXISTING_REVIEW_MULTIPLE_CANDIDATES'
           }
         }
       }
@@ -264,12 +293,25 @@ class TitleAugmentService {
             rr_merged,
             editorialGroup
           )
+
+          result.result = 'SKIPPED_NEW_REVIEW_MERGED_IDS'
+          result.new_review = rr_merged.value
+        }
+        else {
+          result.result = 'SKIPPED_EXISTING_REVIEW_MERGED_IDS'
         }
       }
       else {
         log.debug("Skipping title with existing RR ..")
+        result.result = 'SKIPPED_EXISTING_REVIEW_IN_USE'
       }
     }
+    else {
+      result.result = 'ERROR'
+      result.message = "Skipped ZDB augment for ${titleInstance}"
+    }
+
+    result
   }
 
   public void touchTitleTipps (ti, boolean onlyCurrent = true, boolean skipPackageUpdate = false) {
