@@ -901,7 +901,7 @@ class ApiController {
     def title = TitleInstance.get(genericOIDService.oidToId(params.id))
 
     if (title) {
-      result.candidates = zdbAPIService.lookup(title.name, title.ids)
+      result = zdbAPIService.lookup(title.name, title.ids)
     }
     else {
       result.result = 'ERROR'

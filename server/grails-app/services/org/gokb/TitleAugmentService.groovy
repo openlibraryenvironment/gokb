@@ -634,7 +634,7 @@ class TitleAugmentService {
 
 
   def syncZdbInfo(Job j = null, boolean unlinkedOnly = false, LocalDateTime created_since = null) {
-    def result = [result: 'OK']
+    Map result = [result: 'OK', counts:[:]]
 
     JournalInstance.withNewSession { lsession ->
       RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
@@ -686,7 +686,8 @@ class TitleAugmentService {
         queryString += " and ti.dateCreated > :date"
       }
 
-      def id_list = JournalInstance.executeQuery("select ti.id ${queryString}".toString(), params)
+      result.total = JournalInstance.executeQuery("select count(ti.id) ${queryString}".toString(), params)
+      List id_list = JournalInstance.executeQuery("select ti.id ${queryString}".toString(), params)
 
       result.total = id_list.size()
 
@@ -698,7 +699,39 @@ class TitleAugmentService {
       for (ti_id in id_list) {
         def ti = TitleInstance.get(ti_id)
         log.debug("Attempting augment on ${ti.id} ${ti.name}")
-        augmentZdb(ti)
+
+        Map augment_result = augmentZdb(ti)
+
+        if (!result.counts[augment_result.result]) {
+          result.counts[augment_result.result] = 1
+        }
+        else {
+          result.counts[augment_result.result]++
+        }
+
+        if (augment_result.result == 'ERROR_RESPONSE') {
+          if (augment_result.status == 503) {
+            result.result = 'CANCELLED_UNAVAILABLE'
+            break
+          }
+          else if (augment_result.status == 429 && augment_result.rate_limit) {
+
+            try {
+              reduced_rate = Float.parseFloat(augment_result.rate_limit)
+            }
+            catch (Exception e) {
+              log.error("Unable to parse rate limit ${augment_result.rate_limit}!")
+              result.result = 'CANCELLED_RATE_LIMIT_PARSE_ERROR'
+              break
+            }
+
+            if (reduced_rate > 1) {
+              result.result = 'CANCELLED_MAX_RATE_LIMIT'
+              break
+            }
+          }
+        }
+
         offset++
 
         j?.setProgress(offset, result.total)
@@ -709,11 +742,13 @@ class TitleAugmentService {
         }
 
         if (Thread.currentThread().isInterrupted() || j?.isCancelled()) {
+          result.result = 'INTERRUPTED'
           break
         }
       }
 
       j?.endTime = new Date()
+      j?.message('syncZdbInfo :: Finished processing')
       result.endTime = new Date()
 
       result

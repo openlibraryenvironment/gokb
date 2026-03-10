@@ -77,7 +77,7 @@ class AugmentZdbJob implements InterruptableJob {
         issnNs << IdentifierNamespace.findByValue('eissn')
         int offset = 0
         ZonedDateTime zdt_minus_one = ZonedDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS)
-        boolean run_full_update = (ZonedDateTime.now(ZoneId.of("Europe/Berlin")).getHour() == 23) // -> 23:30
+        boolean run_full_update = (ZonedDateTime.now(ZoneId.of("Europe/Berlin")).getHour() == 22) // -> 23:30
         Date lastStart = context.getPreviousFireTime() ?: Date.from(zdt_minus_one.toInstant())
 
         def qry_params = [
@@ -96,10 +96,10 @@ class AugmentZdbJob implements InterruptableJob {
           ]
         }
 
-        def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${run_full_update ? query_full : query_new_only}".toString(), qry_params)[0]
-        def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${run_full_update ? query_full : query_new_only}".toString(), qry_params)
+        result.total = JournalInstance.executeQuery("select count(ti.id) ${run_full_update ? query_full : query_new_only}".toString(), qry_params)[0]
+        List journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${run_full_update ? query_full : query_new_only}".toString(), qry_params)
 
-        log.debug("Processing ${count_journals_without_zdb_id}")
+        log.debug("Processing ${result.total}")
 
         for (ti_id in journals_without_zdb_id) {
           TitleInstance ti = TitleInstance.get(ti_id)
@@ -109,13 +109,13 @@ class AugmentZdbJob implements InterruptableJob {
             sleep((int) (reduced_rate * 1000))
           }
 
-          def augment_result = titleAugmentService.augmentZdb(ti)
+          Map augment_result = titleAugmentService.augmentZdb(ti)
 
-          if (!result[augment_result.result]) {
-            result[augment_result.result] = 1
+          if (!result.counts[augment_result.result]) {
+            result.counts[augment_result.result] = 1
           }
           else {
-            result[augment_result.result]++
+            result.counts[augment_result.result]++
           }
 
           if (augment_result.result == 'ERROR_RESPONSE') {
@@ -147,7 +147,7 @@ class AugmentZdbJob implements InterruptableJob {
             cleanUpGorm()
           }
 
-          dataMap.progress = "${Math.floor(offset.div(count_journals_without_zdb_id) * 100)}%".toString()
+          dataMap.progress = "${Math.floor(offset.div(result.total) * 100)}%".toString()
 
           if (interrupted || Thread.currentThread().isInterrupted()) {
             result.result = 'INTERRUPTED'
@@ -159,7 +159,7 @@ class AugmentZdbJob implements InterruptableJob {
           result.result = 'FINISHED'
         }
 
-        log.info("Finished ZDB augment job, augmenting ${count_journals_without_zdb_id} Journals. (${result})")
+        log.info("Finished ZDB augment job, augmenting ${offset} Journals. (${result})")
         dataMap.remove('progress')
         interrupted = false
       }
