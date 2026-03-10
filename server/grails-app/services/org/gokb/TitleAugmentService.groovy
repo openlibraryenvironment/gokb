@@ -641,6 +641,7 @@ class TitleAugmentService {
       RefdataValue combo_active = DomainClassExtender.comboStatusActive
       RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
       IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
+      Float reduced_rate = null
       int offset = 0
       int batchSize = 50
       String queryString = "from JournalInstance as ti where ti.status = :current and "
