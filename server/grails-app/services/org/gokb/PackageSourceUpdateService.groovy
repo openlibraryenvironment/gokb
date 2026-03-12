@@ -463,8 +463,8 @@ class PackageSourceUpdateService {
       HttpHead httpHead = new HttpHead(src_url.toURI())
       HttpGet httpGet = new HttpGet(src_url.toURI())
 
-      httpHead.setHeader(HttpHeaders.USER_AGENT, "GOKb KBART Updater")
-      httpGet.setHeader(HttpHeaders.USER_AGENT, "GOKb KBART Updater")
+      httpHead.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater")
+      httpGet.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater")
 
       httpClient.execute(httpHead, classicHttpResponse -> {
         int code = classicHttpResponse.getStatusLine().getStatusCode()

@@ -8,6 +8,8 @@ import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.BlockingHttpClient
 import io.micronaut.http.client.exceptions.HttpClientException
+import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.client.exceptions.ReadTimeoutException
 import io.micronaut.http.uri.UriBuilder
 
 class ZdbAPIService {
@@ -35,6 +37,10 @@ class ZdbAPIService {
   }
 
   def lookup(String name, def ids) {
+    def result = [
+      result: 'OK',
+      candidates: []
+    ]
     def candidate_ids = [direct: [], parallel: [], matched: []]
 
     for (id in ids) {
@@ -49,7 +55,8 @@ class ZdbAPIService {
             .queryParam('query', (id.namespace.value == 'zdb' ? CONFIG.zdbTerm : CONFIG.issTerm) + id.value + CONFIG.onlineOnly)
             .build()
 
-          HttpResponse resp = http.exchange(HttpRequest.GET(uri), String)
+          HttpRequest request = HttpRequest.GET(uri).header('User-Agent', "GOKB title augment")
+          HttpResponse resp = http.exchange(request, String)
 
           if (resp.status == HttpStatus.OK) {
             def data = new XmlSlurper().parseText(resp.body())
@@ -85,17 +92,32 @@ class ZdbAPIService {
             }
           }
         }
+        catch (HttpClientResponseException e) {
+          log.debug("HttpClientResponseException fetching ZDB record for '$id' ($e.message)!")
+          result.result = 'ERROR_RESPONSE'
+          result.status = e.status.code
+          result.rate_limit = e.response.header('RETRY-AFTER')
+          return result
+        }
+        catch (ReadTimeoutException e) {
+          log.info("ReadTimeoutException fetching ZDB record for '$id' ($e.message)!")
+          result.result = 'ERROR_READ_TIMEOUT'
+          return result
+        }
         catch (HttpClientException e) {
-          log.error("Error fetching ZDB record for '$id' ($e.message)!")
-          break
+          log.debug("HttpClientException fetching ZDB record for '$id' ($e.message)!")
+          result.result = 'ERROR_CLIENT'
+          return result
         }
         catch (java.nio.channels.ClosedChannelException cce) {
-          log.error("Error fetching ZDB record for '$id' ($e.message)!")
-          break
+          log.error("ClosedChannelException fetching ZDB record for '$id' ($e.message)!")
+          result.result = 'ERROR_CLOSED_CHANNEL'
+          return result
         }
         catch ( Exception e ) {
-          log.error("Error fetching ZDB record for '$id' (${e.class.name})!")
-          break
+          result.result = 'ERROR_FETCH'
+          log.error("Unknown error fetching ZDB record for '$id' (${e.class.name})!")
+          return result
         }
       }
       else {
@@ -104,14 +126,16 @@ class ZdbAPIService {
     }
 
     if (candidate_ids.matched.size() > 0) {
-      return candidate_ids.matched
+      result.candidates = candidate_ids.matched
     }
     else if (candidate_ids.direct.size() > 0) {
-      return candidate_ids.direct
+      result.candidates = candidate_ids.direct
     }
     else {
-      return candidate_ids.parallel
+      result.candidates = candidate_ids.parallel
     }
+
+    result
   }
 
   def getZdbInfo(record) {
