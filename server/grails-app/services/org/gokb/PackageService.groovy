@@ -1198,4 +1198,77 @@ class PackageService {
 
     result
   }
+
+  /**
+   * REST package header validation
+   */
+  public Map restValidate(packageHeaderDTO, locale) {
+    def result = [valid: true, errors: [:]]
+
+    if (!packageHeaderDTO.name || !packageHeaderDTO.name.trim()) {
+      result.valid = false
+      result.errors.name = [
+        [
+          messageCode: 'validation.missingName',
+          message: 'Package name is missing!',
+          baddata: packageHeaderDTO.name
+        ]
+      ]
+    }
+
+    String idJsonKey = 'ids'
+    def ids_list = packageHeaderDTO[idJsonKey]
+
+    if (!ids_list) {
+      idJsonKey = 'identifiers'
+      ids_list = packageHeaderDTO[idJsonKey]
+    }
+
+    if (ids_list) {
+      def id_errors = Identifier.validateDTOs(ids_list, locale)
+
+      if (id_errors.size() > 0) {
+        result.errors.put(idJsonKey, id_errors)
+      }
+    }
+
+    validateLinkedInfo(result, packageHeaderDTO, 'provider', Org)
+    validateLinkedInfo(result, packageHeaderDTO, 'nominalPlatform', Platform)
+
+    result
+  }
+
+  private void validateLinkedInfo (result, packageHeaderDTO, linkType, cls) {
+    Object obj
+
+    if (packageHeaderDTO[linkType]) {
+      if (packageHeaderDTO[linkType] instanceof Integer || packageHeaderDTO[linkType] instanceof Long) {
+        obj = cls.get(packageHeaderDTO[linkType])
+      }
+      else if (packageHeaderDTO[linkType] instanceof String) {
+        obj = cls.findByUuid(packageHeaderDTO[linkType])
+      }
+      else if (packageHeaderDTO[linkType] instanceof Map) {
+        if (packageHeaderDTO[linkType].uuid) {
+          obj = cls.findByUuid(packageHeaderDTO[linkType].uuid)
+        }
+
+        if (!obj && packageHeaderDTO[linkType].id) {
+          plt = cls.get(packageHeaderDTO[linkType].id)
+        }
+      }
+    }
+
+    if (!obj) {
+      result.valid = false
+
+      result.errors[linkType] = [
+        [
+          message: 'Unable to reference mandatory linked component!',
+          code: 404,
+          baddata: packageHeaderDTO[linkType]
+        ]
+      ]
+    }
+  }
 }

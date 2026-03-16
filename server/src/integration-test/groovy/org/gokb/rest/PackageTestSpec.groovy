@@ -337,8 +337,12 @@ class PackageTestSpec extends AbstractAuthSpec {
     given:
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle")
     Platform testPlt = Platform.findByName("PackTestPlt")
+    Org provider = Org.findByName("PackTestOrg")
+
     Map upd_body = [
         name : "TestPackageWithTipps",
+        provider: provider.id,
+        nominalPlatform: testPlt.id,
         tipps: [
             [
                 title       : testTitle.id,
