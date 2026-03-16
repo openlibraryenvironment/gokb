@@ -17,6 +17,7 @@ import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
 import org.gokb.TippMatchingJob
 import org.gokb.TippAccessStatusUpdateJob
+import org.gokb.ReviewRequestNotificationJob
 
 import javax.servlet.http.HttpServletRequest
 
@@ -437,11 +438,48 @@ class BootStrap {
             ComponentStatisticService.updateCompStats()
 
             if (Environment.current != Environment.TEST) {
-                AugmentZdbJob.schedule(grailsApplication.config.getProperty('gokb.zdbAugment.cron'))
-                AugmentEzbJob.schedule(grailsApplication.config.getProperty('gokb.ezbAugment.cron'))
-                AutoUpdatePackagesJob.schedule(grailsApplication.config.getProperty('gokb.packageUpdate.cron'))
-                TippMatchingJob.schedule(grailsApplication.config.getProperty('gokb.tippMatching.cron'))
-                TippAccessStatusUpdateJob.schedule(grailsApplication.config.getProperty('gokb.tippAccessStatusUpdate.cron'))
+                if (grailsApplication.config.getProperty('gokb.packageCaching.enabled', Boolean, false)) {
+                    log.info("Package export caching is active.")
+                }
+                else {
+                    log.warn("Package export caching is disabled via 'gokb.packageOaiCaching.enabled = false'!")
+                }
+
+                if (grailsApplication.config.getProperty('gokb.zdbAugment.enabled', Boolean, false)) {
+                    AugmentZdbJob.schedule(grailsApplication.config.getProperty('gokb.zdbAugment.cron'))
+                }
+
+                if (grailsApplication.config.getProperty('gokb.ezbAugment.enabled', Boolean, false)) {
+                    AugmentEzbJob.schedule(grailsApplication.config.getProperty('gokb.ezbAugment.cron'))
+                }
+
+                if (grailsApplication.config.getProperty('gokb.packageUpdate.enabled', Boolean, false)) {
+                    AutoUpdatePackagesJob.schedule(grailsApplication.config.getProperty('gokb.packageUpdate.cron'))
+                }
+                else {
+                    log.info("Automated Package imports are disabled via config override of 'gokb.packageUpdate.enabled = false'!")
+                }
+
+                if (grailsApplication.config.getProperty('gokb.tippMatching.enabled', Boolean, false)) {
+                    TippMatchingJob.schedule(grailsApplication.config.getProperty('gokb.tippMatching.cron'))
+                }
+                else {
+                    log.warn("Automated TIPP reference matching is disabled via config override of 'gokb.tippMatching.enabled = false'!")
+                }
+
+                if (grailsApplication.config.getProperty('gokb.tippAccessStatusUpdate.enabled', Boolean, false)) {
+                    TippAccessStatusUpdateJob.schedule(grailsApplication.config.getProperty('gokb.tippAccessStatusUpdate.cron'))
+                }
+                else {
+                    log.warn("Automated TIPP status updating is disabled via config override of 'gokb.tippAccessStatusUpdate.enabled = false'!")
+                }
+
+                if (grailsApplication.config.getProperty('gokb.reviewRequestNotification.enabled', Boolean, false)) {
+                    ReviewRequestNotificationJob.schedule(grailsApplication.config.getProperty('gokb.reviewRequestNotification.cron'))
+                }
+                else {
+                    log.info("Sending of curatory alerts for new reviews is disabled via config override of 'gokb.reviewRequestNotification.enabled = false'!")
+                }
             }
         }
 
