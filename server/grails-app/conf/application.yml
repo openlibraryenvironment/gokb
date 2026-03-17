@@ -156,11 +156,6 @@ environments:
                 validationQuery: select 1
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
         grails:
-            logging:
-                plugin:
-                    springsecurity:
-                        debug:
-                            useFilter: true
             mail:
                 port: 3025
         gokb:

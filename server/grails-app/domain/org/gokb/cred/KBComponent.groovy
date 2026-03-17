@@ -654,7 +654,12 @@ where cp.owner = :c
       generateUuid()
     }
 
-    def user = springSecurityService?.currentUser
+    User user
+
+    try {
+      user = springSecurityService?.currentUser
+    }
+    catch (Exception e) {}
 
     if (user != null) {
       this.lastUpdatedBy = user

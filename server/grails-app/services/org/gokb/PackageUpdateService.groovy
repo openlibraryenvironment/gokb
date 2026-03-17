@@ -128,7 +128,7 @@ class PackageUpdateService {
         errors.provider = [[message: "Could not find provider Org with id ${reqBody.provider}!", baddata: reqBody.provider]]
       }
     }
-    else if (reqBody.provider == null) {
+    else if (remove && reqBody.provider == null) {
       errors.provider = [[message: "Package must have a provider!", baddata: reqBody.provider]]
     }
 
@@ -149,7 +149,7 @@ class PackageUpdateService {
         errors.contentProvider = [[message: "Could not find content provider Org with id ${reqBody.contentProvider}!", baddata: reqBody.contentProvider]]
       }
     }
-    else if (reqBody.contentProvider == null) {
+    else if (remove && reqBody.contentProvider == null) {
       obj.contentProvider = null
       changed = true
     }
@@ -172,7 +172,7 @@ class PackageUpdateService {
         errors.nominalPlatform = [[message: "Could not find platform with id ${reqBody.nominalPlatform}!", baddata: plt_id]]
       }
     }
-    else if (reqBody.nominalPlatform == null || reqBody.platform == null) {
+    else if (remove && reqBody.nominalPlatform == null && reqBody.platform == null) {
       errors.nominalPlatform = [[message: "Package must have a nominal platform!", baddata: null]]
     }
 
