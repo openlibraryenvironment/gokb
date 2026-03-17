@@ -210,9 +210,15 @@ class EzbCollectionService {
           }
 
           if (obj) {
-            def date_changed = item.ezb_collection_deactivated_date.substring(0, 10) + ' 00:00:00'
+            String date_changed = item.ezb_collection_deactivated_date ? item.ezb_collection_deactivated_date.substring(0, 10) + ' 00:00:00' : null
 
-            obj.retireAt(dateFormatService.parseTimestamp(date_changed))
+            if (date_changed) {
+              obj.retireAt(dateFormatService.parseTimestamp(date_changed))
+            }
+            else {
+              obj.retire()
+            }
+
             obj.save(flush: true)
 
             result.report[ARCHIVED_TYPE].retired++
