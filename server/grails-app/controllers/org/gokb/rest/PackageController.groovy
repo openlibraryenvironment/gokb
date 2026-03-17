@@ -141,7 +141,7 @@ class PackageController {
 
       if (editable) {
         log.debug("Save package ${reqBody}")
-        Map pkg_validation = packageService.restValidate(reqBody, request_locale)
+        Map pkg_validation = packageService.restValidate(reqBody, request_locale, true)
         Package obj = null
 
         if (pkg_validation.valid) {

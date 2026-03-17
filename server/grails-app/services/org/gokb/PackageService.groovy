@@ -1202,7 +1202,7 @@ class PackageService {
   /**
    * REST package header validation
    */
-  public Map restValidate(packageHeaderDTO, locale) {
+  public Map restValidate(packageHeaderDTO, locale, remove) {
     def result = [valid: true, errors: [:]]
 
     if (!packageHeaderDTO.name || !packageHeaderDTO.name.trim()) {
@@ -1232,13 +1232,13 @@ class PackageService {
       }
     }
 
-    validateLinkedInfo(result, packageHeaderDTO, 'provider', Org)
-    validateLinkedInfo(result, packageHeaderDTO, 'nominalPlatform', Platform)
+    validateLinkedInfo(result, packageHeaderDTO, 'provider', Org, remove)
+    validateLinkedInfo(result, packageHeaderDTO, 'nominalPlatform', Platform, remove)
 
     result
   }
 
-  private void validateLinkedInfo (result, packageHeaderDTO, linkType, cls) {
+  private void validateLinkedInfo (result, packageHeaderDTO, linkType, cls, remove) {
     Object obj
 
     if (packageHeaderDTO[linkType]) {
@@ -1258,8 +1258,18 @@ class PackageService {
         }
       }
     }
+    else if (packageHeaderDTO[linkType] == null && remove) {
+      result.valid = false
 
-    if (!obj) {
+      result.errors[linkType] = [
+        [
+          message: 'Mandatory link must not be empty!',
+          code: 400,
+          baddata: null
+        ]
+      ]
+    }
+    else if (!obj) {
       result.valid = false
 
       result.errors[linkType] = [
