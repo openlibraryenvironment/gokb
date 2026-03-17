@@ -129,8 +129,7 @@ class PackageUpdateService {
       }
     }
     else if (reqBody.provider == null) {
-      obj.provider = null
-      changed = true
+      errors.provider = [[message: "Package must have a provider!", baddata: reqBody.provider]]
     }
 
     if (reqBody.contentProvider instanceof Integer) {
@@ -174,8 +173,7 @@ class PackageUpdateService {
       }
     }
     else if (reqBody.nominalPlatform == null || reqBody.platform == null) {
-      obj.nominalPlatform = null
-      changed = true
+      errors.nominalPlatform = [[message: "Package must have a nominal platform!", baddata: null]]
     }
 
     if (reqBody.tipps) {
