@@ -461,6 +461,47 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def zdb() {
+    boolean unlinked_only = params.boolean('unlinkedOnly') ?: false
+    LocalDateTime createdSince = null
+    LocalDateTime lastSynced = null
+
+    if (params.createdSince) {
+      createdSince = GOKbTextUtils.completeDateString(params.createdSince)
+
+      if (!createdSince) {
+        def result = [result: 'ERROR', message: "Unable to parse date for parameter 'createdSince'!"]
+        response.status = 400
+        render result as JSON
+      }
+    }
+
+    if (params.lastSynced) {
+      lastSynced = GOKbTextUtils.completeDateString(params.lastSynced)
+      if (!lastSynced) {
+        /*
+        def result = [result: 'ERROR', message: "Unable to parse date for parameter 'createdSince'!"]
+        response.status = 400
+        render result as JSON
+
+        */
+      }
+    }
+
+    Job j = concurrencyManagerService.createJob { job ->
+      titleAugmentService.syncZdbInfo(job, unlinked_only, createdSince)
+    }.startOrQueue()
+
+    log.debug "Triggering ZDB sync, job #${j.uuid}"
+    j.description = "Update journal information from ZDB data"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Sync ZDB data')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+
+
+  }
+
   def cancelQuartzJob() {
     def result = [result: 'OK', message: null]
 

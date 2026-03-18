@@ -9,6 +9,8 @@ import static grails.async.Promises.*
 @Slf4j
 class JournalInstance extends TitleInstance {
 
+  Date lastZdbSync
+
   private static refdataDefaults = [
     "TitleInstance.medium"		: "Journal"
   ]
@@ -18,6 +20,7 @@ class JournalInstance extends TitleInstance {
   }
 
   static constraints = {
+    lastZdbSync(nullable:true, blank:true)
   }
 
   @Override

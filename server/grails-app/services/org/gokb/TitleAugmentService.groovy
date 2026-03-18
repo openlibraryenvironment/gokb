@@ -633,7 +633,7 @@ class TitleAugmentService {
   }
 
 
-  def syncZdbInfo(Job j = null, boolean unlinkedOnly = false, LocalDateTime created_since = null) {
+  def syncZdbInfo(Job j = null, boolean unlinkedOnly = false, LocalDateTime created_since = null, LocalDateTime lastSynced = null) {
     Map result = [result: 'OK', counts:[:]]
 
     JournalInstance.withNewSession { lsession ->
