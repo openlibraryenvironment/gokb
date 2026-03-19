@@ -515,10 +515,8 @@ class PackageSourceUpdateService {
         if (code >= 400) {
           log.debug("KBART fetch status: ${code}")
 
-          if (code != 404) {
-            result.status = code
-            return result
-          }
+          result.status = code
+          return result
         }
         else if (!file_name && result.content_mime_type?.startsWith('text/plain')) {
           file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
