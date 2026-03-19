@@ -183,7 +183,7 @@ class PackageSourceUpdateService {
                 result.result = 'ERROR'
                 result.messageCode = 'kbart.errors.url.connection'
                 result.message = "There was an error trying to fetch KBART via URL!"
-                result.exceptionMsg = file_info.exceptionMsg
+                result.exceptionMsg = file_info.errorMsg
 
                 result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
@@ -217,11 +217,19 @@ class PackageSourceUpdateService {
                 result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
                 return result
-              } else if (file_info.status == 403) {
-                log.debug("URL request failed!")
-                result.result = 'ERROR'
-                result.messageCode = 'kbart.errors.url.denied'
-                result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
+              } else if (file_info.status && file_info.status != 404) {
+                log.debug("URL request failed (status ${file_info.status})!")
+
+                if (file_info.status == 403 || file_info.status == 401) {
+                  result.result = 'ERROR'
+                  result.messageCode = 'kbart.errors.url.denied'
+                  result.message = "URL request returned status ${file_info.status}, skipping further tries!"
+                }
+                else if (file_info.status >= 500) {
+                  result.result = 'ERROR'
+                  result.messageCode = 'kbart.errors.url.serverError'
+                  result.message = "URL request returned status ${file_info.status}, skipping further tries!"
+                }
 
                 result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
@@ -271,6 +279,7 @@ class PackageSourceUpdateService {
               log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
             } // end not-FTP
+
             if (file_info.file_name) {
               try {
                 MessageDigest md5_digest = MessageDigest.getInstance("MD5")
@@ -497,8 +506,13 @@ class PackageSourceUpdateService {
 
         result.content_mime_type = classicHttpResponse.getFirstHeader('Content-Type').getValue()
 
-        if (code > 400) {
+        if (code >= 400) {
           log.debug("KBART fetch status: ${code}")
+
+          if (code != 404) {
+            result.status = code
+            return result
+          }
         }
         else if (!file_name && result.content_mime_type?.startsWith('text/plain')) {
           file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
