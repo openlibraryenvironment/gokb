@@ -438,7 +438,7 @@ class BootStrap {
             ComponentStatisticService.updateCompStats()
 
             if (Environment.current != Environment.TEST) {
-                if (grailsApplication.config.getProperty('gokb.packageCaching.enabled', Boolean, false)) {
+                if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
                     log.info("Package export caching is active.")
                 }
                 else {
