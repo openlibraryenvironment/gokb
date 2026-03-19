@@ -6,12 +6,15 @@ import grails.gorm.transactions.Transactional
 
 import groovy.util.logging.Slf4j
 
+import java.time.*
+
 import org.gokb.cred.*
 
 @Slf4j
 class PackageCleanupService {
 
   def tippService
+  def titleAugmentService
 
   def reactivateReplacedTipps(pid, Job j = null) {
     def result = [result: 'OK', cases: 0, additionalDeletes: 0, total: 0]
@@ -100,5 +103,44 @@ class PackageCleanupService {
     }
 
     result
+  }
+
+  def revertTitleIds(Long pid, LocalDate date, Job job) {
+    Package.withNewSession {
+      def combos_qry = '''select id, fromComponent.id from Combo as cid
+                          where type = :cti
+                          and dateCreated between :dateStart and :dateEnd
+                          and exists (
+                            select 1 from ct
+                            where type = :ctt
+                            and fromComponent = cid.fromComponent
+                            and exists (
+                              select 1 from Combo as cp
+                              where type = :ctp
+                              and toComponent = ct.toComponent
+                              and fromComponent.id = :pid
+                            )
+                          )
+                          order by fromComponent.id'''
+
+      Map pars = [
+        cti: RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids'),
+        ctt: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps'),
+        ctp: RefdataCategory.lookup('Combo.Type', 'Package.Tipps'),
+        dateStart: date,
+        dateEnd: date.plusDays(1)
+      ]
+
+      List results = Combo.executeQuery(combos_qry, pars)
+
+      Long last_id
+
+      for (c in results) {
+        Combo ctd = Combo.get(c[0]).delete()
+        TitleInstance ti = TitleInstance.get(c[0])
+
+        titleAugmentService.touchTitleTipps(ti, false)
+      }
+    }
   }
 }
