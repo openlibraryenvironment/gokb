@@ -223,7 +223,13 @@ class PackageSourceUpdateService {
                 if (file_info.status == 403 || file_info.status == 401) {
                   result.result = 'ERROR'
                   result.messageCode = 'kbart.errors.url.denied'
-                  result.message = "URL request returned status ${file_info.status}, skipping further tries!"
+                  result.message = "URL request was denied (status ${file_info.status}), skipping further tries!"
+
+                  if (pkg_source.automaticUpdates) {
+                    log.debug("Deactivate automated updating ..")
+                    pkg_source.automaticUpdates = false
+                    pkg_source.save(flush: true)
+                  }
                 }
                 else if (file_info.status >= 500) {
                   result.result = 'ERROR'
