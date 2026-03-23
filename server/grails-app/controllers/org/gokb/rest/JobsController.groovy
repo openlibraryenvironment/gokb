@@ -193,6 +193,7 @@ class JobsController {
         int hqlTotal
         JobResult[] jobs
         LocalDate dateFilter = null
+        boolean first = true
         def date_qry = "jr.startTime > :date and jr.startTime < :nd"
         def qry_pars = [:]
 
@@ -212,13 +213,12 @@ class JobsController {
         }
 
         def base_qry = "from JobResult as jr"
-        def count_qry = "select count(jr.id) from JobResult as jr"
 
         if (params.type == 'import') {
           qry_pars.jt = [RefdataCategory.lookup('Job.Type','KBARTIngest'), RefdataCategory.lookup('Job.Type','KBARTSourceIngest')]
 
           base_qry += " where type in (:jt)"
-          count_qry += " where type in (:jt)"
+          first = false
         }
         else if (params.int('type')) {
           RefdataValue rdv_type = RefdataValue.get(params.int('type'))
@@ -227,8 +227,8 @@ class JobsController {
             if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
               qry_pars.jt = rdv_type
 
-              count_qry += " where type = :jt"
               base_qry += " where type = :jt"
+              first = false
             }
             else {
               result.result = 'ERROR'
@@ -243,24 +243,35 @@ class JobsController {
           }
         }
 
+        if (params.status) {
+          if (first) {
+            base_qry += " where statusText = :st"
+          }
+          else {
+            base_qry *= " and statusText = :st"
+          }
+
+          qry_pars.st = params.status
+
+          first = false
+        }
+
         if (result.result != 'ERROR') {
           if (dateFilter) {
-            if (params.type) {
+            if (!first) {
               base_qry += " and "
-              count_qry += " and "
             }
             else {
               base_qry += " where "
-              count_qry += " where "
             }
 
             base_qry += date_qry
-            count_qry += date_qry
+
             qry_pars.date = java.sql.Date.valueOf(dateFilter)
             qry_pars.nd = java.sql.Date.valueOf(dateFilter.plusDays(1))
           }
 
-          hqlTotal = JobResult.executeQuery(count_qry, qry_pars)[0]
+          hqlTotal = JobResult.executeQuery("select count(jr.id) ${base_qry}".toString(), qry_pars)[0]
           jobs = JobResult.executeQuery("${base_qry} order by jr.startTime desc".toString(), qry_pars, [max: max, offset: offset])
 
           jobs.each { JobResult j ->
