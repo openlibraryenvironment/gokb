@@ -19,313 +19,98 @@ class JobsController {
   static namespace = 'rest'
 
   def springSecurityService
+  def jobResultService
   ConcurrencyManagerService concurrencyManagerService
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def index() {
-    def result = [:]
-    def max = params.limit ? params.int('limit') : 10
-    def offset = params.offset ? params.int('offset') : 0
+    Map result = [result:'OK', errors: [:]]
+    int max = params.limit ? params.int('limit') : 10
+    int offset = params.offset ? params.int('offset') : 0
     User user = User.get(springSecurityService.principal.id)
-    def showFinished = params.boolean('showFinished') ?: false
+    boolean showFinished = params.boolean('showFinished') ?: false
 
-    if (params.keySet().intersect(['user', 'curatoryGroup', 'linkedItem']).size() == 1) {
-      // by user
-      if (params.user) {
-        if (user.superUserStatus || user.id == params.int('user')) {
-          long userId = params.long('user')
+    if (!user.isAdmin()) {
+      if (params.user && user.id != params.long('user')) {
+        result.result = 'ERROR'
+        response.status = 403
+        result.message = "Insuffictient permissions to retrieve jobs for these filters!"
 
-          if (params.boolean('archived') == true || params.boolean('combined') == true) {
-            result.data = []
-            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?0", [userId])[0]
-            def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?0 order by jr.startTime desc", [userId], [max: max, offset: offset])
-
-            if (params.boolean('combined') == true) {
-              def active_jobs = concurrencyManagerService.getUserJobs(userId, max, offset, false)
-
-              hqlTotal += active_jobs._pagination.total
-
-              if (offset == 0) {
-                result.data = active_jobs.data
-              }
-            }
-
-            jobs.each { j ->
-              def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
-              // No JsonObject for list view
-
-              result.data << [
-                uuid: j.uuid,
-                description: j.description,
-                type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-                linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-                startTime: j.startTime,
-                endTime: j.endTime,
-                status: j.statusText
-              ]
-            }
-
-            result['_pagination'] = [
-              offset: offset,
-              limit: max,
-              total: hqlTotal
-            ]
-          }
-          else {
-            result = concurrencyManagerService.getUserJobs(userId, max, offset, showFinished)
-          }
-        }
-        else {
-          result.result = 'ERROR'
-          response.status = 403
-          result.message = "Insuffictient permissions to retrieve the jobs for this user"
-        }
+        result.errors['user'] = [message: 'Unable to retrieve results filtered by another user!']
       }
-      // by curatoryGroup
-      if (params.curatoryGroup) {
-        if (user.superUserStatus || user.curatoryGroups?.find { it.id == params.int('curatoryGroup') }) {
-          long groupId = params.long('curatoryGroup')
+      if (params.curatoryGroup && !user.curatoryGroups?.find { it.id == params.int('curatoryGroup') }) {
+        result.result = 'ERROR'
+        response.status = 403
+        result.message = "Insuffictient permissions to retrieve jobs for these filters!"
 
-          if (params.boolean('archived') == true || params.boolean('combined') == true) {
-            result.data = []
-            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?0", [groupId])[0]
-            def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ?0 order by jr.startTime desc", [groupId], [max: max, offset: offset])
-
-            if (params.boolean('combined') == true) {
-              def active_jobs = concurrencyManagerService.getGroupJobs(groupId, max, offset, false)
-
-              hqlTotal += active_jobs._pagination.total
-
-              if (offset == 0) {
-                result.data = active_jobs.data
-              }
-            }
-
-            jobs.each { j ->
-              def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
-              // No JsonObject for list view
-
-              result.data << [
-                uuid: j.uuid,
-                description: j.description,
-                type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-                linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-                startTime: j.startTime,
-                endTime: j.endTime,
-                status: j.statusText
-              ]
-            }
-
-            result['_pagination'] = [
-              offset: offset,
-              limit: max,
-              total: hqlTotal
-            ]
-          }
-          else {
-            result = concurrencyManagerService.getGroupJobs(groupId, max, offset, showFinished)
-          }
-        }
-        else {
-          result.result = 'ERROR'
-          response.status = 403
-          result.message = "Insuffictient permissions to retrieve the jobs for this group"
-        }
+        result.errors['curatoryGroup'] = [message: 'Unable to retrieve results filtered by a group you are not a part of!']
       }
-      // by linked Component
-      if (params.linkedItem) {
-        Long compId = KBComponent.findByUuid(params.linkedItem)?.id ?: params.long('linkedItem')
-
-        if (compId) {
-          if (params.boolean('archived') == true || params.boolean('combined') == true) {
-            result.data = []
-            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.linkedItemId = ?0", [compId])[0]
-            def jobs = JobResult.executeQuery("from JobResult as jr where jr.linkedItemId = ?0 order by jr.startTime desc", [compId], [max: max, offset: offset])
-
-            if (params.boolean('combined') == true) {
-              def active_jobs = concurrencyManagerService.getComponentJobs(compId, max, offset, false)
-
-              hqlTotal += active_jobs._pagination.total
-
-              if (offset == 0) {
-                result.data = active_jobs.data
-              }
-            }
-
-            jobs.each { j ->
-              def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
-              // No JsonObject for list view
-
-              result.data << [
-                uuid: j.uuid,
-                description: j.description,
-                type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-                linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-                startTime: j.startTime,
-                endTime: j.endTime,
-                status: j.statusText
-              ]
-            }
-
-            result['_pagination'] = [
-              offset: offset,
-              limit: max,
-              total: hqlTotal
-            ]
-          }
-          else {
-            result = concurrencyManagerService.getComponentJobs(compId, max, offset, showFinished)
-          }
-        }
-        else {
-          result.result = 'ERROR'
-          response.status = 404
-          result.messageCode = "job.fetch.error.linkedItem.notFound"
-          result.message = "Unable to reference linked item id."
-        }
+      if (!params.user && !params.curatoryGroups && !params.linkedItem) {
+        result.result = 'ERROR'
+        response.status = 403
+        result.message = "Insuffictient permissions to retrieve jobs for these filters!"
       }
+
+      render result as JSON
+      return
     }
-    // all jobs
-    else if (user.isAdmin()) {
-      if (params.archived == "true") {
+
+    if ((params.user || params.curatoryGroup || params.linkedItem)) {
+      if (params.boolean('archived') == true) {
+        result = jobResultService.fetchJobs(params)
+      }
+      else if (params.boolean('combined') == true) {
+        Map active_jobs = [:]
+
+        if (params.user) {
+          active_jobs = concurrencyManagerService.getUserJobs(params.long('user'), max, offset, false)
+        }
+        else if (params.curatoryGroup) {
+          active_jobs = concurrencyManagerService.getGroupJobs(params.long('curatoryGroup'), max, offset, false)
+        }
+        else if (params.linkedItem) {
+          active_jobs = concurrencyManagerService.getComponentJobs(params.long('linkedItem') ?: KBComponent.findByUuid(params.linkedItem), max, offset, false)
+        }
 
         result.data = []
-        int hqlTotal
-        JobResult[] jobs
-        LocalDate dateFilter = null
-        boolean first = true
-        def date_qry = "jr.startTime > :date and jr.startTime < :nd"
-        def qry_pars = [:]
 
-        if (params.date) {
-          try {
-            dateFilter = LocalDate.parse(params.date)
-          }
-          catch (Exception e) {
-            log.debug(e)
-            result.result = 'ERROR'
-            response.status = 400
-            result.message = 'Unable to parse provided date parameter!'
+        int hqlTotal = active_jobs._pagination.total
 
-            render result as JSON
-            return
-          }
+        if (offset == 0) {
+          result.data = active_jobs.data
+          max = max - active_jobs
         }
 
-        def base_qry = "from JobResult as jr"
+        Map jr_result = jobResultService.fetchJobs(params, max, offset)
 
-        if (params.type == 'import') {
-          qry_pars.jt = [RefdataCategory.lookup('Job.Type','KBARTIngest'), RefdataCategory.lookup('Job.Type','KBARTSourceIngest')]
+        hqlTotal += jr_result._pagination.total
+        result.data = result.data + jr_result.data
 
-          base_qry += " where type in (:jt)"
-          first = false
-        }
-        else if (params.int('type')) {
-          RefdataValue rdv_type = RefdataValue.get(params.int('type'))
-
-          if (rdv_type) {
-            if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
-              qry_pars.jt = rdv_type
-
-              base_qry += " where type = :jt"
-              first = false
-            }
-            else {
-              result.result = 'ERROR'
-              response.status = 400
-              result.message = 'Reference value ${params.type} is not a job type!'
-            }
-          }
-          else {
-            result.result = 'ERROR'
-            response.status = 400
-            result.message = 'Unable to reference job type via ID ${params.type}!'
-          }
-        }
-
-        if (params.status) {
-          if (first) {
-            base_qry += " where statusText = :st"
-          }
-          else {
-            base_qry *= " and statusText = :st"
-          }
-
-          qry_pars.st = params.status
-
-          first = false
-        }
-
-        if (result.result != 'ERROR') {
-          if (dateFilter) {
-            if (!first) {
-              base_qry += " and "
-            }
-            else {
-              base_qry += " where "
-            }
-
-            base_qry += date_qry
-
-            qry_pars.date = java.sql.Date.valueOf(dateFilter)
-            qry_pars.nd = java.sql.Date.valueOf(dateFilter.plusDays(1))
-          }
-
-          hqlTotal = JobResult.executeQuery("select count(jr.id) ${base_qry}".toString(), qry_pars)[0]
-          jobs = JobResult.executeQuery("${base_qry} order by jr.startTime desc".toString(), qry_pars, [max: max, offset: offset])
-
-          jobs.each { JobResult j ->
-            def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
-            // No JsonObject for list view
-            CuratoryGroup cg = CuratoryGroup.get(j.groupId)
-            result.data << [
-                group      : cg?[id:cg.id, name:cg.name, uuid: cg.uuid]:null,
-                uuid       : j.uuid,
-                description: j.description,
-                type       : j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-                linkedItem : (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-                startTime  : j.startTime,
-                endTime    : j.endTime,
-                status     : j.statusText
-            ]
-          }
-
-          result['_pagination'] = [
-              offset: offset,
-              limit : max,
-              total : hqlTotal
-          ]
-        }
+        result['_pagination'] = [
+          offset: params.int('offset') ?: 0,
+          limit: params.int('limit') ?: 10,
+          total: hqlTotal
+        ]
       }
       else {
-        if (params.int('type')) {
-          RefdataValue rdv_type = RefdataValue.get(params.int('type'))
-
-          if (rdv_type) {
-            if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
-              result = concurrencyManagerService.getJobsForType(rdv_type, max, offset, showFinished)
-            }
-            else {
-              result.result = 'ERROR'
-              response.status = 400
-              result.message = 'Reference value ${params.type} is not a job type!'
-            }
-          }
-          else {
-            result.result = 'ERROR'
-            response.status = 400
-            result.message = 'Unable to reference job type via ID ${params.type}!'
-          }
+        if (params.user) {
+          result = concurrencyManagerService.getUserJobs(params.long('user'), max, offset, false)
         }
-        else {
-          result
+        else if (params.curatoryGroup) {
+          result = concurrencyManagerService.getGroupJobs(params.long('curatoryGroup'), max, offset, false)
+        }
+        else if (params.linkedItem) {
+          result = concurrencyManagerService.getComponentJobs(params.long('linkedItem') ?: KBComponent.findByUuid(params.linkedItem), max, offset, false)
         }
       }
     }
     else {
-      result.result = 'ERROR'
-      response.status = 403
-      result.message = "Insufficient permissions to retrieve all jobs"
+      if (params.boolean('archived') == true) {
+        result = jobResultService.fetchJobs(params, max, offset)
+      }
+      else {
+        result = concurrencyManagerService.getFilteredJobs(null, null, max, offset, showFinished)
+      }
     }
 
     render result as JSON
@@ -464,34 +249,5 @@ class JobsController {
     }
 
     render result as JSON
-  }
-
-  public static def filterJobResults(String propName, def id, def max, def offset, Map result) {
-    if (['ownerId', 'groupId', 'linkedItemId'].contains(propName)) {
-      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr." + propName + " = :val", [val: id.toLong()])[0]
-      def jobs = JobResult.executeQuery("from JobResult as jr where jr." + propName + " = :val order by jr.startTime desc", [val: id.toLong()], [max: max, offset: offset])
-      jobs.each { j ->
-        def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
-        // No JsonObject for list view
-        CuratoryGroup cg = CuratoryGroup.get(j.groupId)
-        result.data << [
-            group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
-            uuid       : j.uuid,
-            description: j.description,
-            type       : j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-            linkedItem : (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-            startTime  : j.startTime,
-            endTime    : j.endTime,
-            status     : j.statusText
-        ]
-      }
-
-      result['_pagination'] = [
-          offset: offset,
-          limit : max,
-          total : hqlTotal
-      ]
-    }
-    return result
   }
 }
