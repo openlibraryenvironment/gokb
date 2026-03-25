@@ -174,57 +174,15 @@ class PackageSourceUpdateService {
             }
             else { // start not-FTP
 
-              if (!extracted_date || !lastRunLocal || extracted_date > lastRunLocal) {
+              if (!extracted_date || !lastRunLocal) {
                 log.debug("Request initial URL..")
                 file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
+
+                processErrorState(result, file_info)
               }
 
-              if (file_info.connectError) {
-                result.result = 'ERROR'
-                result.messageCode = 'kbart.errors.url.connection'
-                result.message = "There was an error trying to fetch KBART via URL!"
-                result.exceptionMsg = file_info.exceptionMsg
-
+              if (result.result == 'ERROR') {
                 result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-                return result
-              }
-
-              if (file_info.fileSizeError) {
-                result.result = 'ERROR'
-                result.messageCode = 'kbart.errors.url.fileSize'
-                result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
-
-                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-                return result
-              }
-
-              if (file_info.accessError) {
-                result.result = 'ERROR'
-                result.messageCode = 'kbart.errors.url.html'
-                result.message = "URL returned HTML, indicating provider configuration issues!"
-
-                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-                return result
-              } else if (file_info.mimeTypeError) {
-                result.result = 'ERROR'
-                result.messageCode = 'kbart.errors.url.mimeType'
-                result.message = "KBART URL returned a wrong content type!"
-                log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
-
-                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
-                return result
-              } else if (file_info.status == 403) {
-                log.debug("URL request failed!")
-                result.result = 'ERROR'
-                result.messageCode = 'kbart.errors.url.denied'
-                result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
-
-                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-
                 return result
               }
 
@@ -235,12 +193,26 @@ class PackageSourceUpdateService {
                 log.debug("Fetching dated URL for today..")
                 file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
+                processErrorState(result, file_info)
+
+                if (result.result == 'ERROR') {
+                  result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                  return result
+                }
+
                 // Look at first of this month
                 if (!file_info.file_name) {
                   sleep(500)
                   log.debug("Fetching first of the month..")
                   def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
                   file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
+
+                  processErrorState(result, file_info)
+
+                  if (result.result == 'ERROR') {
+                    result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                    return result
+                  }
                 }
 
                 // Check all days of this month
@@ -251,26 +223,31 @@ class PackageSourceUpdateService {
                   sleep(500)
                   file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
-                  if (file_info.mimeTypeError) {
-                    skipLookupByDate = true
+                  processErrorState(result, file_info)
+
+                  if (result.result == 'ERROR') {
+                    result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                    return result
                   }
                 }
-              }
 
-              if (file_info.mimeTypeError) {
-                result.result = 'ERROR'
-                result.messageCode = 'kbart.errors.url.mimeType'
-                result.message = "KBART URL returned a wrong content type!"
-                log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+                if (!skipLookupByDate && !file_info.file_name && extracted_date && extracted_date > lastRunLocal) {
+                  log.debug("Last request with extracted date ..")
+                  file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
-                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                  processErrorState(result, file_info)
 
-                return result
+                  if (result.result == 'ERROR') {
+                    result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                    return result
+                  }
+                }
               }
 
               log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
             } // end not-FTP
+
             if (file_info.file_name) {
               try {
                 MessageDigest md5_digest = MessageDigest.getInstance("MD5")
@@ -446,6 +423,53 @@ class PackageSourceUpdateService {
     result
   }
 
+  private void processErrorState(result, file_info) {
+    if (file_info.connectError) {
+      result.result = 'ERROR'
+      result.messageCode = 'kbart.errors.url.connection'
+      result.message = "There was an error trying to fetch KBART via URL!"
+      result.exceptionMsg = file_info.errorMsg
+    }
+
+    if (file_info.fileSizeError) {
+      result.result = 'ERROR'
+      result.messageCode = 'kbart.errors.url.fileSize'
+      result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
+    }
+
+    if (file_info.accessError) {
+      result.result = 'ERROR'
+      result.messageCode = 'kbart.errors.url.html'
+      result.message = "URL returned HTML, indicating provider configuration issues!"
+    }
+    else if (file_info.mimeTypeError) {
+      result.result = 'ERROR'
+      result.messageCode = 'kbart.errors.url.mimeType'
+      result.message = "KBART URL returned a wrong content type!"
+      log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+    }
+    else if (file_info.status && file_info.status != 404) {
+      log.debug("URL request failed (status ${file_info.status})!")
+
+      if (file_info.status == 403 || file_info.status == 401) {
+        result.result = 'ERROR'
+        result.messageCode = 'kbart.errors.url.denied'
+        result.message = "URL request was denied (status ${file_info.status}), skipping further tries!"
+
+        if (pkg_source.automaticUpdates) {
+          log.debug("Deactivate automated updating ..")
+          pkg_source.automaticUpdates = false
+          pkg_source.save(flush: true)
+        }
+      }
+      else if (file_info.status >= 500) {
+        result.result = 'ERROR'
+        result.messageCode = 'kbart.errors.url.serverError'
+        result.message = "URL request returned status ${file_info.status}, skipping further tries!"
+      }
+    }
+  }
+
   def fetchKbartFile(File tmp_file, URL src_url, boolean restrictSize = true) {
     def result = [content_mime_type: null, file_name: null]
     Long max_length = 20971520L // 1024 * 1024 * 20
@@ -463,8 +487,8 @@ class PackageSourceUpdateService {
       HttpHead httpHead = new HttpHead(src_url.toURI())
       HttpGet httpGet = new HttpGet(src_url.toURI())
 
-      httpHead.setHeader(HttpHeaders.USER_AGENT, "GOKb KBART Updater")
-      httpGet.setHeader(HttpHeaders.USER_AGENT, "GOKb KBART Updater")
+      httpHead.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater")
+      httpGet.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater")
 
       httpClient.execute(httpHead, classicHttpResponse -> {
         int code = classicHttpResponse.getStatusLine().getStatusCode()
@@ -497,8 +521,11 @@ class PackageSourceUpdateService {
 
         result.content_mime_type = classicHttpResponse.getFirstHeader('Content-Type').getValue()
 
-        if (code > 400) {
+        if (code >= 400) {
           log.debug("KBART fetch status: ${code}")
+
+          result.status = code
+          return result
         }
         else if (!file_name && result.content_mime_type?.startsWith('text/plain')) {
           file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
@@ -704,12 +731,6 @@ class PackageSourceUpdateService {
 
 
           if(foundFile){
-            LocalDate foundFileDate = LocalDate.ofInstant(foundFile.getTimestampInstant(), ZoneId.systemDefault())
-            if(lastRunLocal && (lastRunLocal > foundFileDate)){
-              // no update needed
-              tmp_file.delete()
-              return result
-            }
 
             Long foundFileSize = foundFile.getSize()
             if(foundFileSize > max_length && restrictSize){
@@ -717,8 +738,9 @@ class PackageSourceUpdateService {
               result.result = 'ERROR'
               result.messageCode = 'kbart.errors.url.fileSize'
               result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
-              //result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
               tmp_file.delete()
+
               return result
             }
 

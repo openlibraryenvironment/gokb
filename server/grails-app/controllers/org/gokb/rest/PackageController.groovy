@@ -141,19 +141,20 @@ class PackageController {
 
       if (editable) {
         log.debug("Save package ${reqBody}")
-        def pkg_validation = Package.validateDTO(reqBody, request_locale)
-        def obj = null
+        Map pkg_validation = packageService.restValidate(reqBody, request_locale, true)
+        Package obj = null
 
         if (pkg_validation.valid) {
-          def lookup_result = packageService.restLookup(reqBody)
+          Map lookup_result = packageService.restLookup(reqBody)
 
           if (lookup_result.to_create) {
-            def normname = Package.generateNormname(reqBody.name)
+            String normname = Package.generateNormname(reqBody.name)
+
             try {
               obj = new Package(name: reqBody.name, normname: normname)
             }
             catch (grails.validation.ValidationException ve) {
-              errors << messageService.processValidationErrors(ve.errors, request_locale)
+              errors = messageService.processValidationErrors(ve.errors, request_locale)
             }
             log.debug("New Object ${obj}")
           }
@@ -248,7 +249,7 @@ class PackageController {
           }
         }
         else {
-          errors << pkg_validation.errors
+          errors = pkg_validation.errors
         }
       }
       else {
@@ -661,6 +662,7 @@ class PackageController {
       result.message = "Unable to reference package!"
 
       render result as JSON
+      return
     }
 
     def pkgInfo = [:]

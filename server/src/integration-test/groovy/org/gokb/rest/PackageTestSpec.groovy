@@ -257,12 +257,16 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages update name"() {
     given:
-    def upd_body = [name: 'UpdPack']
-    def urlPath = getUrlPath()
-    def testPackage = Package.findByName("TestPack")
+    String urlPath = getUrlPath()
+    Package testPackage = Package.findByName("TestPack")
+
+    Map upd_body = [
+      name: 'UpdPack'
+    ]
+
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body)
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/packages/${testPackage.id}", upd_body)
       .bearerAuth(accessToken)
     HttpResponse resp = http.exchange(request, Map)
 
@@ -274,9 +278,15 @@ class PackageTestSpec extends AbstractAuthSpec {
   void "test /rest/packages update comboList"() {
     given:
     CuratoryGroup testGroup = CuratoryGroup.findByName("cgtest1")
-    def upd_body = [curatoryGroups: [testGroup.id]]
-    def urlPath = getUrlPath()
-    def testPackage = Package.findByName("TestPack")
+    String urlPath = getUrlPath()
+    Package testPackage = Package.findByName("TestPack")
+
+    Map upd_body = [
+      curatoryGroups: [testGroup.id],
+      provider: testPackage.provider.id,
+      nominalPlatform: testPackage.nominalPlatform.id
+    ]
+
     when:
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body)
@@ -337,8 +347,12 @@ class PackageTestSpec extends AbstractAuthSpec {
     given:
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle")
     Platform testPlt = Platform.findByName("PackTestPlt")
+    Org provider = Org.findByName("PackTestOrg")
+
     Map upd_body = [
         name : "TestPackageWithTipps",
+        provider: provider.id,
+        nominalPlatform: testPlt.id,
         tipps: [
             [
                 title       : testTitle.id,

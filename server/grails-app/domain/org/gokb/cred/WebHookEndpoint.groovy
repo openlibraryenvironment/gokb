@@ -87,4 +87,16 @@ class WebHookEndpoint {
     result
   }
 
+  @Override
+  public boolean equals (Object o) {
+
+    if (o != null) {
+      if (o instanceof WebHookEndpoint) {
+        return o.id == id
+      }
+    }
+
+    return false
+  }
+
 }

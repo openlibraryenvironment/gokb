@@ -821,6 +821,7 @@ class IngestKbartRun {
                 log.debug("Ignoring EZB-ID match ..")
               }
               else {
+                log.debug("Raising TIPP conflict (${ct.matchResults}) ..")
                 needs_review = true
                 additionalInfo.otherComponents << [
                   oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id,
