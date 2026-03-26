@@ -214,6 +214,7 @@ class CuratoryGroupAlertingService {
     Locale locale = new Locale(group.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
     Date lastDayDate = Date.from(LocalDateTime.now().minusHours(24).atZone(ZoneId.systemDefault()).toInstant())
     String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'review/' : null
+    RefdataValue type_ext = RefdataCategory.lookup('ReviewRequest.StdDesc', 'External Editorial Request')
 
     def new_requests = ReviewRequest.executeQuery('''from ReviewRequest as rr
                                                      where status = :open
