@@ -583,7 +583,7 @@ class IngestKbartRun {
         def identifiers = []
 
         if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
-          String final_val
+          String final_val = the_kbart.online_identifier.trim()
 
           if (row_specific_config.identifierMap.online_identifier in ['isbn', 'pisbn']) {
             final_val = ISBN.parseIsbn(the_kbart.online_identifier.trim()).getIsbn13()
@@ -592,7 +592,7 @@ class IngestKbartRun {
           identifiers << [type: row_specific_config.identifierMap.online_identifier, value: final_val]
 
         if (the_kbart.print_identifier && the_kbart.print_identifier.trim()) {
-          String final_val
+          String final_val = the_kbart.print_identifier.trim()
 
           if (row_specific_config.identifierMap.print_identifier in ['isbn', 'pisbn']) {
             final_val = ISBN.parseIsbn(the_kbart.print_identifier.trim()).getIsbn13()
