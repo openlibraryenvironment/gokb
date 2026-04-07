@@ -334,16 +334,18 @@ class ESSearchService{
   }
 
   private String sanitizeParam(String param) {
-    return param.replaceAll(":", "\\\\:")
-        .replaceAll("/", "\\\\/")
+    return param.replaceAll(":", "\\:")
+        .replaceAll("/", "\\/")
         .replaceAll(/[()]/, " ")
         .replaceAll(/[\[\]]/, "")
   }
 
   private String escapeQueryString(String param) {
-    param = param.replaceAll(/[<>]/, "")
-    param = param.replaceAll(/([=!{}^])/, '\\\\$1')
-    return param
+    return param.replaceAll(":", "\\\\:")
+            .replaceAll("/", "\\\\/")
+            .replaceAll(/[()]/, " ")
+            .replaceAll(/[\[\]<>]/, "")
+            .replaceAll(/([=!{}^])/, '\\\\$1')
   }
 
   private void addDateQueries(query, errors, qpars) {
@@ -713,13 +715,13 @@ class ESSearchService{
       query.must(suggestQuery)
     }
     else if (qpars.qsName) {
-      def sanitized_param = sanitizeParam(qpars.qsName)
-      sanitized_param = escapeQueryString(sanitized_param)
+      String sanitized_param = sanitizeParam(qpars.qsName)
+      String sanitized_qs_param = escapeQueryString(qpars.qsName)
 
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("name", 8f))
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("altname", 5.2f))
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("normname", 6f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_qs_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("name", 8f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_qs_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("altname", 5.2f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_qs_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("normname", 6f))
 
       if (!defaultOr) {
         // search in OR-mode, but for ALL terms across different name fields
@@ -1257,7 +1259,7 @@ class ESSearchService{
         }
       }
       else if (requestMapping.queryString.contains(k)){
-        exactQuery.must(QueryBuilders.queryStringQuery(sanitizeParam(v)).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field(k, 1f))
+        exactQuery.must(QueryBuilders.queryStringQuery(escapeQueryString(v)).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field(k, 1f))
       }
       else if (requestMapping.simpleMap?.containsKey(k)){
         exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v).operator(Operator.AND))
