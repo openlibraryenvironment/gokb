@@ -384,7 +384,7 @@ class OAIService {
       }
 
       if (rtc[1].trim()) {
-        def tparam = rtc[0]
+        def tparam = rtc[1]
 
         if (tparam.length() == 20) {
           tparam = tparam.substring(0, 18) + ".000Z"
