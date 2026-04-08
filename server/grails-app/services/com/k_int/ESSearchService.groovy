@@ -932,10 +932,10 @@ class ESSearchService{
    *         then the end of scrolling is reached.
    **/
   def scroll(params) throws Exception{
-    def result = [:]
+    Map result = [:]
     def esClient = ESWrapperService.getClient()
-    def unknown_fields = []
-    def usedComponentTypes = getUsedComponentTypes(params, result)
+    List unknown_fields = []
+    Map usedComponentTypes = getUsedComponentTypes(params, result)
 
     if (result.result == 'ERROR'){
       return result
@@ -944,7 +944,7 @@ class ESSearchService{
     // now search
     int scrollSize = 5000
 
-    def scrollSizeParam = params.int('scrollSize')
+    Integer scrollSizeParam = params.int('scrollSize')
 
     if (scrollSizeParam) {
       if (scrollSizeParam <= scrollSize) {
@@ -966,10 +966,13 @@ class ESSearchService{
 
     if (!params.scrollId){
       QueryBuilder scrollQuery = QueryBuilders.boolQuery()
+
       if (params.component_type || params.componentType) {
         def final_type = deriveComponentType(params.componentType ?: params.component_type)
-        scrollQuery.must(QueryBuilders.termQuery('componentType', final_type))
+
+        filterByComponentType(scrollQuery, final_type, params)
       }
+
       addDateQueries(scrollQuery, errors, params)
       addNumberRanges(scrollQuery, errors, params)
       specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
