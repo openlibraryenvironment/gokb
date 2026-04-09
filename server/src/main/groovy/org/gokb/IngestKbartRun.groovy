@@ -1,5 +1,6 @@
 package org.gokb
 
+import com.github.ladutsko.isbn.*
 import com.opencsv.CSVReader
 import com.opencsv.CSVReaderBuilder
 import com.opencsv.CSVParser
@@ -582,10 +583,23 @@ class IngestKbartRun {
         def identifiers = []
 
         if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
-          identifiers << [type: row_specific_config.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
+          String final_val = the_kbart.online_identifier.trim()
 
-        if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
-          identifiers << [type: row_specific_config.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
+          if (row_specific_config.identifierMap.online_identifier in ['isbn', 'pisbn']) {
+            final_val = ISBN.parseIsbn(the_kbart.online_identifier.trim()).getIsbn13()
+          }
+
+          identifiers << [type: row_specific_config.identifierMap.online_identifier, value: final_val]
+
+        if (the_kbart.print_identifier && the_kbart.print_identifier.trim()) {
+          String final_val = the_kbart.print_identifier.trim()
+
+          if (row_specific_config.identifierMap.print_identifier in ['isbn', 'pisbn']) {
+            final_val = ISBN.parseIsbn(the_kbart.print_identifier.trim()).getIsbn13()
+          }
+
+          identifiers << [type: row_specific_config.identifierMap.print_identifier, value: final_val]
+        }
 
         if (the_kbart.title_id && the_kbart.title_id.trim()) {
           log.debug("title_id ${the_kbart.title_id}")
