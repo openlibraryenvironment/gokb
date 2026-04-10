@@ -151,50 +151,56 @@ class CuratoryGroupAlertingService {
 
     groups_list.each { groupId, packageIdList ->
       CuratoryGroup cg = CuratoryGroup.get(groupId)
-      log.debug("triggerDailyReviewsAlerts :: Processing group ${cg?.name} (ID ${groupId}) ..")
-      Locale locale = new Locale(cg.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
-      def table_items = []
 
-      if (cg.newReviewsAlerts) {
-        packageIdList.each { pid ->
-          log.debug("triggerDailyReviewsAlerts :: Processing package ${pid}) ..")
+      if (cg) {
+        log.debug("triggerDailyReviewsAlerts :: Processing group ${cg?.name} (ID ${groupId}) ..")
+        Locale locale = new Locale(cg.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
+        def table_items = []
 
-          Package pkg = Package.get(pid)
+        if (cg.newReviewsAlerts) {
+          packageIdList.each { pid ->
+            log.debug("triggerDailyReviewsAlerts :: Processing package ${pid}) ..")
 
-          def num_new_reviews = ReviewRequest.executeQuery('''select count(rr.id) from ReviewRequest as rr
-                                                              where status = :open
-                                                              and dateCreated > :lastDay
-                                                              and exists (
-                                                                select 1 from TitleInstancePackagePlatform as t
-                                                                where t.id = rr.componentToReview.id
+            Package pkg = Package.get(pid)
+
+            def num_new_reviews = ReviewRequest.executeQuery('''select count(rr.id) from ReviewRequest as rr
+                                                                where status = :open
+                                                                and dateCreated > :lastDay
                                                                 and exists (
-                                                                  select 1 from Combo
-                                                                  where fromComponent = :pkg
-                                                                  and toComponent.id = t.id
-                                                                  and type = :ctype
-                                                                )
-                                                              )''',
-                                                              [lastDay: lastDayDate, open: rr_open, ctype: combo_tipp, pkg: pkg])[0]
+                                                                  select 1 from TitleInstancePackagePlatform as t
+                                                                  where t.id = rr.componentToReview.id
+                                                                  and exists (
+                                                                    select 1 from Combo
+                                                                    where fromComponent = :pkg
+                                                                    and toComponent.id = t.id
+                                                                    and type = :ctype
+                                                                  )
+                                                                )''',
+                                                                [lastDay: lastDayDate, open: rr_open, ctype: combo_tipp, pkg: pkg])[0]
 
-          if (num_new_reviews > 0) {
-            log.debug("Got ${num_new_reviews} new reviews!")
+            if (num_new_reviews > 0) {
+              log.debug("Got ${num_new_reviews} new reviews!")
 
-            table_items << [
-              packageName: pkg.name,
-              packageId: pid,
-              editLink: edit_base ? edit_base + "${pid}" : null,
-              reviewsTotal: num_new_reviews
-            ]
+              table_items << [
+                packageName: pkg.name,
+                packageId: pid,
+                editLink: edit_base ? edit_base + "${pid}" : null,
+                reviewsTotal: num_new_reviews
+              ]
+            }
+          }
+
+          if (table_items.size() > 0) {
+            result.report[cg.name] = sendDailyAlertsForGroup(cg, locale, 'reviews', table_items)
           }
         }
 
-        if (table_items.size() > 0) {
-          result.report[cg.name] = sendDailyAlertsForGroup(cg, locale, 'reviews', table_items)
-        }
+        session.flush()
+        session.clear()
       }
-
-      session.flush()
-      session.clear()
+      else {
+        log.warn("Skipping review alerts for missing groupID ${groupId}!")
+      }
     }
 
     if (zdb_admin && zdb_admin.newReviewsAlerts) {
