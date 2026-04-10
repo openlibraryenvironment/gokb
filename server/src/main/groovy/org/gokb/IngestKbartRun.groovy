@@ -1,6 +1,7 @@
 package org.gokb
 
 import com.github.ladutsko.isbn.*
+import com.k_int.ConcurrencyManagerService.Job
 import com.opencsv.CSVReader
 import com.opencsv.CSVReaderBuilder
 import com.opencsv.CSVParser
@@ -42,11 +43,10 @@ class IngestKbartRun {
   boolean isCleanup
   User user
   Map errors = [global: [], tipps: []]
-  int removedNum = 0
-  def invalidTipps = []
-  def matched_tipps = [:]
-  def titleIdMap = [:]
-  def titleMatchResult = [
+  List invalidTipps = []
+  Map matched_tipps = [:]
+  Map titleIdMap = [:]
+  Map titleMatchResult = [
     matches: [
       partial: 0,
       full: 0
@@ -55,24 +55,16 @@ class IngestKbartRun {
     conflicts: 0,
     noid: 0
   ]
-  def titleMatchConflicts = []
+  List titleMatchConflicts = []
   Package pkg
   CuratoryGroup activeGroup
-  def pkg_validation
-  def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
-  def job = null
+  Job job = null
   IdentifierNamespace providerIdentifierNamespace
   IdentifierNamespace serialNamespace
   IdentifierNamespace monographNamespace
   Long ingest_systime
 
   DataFile datafile
-
-  def possible_date_formats = [
-    new SimpleDateFormat('yyyy-MM-dd'),
-    new SimpleDateFormat('yyyy-MM'),
-    new SimpleDateFormat('yyyy')
-  ]
 
   public IngestKbartRun(Package pack,
                         DataFile data_file,
@@ -100,15 +92,16 @@ class IngestKbartRun {
     monographNamespace = titleIdMonograph
   }
 
-  def start(nJob, session) {
-    job = nJob ?: job
-    def pkg_info = [
+  private Map start(Job nJob = null, session) {
+    job = nJob
+
+    Map pkg_info = [
       id: pkg.id,
       uuid: pkg.uuid,
       name: pkg.name
     ]
     log.debug("ingest start")
-    def result = [result: 'OK', dryRun: dryRun]
+    Map result = [result: 'OK', dryRun: dryRun]
     result.messages = []
 
     long start_time = System.currentTimeMillis()
@@ -179,7 +172,7 @@ class IngestKbartRun {
         result.messages.add("There are ${file_info.rows.error} invalid rows (${file_info.rows.warning} with warnings)!")
       }
 
-      def running_jobs = concurrencyManagerService.getComponentJobs(pkg_info.id)
+      Map running_jobs = concurrencyManagerService.getComponentJobs(pkg_info.id)
 
       if (valid_encoding && (file_info.valid || (skipInvalid && !file_info.errors.missingColumns)) && running_jobs.data?.size() <= 1) {
         CSVReader csv = initReader(datafile)
@@ -222,7 +215,7 @@ class IngestKbartRun {
         if (!dryRun) {
           Package.withNewTransaction {
             RefdataValue combo_fa_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
-            def p = Package.get(pkg_info.id)
+            Package p = Package.get(pkg_info.id)
             p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
             p.lastSeen = new Date().getTime()
             new Combo(fromComponent: p, toComponent: datafile, type: RefdataCategory.lookup('Combo.Type','KBComponent.FileAttachments')).save(flush: true, failOnError: true)
@@ -244,15 +237,15 @@ class IngestKbartRun {
               long rowStartTime = System.currentTimeMillis()
 
               if (!result.validation.errors.rows["${rownum}"]) {
-                def row_kbart_beans = getKbartBeansForRow(col_positions, row_data)
-                def row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
+                Map row_kbart_beans = getKbartBeansForRow(col_positions, row_data)
+                Map row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
                 log.debug("**Ingesting ${rownum} of ${file_info.rows.total + file_info.rows.skipped} ${row_kbart_beans}")
 
                 if (dryRun) {
                   checkTitleMatchRow(row_kbart_beans, rownum, ingest_cfg)
                 }
 
-                def line_result = writeToDB(row_kbart_beans,
+                Map line_result = writeToDB(row_kbart_beans,
                           ingest_date,
                           ingest_cfg,
                           row_specific_cfg)
@@ -319,9 +312,9 @@ class IngestKbartRun {
         }
 
         long processing_elapsed = System.currentTimeMillis() - startTime
-        def average_milliseconds_per_row = file_info.rows.total > 0 ? processing_elapsed.intdiv(file_info.rows.total  + file_info.rows.skipped) : 0
+        long average_milliseconds_per_row = file_info.rows.total > 0 ? processing_elapsed.intdiv(file_info.rows.total  + file_info.rows.skipped) : 0
         // 3600 seconds in an hour, * 1000ms in a second
-        def average_per_hour = average_milliseconds_per_row > 0 ? 3600000.intdiv(average_milliseconds_per_row) : 0
+        long average_per_hour = average_milliseconds_per_row > 0 ? 3600000.intdiv(average_milliseconds_per_row) : 0
 
         result.report.timestamp = System.currentTimeMillis()
         result.report.event = (result.result == 'CANCELLED' ? 'ProcessingCancelled' : 'ProcessingComplete')
@@ -335,18 +328,16 @@ class IngestKbartRun {
             Package.withNewSession {
               Package p = Package.get(pkg_info.id)
 
-              def update_agent = User.findByUsername('IngestAgent')
               // insertBenchmark updateBenchmark
               if ( p.insertBenchmark == null )
                 p.insertBenchmark = processing_elapsed
 
               p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
-              p.lastUpdatedBy = update_agent
               p.updateBenchmark = processing_elapsed
               p.save(flush: true, failOnError: true)
             }
 
-            def matching_job = concurrencyManagerService.createJob { mjob ->
+            Job matching_job = concurrencyManagerService.createJob { mjob ->
               tippService.matchPackage(pkg_info.id, mjob, job)
             }
 
@@ -400,7 +391,7 @@ class IngestKbartRun {
           result.titleMatch.rowConflicts = titleMatchConflicts
         }
 
-        def job_map = [
+        Map job_map = [
             uuid        : (job.uuid),
             description : (job.description),
             resultObject: (result as JSON).toString(),
@@ -414,10 +405,10 @@ class IngestKbartRun {
             importFile  : (datafile)
         ]
 
-        def result_object = JobResult.findByUuid(job.uuid)
+        JobResult result_object = JobResult.findByUuid(job.uuid)
 
         if (!result_object) {
-          def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+          new JobResult(job_map).save(flush: true, failOnError: true)
         }
         else {
           job_map.each { k, v ->
@@ -428,22 +419,22 @@ class IngestKbartRun {
       }
     }
 
-    def elapsed = System.currentTimeMillis() - start_time
+    long elapsed = System.currentTimeMillis() - start_time
 
     log.debug("Ingest completed after ${elapsed}ms")
 
     result
   }
 
-  def doCleanup(pkgId, date) {
-    def result = [:]
+  private Map doCleanup(pkgId, date) {
+    Map result = [:]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
     RefdataValue status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
     RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
-    def cleanup_current_pars = [
+    Map cleanup_current_pars = [
       pkgid: pkgId,
       dt: ingest_systime,
       so: status_current,
@@ -453,7 +444,7 @@ class IngestKbartRun {
       now: new Date()
     ]
 
-    def rr_pars = [
+    Map rr_pars = [
       pkgid: pkgId,
       closed: RefdataCategory.lookup('ReviewRequest.Status', 'Closed'),
       now: new Date(),
@@ -464,7 +455,7 @@ class IngestKbartRun {
 
     log.debug("Retiring/Deleting via pars ${cleanup_current_pars}")
 
-    def removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
+    long removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
         set tipp.status = :sn, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
         where exists (
           select 1 from Combo as tc
@@ -478,7 +469,7 @@ class IngestKbartRun {
         )
         and tipp.status = :so''', cleanup_current_pars)
 
-    def cleanup_expected_pars = [
+    Map cleanup_expected_pars = [
       pkgid: pkgId,
       dt: ingest_systime,
       so: status_expected,
@@ -489,7 +480,7 @@ class IngestKbartRun {
 
     log.debug("Deleting removed expected Titles")
 
-    def removed_expected_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
+    long removed_expected_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
         set tipp.status = :sn, tipp.lastUpdated = :now
         where exists (
           select 1 from Combo as tc
@@ -505,7 +496,7 @@ class IngestKbartRun {
 
     log.debug("Closing reviews")
 
-    def closed_rrs_count = ReviewRequest.executeUpdate('''update ReviewRequest as rr
+    long closed_rrs_count = ReviewRequest.executeUpdate('''update ReviewRequest as rr
         set rr.status = :closed, rr.lastUpdated = :now
         where exists (
           select 1 from Combo as tc
@@ -532,7 +523,7 @@ class IngestKbartRun {
     result
   }
 
-  public Map writeToDB(Map the_kbart, String ingest_date, Map ingest_cfg, Map row_specific_config) {
+  private Map writeToDB(Map the_kbart, String ingest_date, Map ingest_cfg, Map row_specific_config) {
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
@@ -654,21 +645,7 @@ class IngestKbartRun {
     result
   }
 
-  Date parseDate(String datestr) {
-    def parsed_date = null;
-    if ( datestr && ( datestr.length() > 0 ) ) {
-      for(Iterator<SimpleDateFormat> i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
-        try {
-          parsed_date = i.next().clone().parse(datestr.replaceAll('-','/'))
-        }
-        catch ( Exception e ) {
-        }
-      }
-    }
-    parsed_date
-  }
-
-  def manualUpsertTIPP(the_kbart,
+  private Map manualUpsertTIPP(the_kbart,
                        the_platform,
                        ingest_date,
                        identifiers) {
@@ -731,11 +708,11 @@ class IngestKbartRun {
     ]
 
     if (isUpdate || !tipp_map.importId) {
-      def match_result = tippService.restLookup(tipp_map)
+      Map match_result = tippService.restLookup(tipp_map)
 
       if (match_result.full_matches.size() > 0) {
         LocalDateTime access_end_date_local
-        def current_matches = match_result.full_matches.findAll { it.status.value == 'Current' || it.status.value == 'Expected' }
+        List current_matches = match_result.full_matches.findAll { it.status.value == 'Current' || it.status.value == 'Expected' }
         result.status = 'matched'
 
         if (tipp_map.accessEndDate) {
@@ -761,7 +738,7 @@ class IngestKbartRun {
 
             if (!dryRun) {
               log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
-              def additionalInfo = [otherComponents: []]
+              Map additionalInfo = [otherComponents: []]
 
               match_result.full_matches.eachWithIndex { ct, idx ->
                 if (idx > 0) {
@@ -793,7 +770,7 @@ class IngestKbartRun {
         result.status = 'created'
 
         if (!dryRun) {
-          def tipp_fields = [
+          Map tipp_fields = [
             pkg: pkg,
             hostPlatform: the_platform,
             url: the_kbart.title_url?.trim(),
@@ -814,16 +791,16 @@ class IngestKbartRun {
           result.status = 'partial'
 
           if (!dryRun) {
-            def additionalInfo = [otherComponents: []]
+            Map additionalInfo = [otherComponents: []]
             boolean needs_review = false
 
             match_result.failed_matches.each { ct ->
               boolean isEzbImportId = false
-              def matched_ns = []
+              List matched_ns = []
 
               ct.matchResults.each { mr ->
                 if (mr.match == 'OK') {
-                  matched_ns = mr.namespace
+                  matched_ns << mr.namespace
                 }
               }
 
@@ -887,7 +864,7 @@ class IngestKbartRun {
       }
     }
     else {
-      def jsonIdMap = [:]
+      Map jsonIdMap = [:]
 
       identifiers.each { jsonId ->
         jsonIdMap[jsonId.type] = jsonId.value
@@ -916,7 +893,7 @@ class IngestKbartRun {
 
       if (result.status != 'matched') {
         if (!dryRun) {
-          def tipp_fields = [
+          Map tipp_fields = [
             pkg: pkg,
             hostPlatform: the_platform,
             url: the_kbart.title_url,
@@ -944,16 +921,6 @@ class IngestKbartRun {
       boolean hasTippChanged = tippService.updateTippFields(tipp, tipp_map, user, new_coverage)
       tipp.refresh()
 
-      // log.debug("Values updated, set lastSeen");
-
-      // setPrices(tipp, the_kbart)
-
-      // Look through the field list for any tipp.custprop values
-      // log.debug("Checking for tipp custprops")
-
-      // addCustprops(tipp, the_kbart, 'tipp.custprops.')
-      // addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.')
-
       log.debug("manualUpsertTIPP returning")
       log.debug("TIPP ${tipp.id} info check: ${tipp.name}, ${tipp.url}")
 
@@ -979,31 +946,16 @@ class IngestKbartRun {
     result
   }
 
-  def setPrices(tipp, cols) {
-    cols.each { name, val ->
-      if (name ==~ ~/^listprice_.+/ && val.trim()) {
-        def currency = name.split('_')[1]
-        def combined_price = "${val.trim()} ${currency}"
-
-        def priceObj = tipp.setPrice('list', combined_price)
-
-        if (!priceObj) {
-          log.debug("Unable to create attached list price (${name}: ${val.trim()})!")
-        }
-      }
-    }
-  }
-
-  def handlePlatform(host, protocol) {
-    def result
-    def orig_host = host
+  private Platform handlePlatform(String host, String protocol) {
+    Platform result
+    String orig_host = host
 
     if (host.startsWith("www.")){
       host = host.substring(4)
     }
 
-    def plt_params = ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')]
-    def platforms = Platform.executeQuery("select p from Platform as p where status != :sc and (p.primaryUrl like :host or p.name = :host)", plt_params, [readonly: false])
+    Map plt_params = ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')]
+    List platforms = Platform.executeQuery("select p from Platform as p where status != :sc and (p.primaryUrl like :host or p.name = :host)", plt_params, [readonly: false])
 
     switch (platforms.size()) {
       case 0:
@@ -1022,7 +974,7 @@ class IngestKbartRun {
   }
 
   private CSVReader initReader (the_data) {
-    def charset = 'UTF-8'
+    String charset = 'UTF-8'
 
     final CSVParser parser = new CSVParserBuilder()
     .withSeparator('\t' as char)
@@ -1047,14 +999,14 @@ class IngestKbartRun {
     return csv
   }
 
-  def getKbartBeansForRow(col_positions, row_data) {
-    def result = [:]
+  private Map getKbartBeansForRow(Map col_positions, String[] row_data) {
+    Map result = [:]
 
     for (key in col_positions.keySet()) {
       // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
       if (key && key.length() > 0) {
         if ((int)key.toCharArray()[0] == 65279) {
-          def corrected_key = key.getAt(1..key.length() - 1)
+          String corrected_key = key.getAt(1..key.length() - 1)
           result[corrected_key] = row_data[col_positions[key]].trim()
         } else {
           if (col_positions[key] != null && col_positions[key] < row_data.length) {
@@ -1100,13 +1052,13 @@ class IngestKbartRun {
    *             [field: 'publication_title', kbart: 'publication_title'],
    *             [field: 'print_identifier', kbart: 'print_iden..........
    */
-  def getRowSpecificCfg(cfg, row) {
-    def result = cfg
+  private Map getRowSpecificCfg(Map cfg, Map row) {
+    Map result = cfg
     log.debug("getRowSpecificCfg(${cfg.polymorphicRows},${cfg.discriminatorColumn},${row[cfg.discriminatorColumn]})")
 
     if (cfg.polymorphicRows && cfg.discriminatorColumn) {
       if (row[cfg.discriminatorColumn]) {
-        def row_specific_cfg = cfg.polymorphicRows[row[cfg.discriminatorColumn].toLowerCase()]
+        Map row_specific_cfg = cfg.polymorphicRows[row[cfg.discriminatorColumn].toLowerCase()]
 
         if (row_specific_cfg) {
           result = row_specific_cfg
@@ -1115,10 +1067,10 @@ class IngestKbartRun {
     }
     else if (cfg.polymorphicRows && cfg.discriminatorFunction) {
       log.debug("calling discriminatorFunction ${row}")
-      def rowtype = cfg.discriminatorFunction.call(row)
+      String rowtype = cfg.discriminatorFunction.call(row)
 
       if (rowtype) {
-        def row_specific_cfg = cfg.polymorphicRows[rowtype]
+        Map row_specific_cfg = cfg.polymorphicRows[rowtype]
 
         if (row_specific_cfg) {
           result = row_specific_cfg
@@ -1129,9 +1081,9 @@ class IngestKbartRun {
     result
   }
 
-  def checkTitleMatchRow(the_kbart, rownum, ingest_cfg) {
-    def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
-    def identifiers = []
+  private void checkTitleMatchRow(Map the_kbart, int rownum, Map ingest_cfg) {
+    Map row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
+    List identifiers = []
 
     if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
       identifiers << [type: row_specific_cfg.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
@@ -1161,7 +1113,7 @@ class IngestKbartRun {
     log.debug("TitleMatch title:${the_kbart.publication_title} identifiers:${identifiers}")
 
     if (identifiers.size() > 0) {
-      def title_lookup_result = titleLookupService.find(
+      Map title_lookup_result = titleLookupService.find(
           the_kbart.publication_title,
           the_kbart.publisher_name,
           identifiers,
@@ -1170,13 +1122,13 @@ class IngestKbartRun {
 
       boolean hasConflicts = false
       boolean partial = false
-      def matchConflicts = []
+      List matchConflicts = []
 
       title_lookup_result.matches.each { trm ->
         if (trm.conflicts?.size() > 0) {
           partial = true
 
-          def match = [
+          Map match = [
             id: trm.object.id,
             name: trm.object.name,
             conflicts: trm.conflicts
@@ -1215,61 +1167,5 @@ class IngestKbartRun {
       log.warn("[${the_kbart.publication_title}] No identifiers.")
       titleMatchResult.noid++
     }
-  }
-
-  /**
-   *  Add mapped custom properties to an object. Extensibility mechanism.
-   *  Look through the properties passed for any that start with the given prefix. If any
-   *  matches are found, add the remaining property name to obj as custom properties.
-   *  Sometimes, a column is mapped into a custprop widget -> tipp.custprops.widget. This
-   *  handles that case.
-   *  @See KBComponent.additionalProperties
-   */
-  def addCustprops(obj, props, prefix) {
-    boolean changed = false
-    props.each { k, v ->
-      if (k.toString().startsWith(prefix)) {
-        log.debug("Got custprop match : ${k} = ${v}");
-        def trimmed_name = m.name.substring(prefix.length())
-        obj.appendToAdditionalProperty(trimmed_name, m.value)
-        changed = true
-      }
-    }
-
-    if (changed) {
-      KBComponent.withTransaction {
-        obj.save(flush:true, failOnError:true)
-      }
-    }
-
-    return
-  }
-
-  /**
-   *  Add mapped custom properties to an object. Extensibility mechanism.
-   *  Look through any unmapped properties that start with the given prefix. If any
-   *  matches are found, add the remaining property name to obj as custom properties.
-   *  Sometimes, a column is mapped into a custprop widget -> tipp.custprops.widget. This
-   *  handles that case.
-   *  @See KBComponent.additionalProperties
-   */
-  def addUnmappedCustprops(obj, unmappedprops, prefix) {
-    boolean changed = false
-    unmappedprops.each { m ->
-      if ( m.name.toString().startsWith(prefix) ) {
-        log.debug("Got custprop match : ${m.name} = ${m.value}")
-        def trimmed_name = m.name.substring(prefix.length())
-        obj.appendToAdditionalProperty(trimmed_name, m.value)
-        changed=true
-      }
-    }
-
-    if (changed) {
-      KBComponent.withTransaction {
-        obj.save(flush:true, failOnError:true)
-      }
-    }
-
-    return
   }
 }
