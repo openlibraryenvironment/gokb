@@ -16,6 +16,7 @@ import gokbg3.DateFormatService
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.regex.Matcher
 
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
@@ -117,7 +118,7 @@ class IngestKbartRun {
       job.startTime = new Date()
     }
 
-    def ingest_cfg = [
+    Map ingest_cfg = [
       defaultTypeName: 'org.gokb.cred.JournalInstance',
       identifierMap: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
       defaultMedium: 'Journal',
@@ -146,8 +147,8 @@ class IngestKbartRun {
       log.debug("Initialise start time")
 
       ingest_systime = start_time
-      def date_pattern_matches = (datafile.uploadName =~ /[\d]{4}-[\d]{2}-[\d]{2}/)
-      def ingest_date = date_pattern_matches?.size() > 0 ? date_pattern_matches[0] : LocalDate.now().toString()
+      Matcher date_pattern_matches = (datafile.uploadName =~ /[\d]{4}-[\d]{2}-[\d]{2}/)
+      String ingest_date = date_pattern_matches?.size() > 0 ? date_pattern_matches[0] : LocalDate.now().toString()
       boolean valid_encoding = true
 
       if (!(datafile.encoding in ['UTF-8', 'US-ASCII'])) {
@@ -161,7 +162,7 @@ class IngestKbartRun {
       log.debug("Set progress")
       job?.setProgress(0)
 
-      def file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false, serialNamespace, monographNamespace)
+      Map file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false, serialNamespace, monographNamespace)
       result.report = [
         numRows: file_info.rows.total,
         skipped: file_info.rows.skipped,
@@ -256,7 +257,9 @@ class IngestKbartRun {
                           ingest_cfg,
                           row_specific_cfg)
 
-                result.report[line_result.status]++
+                if (line_result.status) {
+                  result.report[line_result.status]++
+                }
 
                 if (line_result.reviewCreated) {
                   result.report.reviews++
@@ -529,28 +532,24 @@ class IngestKbartRun {
     result
   }
 
-  def writeToDB(the_kbart,
-               ingest_date,
-               ingest_cfg,
-               row_specific_config) {
-
+  public Map writeToDB(Map the_kbart, String ingest_date, Map ingest_cfg, Map row_specific_config) {
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
     log.debug("TSVINgestionService:writeToDB -- package id is ${pkg.id}")
-    def result = [status: null, reviewCreated: false]
+    Map result = [status: 'ok', reviewCreated: false]
 
     //first we need a platform:
-    def platform = null
+    Platform platform = null
 
     if (the_kbart.title_url != null) {
       log.debug("Extract host from ${the_kbart.title_url}")
 
-      def title_url_host = null
-      def title_url_protocol = null
+      String title_url_host = null
+      String title_url_protocol = null
 
       try {
-        def title_url = new URL(the_kbart.title_url)
+        URL title_url = new URL(the_kbart.title_url)
         log.debug("Parsed title_url : ${title_url}")
         title_url_host = title_url.getHost()
         title_url_protocol = title_url.getProtocol()
@@ -580,25 +579,26 @@ class IngestKbartRun {
 
         log.debug("online_identifier ${the_kbart.online_identifier}")
 
-        def identifiers = []
+        List identifiers = []
 
-        if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
-          String final_val = the_kbart.online_identifier.trim()
+        if (row_specific_config.identifierMap?.online_identifier && the_kbart.online_identifier && the_kbart.online_identifier.trim()) {
+          String fnl_val = the_kbart.online_identifier.trim()
 
-          if (row_specific_config.identifierMap.online_identifier in ['isbn', 'pisbn']) {
-            final_val = ISBN.parseIsbn(the_kbart.online_identifier.trim()).getIsbn13()
+          if (row_specific_config.identifierMap?.online_identifier == 'isbn') {
+            fnl_val = ISBN.parseIsbn(fnl_val).getIsbn13()
           }
 
-          identifiers << [type: row_specific_config.identifierMap.online_identifier, value: final_val]
+          identifiers << [type: row_specific_config.identifierMap.online_identifier, value: fnl_val]
+        }
 
-        if (the_kbart.print_identifier && the_kbart.print_identifier.trim()) {
-          String final_val = the_kbart.print_identifier.trim()
+        if (row_specific_config.identifierMap?.online_identifier && the_kbart.print_identifier && the_kbart.print_identifier.trim()) {
+          String fnl_val = the_kbart.print_identifier.trim()
 
-          if (row_specific_config.identifierMap.print_identifier in ['isbn', 'pisbn']) {
-            final_val = ISBN.parseIsbn(the_kbart.print_identifier.trim()).getIsbn13()
+          if (row_specific_config.identifierMap?.print_identifier == 'pisbn') {
+            fnl_val = ISBN.parseIsbn(fnl_val).getIsbn13()
           }
 
-          identifiers << [type: row_specific_config.identifierMap.print_identifier, value: final_val]
+          identifiers << [type: row_specific_config.identifierMap.print_identifier, value: fnl_val]
         }
 
         if (the_kbart.title_id && the_kbart.title_id.trim()) {
@@ -618,7 +618,7 @@ class IngestKbartRun {
 
         the_kbart.each { k, v ->
           if (k.startsWith('identifier_')) {
-            def ns_val = k.split('_', 2)[1]
+            String ns_val = k.split('_', 2)[1]
             log.debug("Found potential additional namespace ${ns_val}")
 
             if (IdentifierNamespace.findByValue(ns_val)) {
@@ -634,7 +634,7 @@ class IngestKbartRun {
           identifiers << [type: 'doi', value: the_kbart.doi_identifier.trim()]
         }
 
-        def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
+        String titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
 
         if (titleClass) {
           result = manualUpsertTIPP(the_kbart,
@@ -677,11 +677,11 @@ class IngestKbartRun {
 
     assert pkg != null && the_platform != null
 
-    def result = [status: null, reviewCreated: false]
+    Map result = [status: 'ok', reviewCreated: false]
     TitleInstancePackagePlatform tipp = null
     boolean new_coverage = true
 
-    def tipp_map = [
+    Map tipp_map = [
       url: the_kbart.title_url?.trim(),
       coverageStatements: [
         [
