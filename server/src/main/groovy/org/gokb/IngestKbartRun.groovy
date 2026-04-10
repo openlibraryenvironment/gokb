@@ -92,7 +92,7 @@ class IngestKbartRun {
     monographNamespace = titleIdMonograph
   }
 
-  private Map start(Job nJob = null, session) {
+  public Map start(Job nJob = null, session) {
     job = nJob
 
     Map pkg_info = [
