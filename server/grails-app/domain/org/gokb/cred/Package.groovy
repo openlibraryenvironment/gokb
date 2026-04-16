@@ -377,15 +377,14 @@ class Package extends KBComponent {
     RefdataValue expected_status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
     RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
     RefdataValue rr_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
-    RefdataValue combo_type_package = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-    RefdataValue combo_type_title = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
     def qry_params = [
       ret: new_status,
       sce: [expected_status, current_status],
       comment: "Status set to ${new_status.value} due to package change!",
       pkg: this.id,
-      ctp: combo_type_package,
+      ctype: combo_type,
       now: new Date(),
       rdate: date
     ]
@@ -404,10 +403,8 @@ class Package extends KBComponent {
                     select 1 from Combo
                     where fromComponent.id = :pkg
                     and toComponent.id = t.id
-                    and type = :ctp
+                    and type = :ctype
                   )'''
-
-    TitleInstancePackagePlatform.executeUpdate(qry, qry_params)
 
     def rr_qry = '''update ReviewRequest as rr
                     set rr.status = :closed,
@@ -417,80 +414,19 @@ class Package extends KBComponent {
                       select 1 from Combo
                       where fromComponent.id = :pkg
                       and toComponent.id = rr.componentToReview.id
-                      and type = :ctp
+                      and type = :ctype
                     )'''
 
     def params_rr = [
       closed: rr_closed,
       open: rr_open,
       pkg: this.id,
-      ctype: combo_type_package,
+      ctype: combo_type,
       now: new Date()
     ]
 
+    TitleInstancePackagePlatform.executeUpdate(qry, qry_params)
     ReviewRequest.executeUpdate(rr_qry, params_rr)
-
-    def ti_qry = '''update TitleInstance as ti
-                      set ti.status = :ns,
-                      ti.lastUpdateComment = :comment,
-                      ti.lastUpdated = :now
-                      where ti.status in :sce
-                      and exists (
-                        select 1 from Combo as ct
-                        where fromComponent = ti
-                        and type = :ctt
-                        and exists (
-                          select 1 from Combo as cp
-                          where fromComponent = :pkg
-                          and type = :ctp
-                          and toComponent = ct.toComponent
-                        )
-                      )
-                      and not exists (
-                        select 1 from Combo as ct
-                        where fromComponent = ti
-                        and type = :ctt
-                        and exists (
-                          select 1 from Combo as cp
-                          where fromComponent != :pkg
-                          and toComponent = ct.toComponent
-                        )
-                      )'''
-
-    Map params_ti = [
-      ns: new_status,
-      sce: [expected_status, current_status],
-      comment: "Deleted due to remaing package deletion!",
-      pkg: this.id,
-      ctp: combo_type_package,
-      ctt: combo_type_title,
-      now: new Date()
-    ]
-
-    TitleInstance.executeUpdate(ti_qry, params_ti)
-
-    def ti_combo_qry = '''delete from Combo as ct
-                          where type = :ctt
-                          and exists (
-                            select 1 from Combo as cp
-                            where type = :ctp
-                            and fromComponent = :pkg
-                            and toComponent = ct.toComponent
-                          )
-                          and not exists (
-                            select 1 from Combo as ct2
-                            where type = :ctt
-                            and fromComponent = ct.fromComponent
-                            and toComponent != ct.toComponent
-                          )'''
-
-    Map combo_params = [
-      pkg: this.id,
-      ctp: combo_type_package,
-      ctt: combo_type_title
-    ]
-
-    Combo.executeUpdate(ti_combo_qry, combo_params)
   }
 
 
@@ -732,13 +668,7 @@ class Package extends KBComponent {
       }
     }
 
-    User user
-
-    try {
-      user = springSecurityService?.currentUser
-    }
-    catch (Exception e) {}
-
+    def user = springSecurityService?.currentUser
     if (user != null) {
       this.lastUpdatedBy = user
     }
