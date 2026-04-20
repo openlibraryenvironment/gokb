@@ -521,14 +521,17 @@ class AdminController {
 
   def revertLinkedTiIds() {
     log.debug("Manual TIPP deduplication for ID ${params.id}")
-    Map result = [params: params, result: null]
+    Map result = [params: params, result: 'OK']
     Long pkgId = params.long('id') ?: null
     LocalDate linkDate
 
     try {
       linkDate = LocalDate.from(params.date)
     }
-    catch (Exception e) {}
+    catch (Exception e) {
+      result.result = 'ERROR'
+      result.message = 'Unable to parse date parameter!'
+    }
 
     if (pkgId && linkDate) {
       Job j = concurrencyManagerService.createJob { job ->
