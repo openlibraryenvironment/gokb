@@ -15,6 +15,7 @@ class PackageCleanupService {
 
   def tippService
   def titleAugmentService
+  def sessionFactory
 
   def reactivateReplacedTipps(pid, Job j = null) {
     def result = [result: 'OK', cases: 0, additionalDeletes: 0, total: 0]
@@ -113,7 +114,10 @@ class PackageCleanupService {
       result = processTitleIdCleanup(session, pid, date, j)
     }
     catch (Exception e) {
+      log.debug("Failed session lookup", e)
+
       Package.withNewSession { session ->
+        log.debug("revertTitleIds :: creating new session ..")
         result = processTitleIdCleanup(session, pid, date, j)
       }
     }

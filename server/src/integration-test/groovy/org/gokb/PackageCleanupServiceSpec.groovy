@@ -82,7 +82,7 @@ class PackageCleanupServiceSpec extends Specification {
     when:
     Map result = packageCleanupService.revertTitleIds(package_cleanup_pkg.id, old_id_ld)
     then:
-    def combos = Combo.executeQuery('''select id, fromComponent.id from Combo as cid
+    def combos = Combo.executeQuery('''from Combo as cid
                                         where type = :cti
                                         and exists (
                                           select 1 from Combo as ct
@@ -96,8 +96,7 @@ class PackageCleanupServiceSpec extends Specification {
                                           )
                                         )
                                         order by fromComponent.id''', total_pars)
-    combos.size() == 1 || combos[1].dateCreated != null
-    combos.size() == 1 || combos[0].dateCreated != null
+    combos.size() == 1
     result.cleanups == 1
   }
 }
