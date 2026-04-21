@@ -240,7 +240,7 @@ class BulkPackageImportService {
     result
   }
 
-  private def validateCollection(col) {
+  private Map validateCollection(col) {
     log.debug("Checking collection info: ${col}")
     Map errors = [:]
     Map col_errors = checkConfigItem(col)
@@ -265,9 +265,9 @@ class BulkPackageImportService {
     errors
   }
 
-  private def fetchRemoteConfig(String url) {
+  private Map fetchRemoteConfig(String url) {
     try {
-      def resp = HttpClient.create(new URL(url)).toBlocking().retrieve(HttpRequest.GET("/"), Map.class)
+      Map resp = HttpClient.create(new URL(url)).toBlocking().retrieve(HttpRequest.GET("/"), Map.class)
 
       return resp
     }
@@ -276,7 +276,7 @@ class BulkPackageImportService {
     }
   }
 
-  private def checkConfigItem(cobj, Object collection_info = null) {
+  private Map checkConfigItem(cobj, Object collection_info = null) {
     Map errors = [:]
 
     if (!collection_info) {
@@ -419,7 +419,7 @@ class BulkPackageImportService {
   }
 
   @Transactional
-  def startUpdate(BulkImportListConfig listInfo, Boolean dryRun, Boolean async, User user = null) {
+  public Map startUpdate(BulkImportListConfig listInfo, Boolean dryRun, Boolean async, User user = null) {
     Map result = [result: 'OK']
     RefdataValue job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
     List running_jobs = concurrencyManagerService.getActiveJobsForType(job_rdv)
@@ -455,9 +455,9 @@ class BulkPackageImportService {
     result
   }
 
-  private def fetchUpdatedLists (BulkImportListConfig list_info, Boolean dryRun, Job job) {
-    def result = [result: 'OK', report: [:]]
-    def allCollections = []
+  private Map fetchUpdatedLists (BulkImportListConfig list_info, Boolean dryRun, Job job) {
+    Map result = [result: 'OK', report: [:]]
+    List allCollections = []
     boolean cancelled = false
 
     if (list_info.url) {
@@ -476,7 +476,7 @@ class BulkPackageImportService {
     if (allCollections) {
       for (type in allCollections) {
         log.debug("Starting with collection ${type.collection_name} ..")
-        def type_results = [
+        Map type_results = [
           total: 0,
           skipped: 0,
           noProvider: 0,
