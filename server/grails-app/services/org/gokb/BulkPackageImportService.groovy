@@ -13,6 +13,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 
+import org.grails.web.json.JSONObject
 import org.gokb.cred.*
 
 @Slf4j
@@ -54,9 +55,9 @@ class BulkPackageImportService {
   ]
 
   @Transactional
-  def upsertConfig (reqBody, user) {
-    def result = [result: 'OK']
-    def validation = validateConfig(reqBody)
+  public Map upsertConfig (JSONObject reqBody, User user) {
+    Map result = [result: 'OK']
+    Map validation = validateConfig(reqBody)
 
     if (validation.errors) {
       result.errors = validation.errors
@@ -156,8 +157,8 @@ class BulkPackageImportService {
     result
   }
 
-  private def validateConfig (Map config) {
-    def result = [valid: true, errors:[:]]
+  private Map validateConfig (config) {
+    Map result = [valid: true, errors:[:]]
 
     if (!config.code || !config.code.trim()) {
       result.valid = false
@@ -175,12 +176,12 @@ class BulkPackageImportService {
         result.errors.url = [message: "Invalid URL provided: ${config.url}!", value: config.url]
       }
       else {
-        def remote_conf = fetchRemoteConfig(config.url)
+        Map remote_conf = fetchRemoteConfig(config.url)
 
         if (remote_conf) {
           boolean conf_valid = true
           remote_conf.collections?.eachWithIndex { col, idx ->
-            def col_errors = validateCollection(col)
+            Map col_errors = validateCollection(col)
 
             if (col_errors) {
               if (col_errors.generic) {
@@ -239,10 +240,10 @@ class BulkPackageImportService {
     result
   }
 
-  private def validateCollection(Map col) {
+  private def validateCollection(col) {
     log.debug("Checking collection info: ${col}")
-    def errors = [:]
-    def col_errors = checkConfigItem(col, false)
+    Map errors = [:]
+    Map col_errors = checkConfigItem(col)
 
     if (col_errors.size() > 0) {
       errors.generic = col_errors
@@ -250,7 +251,7 @@ class BulkPackageImportService {
 
     col.package_list.eachWithIndex { info, idx ->
       log.debug("Checking package info: ${info}")
-      def pkg_errors = checkConfigItem(info, true, (col.ftp_config != null))
+      Map pkg_errors = checkConfigItem(info, col)
 
       if (pkg_errors.size() > 0) {
         if (!errors.packages) {
@@ -275,12 +276,23 @@ class BulkPackageImportService {
     }
   }
 
-  private def checkConfigItem(Map cobj, boolean specific = false, boolean collection_ftp_config = false) {
-    def errors = [:]
+  private def checkConfigItem(cobj, Object collection_info = null) {
+    Map errors = [:]
+
+    if (!collection_info) {
+      if (!cobj.collection_name) {
+        errors['collection_name'] = [message: "Collection entry is missing a name!"]
+      }
+      if (!cobj.containsKey('package_list')) {
+        errors['package_list'] = [message: "Collection is missing a package list!"]
+      }
+    }
 
     KNOWN_CONFIG_FIELDS.each { fname, cfg ->
-      if (specific && cfg.required && !cobj[fname]) {
-        errors[fname] = [message: "Missing required field '${fname}'!"]
+      if (collection_info && cfg.required && !cobj[fname] && !collection_info[fname]) {
+        if (!collection_info[fname]) {
+          errors[fname] = [message: "Missing required field '${fname}'!"]
+        }
       }
       else if (cfg.cls && cobj[fname] && cfg.field  == 'uuid') {
         if (!cfg.cls.findByUuid(cobj[fname])) {
@@ -316,13 +328,28 @@ class BulkPackageImportService {
       if (cobj.start_year == null) {
         // No start year
       }
-      else if (cobj.start_year instanceof Integer) {
-        if (cobj.start_year < 1700 || cobj.start_year > 9999) {
-          errors['start_year'] = [message: "Package years must be between 1700 and 9999!"]
-        }
-      }
       else {
-        errors['start_year'] = [message: "Package years must be four digit integers or null!"]
+        Integer final_val
+
+        if (cobj.start_year instanceof Integer) {
+          final_val = cobj.start_year
+        }
+        else if (cobj.start_year instanceof String) {
+          try {
+            final_val = Integer.valueOf(cobj.start_year)
+          } catch (Exception e) {
+            errors['start_year'] = [message: "Unable to parse start year ${cobj.start_year}!"]
+          }
+        }
+        else {
+          errors['start_year'] = [message: "Package years must be four digits or null!"]
+        }
+
+        if (final_val) {
+          if (cobj.start_year < 1700 || cobj.start_year > 9999) {
+            errors['start_year'] = [message: "Package years must be between 1700 and 9999!"]
+          }
+        }
       }
     }
 
@@ -330,24 +357,52 @@ class BulkPackageImportService {
       if (cobj.end_year == null) {
         // No end year
       }
-      else if (cobj.end_year instanceof Integer) {
-        if (cobj.end_year < 1700 || cobj.end_year > 9999) {
-          errors['end_year'] = [message: "Package years must be between 1700 and 9999!"]
-        }
-        else if (!cobj.start_year) {
-          errors['end_year'] = [message: "Missing start_year for given end_year!"]
-        }
-        else if (cobj.start_year instanceof Integer && cobj.end_year < cobj.start_year) {
-          errors['end_year'] = [message: "Package end_year must not be earlier than the start_year!"]
-        }
-      }
       else {
-        errors['end_year'] = [message: "Package years must be four digit integers or null!"]
+        Integer final_val
+
+        if (cobj.end_year instanceof Integer) {
+          final_val = cobj.end_year
+        }
+        else if (cobj.end_year instanceof String) {
+          try {
+            final_val = Integer.valueOf(cobj.end_year)
+          } catch (Exception e) {
+            errors['end_year'] = [message: "Unable to parse start year ${cobj.end_year}!"]
+          }
+        }
+        else {
+          errors['end_year'] = [message: "Package years must be four digits or null!"]
+        }
+
+        if (final_val) {
+          if (final_val < 1700 || final_val > 9999) {
+            errors['end_year'] = [message: "Package years must be between 1700 and 9999!"]
+          }
+          else if (!cobj.start_year) {
+            errors['end_year'] = [message: "Missing start_year for given end_year!"]
+          }
+          else if (cobj.start_year) {
+            Integer start_year
+
+            if (cobj.start_year instanceof Integer) {
+              start_year = cobj.start_year
+            }
+            else if (cobj.start_year instanceof String) {
+              try {
+                final_val = Integer.valueOf(cobj.start_year)
+              } catch (Exception e) {}
+            }
+
+            if (start_year && final_val < start_year) {
+              errors['end_year'] = [message: "Package end_year must not be earlier than the start_year!"]
+            }
+          }
+        }
       }
     }
 
-    if (specific) {
-      if (collection_ftp_config) {
+    if (collection_info) {
+      if (collection_info.ftp_config) {
         if (!cobj.package_titlelist_ftppath && !cobj.package_titlelist) {
           errors['package_titlelist_ftppath'] = [message: "Package is missing a URL or a file path for its collection-wide ftp_config!"]
         }
@@ -365,9 +420,9 @@ class BulkPackageImportService {
 
   @Transactional
   def startUpdate(BulkImportListConfig listInfo, Boolean dryRun, Boolean async, User user = null) {
-    def result = [result: 'OK']
-    def job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
-    def running_jobs = concurrencyManagerService.getActiveJobsForType(job_rdv)
+    Map result = [result: 'OK']
+    RefdataValue job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
+    List running_jobs = concurrencyManagerService.getActiveJobsForType(job_rdv)
 
     if (running_jobs.size() == 0) {
         log.debug("Creating new job..")
@@ -438,16 +493,17 @@ class BulkPackageImportService {
         if (!cancelled) {
           for (item in type.package_list) {
             if (Thread.currentThread().isInterrupted()) {
+              log.error("Bulk Import Cancelled!")
               break
               cancelled = true
             }
 
             boolean skip = false
-            def pkgInfo = [:]
-            def curator_id = null
-            def title_ns_id = null
-            def source_id = null
-            def pkg_result = [:]
+            Map pkgInfo = [:]
+            Long curator_id
+            Long title_ns_id
+            Long source_id
+            Map pkg_result = [:]
 
             Package.withNewSession { session ->
               type_results.total++
@@ -612,7 +668,6 @@ class BulkPackageImportService {
                     }
 
                     try {
-
                       if (item.containsKey('fixed') || type.fixed != null) {
                         setPackageBinaryRefdata(obj, 'fixed', 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
                       }
@@ -780,88 +835,13 @@ class BulkPackageImportService {
 
                     obj.save(flush: true, failOnError: true)
 
-
-                    if (!source) {
-                      log.debug("Setting new package source..")
-
-                      try {
-                        def dupe = Source.findByName(final_name)
-
-                        if (!dupe) {
-                          source = new Source(name: final_name).save(flush:true, failOnError: true)
-                        }
-                        else {
-                          log.warn("Found existing source with package name ${final_name}!")
-                          source = dupe
-                        }
-                      }
-                      catch (Exception e) {
-                        log.error("Exception creating source:", e)
-                        type_results.errors++
-                      }
-
-                      if (source) {
-                        source.curatoryGroups << curator
-                        source.save()
-
-                        obj.source = source
-                        obj.save(flush: true)
-                      }
-                    }
-                    else {
-                      if (source.curatoryGroups == obj.curatoryGroups) {
-                        log.debug("Not updating source curators ..")
-                      }
-                      else {
-                        obj.curatoryGroups.each { pcg ->
-                          if (!source.curatoryGroups.contains(pcg)) {
-                            source.curatoryGroups << pcg
-                          }
-                        }
-
-                        source.save(flush: true)
-
-                        source.curatoryGroups.retainAll(obj.curatoryGroups)
-                        source.save(flush: true)
-                      }
-                    }
+                    source = handleSource(obj, item, type, listInfo)
 
                     if (source) {
-                      log.debug("Setting source info ..")
-                      source.bulkConfig = listInfo
-                      source.targetNamespace = title_id_ns
-                      source.url = item.package_titlelist
-                      source.frequency = listInfo.frequency ? RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value) : null
-                      source.ftpPath = item.package_titlelist_ftppath
-
-                      if (item.ftp_config) {
-                        source.webEndpoint = WebHookEndpoint.findByName(item.ftp_config)
-                      }
-                      else if (type.ftp_config) {
-                        source.webEndpoint = WebHookEndpoint.findByName(type.ftp_config)
-                      }
-                      else {
-                        source.webEndpoint = null
-                      }
-
-                      if ((item.ftp_config || type.ftp_config) && item.package_titlelist_ftppath) {
-                        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'FTP')
-                      }
-                      else if (item.package_titlelist) {
-                        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'HTTP')
-                      }
-                      else {
-                        source.transferMethod = null
-                      }
-
-                      if (listInfo.frequency && (source.url || source.transferMethod?.value == 'FTP')) {
-                        source.automaticUpdates = listInfo.automatedUpdate
-                      }
-                      else {
-                        log.debug("No frequency or url for ${item.package_name} - Setting automated source update to 'false'!")
-                        source.automaticUpdates = false
-                      }
-                      source.save(flush: true)
+                      source_id = source.id
+                    }
+                    else {
+                      type_results.errors++
                     }
                   }
                 }
@@ -996,6 +976,94 @@ class BulkPackageImportService {
     }
 
     result
+  }
+
+  private Source handleSource(pkg, item, type, listInfo) {
+    Source source = pkg.source
+
+    if (!source) {
+      log.debug("Setting new package source..")
+
+      try {
+        def dupe = Source.findByName(final_name)
+
+        if (!dupe) {
+          source = new Source(name: final_name).save(flush:true, failOnError: true)
+        }
+        else {
+          log.warn("Found existing source with package name ${final_name}!")
+          source = dupe
+        }
+      }
+      catch (Exception e) {
+        log.error("Exception creating source:", e)
+      }
+
+      if (source) {
+        source.curatoryGroups << curator
+        source.save()
+
+        pkg.source = source
+        pkg.save(flush: true)
+      }
+    }
+    else {
+      if (source.curatoryGroups == pkg.curatoryGroups) {
+        log.debug("Not updating source curators ..")
+      }
+      else {
+        pkg.curatoryGroups.each { pcg ->
+          if (!source.curatoryGroups.contains(pcg)) {
+            source.curatoryGroups << pcg
+          }
+        }
+
+        source.save(flush: true)
+
+        source.curatoryGroups.retainAll(obj.curatoryGroups)
+        source.save(flush: true)
+      }
+    }
+
+    if (source) {
+      log.debug("Setting source info ..")
+      source.bulkConfig = listInfo
+      source.targetNamespace = title_id_ns
+      source.url = item.package_titlelist
+      source.frequency = listInfo.frequency ? RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value) : null
+      source.ftpPath = item.package_titlelist_ftppath
+
+      if (item.ftp_config) {
+        source.webEndpoint = WebHookEndpoint.findByName(item.ftp_config)
+      }
+      else if (type.ftp_config) {
+        source.webEndpoint = WebHookEndpoint.findByName(type.ftp_config)
+      }
+      else {
+        source.webEndpoint = null
+      }
+
+      if ((item.ftp_config || type.ftp_config) && item.package_titlelist_ftppath) {
+        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'FTP')
+      }
+      else if (item.package_titlelist) {
+        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'HTTP')
+      }
+      else {
+        source.transferMethod = null
+      }
+
+      if (listInfo.frequency && (source.url || source.transferMethod?.value == 'FTP')) {
+        source.automaticUpdates = listInfo.automatedUpdate
+      }
+      else {
+        log.debug("No frequency or url for ${item.package_name} - Setting automated source update to 'false'!")
+        source.automaticUpdates = false
+      }
+      source.save(flush: true)
+    }
+
+    source
   }
 
   private void setPackageBinaryRefdata(Package obj, String prop, String category, boolean val) {
