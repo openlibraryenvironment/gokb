@@ -9,6 +9,7 @@ import groovy.util.logging.Slf4j
 import java.time.*
 
 import org.gokb.cred.*
+import org.hibernate.HibernateException
 
 @Slf4j
 class PackageCleanupService {
@@ -113,8 +114,8 @@ class PackageCleanupService {
       def session = sessionFactory.currentSession
       result = processTitleIdCleanup(session, pid, date, j)
     }
-    catch (Exception e) {
-      log.debug("Failed session lookup", e)
+    catch (HibernateException e) {
+      log.debug("Failed session lookup..")
 
       Package.withNewSession { session ->
         log.debug("revertTitleIds :: creating new session ..")
@@ -159,36 +160,10 @@ class PackageCleanupService {
 
     List delete_candidates = Combo.executeQuery(deletion_candidates_qry, pars)
 
-    def total_ids_qry = '''select id, fromComponent.id from Combo as cid
-                            where type = :cti
-                            and exists (
-                              select 1 from Combo as ct
-                              where type = :ctt
-                              and fromComponent = cid.fromComponent
-                              and exists (
-                                select 1 from Combo as cp
-                                where type = :ctp
-                                and toComponent = ct.toComponent
-                                and fromComponent.id = :pid
-                              )
-                            )
-                            order by fromComponent.id'''
-
-    Map total_pars = [
-      pid: pid,
-      cti: type_ids,
-      ctt: type_ti_tipps,
-      ctp: type_pkg_tipps
-    ]
-
-    List total_ids = Combo.executeQuery(total_ids_qry, total_pars)
-
-    log.debug("revertTitleIds :: Found ${delete_candidates.size()} of ${total_ids.size()} ids to remove ..")
-
     for (c in delete_candidates) {
       Combo ctd = Combo.get(c[0]).delete(flush: true)
       result.cleanups++
-      TitleInstance ti = TitleInstance.get(c[0])
+      TitleInstance ti = TitleInstance.get(c[1])
 
       titleAugmentService.touchTitleTipps(ti, false)
 
