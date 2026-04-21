@@ -719,12 +719,12 @@ class BulkPackageImportService {
                       }
 
                       if (!pkg_result.errors) {
-                        obj.endYear = item.end_year ? item.end_year : null
+                        obj.endYear = item.end_year ? Integer.valueOf(item.end_year) : null
                       }
                     }
 
                     if (!pkg_result.errors && item.containsKey('start_year')) {
-                      obj.startYear = item.start_year ? item.start_year : null
+                      obj.startYear = item.start_year ? Integer.valueOf(item.start_year) : null
                     }
 
                     obj.nominalPlatform = platform
