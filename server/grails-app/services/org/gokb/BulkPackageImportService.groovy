@@ -346,7 +346,7 @@ class BulkPackageImportService {
         }
 
         if (final_val) {
-          if (cobj.start_year < 1700 || cobj.start_year > 9999) {
+          if (final_val < 1700 || final_val > 9999) {
             errors['start_year'] = [message: "Package years must be between 1700 and 9999!"]
           }
         }
