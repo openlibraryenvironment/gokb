@@ -419,13 +419,13 @@ class BulkPackageImportService {
   }
 
   @Transactional
-  public Map startUpdate(BulkImportListConfig listInfo, Boolean dryRun, Boolean async, User user = null) {
+  public Map startUpdate(BulkImportListConfig listInfo, Boolean dryRun = false, Boolean async = false, User user = null) {
     Map result = [result: 'OK']
     RefdataValue job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
     List running_jobs = concurrencyManagerService.getActiveJobsForType(job_rdv)
 
     if (running_jobs.size() == 0) {
-        log.debug("Creating new job..")
+        log.debug("Creating new job (async ${async && user})..")
         Job new_job = concurrencyManagerService.createJob { ljob ->
           fetchUpdatedLists(listInfo, dryRun, ljob)
         }
@@ -452,10 +452,12 @@ class BulkPackageImportService {
       result.result = 'SKIPPED_ALREADY_RUNNING'
     }
 
+    log.debug("Full response: ${result}")
+
     result
   }
 
-  private Map fetchUpdatedLists (BulkImportListConfig list_info, Boolean dryRun, Job job) {
+  public Map fetchUpdatedLists (BulkImportListConfig list_info, Boolean dryRun, Job job) {
     Map result = [result: 'OK', report: [:]]
     List allCollections = []
     boolean cancelled = false
@@ -501,7 +503,6 @@ class BulkPackageImportService {
             boolean skip = false
             Map pkgInfo = [:]
             Long curator_id
-            Long title_ns_id
             Long source_id
             Map pkg_result = [:]
 
@@ -835,13 +836,88 @@ class BulkPackageImportService {
 
                     obj.save(flush: true, failOnError: true)
 
-                    source = handleSource(obj, item, type, listInfo)
+                    if (!source) {
+                      log.debug("Setting new package source..")
 
-                    if (source) {
-                      source_id = source.id
+                      try {
+                        def dupe = Source.findByName(final_name)
+
+                        if (!dupe) {
+                          source = new Source(name: final_name).save(flush:true, failOnError: true)
+                        }
+                        else {
+                          log.warn("Found existing source with package name ${final_name}!")
+                          source = dupe
+                        }
+                      }
+                      catch (Exception e) {
+                        log.error("Exception creating source:", e)
+                      }
+
+                      if (source) {
+                        source.curatoryGroups << curator
+                        source.save()
+
+                        obj.source = source
+                        obj.save(flush: true)
+                      }
                     }
                     else {
-                      type_results.errors++
+                      if (source.curatoryGroups == obj.curatoryGroups) {
+                        log.debug("Not updating source curators ..")
+                      }
+                      else {
+                        obj.curatoryGroups.each { pcg ->
+                          if (!source.curatoryGroups.contains(pcg)) {
+                            source.curatoryGroups << pcg
+                          }
+                        }
+
+                        source.save(flush: true)
+
+                        source.curatoryGroups.retainAll(obj.curatoryGroups)
+                        source.save(flush: true)
+                      }
+                    }
+
+                    if (source) {
+                      log.debug("Setting source info ..")
+                      source_id = source.id
+
+                      source.bulkConfig = listInfo
+                      source.targetNamespace = title_id_ns
+                      source.url = item.package_titlelist
+                      source.frequency = listInfo.frequency ? RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value) : null
+                      source.ftpPath = item.package_titlelist_ftppath
+
+                      if (item.ftp_config) {
+                        source.webEndpoint = WebHookEndpoint.findByName(item.ftp_config)
+                      }
+                      else if (type.ftp_config) {
+                        source.webEndpoint = WebHookEndpoint.findByName(type.ftp_config)
+                      }
+                      else {
+                        source.webEndpoint = null
+                      }
+
+                      if ((item.ftp_config || type.ftp_config) && item.package_titlelist_ftppath) {
+                        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'FTP')
+                      }
+                      else if (item.package_titlelist) {
+                        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'HTTP')
+                      }
+                      else {
+                        source.transferMethod = null
+                      }
+
+                      if (listInfo.frequency && (source.url || source.transferMethod?.value == 'FTP')) {
+                        source.automaticUpdates = listInfo.automatedUpdate
+                      }
+                      else {
+                        log.debug("No frequency or url for ${item.package_name} - Setting automated source update to 'false'!")
+                        source.automaticUpdates = false
+                      }
+                      source.save(flush: true)
                     }
                   }
                 }
@@ -929,7 +1005,7 @@ class BulkPackageImportService {
                 }
               }
               else {
-                log.debug("Skipping unchanged Package file ${obj.name}.")
+                log.debug("Skipping unchanged Package file ${pkgInfo.name}.")
                 type_results.unchanged++
               }
             }
@@ -952,12 +1028,13 @@ class BulkPackageImportService {
       }
 
       result.result = 'FINISHED'
-      job.endTime = new Date()
     }
     else {
       log.debug("No collections found.")
       result.result = 'SKIPPED_NO_API_URL'
     }
+
+    job.endTime = new Date()
 
     JobResult.withNewSession {
       def job_map = [
@@ -976,94 +1053,6 @@ class BulkPackageImportService {
     }
 
     result
-  }
-
-  private Source handleSource(pkg, item, type, listInfo) {
-    Source source = pkg.source
-
-    if (!source) {
-      log.debug("Setting new package source..")
-
-      try {
-        def dupe = Source.findByName(final_name)
-
-        if (!dupe) {
-          source = new Source(name: final_name).save(flush:true, failOnError: true)
-        }
-        else {
-          log.warn("Found existing source with package name ${final_name}!")
-          source = dupe
-        }
-      }
-      catch (Exception e) {
-        log.error("Exception creating source:", e)
-      }
-
-      if (source) {
-        source.curatoryGroups << curator
-        source.save()
-
-        pkg.source = source
-        pkg.save(flush: true)
-      }
-    }
-    else {
-      if (source.curatoryGroups == pkg.curatoryGroups) {
-        log.debug("Not updating source curators ..")
-      }
-      else {
-        pkg.curatoryGroups.each { pcg ->
-          if (!source.curatoryGroups.contains(pcg)) {
-            source.curatoryGroups << pcg
-          }
-        }
-
-        source.save(flush: true)
-
-        source.curatoryGroups.retainAll(obj.curatoryGroups)
-        source.save(flush: true)
-      }
-    }
-
-    if (source) {
-      log.debug("Setting source info ..")
-      source.bulkConfig = listInfo
-      source.targetNamespace = title_id_ns
-      source.url = item.package_titlelist
-      source.frequency = listInfo.frequency ? RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value) : null
-      source.ftpPath = item.package_titlelist_ftppath
-
-      if (item.ftp_config) {
-        source.webEndpoint = WebHookEndpoint.findByName(item.ftp_config)
-      }
-      else if (type.ftp_config) {
-        source.webEndpoint = WebHookEndpoint.findByName(type.ftp_config)
-      }
-      else {
-        source.webEndpoint = null
-      }
-
-      if ((item.ftp_config || type.ftp_config) && item.package_titlelist_ftppath) {
-        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'FTP')
-      }
-      else if (item.package_titlelist) {
-        source.transferMethod = RefdataCategory.lookup('Source.TransferMethod', 'HTTP')
-      }
-      else {
-        source.transferMethod = null
-      }
-
-      if (listInfo.frequency && (source.url || source.transferMethod?.value == 'FTP')) {
-        source.automaticUpdates = listInfo.automatedUpdate
-      }
-      else {
-        log.debug("No frequency or url for ${item.package_name} - Setting automated source update to 'false'!")
-        source.automaticUpdates = false
-      }
-      source.save(flush: true)
-    }
-
-    source
   }
 
   private void setPackageBinaryRefdata(Package obj, String prop, String category, boolean val) {

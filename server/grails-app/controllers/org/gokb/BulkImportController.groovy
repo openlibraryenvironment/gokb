@@ -57,11 +57,13 @@ class BulkImportController {
       result = bulkPackageImportService.startUpdate(config, dryRun, async, springSecurityService.currentUser)
     }
     else if (!config) {
+      log.debug("Unable to reference config with code '${params.code}'!")
       result.result = 'ERROR'
       response.status = 404
       result.message = "Unable to reference config with code '${params.code}'!"
     }
     else {
+      log.debug("No permission to edit this config!")
       result.result = 'ERROR'
       response.status = 403
       result.message = "No permission to edit this config!"
