@@ -485,6 +485,7 @@ class BulkPackageImportService {
           noPlatform: 0,
           noCurator: 0,
           unchanged: 0,
+          noFile: 0,
           updated: 0,
           created: 0,
           errors: 0,
@@ -962,51 +963,53 @@ class BulkPackageImportService {
             }
 
             if (!skip && pkgInfo.id && source_id) {
-              if (hasChangedFile(pkgInfo.id, item)) {
-                log.debug("Creating new import job ..")
+              log.debug("Creating new import job ..")
 
-                try {
-                  Job pkg_job = concurrencyManagerService.createJob { pjob ->
-                    packageSourceUpdateService.updateFromSource(pkgInfo.id, null, pjob, curator_id, dryRun)
+              try {
+                Job pkg_job = concurrencyManagerService.createJob { pjob ->
+                  packageSourceUpdateService.updateFromSource(pkgInfo.id, null, pjob, curator_id, dryRun)
+                }
+
+                Package.withNewSession {
+                  pkg_job.groupId = curator_id
+                  pkg_job.description = "BulkConfig KBART Source ingest (${pkgInfo.name})".toString()
+                  pkg_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+                  pkg_job.linkedItem = pkgInfo
+                  pkg_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
+                  pkg_job.startOrQueue()
+                  def job_result = pkg_job.get()
+
+                  log.debug("Finished job with result: ${job_result?.result}")
+
+                  pkg_result.validation = job_result?.validation
+
+                  if (job_result?.result == 'ERROR') {
+                    pkg_result.result = 'ERROR'
+                    type_results.errors++
                   }
-
-                  Package.withNewSession {
-                    pkg_job.groupId = curator_id
-                    pkg_job.description = "BulkConfig KBART Source ingest (${pkgInfo.name})".toString()
-                    pkg_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
-                    pkg_job.linkedItem = pkgInfo
-                    pkg_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
-                    pkg_job.startOrQueue()
-                    def job_result = pkg_job.get()
-
-                    log.debug("Finished job with result: ${job_result?.result}")
-
-                    pkg_result.validation = job_result?.validation
-
-                    if (job_result?.result == 'ERROR') {
-                      pkg_result.result = 'ERROR'
-                      type_results.errors++
+                  else if (job_result.result == 'SKIPPED') {
+                    if (job_result.messageCode('kbart.transmission.skipped.sameFile')) {
+                      type_results.unchanged++
                     }
                     else {
-                      type_results.success++
+                      type_results.noFile++
                     }
                   }
-                }
-                catch (Exception e) {
-                  log.error("Exception creating source update job!", e)
-                  pkg_result.result = 'ERROR'
-                  pkg_result.errors.processing = [
-                    [
-                      message: "There was an error processing the package import!",
-                      messageCode: "import.bulk.error.generic.label"
-                    ]
-                  ]
-                  type_results.errors++
+                  else {
+                    type_results.success++
+                  }
                 }
               }
-              else {
-                log.debug("Skipping unchanged Package file ${pkgInfo.name}.")
-                type_results.unchanged++
+              catch (Exception e) {
+                log.error("Exception creating source update job!", e)
+                pkg_result.result = 'ERROR'
+                pkg_result.errors.processing = [
+                  [
+                    message: "There was an error processing the package import!",
+                    messageCode: "import.bulk.error.generic.label"
+                  ]
+                ]
+                type_results.errors++
               }
             }
             else if (!source_id) {
@@ -1064,29 +1067,6 @@ class BulkPackageImportService {
     }
     else {
       obj[prop] = RefdataCategory.lookup(category, "Unknown")
-    }
-  }
-
-  private boolean hasChangedFile(Long pid, Map item) {
-    Package.withNewSession {
-      boolean result = false
-      def deposit_token = java.util.UUID.randomUUID().toString()
-      File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
-      def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.package_titlelist))
-      RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
-
-      def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
-                                                where c.type = :ct
-                                                and c.fromComponent.id = :pkg
-                                                order by c.dateCreated desc''', [ct: type_fa, pkg: pid])
-
-      def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
-
-      if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
-        result = true
-      }
-
-      result
     }
   }
 }
