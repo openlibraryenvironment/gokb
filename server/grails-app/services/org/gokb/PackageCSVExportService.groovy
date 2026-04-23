@@ -820,6 +820,10 @@ class PackageCSVExportService {
   }
 
   private String pick(def tippPropValue, def titlePropValue, ExportType exportType) {
+    if (exportType == ExportType.KBART_TIPP) {
+      return tippPropValue
+    }
+
     if (tippPropValue && titlePropValue){
       return (exportType == ExportType.KBART_TIPP) ? tippPropValue : titlePropValue
     }
@@ -858,6 +862,7 @@ class PackageCSVExportService {
       record.print_identifier = pick(tipp.getIdentifierValue('ISSN'), ti?.getIdentifierValue('ISSN'), exportType)
       record.online_identifier = pick(tipp.getIdentifierValue('eISSN'), ti?.getIdentifierValue('eISSN'), exportType)
     }
+
     record.title_url = tipp.url
     record.first_author = pick(tipp.firstAuthor, ti?.hasProperty('firstAuthor') ? ti.firstAuthor : null, exportType)
     record.first_editor = pick(tipp.firstEditor, ti?.hasProperty('firstEditor') ? ti.firstEditor : null, exportType)
