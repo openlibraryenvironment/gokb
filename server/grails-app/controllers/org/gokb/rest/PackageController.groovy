@@ -319,25 +319,28 @@ class PackageController {
 
         result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
-
-        result.changed |= variant_result.changed
-
-        if (variant_result.errors.size() > 0) {
-          errors.variantNames = variant_result.errors
-        }
-
-        def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
-
-        result.changed |= subject_result.changed
-
-        if (subject_result.errors.size() > 0) {
-          errors.subjects = subject_result.errors
-        }
-
-        errors << packageUpdateService.updateCombos(obj, reqBody, result.changed, remove, user)
-
         if (obj.validate()) {
+          log.debug("No errors.. saving")
+          obj = obj.merge(flush: true)
+
+          def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+          result.changed |= variant_result.changed
+
+          if (variant_result.errors.size() > 0) {
+            errors.variantNames = variant_result.errors
+          }
+
+          def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+
+          result.changed |= subject_result.changed
+
+          if (subject_result.errors.size() > 0) {
+            errors.subjects = subject_result.errors
+          }
+
+          errors << packageUpdateService.updateCombos(obj, reqBody, result.changed, remove, user)
+
           if (generateToken) {
             String charset = (('a'..'z') + ('0'..'9')).join()
             def updateToken = RandomStringUtils.random(255, charset.toCharArray())
