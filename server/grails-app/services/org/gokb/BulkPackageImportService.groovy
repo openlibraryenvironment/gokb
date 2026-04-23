@@ -988,7 +988,7 @@ class BulkPackageImportService {
                     type_results.errors++
                   }
                   else if (job_result.result == 'SKIPPED') {
-                    if (job_result.messageCode('kbart.transmission.skipped.sameFile')) {
+                    if (job_result.messageCode == 'kbart.transmission.skipped.sameFile') {
                       type_results.unchanged++
                     }
                     else {
