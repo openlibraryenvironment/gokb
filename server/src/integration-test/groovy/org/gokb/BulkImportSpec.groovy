@@ -12,8 +12,12 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.DefaultHttpClientConfiguration
 import io.micronaut.http.client.BlockingHttpClient
 
+import java.time.*
+
+import org.gokb.ValidationService
 import org.gokb.cred.*
 import org.springframework.beans.factory.annotation.*
 import org.springframework.web.context.WebApplicationContext
@@ -26,6 +30,9 @@ class BulkImportSpec extends Specification {
   GrailsApplication grailsApplication
 
   @Autowired
+  ValidationService validationService
+
+  @Autowired
   WebApplicationContext ctx
 
   BlockingHttpClient client
@@ -36,7 +43,10 @@ class BulkImportSpec extends Specification {
 
   def setup() {
     if (!client) {
-      client = HttpClient.create(new URL(getUrlPath())).toBlocking()
+      DefaultHttpClientConfiguration config = new DefaultHttpClientConfiguration()
+      config.setReadTimeout(Duration.ofSeconds(90))
+
+      client = HttpClient.create(new URL(getUrlPath()), config).toBlocking()
     }
 
     def test_bulk_org = Org.findByName('TestBulkOrg') ?: new Org(name: 'TestBulkOrg').save(flush: true)
@@ -57,8 +67,6 @@ class BulkImportSpec extends Specification {
   }
 
   def cleanup() {
-    Platform.findByName('TestBulkPlt')?.expunge()
-    Org.findByName('TestBulkOrg')?.expunge()
     TitleInstancePackagePlatform.list().each {
       it.expunge()
     }
@@ -70,6 +78,9 @@ class BulkImportSpec extends Specification {
       Package.findByName(it)?.expunge()
       Source.findByName(it)?.expunge()
     }
+
+    Platform.findByName('TestBulkPlt')?.expunge()
+    Org.findByName('TestBulkOrg')?.expunge()
 
     BulkImportListConfig.list().each {
       it.delete()
@@ -189,12 +200,16 @@ class BulkImportSpec extends Specification {
     ]
     when: "Caller asks for this bulk config to be processed"
 
+    sleep(1000)
+
     HttpRequest init_request = HttpRequest.POST(getUrlPath() + "/bulkImport/assertBulkConfig", json_record).basicAuth('admin', 'admin')
 
     try {
       client.exchange(init_request, Map)
     }
-    catch (Exception e) {}
+    catch (Exception e) {
+      println(e.message)
+    }
 
     HttpRequest request = HttpRequest.GET(getUrlPath() + "/bulkImport/runBulkUpdate?dryRun=false&async=false&code=testbulkimport").basicAuth('admin', 'admin')
     HttpResponse resp
@@ -202,7 +217,10 @@ class BulkImportSpec extends Specification {
     try {
       resp = client.exchange(request, Map)
     }
-    catch (Exception e) {}
+    catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      println(e.message)
+      resp = e.response
+    }
 
     then: "The request is successful"
     resp.status == HttpStatus.OK
@@ -279,6 +297,8 @@ class BulkImportSpec extends Specification {
     ]
     when: "Caller asks for this bulk config to be processed"
 
+    sleep(1000)
+
     HttpRequest init_request = HttpRequest.POST(getUrlPath() + "/bulkImport/assertBulkConfig", json_record).basicAuth('admin', 'admin')
     client.exchange(init_request, Map)
 
@@ -289,6 +309,7 @@ class BulkImportSpec extends Specification {
       resp = client.exchange(request, Map)
     }
     catch (Exception e) {
+      println(e.message)
       resp = e.response
     }
 
@@ -369,6 +390,8 @@ class BulkImportSpec extends Specification {
     ]
     when: "Caller asks for this bulk config to be processed"
 
+    sleep(1000)
+
     HttpRequest init_request = HttpRequest.POST(getUrlPath() + "/bulkImport/assertBulkConfig", json_record).basicAuth('admin', 'admin')
     client.exchange(init_request, Map)
 
@@ -432,6 +455,8 @@ class BulkImportSpec extends Specification {
     ]
     when: "Caller asks for this bulk config to be processed"
 
+    sleep(1000)
+
     HttpRequest init_request = HttpRequest.POST(getUrlPath() + "/bulkImport/assertBulkConfig", json_record).basicAuth('admin', 'admin')
     client.exchange(init_request, Map)
 
@@ -448,7 +473,7 @@ class BulkImportSpec extends Specification {
     def new_group = CuratoryGroup.findByName('TestBulkAlternativeCG')
     pkg != null
     pkg.refresh()
-    sleep(1000)
+
     def new_curators = CuratoryGroup.executeQuery('''from CuratoryGroup as cg
                                                             where exists (
                                                               select 1 from Combo

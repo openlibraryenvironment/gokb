@@ -13,6 +13,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 
+import org.grails.web.json.JSONObject
 import org.gokb.cred.*
 
 @Slf4j
@@ -54,9 +55,9 @@ class BulkPackageImportService {
   ]
 
   @Transactional
-  def upsertConfig (reqBody, user) {
-    def result = [result: 'OK']
-    def validation = validateConfig(reqBody)
+  public Map upsertConfig (JSONObject reqBody, User user) {
+    Map result = [result: 'OK']
+    Map validation = validateConfig(reqBody)
 
     if (validation.errors) {
       result.errors = validation.errors
@@ -156,8 +157,8 @@ class BulkPackageImportService {
     result
   }
 
-  private def validateConfig (Map config) {
-    def result = [valid: true, errors:[:]]
+  private Map validateConfig (config) {
+    Map result = [valid: true, errors:[:]]
 
     if (!config.code || !config.code.trim()) {
       result.valid = false
@@ -175,12 +176,12 @@ class BulkPackageImportService {
         result.errors.url = [message: "Invalid URL provided: ${config.url}!", value: config.url]
       }
       else {
-        def remote_conf = fetchRemoteConfig(config.url)
+        Map remote_conf = fetchRemoteConfig(config.url)
 
         if (remote_conf) {
           boolean conf_valid = true
           remote_conf.collections?.eachWithIndex { col, idx ->
-            def col_errors = validateCollection(col)
+            Map col_errors = validateCollection(col)
 
             if (col_errors) {
               if (col_errors.generic) {
@@ -239,10 +240,10 @@ class BulkPackageImportService {
     result
   }
 
-  private def validateCollection(Map col) {
+  private Map validateCollection(col) {
     log.debug("Checking collection info: ${col}")
-    def errors = [:]
-    def col_errors = checkConfigItem(col, false)
+    Map errors = [:]
+    Map col_errors = checkConfigItem(col)
 
     if (col_errors.size() > 0) {
       errors.generic = col_errors
@@ -250,7 +251,7 @@ class BulkPackageImportService {
 
     col.package_list.eachWithIndex { info, idx ->
       log.debug("Checking package info: ${info}")
-      def pkg_errors = checkConfigItem(info, true, (col.ftp_config != null))
+      Map pkg_errors = checkConfigItem(info, col)
 
       if (pkg_errors.size() > 0) {
         if (!errors.packages) {
@@ -264,9 +265,9 @@ class BulkPackageImportService {
     errors
   }
 
-  private def fetchRemoteConfig(String url) {
+  private Map fetchRemoteConfig(String url) {
     try {
-      def resp = HttpClient.create(new URL(url)).toBlocking().retrieve(HttpRequest.GET("/"), Map.class)
+      Map resp = HttpClient.create(new URL(url)).toBlocking().retrieve(HttpRequest.GET("/"), Map.class)
 
       return resp
     }
@@ -275,12 +276,23 @@ class BulkPackageImportService {
     }
   }
 
-  private def checkConfigItem(Map cobj, boolean specific = false, boolean collection_ftp_config = false) {
-    def errors = [:]
+  private Map checkConfigItem(cobj, Object collection_info = null) {
+    Map errors = [:]
+
+    if (!collection_info) {
+      if (!cobj.collection_name) {
+        errors['collection_name'] = [message: "Collection entry is missing a name!"]
+      }
+      if (!cobj.containsKey('package_list')) {
+        errors['package_list'] = [message: "Collection is missing a package list!"]
+      }
+    }
 
     KNOWN_CONFIG_FIELDS.each { fname, cfg ->
-      if (specific && cfg.required && !cobj[fname]) {
-        errors[fname] = [message: "Missing required field '${fname}'!"]
+      if (collection_info && cfg.required && !cobj[fname] && !collection_info[fname]) {
+        if (!collection_info[fname]) {
+          errors[fname] = [message: "Missing required field '${fname}'!"]
+        }
       }
       else if (cfg.cls && cobj[fname] && cfg.field  == 'uuid') {
         if (!cfg.cls.findByUuid(cobj[fname])) {
@@ -316,13 +328,28 @@ class BulkPackageImportService {
       if (cobj.start_year == null) {
         // No start year
       }
-      else if (cobj.start_year instanceof Integer) {
-        if (cobj.start_year < 1700 || cobj.start_year > 9999) {
-          errors['start_year'] = [message: "Package years must be between 1700 and 9999!"]
-        }
-      }
       else {
-        errors['start_year'] = [message: "Package years must be four digit integers or null!"]
+        Integer final_val
+
+        if (cobj.start_year instanceof Integer) {
+          final_val = cobj.start_year
+        }
+        else if (cobj.start_year instanceof String) {
+          try {
+            final_val = Integer.valueOf(cobj.start_year)
+          } catch (Exception e) {
+            errors['start_year'] = [message: "Unable to parse start year ${cobj.start_year}!"]
+          }
+        }
+        else {
+          errors['start_year'] = [message: "Package years must be four digits or null!"]
+        }
+
+        if (final_val) {
+          if (final_val < 1700 || final_val > 9999) {
+            errors['start_year'] = [message: "Package years must be between 1700 and 9999!"]
+          }
+        }
       }
     }
 
@@ -330,24 +357,52 @@ class BulkPackageImportService {
       if (cobj.end_year == null) {
         // No end year
       }
-      else if (cobj.end_year instanceof Integer) {
-        if (cobj.end_year < 1700 || cobj.end_year > 9999) {
-          errors['end_year'] = [message: "Package years must be between 1700 and 9999!"]
-        }
-        else if (!cobj.start_year) {
-          errors['end_year'] = [message: "Missing start_year for given end_year!"]
-        }
-        else if (cobj.start_year instanceof Integer && cobj.end_year < cobj.start_year) {
-          errors['end_year'] = [message: "Package end_year must not be earlier than the start_year!"]
-        }
-      }
       else {
-        errors['end_year'] = [message: "Package years must be four digit integers or null!"]
+        Integer final_val
+
+        if (cobj.end_year instanceof Integer) {
+          final_val = cobj.end_year
+        }
+        else if (cobj.end_year instanceof String) {
+          try {
+            final_val = Integer.valueOf(cobj.end_year)
+          } catch (Exception e) {
+            errors['end_year'] = [message: "Unable to parse start year ${cobj.end_year}!"]
+          }
+        }
+        else {
+          errors['end_year'] = [message: "Package years must be four digits or null!"]
+        }
+
+        if (final_val) {
+          if (final_val < 1700 || final_val > 9999) {
+            errors['end_year'] = [message: "Package years must be between 1700 and 9999!"]
+          }
+          else if (!cobj.start_year) {
+            errors['end_year'] = [message: "Missing start_year for given end_year!"]
+          }
+          else if (cobj.start_year) {
+            Integer start_year
+
+            if (cobj.start_year instanceof Integer) {
+              start_year = cobj.start_year
+            }
+            else if (cobj.start_year instanceof String) {
+              try {
+                final_val = Integer.valueOf(cobj.start_year)
+              } catch (Exception e) {}
+            }
+
+            if (start_year && final_val < start_year) {
+              errors['end_year'] = [message: "Package end_year must not be earlier than the start_year!"]
+            }
+          }
+        }
       }
     }
 
-    if (specific) {
-      if (collection_ftp_config) {
+    if (collection_info) {
+      if (collection_info.ftp_config) {
         if (!cobj.package_titlelist_ftppath && !cobj.package_titlelist) {
           errors['package_titlelist_ftppath'] = [message: "Package is missing a URL or a file path for its collection-wide ftp_config!"]
         }
@@ -364,13 +419,13 @@ class BulkPackageImportService {
   }
 
   @Transactional
-  def startUpdate(BulkImportListConfig listInfo, Boolean dryRun, Boolean async, User user = null) {
-    def result = [result: 'OK']
-    def job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
-    def running_jobs = concurrencyManagerService.getActiveJobsForType(job_rdv)
+  public Map startUpdate(BulkImportListConfig listInfo, Boolean dryRun = false, Boolean async = false, User user = null) {
+    Map result = [result: 'OK']
+    RefdataValue job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
+    List running_jobs = concurrencyManagerService.getActiveJobsForType(job_rdv)
 
     if (running_jobs.size() == 0) {
-        log.debug("Creating new job..")
+        log.debug("Creating new job (async ${async && user})..")
         Job new_job = concurrencyManagerService.createJob { ljob ->
           fetchUpdatedLists(listInfo, dryRun, ljob)
         }
@@ -397,12 +452,14 @@ class BulkPackageImportService {
       result.result = 'SKIPPED_ALREADY_RUNNING'
     }
 
+    log.debug("Full response: ${result}")
+
     result
   }
 
-  private def fetchUpdatedLists (BulkImportListConfig list_info, Boolean dryRun, Job job) {
-    def result = [result: 'OK', report: [:]]
-    def allCollections = []
+  public Map fetchUpdatedLists (BulkImportListConfig list_info, Boolean dryRun, Job job) {
+    Map result = [result: 'OK', report: [:]]
+    List allCollections = []
     boolean cancelled = false
 
     if (list_info.url) {
@@ -421,13 +478,14 @@ class BulkPackageImportService {
     if (allCollections) {
       for (type in allCollections) {
         log.debug("Starting with collection ${type.collection_name} ..")
-        def type_results = [
+        Map type_results = [
           total: 0,
           skipped: 0,
           noProvider: 0,
           noPlatform: 0,
           noCurator: 0,
           unchanged: 0,
+          noFile: 0,
           updated: 0,
           created: 0,
           errors: 0,
@@ -438,16 +496,16 @@ class BulkPackageImportService {
         if (!cancelled) {
           for (item in type.package_list) {
             if (Thread.currentThread().isInterrupted()) {
+              log.error("Bulk Import Cancelled!")
               break
               cancelled = true
             }
 
             boolean skip = false
-            def pkgInfo = [:]
-            def curator_id = null
-            def title_ns_id = null
-            def source_id = null
-            def pkg_result = [:]
+            Map pkgInfo = [:]
+            Long curator_id
+            Long source_id
+            Map pkg_result = [:]
 
             Package.withNewSession { session ->
               type_results.total++
@@ -612,7 +670,6 @@ class BulkPackageImportService {
                     }
 
                     try {
-
                       if (item.containsKey('fixed') || type.fixed != null) {
                         setPackageBinaryRefdata(obj, 'fixed', 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
                       }
@@ -664,12 +721,12 @@ class BulkPackageImportService {
                       }
 
                       if (!pkg_result.errors) {
-                        obj.endYear = item.end_year ? item.end_year : null
+                        obj.endYear = item.end_year ? Integer.valueOf(item.end_year) : null
                       }
                     }
 
                     if (!pkg_result.errors && item.containsKey('start_year')) {
-                      obj.startYear = item.start_year ? item.start_year : null
+                      obj.startYear = item.start_year ? Integer.valueOf(item.start_year) : null
                     }
 
                     obj.nominalPlatform = platform
@@ -780,7 +837,6 @@ class BulkPackageImportService {
 
                     obj.save(flush: true, failOnError: true)
 
-
                     if (!source) {
                       log.debug("Setting new package source..")
 
@@ -797,7 +853,6 @@ class BulkPackageImportService {
                       }
                       catch (Exception e) {
                         log.error("Exception creating source:", e)
-                        type_results.errors++
                       }
 
                       if (source) {
@@ -828,6 +883,8 @@ class BulkPackageImportService {
 
                     if (source) {
                       log.debug("Setting source info ..")
+                      source_id = source.id
+
                       source.bulkConfig = listInfo
                       source.targetNamespace = title_id_ns
                       source.url = item.package_titlelist
@@ -906,51 +963,53 @@ class BulkPackageImportService {
             }
 
             if (!skip && pkgInfo.id && source_id) {
-              if (hasChangedFile(pkgInfo.id, item)) {
-                log.debug("Creating new import job ..")
+              log.debug("Creating new import job ..")
 
-                try {
-                  Job pkg_job = concurrencyManagerService.createJob { pjob ->
-                    packageSourceUpdateService.updateFromSource(pkgInfo.id, null, pjob, curator_id, dryRun)
+              try {
+                Job pkg_job = concurrencyManagerService.createJob { pjob ->
+                  packageSourceUpdateService.updateFromSource(pkgInfo.id, null, pjob, curator_id, dryRun)
+                }
+
+                Package.withNewSession {
+                  pkg_job.groupId = curator_id
+                  pkg_job.description = "BulkConfig KBART Source ingest (${pkgInfo.name})".toString()
+                  pkg_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+                  pkg_job.linkedItem = pkgInfo
+                  pkg_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
+                  pkg_job.startOrQueue()
+                  def job_result = pkg_job.get()
+
+                  log.debug("Finished job with result: ${job_result?.result}")
+
+                  pkg_result.validation = job_result?.validation
+
+                  if (job_result?.result == 'ERROR') {
+                    pkg_result.result = 'ERROR'
+                    type_results.errors++
                   }
-
-                  Package.withNewSession {
-                    pkg_job.groupId = curator_id
-                    pkg_job.description = "BulkConfig KBART Source ingest (${pkgInfo.name})".toString()
-                    pkg_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
-                    pkg_job.linkedItem = pkgInfo
-                    pkg_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
-                    pkg_job.startOrQueue()
-                    def job_result = pkg_job.get()
-
-                    log.debug("Finished job with result: ${job_result?.result}")
-
-                    pkg_result.validation = job_result?.validation
-
-                    if (job_result?.result == 'ERROR') {
-                      pkg_result.result = 'ERROR'
-                      type_results.errors++
+                  else if (job_result.result == 'SKIPPED') {
+                    if (job_result.messageCode == 'kbart.transmission.skipped.sameFile') {
+                      type_results.unchanged++
                     }
                     else {
-                      type_results.success++
+                      type_results.noFile++
                     }
                   }
-                }
-                catch (Exception e) {
-                  log.error("Exception creating source update job!", e)
-                  pkg_result.result = 'ERROR'
-                  pkg_result.errors.processing = [
-                    [
-                      message: "There was an error processing the package import!",
-                      messageCode: "import.bulk.error.generic.label"
-                    ]
-                  ]
-                  type_results.errors++
+                  else {
+                    type_results.success++
+                  }
                 }
               }
-              else {
-                log.debug("Skipping unchanged Package file ${obj.name}.")
-                type_results.unchanged++
+              catch (Exception e) {
+                log.error("Exception creating source update job!", e)
+                pkg_result.result = 'ERROR'
+                pkg_result.errors.processing = [
+                  [
+                    message: "There was an error processing the package import!",
+                    messageCode: "import.bulk.error.generic.label"
+                  ]
+                ]
+                type_results.errors++
               }
             }
             else if (!source_id) {
@@ -972,12 +1031,13 @@ class BulkPackageImportService {
       }
 
       result.result = 'FINISHED'
-      job.endTime = new Date()
     }
     else {
       log.debug("No collections found.")
       result.result = 'SKIPPED_NO_API_URL'
     }
+
+    job.endTime = new Date()
 
     JobResult.withNewSession {
       def job_map = [
@@ -1007,29 +1067,6 @@ class BulkPackageImportService {
     }
     else {
       obj[prop] = RefdataCategory.lookup(category, "Unknown")
-    }
-  }
-
-  private boolean hasChangedFile(Long pid, Map item) {
-    Package.withNewSession {
-      boolean result = false
-      def deposit_token = java.util.UUID.randomUUID().toString()
-      File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
-      def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.package_titlelist))
-      RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
-
-      def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
-                                                where c.type = :ct
-                                                and c.fromComponent.id = :pkg
-                                                order by c.dateCreated desc''', [ct: type_fa, pkg: pid])
-
-      def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
-
-      if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
-        result = true
-      }
-
-      result
     }
   }
 }

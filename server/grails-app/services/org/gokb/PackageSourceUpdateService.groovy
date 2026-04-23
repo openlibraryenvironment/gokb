@@ -347,7 +347,8 @@ class PackageSourceUpdateService {
 
             return result
           }
-        } else {
+        }
+        else {
           log.debug("No source URL!")
           result.result = 'ERROR'
           result.messageCode = 'kbart.errors.url.missing'
