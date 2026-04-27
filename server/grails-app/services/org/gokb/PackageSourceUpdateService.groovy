@@ -330,7 +330,6 @@ class PackageSourceUpdateService {
               result.message = "No KBART found for provided URL!"
               result.messageCode = 'kbart.transmission.skipped.noFile'
               result.result = 'SKIPPED'
-              log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
 
               result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
@@ -447,7 +446,6 @@ class PackageSourceUpdateService {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.url.mimeType'
       result.message = "KBART URL returned a wrong content type!"
-      log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
     }
     else if (file_info.status && file_info.status != 404) {
       log.debug("URL request failed (status ${file_info.status})!")
