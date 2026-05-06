@@ -989,7 +989,12 @@ class ComponentLookupService {
 
     if (!curated_component) {
       String component_classname = component.class.getSimpleName()
-      String central_group_name = grailsApplication.config.getProperty("gokb.centralGroups[$component_classname]")
+      Map centralGroups = grailsApplication.config.getProperty("gokb.centralGroups", Map)
+      String central_group_name = centralGroups[component_classname]
+
+      // log.debug("findCuratoryGroupOfInterest :: Central groups: ${grailsApplication.config.getProperty("gokb.centralGroups", Map)}")
+
+      // log.debug("findCuratoryGroupOfInterest :: Central group for $component_classname : $central_group_name ..")
 
       if (activeCuratoryGroup?.superordinatedGroup && component_classname in ['JournalInstance', 'BookInstance', 'DatabaseInstance', 'OtherInstance']) {
         return activeCuratoryGroup.superordinatedGroup
