@@ -178,7 +178,7 @@ class PackageSourceUpdateService {
                 log.debug("Request initial URL..")
                 file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
-                processErrorState(result, file_info)
+                processErrorState(result, pkg_source, file_info)
               }
 
               if (result.result == 'ERROR') {
@@ -193,7 +193,7 @@ class PackageSourceUpdateService {
                 log.debug("Fetching dated URL for today..")
                 file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
-                processErrorState(result, file_info)
+                processErrorState(result, pkg_source, file_info)
 
                 if (result.result == 'ERROR') {
                   result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
@@ -207,7 +207,7 @@ class PackageSourceUpdateService {
                   def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
                   file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
 
-                  processErrorState(result, file_info)
+                  processErrorState(result, pkg_source, file_info)
 
                   if (result.result == 'ERROR') {
                     result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
@@ -223,7 +223,7 @@ class PackageSourceUpdateService {
                   sleep(500)
                   file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
-                  processErrorState(result, file_info)
+                  processErrorState(result, pkg_source, file_info)
 
                   if (result.result == 'ERROR') {
                     result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
@@ -235,7 +235,7 @@ class PackageSourceUpdateService {
                   log.debug("Last request with extracted date ..")
                   file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
-                  processErrorState(result, file_info)
+                  processErrorState(result, pkg_source, file_info)
 
                   if (result.result == 'ERROR') {
                     result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
@@ -423,7 +423,7 @@ class PackageSourceUpdateService {
     result
   }
 
-  private void processErrorState(result, file_info) {
+  private void processErrorState(result, pkg_source, file_info) {
     if (file_info.connectError) {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.url.connection'
@@ -518,7 +518,7 @@ class PackageSourceUpdateService {
           file_name = file_name.split('filename*=')[1].split("'")[2]
         }
 
-        result.content_mime_type = classicHttpResponse.getFirstHeader('Content-Type').getValue()
+        result.content_mime_type = classicHttpResponse.getFirstHeader('Content-Type')?.getValue() ?: 'application/octet-stream'
 
         if (code >= 400) {
           log.debug("KBART fetch status: ${code}")
