@@ -603,30 +603,31 @@ class OrgService {
     result
   }
 
+  @Transactional
   def mergeDuplicate(old_org_id, new_org_id, Job j = null) {
     def result = null
     boolean new_session = false
+    Session session
 
     try {
-      def session = sessionFactory.currentSession
+      session = sessionFactory.currentSession
     }
     catch (Exception e) {
       new_session = true
     }
 
     if (new_session) {
-      Platform.withNewSession {
-        result = processMergeDuplicate(old_org_id, new_org_id, j)
+      Platform.withNewSession { nsession ->
+        result = processMergeDuplicate(old_org_id, new_org_id, nsession, j)
       }
     }
     else {
-      result = processMergeDuplicate(old_org_id, new_org_id, j)
+      result = processMergeDuplicate(old_org_id, new_org_id, session, j)
     }
   }
 
-  private def processMergeDuplicate(old_org_id, new_org_id, Job j = null) {
+  private def processMergeDuplicate(old_org_id, new_org_id, session, Job j = null) {
     def result = [result: 'OK', ti: 0, pkgs: 0, plts: 0]
-    def session = sessionFactory.currentSession
 
     Org old_org = Org.findById(old_org_id)
     Org new_org = Org.findById(new_org_id)
@@ -763,9 +764,7 @@ class OrgService {
       if (old_org.ids.size() > 0 && new_org.ids?.size() == 0) {
         def ids_to_add = old_org.activeIdInfo
 
-        Org.withTransaction {
-          componentUpdateService.updateIdentifiers(new_org, ids_to_add)
-        }
+        componentUpdateService.updateIdentifiers(new_org, ids_to_add)
       }
 
       old_org.status = status_deleted
