@@ -423,6 +423,42 @@ class PackageSourceUpdateService {
     result
   }
 
+  private List<URL> findUrlsToCall (String givenUrl, Source source) {
+    List<URL> urls = new ArrayList<>()
+    boolean dynamic_date = false
+    boolean fixed_date = false
+    LocalDate extracted_date = null
+    LocalDate dateLastFoundUpdateFile = source.dateLastFoundUpdateFile
+
+    String local_date_string = LocalDate.now().toString()
+
+    if (givenUrl =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
+      log.debug("URL contains date placeholder ..")
+      urls.add(new URL(givenUrl.replace('{YYYY-MM-DD}', local_date_string)))
+      dynamic_date = true
+    }
+    else {
+      def date_pattern_match = (givenUrl =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
+
+      if (date_pattern_match && date_pattern_match[0].size() > 0) {
+        String matched_date_string = date_pattern_match[0][1]
+        log.debug("${matched_date_string}")
+        extracted_date = LocalDate.parse(matched_date_string)
+        fixed_date = true
+      }
+     urls.add(new URL(givenUrl))
+    }
+
+    LocalDate lastRunLocal = source.lastRun ? source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
+    source.lastRun = new Date()
+    source.save(flush: true)
+
+
+
+
+    return urls
+  }
+
   private void processErrorState(result, pkg_source, file_info) {
     if (file_info.connectError) {
       result.result = 'ERROR'
@@ -773,5 +809,7 @@ class PackageSourceUpdateService {
       return result
 
   }
+
+
 
 }
