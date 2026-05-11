@@ -6,12 +6,17 @@ import grails.gorm.transactions.Transactional
 
 import groovy.util.logging.Slf4j
 
+import java.time.*
+
 import org.gokb.cred.*
+import org.hibernate.HibernateException
 
 @Slf4j
 class PackageCleanupService {
 
   def tippService
+  def titleAugmentService
+  def sessionFactory
 
   def reactivateReplacedTipps(pid, Job j = null) {
     def result = [result: 'OK', cases: 0, additionalDeletes: 0, total: 0]
@@ -98,6 +103,77 @@ class PackageCleanupService {
 
       j?.endTime = new Date()
     }
+
+    result
+  }
+
+  public Map revertTitleIds(Long pid, LocalDate date, Job j = null) {
+    Map result = [:]
+
+    try {
+      def session = sessionFactory.currentSession
+      result = processTitleIdCleanup(session, pid, date, j)
+    }
+    catch (HibernateException e) {
+      log.debug("Failed session lookup..")
+
+      Package.withNewSession { session ->
+        log.debug("revertTitleIds :: creating new session ..")
+        result = processTitleIdCleanup(session, pid, date, j)
+      }
+    }
+
+    result
+  }
+
+  private Map processTitleIdCleanup(session, Long pid, LocalDate date, Job job = null) {
+    Map result = [result: 'OK', cleanups: 0]
+    RefdataValue type_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+    RefdataValue type_ti_tipps = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    RefdataValue type_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+    log.debug("revertTitleIds :: Processing id links for Package ${pid} between ${java.sql.Date.valueOf(date)} and ${java.sql.Date.valueOf(date.plusDays(1))} ..")
+
+    def deletion_candidates_qry = '''select id, fromComponent.id from Combo as cid
+                                      where type = :cti
+                                      and dateCreated between :dateStart and :dateEnd
+                                      and exists (
+                                        select 1 from Combo as ct
+                                        where type = :ctt
+                                        and fromComponent = cid.fromComponent
+                                        and exists (
+                                          select 1 from Combo as cp
+                                          where type = :ctp
+                                          and toComponent = ct.toComponent
+                                          and fromComponent.id = :pid
+                                        )
+                                      )
+                                      order by fromComponent.id'''
+
+    Map pars = [
+      pid: pid,
+      cti: type_ids,
+      ctt: type_ti_tipps,
+      ctp: type_pkg_tipps,
+      dateStart: java.sql.Date.valueOf(date),
+      dateEnd: java.sql.Date.valueOf(date.plusDays(1))
+    ]
+
+    List delete_candidates = Combo.executeQuery(deletion_candidates_qry, pars)
+
+    for (c in delete_candidates) {
+      Combo ctd = Combo.get(c[0]).delete(flush: true)
+      result.cleanups++
+      TitleInstance ti = TitleInstance.get(c[1])
+
+      titleAugmentService.touchTitleTipps(ti, false)
+
+      if (result.cleanups % 50 == 0) {
+        session.flush()
+        session.clear()
+      }
+    }
+
+    job?.endTime = new Date()
 
     result
   }

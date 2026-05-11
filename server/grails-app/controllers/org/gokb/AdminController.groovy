@@ -9,7 +9,7 @@ import org.hibernate.criterion.CriteriaSpecification
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.acls.domain.BasePermission
 
-import java.time.LocalDateTime
+import java.time.*
 import java.util.concurrent.CancellationException
 
 import grails.gorm.transactions.*
@@ -477,9 +477,9 @@ class AdminController {
 
   def cacheSinglePackage() {
     log.debug("Manual package caching for ID ${params.id}")
-    def result = [params: params, result: null]
+    Map result = [params: params, result: null]
 
-    def pkg = Package.findByUuid(params.id)
+    Package pkg = Package.findByUuid(params.id)
 
     if (!pkg && params.long('id')) {
       pkg = Package.get(params.long('id'))
@@ -503,8 +503,8 @@ class AdminController {
 
   def deduplicatePackageTipps() {
     log.debug("Manual TIPP deduplication for ID ${params.id}")
-    def result = [params: params, result: null]
-    def pkgId = params.int('id') ?: null
+    Map result = [params: params, result: null]
+    Long pkgId = params.long('id') ?: null
 
     if (pkgId) {
       Job j = concurrencyManagerService.createJob { job ->
@@ -518,6 +518,40 @@ class AdminController {
 
     render(view: "logViewer", model: logViewer())
   }
+
+  def revertLinkedTiIds() {
+    log.debug("Manual TIPP deduplication for ID ${params.id}")
+    Map result = [params: params, result: 'OK']
+    Long pkgId = params.long('id') ?: null
+    LocalDate linkDate
+
+    try {
+      linkDate = LocalDate.from(params.date)
+    }
+    catch (Exception e) {
+      result.result = 'ERROR'
+      result.message = 'Unable to parse date parameter!'
+    }
+
+    if (pkgId && linkDate) {
+      Job j = concurrencyManagerService.createJob { job ->
+        packageCleanupService.revertTitleIds(pkgId, linkDate, job)
+      }.startOrQueue()
+
+      j.description = "Deduplicating package TIPPs for package ${pkgId}"
+      j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Package TI Id Cleanup')
+      j.startTime = new Date()
+
+      render(view: "logViewer", model: logViewer())
+    }
+    else {
+      result.result = 'ERROR'
+      response.status = 400
+
+      render result as JSON
+    }
+  }
+
 
   def fetchEzbCollections() {
     log.debug("Triggering EZB open collections sync")
