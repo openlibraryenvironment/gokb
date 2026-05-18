@@ -57,10 +57,10 @@ class PackageTestSpec extends AbstractAuthSpec {
     testPlt.provider = testOrg
     testPlt.save(flush: true)
 
-    def http_method = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
-    def kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
-    def freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
-    def combo_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids').save(flush: true)
+    RefdataValue http_method = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
+    RefdataValue kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
+    RefdataValue freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
+    RefdataValue combo_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids').save(flush: true)
     Source testSource = Source.findByName("TestPack") ?: new Source(
         name: "TestPack",
         url: "https://org/package",
@@ -74,6 +74,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     Package testPackageInitNoDates = Package.findByName("TestPackInitNoDates")
     Package testPackageInitWithDates = Package.findByName("TestPackInitWithDates")
     Package testPackageUpdateDates = Package.findByName("TestPackUpdateDates")
+    Package testPackageNormNameMatch = Package.findByName("Test: Package")
 
     if (!testPackage) {
       testPackage = new Package(name: "TestPack", source: testSource).save(flush: true)
@@ -115,6 +116,10 @@ class PackageTestSpec extends AbstractAuthSpec {
       testPackageUpdateDates.nominalPlatform = testPlt
       testPackageUpdateDates.provider = testOrg
       testPackageUpdateDates.save(flush: true)
+    }
+
+    if (!testPackageNormNameMatch) {
+      testPackageUpdateDates = new Package(name: "Test: Package", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
     }
 
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle")
@@ -196,7 +201,8 @@ class PackageTestSpec extends AbstractAuthSpec {
       "TestPackPartialError",
       "TestPackInitNoDates",
       "TestPackInitWithDates",
-      "TestPackUpdateDates"
+      "TestPackUpdateDates",
+      "Test: Package"
     ].each {
       Package.findByName(it)?.expunge()
     }
@@ -341,6 +347,76 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.body().globalNote == "Testing Consortium"
     resp.body().breakable.name == "Yes"
     resp.body()._embedded?.ids?.size() == 1
+  }
+
+  void "test /rest/packages post with duplicate name"() {
+    given:
+    def testSource = Source.findByName("TestPack")
+    Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
+    Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
+    Map new_body = [
+        name           : "Testpack",
+        breakable      : "Yes",
+        consistent     : "Yes",
+        description    : "kjkljslkdfsdf",
+        descriptionURL : "https://heise.de",
+        fixed          : "Yes",
+        global         : "Consortium",
+        globalNote     : "Testing Consortium",
+        ids            : [
+            [
+                "value"    : "ZDB-1-TEST",
+                "namespace": "isil"
+            ]
+        ],
+        provider       : testOrg.id,
+        nominalPlatform: testPlt.id,
+        source         : testSource.id,
+        scope          : [name: "Front File"]
+    ]
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken()
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    } catch (Exception e) {
+      resp = e.response
+    }
+
+    then:
+    resp.body().errors?.name != null
+    Package.findAllByNameIlike("TestPack").size() == 1
+  }
+
+  void "test /rest/packages post with duplicate normname"() {
+    given:
+    Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
+    Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
+    Map new_body = [
+        name           : "Test : Package",
+        provider       : testOrg.id,
+        nominalPlatform: testPlt.id
+    ]
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken()
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    } catch (Exception e) {
+      resp = e.response
+    }
+
+    then:
+    resp.body().errors?.name != null
+    Package.findAllByNameIlike("Test : Package").size() == 0
   }
 
   void "test /rest/packages post with new tipps"() {

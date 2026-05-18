@@ -612,28 +612,31 @@ class PackageService {
 
   @javax.annotation.PreDestroy
   def destroy() {
-    log.debug("Destroy");
+    log.debug("Destroy")
   }
 
-  def restLookup(packageHeaderDTO, def user = null) {
-    log.info("Upsert org with header ${packageHeaderDTO}");
-    def result = [to_create: true];
-    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    def normname = Package.generateNormname(packageHeaderDTO.name)
+  public Map restLookup(packageHeaderDTO, User user = null) {
+    log.info("Upsert org with header ${packageHeaderDTO}")
+    Map result = [to_create: true]
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    String normname = Package.generateNormname(packageHeaderDTO.name)
 
     log.debug("Checking by normname ${normname} ..")
-    def name_candidates = Package.executeQuery("from Package as p where p.normname = :nn and p.status <> :sd", [nn: normname, sd: status_deleted])
-    def ids_list = packageHeaderDTO.identifiers ?: packageHeaderDTO.ids
-    def matches = [:]
-    def created = false
-    boolean changed = false;
+    List name_candidates = Package.executeQuery("from Package as p where p.normname = :nn and p.status <> :sd", [nn: normname, sd: status_deleted])
+    List ids_list = packageHeaderDTO.identifiers ?: packageHeaderDTO.ids
+    Map matches = [:]
 
     if (name_candidates.size() > 0) {
       name_candidates.each { nc ->
         if (!matches["${nc.id}"])
           matches["${nc.id}"] = []
 
-        matches["${nc.id}"] << [field: 'name', value: packageHeaderDTO.name, baddata: packageHeaderDTO.name, message: "Another package with this name already exists!"]
+        matches["${nc.id}"] << [
+          field: 'name',
+          value: packageHeaderDTO.name,
+          baddata: packageHeaderDTO.name,
+          message: "Another package with this name already exists!"
+        ]
       }
     }
 
@@ -671,31 +674,38 @@ class PackageService {
     //   }
     // }
 
-    def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
-    def variant_matches = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
+    String variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
+    List variant_matches = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
     variant_matches.each { vm ->
       if (!matches["${vm.id}"]) {
         matches["${vm.id}"] = []
       }
 
-      matches["${vm.id}"] << ['field': 'name', value: packageHeaderDTO.name, baddata: packageHeaderDTO.name, message: "Provided name matched a variant of an existing package!", code: 'inUse']
+      matches["${vm.id}"] << [
+        field: 'name',
+        value: packageHeaderDTO.name,
+        baddata: packageHeaderDTO.name,
+        message: "Provided name matched a variant of an existing package!",
+        code: 'inUse'
+      ]
     }
 
     if (packageHeaderDTO.variantNames?.size() > 0) {
       log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
+
       packageHeaderDTO.variantNames.each {
-        def variant = null
+        String variant_string
 
         if (it instanceof String) {
-          variant = it.trim()
+          variant_string = it.trim()
         }
         else if (it instanceof Map) {
-          variant = it.variantName?.trim() ?: null
+          variant_string = it.variantName?.trim() ?: null
         }
 
-        if (variant) {
-          def var_norm = Package.generateNormname(variant)
+        if (variant_string) {
+          String var_norm = Package.generateNormname(variant_string)
           def name_matches = Package.findAllByNormnameAndStatusNotEqual(var_norm, status_deleted)
 
           name_matches.each { nm ->
@@ -703,19 +713,32 @@ class PackageService {
               matches["${nm.id}"] = []
             }
 
-            matches["${nm.id}"] << [field: 'variantNames', value: variant, baddata: variant, message: "Provided variant matched the title of an existing package!", code: 'inUse']
+            matches["${nm.id}"] << [
+              field: 'variantNames',
+              value: variant_string,
+              baddata: variant_string,
+              message: "Provided variant matched the title of an existing package!",
+              code: 'inUse'
+            ]
           }
 
-          def variant_nn = GOKbTextUtils.normaliseString(variant)
-          def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
+          String variant_nn = GOKbTextUtils.normaliseString(variant_string)
+          List variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_nn, sd: status_deleted])
 
           variant_candidates.each { vc ->
-            log.debug("Found existing package variant name for variantName ${variant}")
+            log.debug("Found existing package variant name for variantName ${variant_string}")
+
             if (!matches["${vc.id}"]) {
               matches["${vc.id}"] = []
             }
 
-            matches["${vc.id}"] << ['field': 'variantNames', value: variant, baddata: variant, message: "Provided variant matched that of an existing package!", code: 'inUse']
+            matches["${vc.id}"] << [
+              field: 'variantNames',
+              value: variant_string,
+              baddata: variant_string,
+              message: "Provided variant matched that of an existing package!",
+              code: 'inUse'
+            ]
           }
         }
       }
