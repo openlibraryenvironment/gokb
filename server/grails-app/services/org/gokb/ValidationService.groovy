@@ -9,6 +9,7 @@ import com.opencsv.CSVParserBuilder
 import grails.util.Environment
 import grails.validation.ValidationException
 import java.time.LocalDate
+import java.util.regex.Matcher
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
 import org.apache.commons.validator.routines.ISSNValidator
@@ -228,10 +229,10 @@ class ValidationService {
 
   static ISSNValidator ISSN_VAL = new ISSNValidator()
 
-  def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false, IdentifierNamespace titleIdNamespaceSerial = null, IdentifierNamespace titleIdNamespaceMonograph = null) {
+  public Map generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false, IdentifierNamespace titleIdNamespaceSerial = null, IdentifierNamespace titleIdNamespaceMonograph = null) {
     log.debug("Generating report for file with: [titleIdNamespace: $titleIdNamespace, strict: $strict, titleIdNamespaceSerial: $titleIdNamespaceSerial, titleIdNamespaceMonograph: $titleIdNamespaceMonograph]")
 
-    def result = [
+    Map result = [
         valid: true,
         mixed: false,
         message: "",
@@ -304,9 +305,9 @@ class ValidationService {
           result.valid = false
         }
         else if (nl.size() >= MANDATORY_COLS.size()) {
-          def pubTypeVal = nl[col_positions['publication_type']].trim()
-          def titleIdVal = col_positions['title_id'] ? nl[col_positions['title_id']].trim() : null
-          def pubType = checkPubType(pubTypeVal)
+          String pubTypeVal = nl[col_positions['publication_type']].trim()
+          String titleIdVal = col_positions['title_id'] ? nl[col_positions['title_id']].trim() : null
+          String pubType = checkPubType(pubTypeVal)
           IdentifierNamespace row_namespace = titleIdNamespace
 
           if (pubType == 'Serial') {
@@ -343,7 +344,7 @@ class ValidationService {
 
           result.rows.total++
 
-          def row_result = checkRow(nl, rowCount, col_positions, row_namespace, strict)
+          Map row_result = checkRow(nl, rowCount, col_positions, row_namespace, strict)
 
           if (row_result.errors) {
             result.rows.error++
@@ -434,14 +435,14 @@ class ValidationService {
     return csv
   }
 
-  def checkRow(String[] nl, int rowCount, Map col_positions, IdentifierNamespace titleIdNamespace = null, boolean strict = false) {
-    def result = [errors: [:], warnings: [:]]
-    def valid_ids = []
-    def pubTypeVal = nl[col_positions['publication_type']].trim()
-    def pubType = checkPubType(pubTypeVal)
+  public Map checkRow(String[] nl, int rowCount, Map col_positions, IdentifierNamespace titleIdNamespace = null, boolean strict = false) {
+    Map result = [errors: [:], warnings: [:]]
+    List valid_ids = []
+    String pubTypeVal = nl[col_positions['publication_type']].trim()
+    String pubType = checkPubType(pubTypeVal)
 
     for (key in col_positions.keySet()) {
-      def trimmed_val = nl[col_positions[key]].trim()
+      String trimmed_val = nl[col_positions[key]].trim()
 
       if (!hasValidLength(trimmed_val, key)) {
         if (strict) {
@@ -514,10 +515,10 @@ class ValidationService {
           ]
         }
         else if (key == 'title_id' && titleIdNamespace) {
-          def field_valid_result = checkIdForNamespace(trimmed_val, titleIdNamespace)
+          String field_valid_result = checkIdForNamespace(trimmed_val, titleIdNamespace)
 
           if (!field_valid_result) {
-            def nslabel = (titleIdNamespace.name ?: titleIdNamespace.value)
+            String nslabel = (titleIdNamespace.name ?: titleIdNamespace.value)
 
             result.errors[key] = [
                 message: "Identifier value '${trimmed_val}' for namespace '$nslabel' is not valid!",
@@ -530,8 +531,8 @@ class ValidationService {
           log.debug("Skipping ID columns due to missing publication_type")
         }
         else if (KNOWN_COLUMNS[key].validator && trimmed_val) {
-          def final_args = [trimmed_val] + KNOWN_COLUMNS[key].validator.args?.collect { it == "_colName" ? key : nl[col_positions[it]] }
-          def field_valid_result = "${KNOWN_COLUMNS[key].validator.name}"(*final_args)
+          List final_args = [trimmed_val] + KNOWN_COLUMNS[key].validator.args?.collect { it == "_colName" ? key : nl[col_positions[it]] }
+          Object field_valid_result = "${KNOWN_COLUMNS[key].validator.name}"(*final_args)
 
           if (field_valid_result instanceof Map) {
             if (field_valid_result.result == 'ERROR') {
@@ -592,7 +593,7 @@ class ValidationService {
     }
 
     if (col_positions['date_first_issue_online'] && col_positions['date_last_issue_online']) {
-      def date_order = checkDatePair(
+      String date_order = checkDatePair(
           nl[col_positions['date_first_issue_online']],
           nl[col_positions['date_last_issue_online']])
 
@@ -605,7 +606,7 @@ class ValidationService {
       }
     }
 
-    def coverageCheck = checkCoverageRange(col_positions['num_first_vol_online'],
+    Map coverageCheck = checkCoverageRange(col_positions['num_first_vol_online'],
         col_positions['num_first_issue_online'],
         col_positions['num_last_vol_online'],
         col_positions['num_last_issue_online'])
@@ -617,7 +618,7 @@ class ValidationService {
     result
   }
 
-  boolean hasValidLength(String trimmed_val, String column) {
+  private boolean hasValidLength(String trimmed_val, String column) {
     boolean result = true
 
     if (trimmed_val?.length() > 1023 ||
@@ -631,12 +632,15 @@ class ValidationService {
     result
   }
 
-  def checkEmbargoCode(String value) {
-    return (value ==~ ~"^(([RP][1-9][0-9]*[DMY])|(R[1-9][0-9]*[DMY];P[1-9][0-9]*[DMY]))\$" ? value : false)
+  public String checkEmbargoCode(String value) {
+    return (value ==~ ~"^(([RP][1-9][0-9]*[DMY])|(R[1-9][0-9]*[DMY];P[1-9][0-9]*[DMY]))\$" ? value : null)
   }
 
-  def checkCoverageRange(startVolume, startIssue, endVolume, endIssue) {
-    def result = [valid: true, errors: []]
+  public Map checkCoverageRange(startVolume, startIssue, endVolume, endIssue) {
+    Map result = [
+      valid: true,
+      errors: []
+    ]
 
     if ((startVolume instanceof Integer || startVolume?.isInteger()) &&
         (endVolume instanceof Integer || endVolume?.isInteger())
@@ -688,8 +692,8 @@ class ValidationService {
     result
   }
 
-  def checkPubType(String value) {
-    String result
+  public String checkPubType(String value) {
+    String result = null
 
     RefdataValue.withNewSession {
       RefdataValue resolvedType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', value.trim())
@@ -702,7 +706,7 @@ class ValidationService {
     result
   }
 
-  def checkAccessType(String value) {
+  public String checkAccessType(String value) {
     String final_val
 
     if (value in ['F', 'f']) {
@@ -715,7 +719,7 @@ class ValidationService {
     final_val
   }
 
-  def checkCoverageDepth(String value) {
+  public String checkCoverageDepth(String value) {
     String result
     String final_val = value
 
@@ -734,17 +738,17 @@ class ValidationService {
     result
   }
 
-  def checkTitleString(String value) {
+  public String checkTitleString(String value) {
     return GOKbTextUtils.cleanTitleString(value) ?: null
   }
 
-  def checkKbartIdentifier(String value, String column, String pubType) {
-    def result = null
-    def final_type = checkPubType(pubType)
+  public String checkKbartIdentifier(String value, String column, String pubType) {
+    String result = null
+    String final_type = checkPubType(pubType)
 
     if (final_type && KNOWN_COLUMNS[column]?.namespaces?."${final_type}") {
       IdentifierNamespace.withNewSession {
-        def namespace = IdentifierNamespace.findByValue(KNOWN_COLUMNS[column]?.namespaces?."${final_type}")
+        IdentifierNamespace namespace = IdentifierNamespace.findByValue(KNOWN_COLUMNS[column]?.namespaces?."${final_type}")
         result = checkIdForNamespace(value.trim(), namespace)
       }
     }
@@ -752,12 +756,12 @@ class ValidationService {
     result
   }
 
-  def checkIdForNamespace(String value, IdentifierNamespace titleIdNamespace) {
-    def result = null
+  public String checkIdForNamespace(String value, IdentifierNamespace titleIdNamespace) {
+    String result = null
 
     if (titleIdNamespace.value in ['isbn', 'pisbn']) {
       try {
-        def valid_isbn = ISBN.parseIsbn(value)
+        ISBN valid_isbn = ISBN.parseIsbn(value)
 
         result = value
 
@@ -768,7 +772,7 @@ class ValidationService {
       catch(ISBNException ie) {}
     }
     else if (titleIdNamespace.value in ['issn', 'eissn']) {
-      def valid_issn = ISSN_VAL.isValid(value.toUpperCase())
+      boolean valid_issn = ISSN_VAL.isValid(value.toUpperCase())
 
       if (valid_issn) {
         result = value
@@ -789,15 +793,15 @@ class ValidationService {
     result
   }
 
-  def checkZdbId(String zdbId) {
-    def result = null
+  public String checkZdbId(String zdbId) {
+    String result = null
 
     if (zdbId ==~ ~"^\\d{7,10}-[\\dxX]\$") {
-      def parts = zdbId.split('-')
+      List parts = zdbId.split('-')
 
       int number = Integer.valueOf(parts[0])
       int checkDigit = 0
-      def factor = 2
+      int factor = 2
 
       while (number > 0){
         checkDigit += (number % 10) * factor
@@ -816,10 +820,9 @@ class ValidationService {
     result
   }
 
-  def checkDate(String value) {
-    def result = null
-
-    def full_date = GOKbTextUtils.completeDateString(value)
+  public String checkDate(String value) {
+    String result = null
+    String full_date = GOKbTextUtils.completeDateString(value)
 
     if (full_date) {
       result = value
@@ -828,8 +831,8 @@ class ValidationService {
     result
   }
 
-  def checkTimestamp(String value, def format = null) {
-    def result = null
+  public String checkTimestamp(String value, String format = null) {
+    String result
 
     if (!format || format == 'sec') {
       try {
@@ -855,10 +858,10 @@ class ValidationService {
     result
   }
 
-  def checkUrl(String value, boolean replaceDate = false) {
+  public String checkUrl(String value, boolean replaceDate = false) {
     String local_date_string = LocalDate.now().toString()
 
-    def final_val = value.trim()
+    String final_val = value.trim()
 
     if (replaceDate) {
       final_val = final_val.replace('{YYYY-MM-DD}', local_date_string)
@@ -869,7 +872,7 @@ class ValidationService {
     }
     else {
       String url = ""
-      def parts = null
+      Matcher parts = null
 
       if (parts = final_val =~ /^((?>http[s]?|ftp):\/\/)([^\s\/\?@_]+)(\/[\w\-\/]+\/)*(\/?\??)([^#]+)?(#[\w\-]+)?$/) {
         for (int i = 1; i < parts.groupCount(); i++) {
@@ -880,11 +883,11 @@ class ValidationService {
               url = url + IDN.toASCII(parts.group(i))
             }
             else if (i == 5) {
-              def param_parts
+              String param_parts
               String final_encoded = ""
 
               if (parts.group(i).split("\\?", 2).size() > 1) {
-                def split_pars = parts.group(i).split("\\?", 2)
+                List split_pars = parts.group(i).split("\\?", 2)
                 final_encoded = final_encoded + encodeUrlPart(split_pars[0]) + '?'
                 param_parts = split_pars[1]
               } else {
@@ -948,9 +951,9 @@ class ValidationService {
     result
   }
 
-  def checkDatePair(String startDate, String endDate) {
-    def final_start = GOKbTextUtils.completeDateString(startDate)
-    def final_end = GOKbTextUtils.completeDateString(endDate)
+  public String checkDatePair(String startDate, String endDate) {
+    String final_start = GOKbTextUtils.completeDateString(startDate)
+    String final_end = GOKbTextUtils.completeDateString(endDate)
 
     if (final_start && final_end && final_end < final_start) {
       return 'error'
@@ -960,9 +963,11 @@ class ValidationService {
     }
   }
 
-  def checkNewComponentName(String value, String componentType) {
-    def result = [result: 'OK']
-    def defined_types = [
+  public Map checkNewComponentName(String value, String componentType, boolean isVariant = false) {
+    Map result = [result: 'OK']
+    List errors = []
+
+    List defined_types = [
         "Package",
         "Org",
         "JournalInstance",
@@ -980,7 +985,7 @@ class ValidationService {
         "OtherInstance",
         "Other"
     ]
-    def final_type = componentType.capitalize()
+    String final_type = componentType.capitalize()
 
     if (final_type in defined_types) {
       if (final_type == 'TIPP') {
@@ -1004,13 +1009,13 @@ class ValidationService {
     }
     else {
       result.result = 'ERROR'
-      result.errors = [
-        [
-          message: 'Unknown component type!',
-          messageCode: 'validation.unknownType',
-          value: componentType
-        ]
+      errors << [
+        message: 'Unknown component type!',
+        messageCode: 'validation.unknownType',
+        value: componentType
       ]
+
+      result.errors = errors
 
       return result
     }
@@ -1020,55 +1025,129 @@ class ValidationService {
 
     if (cleaned_val) {
       result.cleanedVal = cleaned_val
-      def test_obj = null
 
-      try {
-        test_obj = type_class.newInstance(name: cleaned_val)
-        test_obj.validate()
+      if (final_type == 'Package' || final_type == 'Org') {
+        boolean hasMatches = matchesExistingName(type_class, value, isVariant)
 
-        if (final_type == 'Package') {
-          test_obj = type_class.newInstance(name: value)
-          test_obj.validate()
+        if (hasMatches) {
+          result.result = 'ERROR'
+          errors << [
+            message: 'This name is already in use!',
+            messageCode: 'validation.nameNotUnique',
+            value: value
+          ]
         }
+      }
+      else {
+        KBComponent test_obj
 
-      } catch (ValidationException ve) {
-        ve.errors.fieldErrors?.each {
-          if (it.code == 'notUnique') {
-            result.result = 'ERROR'
-            result.errors = [
-              [
+        try {
+          test_obj = type_class.newInstance(name: cleaned_val)
+          test_obj.validate()
+        } catch (ValidationException ve) {
+          ve.errors.fieldErrors?.each {
+            if (it.code == 'notUnique') {
+              result.result = 'ERROR'
+
+              errors << [
                 message: 'A component with this name already exists!',
                 messageCode: 'validation.nameNotUnique',
                 value: value
               ]
-            ]
+            }
           }
         }
-      }
 
-      test_obj?.discard()
+        test_obj?.discard()
+      }
     }
     else {
       result.result = 'ERROR'
-      result.errors = [
-        [
-          message: 'Please provide a name!',
-          messageCode: 'validation.missingName',
-          value: value
-        ]
+      errors << [
+        message: 'Please provide a name!',
+        messageCode: 'validation.missingName',
+        value: value
       ]
+    }
+
+    if (errors) {
+      result.errors = errors
     }
 
     result
   }
 
-  def checkSubject(RefdataValue scheme, String value) {
-    def result = [result: 'OK']
+  public boolean matchesExistingName(Class cls, String name_string, boolean isVariant = false) {
+    boolean hasMatches = false
+
+    Map matches = matchForName(cls, name_string, isVariant)
+
+    log.debug("matchesExistingName :: matches ${matches} -> ${matches.size() > 0}")
+
+    if (matches.size() > 0) {
+      hasMatches = true
+    }
+
+    hasMatches
+  }
+
+  public Map matchForName(Class cls, String name, boolean isVariant = false) {
+    Map matches = [:]
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    String normname = cls.generateNormname(name)
+    String variant_normname = GOKbTextUtils.normaliseString(name)
+
+    log.debug("Checking by normname ${normname} ..")
+
+    List name_candidates = cls.executeQuery("from ${cls.simpleName} as p where p.normname = :nn and p.status <> :sd".toString(), [nn: normname, sd: status_deleted])
+
+    if (name_candidates.size() > 0) {
+      name_candidates.each { nc ->
+        if (!matches["${nc.id}"])
+          matches["${nc.id}"] = []
+
+        matches["${nc.id}"] << [
+          field: 'name',
+          value: name,
+          baddata: name,
+          cls: cls.simpleName,
+          message: "Another ${cls.simpleName} with this name already exists!",
+          messageCode: "validation.name.${isVariant ? 'variant' : 'name'}AsName"
+        ]
+      }
+    }
+
+    log.debug("Checking as variant normname ${variant_normname} ..")
+
+    List variant_matches = cls.executeQuery("select distinct p from ${cls.simpleName} as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ".toString(), [nvn: variant_normname, sd: status_deleted])
+
+    variant_matches.each { vm ->
+      if (!matches["${vm.id}"]) {
+        matches["${vm.id}"] = []
+      }
+
+      matches["${vm.id}"] << [
+        field: 'name',
+        value: name,
+        baddata: name,
+        cls: cls.simpleName,
+        message: "Provided ${isVariant ? 'variant name': 'name'} matched a variant of an existing ${cls.simpleName}!",
+        messageCode: "validation.name.${isVariant ? 'variant' : 'name'}AsVariant"
+      ]
+    }
+
+    log.debug("MatchForName :: Final result: ${matches}")
+
+    matches
+  }
+
+  public Map checkSubject(RefdataValue scheme, String value) {
+    Map result = [result: 'OK']
     RefdataCategory scheme_category = RefdataCategory.findByDesc('Subject.Scheme')
 
     if (scheme.owner == scheme_category) {
       if (scheme.value == 'DDC') {
-        def notation_result = checkDDCNotation(value)
+        Map notation_result = checkDDCNotation(value)
 
         if (notation_result.result == 'ERROR') {
           result = notation_result
@@ -1097,13 +1176,13 @@ class ValidationService {
     result
   }
 
-  def checkDDCList(String value) {
-    def result = [result: 'OK']
-    def notations = value?.trim()?.split(';') ?: []
+  public Map checkDDCList(String value) {
+    Map result = [result: 'OK']
+    List notations = value?.trim()?.split(';') ?: []
 
     if (notations.size() > 0) {
       notations.each {
-        def validation_result = checkDDCNotation(it)
+        Map validation_result = checkDDCNotation(it)
 
         if (validation_result.result == 'ERROR') {
           result.result = 'ERROR'
@@ -1115,8 +1194,8 @@ class ValidationService {
     result
   }
 
-  def checkDDCNotation(String notation) {
-    def result = [result: 'OK']
+  public Map checkDDCNotation(String notation) {
+    Map result = [result: 'OK']
 
     if (notation ==~ /^\d{3}$/) {
       log.debug("Valid DDC notation!")
