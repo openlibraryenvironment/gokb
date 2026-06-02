@@ -617,7 +617,7 @@ class PackageService {
   }
 
   public Map restLookup(packageHeaderDTO, User user = null) {
-    log.info("Upsert org with header ${packageHeaderDTO}")
+    log.info("Upsert package with header ${packageHeaderDTO}")
     Map result = [to_create: true]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     String normname = Package.generateNormname(packageHeaderDTO.name)
