@@ -819,8 +819,8 @@ class PackageCSVExportService {
     return (what && (what.toString().trim() != '')) ? what.toString().trim() : ''
   }
 
-  private String pick(def tippPropValue, def titlePropValue, ExportType exportType) {
-    if (exportType == ExportType.KBART_TIPP) {
+  private String pick(def tippPropValue, def titlePropValue, ExportType exportType, boolean forceFallback = false) {
+    if (exportType == ExportType.KBART_TIPP && !forceFallback) {
       return tippPropValue
     }
 
@@ -835,7 +835,11 @@ class PackageCSVExportService {
     return ''
   }
 
-  private String selectDateField(tippPropValue, titlePropValue, ExportType exportType) {
+  private String selectDateField(tippPropValue, titlePropValue, ExportType exportType, boolean forceFallback = false) {
+    if (exportType == ExportType.KBART_TIPP && !forceFallback) {
+      return tippPropValue
+    }
+
     if (tippPropValue && titlePropValue){
       return (exportType == ExportType.KBART_TIPP) ? dateFormatService.formatDate(tippPropValue) : dateFormatService.formatDate(titlePropValue)
     }
@@ -875,7 +879,7 @@ class PackageCSVExportService {
     record.preceding_publication_title_id = tipp.precedingPublicationTitleId
     record.parent_publication_title_id = tipp.parentPublicationTitleId
     record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType.value) ? 'F' : 'P'), null, exportType)
-    record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), ti?.getIdentifierValue('ZDB'), exportType)
+    record.zdb_id = pick(tipp.getIdentifierValue('zdb'), ti?.getIdentifierValue('zdb'), exportType, true)
     record.gokb_tipp_uid = tipp.uuid
     record.gokb_title_uid = ti?.uuid
 
