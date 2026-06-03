@@ -132,6 +132,12 @@ class IngestKbartRun {
           defaultMedium: 'Book',
           defaultTypeName: 'org.gokb.cred.BookInstance',
           providerIdentifierNamespace: (monographNamespace?.value ?: null)
+        ],
+        'other': [
+          identifierMap: [:],
+          defaultMedium: null,
+          defaultTypeName: 'org.gokb.cred.OtherInstance',
+          providerIdentifierNamespace: (monographNamespace?.value ?: serialNamespace?.value ?: providerIdentifierNamespace?.value ?: null)
         ]
       ]
     ]

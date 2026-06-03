@@ -76,10 +76,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     Package testPackageUpdateDates = Package.findByName("TestPackUpdateDates")
 
     if (!testPackage) {
-      testPackage = new Package(name: "TestPack", source: testSource).save(flush: true)
-      testPackage.nominalPlatform = testPlt
-      testPackage.provider = testOrg
-      testPackage.save(flush:true)
+      testPackage = new Package(name: "TestPack", source: testSource, nominalPlatform: testPlt, provider: testOrg).save(flush: true, failOnError: true)
     }
 
     if (!urlTestPackage) {
@@ -182,7 +179,9 @@ class PackageTestSpec extends AbstractAuthSpec {
       'TestJournalTIPPSkip',
       'TIPP Name',
       'Journal of agricultural and food chemistry',
-      'Book of agricultural and food chemistry'
+      'Book of agricultural and food chemistry',
+      'TestPackOtherTitle1',
+      'TestPackOtherTitle2'
     ].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
@@ -216,7 +215,9 @@ class PackageTestSpec extends AbstractAuthSpec {
       'TestJournalTIPPSkip',
       'TIPP Name',
       'Journal of agricultural and food chemistry',
-      'Book of agricultural and food chemistry'
+      'Book of agricultural and food chemistry',
+      'TestPackOtherTitle1',
+      'TestPackOtherTitle2'
     ].each {
       TitleInstance.findByName(it)?.expunge()
     }
@@ -659,7 +660,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     MultipartBody requestBody = MultipartBody.builder()
       .addPart(
         "submissionFile",
-        "test_rest_initial_no_access.txt",
+        "test_rest_mixed_valid_separate_namespaces.txt",
         MediaType.TEXT_PLAIN_TYPE,
         kbart_file.getFile()
       )
@@ -677,5 +678,40 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.status == HttpStatus.OK
     TitleInstancePackagePlatform.findByName('TestPackMixedJournal')?.ids.find { it.namespace == testJournalNs }
     TitleInstancePackagePlatform.findByName('TestPackMixedBook')?.ids.find { it.namespace == testMonoNs }
+  }
+
+  void "test /rest/packages/<id>/ingest with publication_type 'other'"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_other_separate_namespaces.txt")
+    Package pkg = Package.findByName("TestPackHandleUrl")
+    IdentifierNamespace testJournalNs = IdentifierNamespace.findByValue('testj')
+    IdentifierNamespace testMonoNs = IdentifierNamespace.findByValue('testm')
+
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_other_separate_namespaces.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .addPart('titleIdSerial', "${testJournalNs.id}")
+      .addPart('titleIdMonograph', "${testMonoNs.id}")
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().job_result.report.created == 2
+    pkg.refresh().tipps?.size() == 2
+    TitleInstancePackagePlatform.findByName('TestPackOtherTitle1')?.ids.find { it.namespace == testMonoNs }
+    TitleInstancePackagePlatform.findByName('TestPackOtherTitle2')?.ids.find { it.namespace == testMonoNs }
   }
 }
