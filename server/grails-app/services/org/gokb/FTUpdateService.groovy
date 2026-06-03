@@ -222,6 +222,27 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
+        kbc.titleHistory?.each { he ->
+          if (he.date) {
+            Map event = [
+              date: dateFormatService.formatDate(he.date),
+              from: [],
+              to: [],
+              id: (he.id ?: "")
+            ]
+
+            if (he.from) {
+              event.from.addAll(he.from.collect { fe -> [id: fe?.id, uuid: fe?.uuid, name: fe?.name] })
+            }
+
+            if (he.to) {
+              event.to.addAll(he.to.collect { te -> [id: te?.id, uuid: te?.uuid, name: te?.name] })
+            }
+
+            result.titleHistory.add(event)
+          }
+        }
+
         break
       case DatabaseInstance:
         result.updater = 'database'
