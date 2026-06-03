@@ -134,27 +134,11 @@ class PackageSourceUpdateService {
           def file_info = [:]
 
           if (valid_url_string) {
-            /* String local_date_string = LocalDate.now().toString()
 
-            if (valid_url_string =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
-              log.debug("URL contains date placeholder ..")
-              src_url = new URL(valid_url_string.replace('{YYYY-MM-DD}', local_date_string))
-              dynamic_date = true
-            } else {
-              def date_pattern_match = (valid_url_string =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
+            urls = findUrlsToCall(valid_url_string, pkg_source, isFtpTransfer)
+            src_url = urls.get(0)
 
-              if (date_pattern_match && date_pattern_match[0].size() > 0) {
-                String matched_date_string = date_pattern_match[0][1]
-                log.debug("${matched_date_string}")
-                extracted_date = LocalDate.parse(matched_date_string)
-              }
-
-              src_url = new URL(valid_url_string)
-            }
-            */
-
-            urls = findUrlsToCall(valid_url_string, pkg_source)
-
+            log.debug("++++++ " + src_url.toString())
 
           }
           else {
@@ -171,31 +155,17 @@ class PackageSourceUpdateService {
             def deposit_token = java.util.UUID.randomUUID().toString()
             File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
             /* def lastRunLocal = pkg_source.lastRun ? pkg_source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
-
+            */
             pkg_source.lastRun = new Date()
             pkg_source.save(flush: true)
-            */
+
 
             if ( isFtpTransfer ) {
                 log.debug("Start FTP Update from Source " + pkg_source )
                 ftpUrlParts["complete"] = src_url.toString()
-                // file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, dynamic_date, extracted_date, lastRunLocal, restrictSize)
                 file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, restrictSize)
             }
             else { // start not-FTP
-
-              /* if (!extracted_date || !lastRunLocal) {
-                log.debug("Request initial URL..")
-                file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-
-                processErrorState(result, pkg_source, file_info)
-              }
-
-              if (result.result == 'ERROR') {
-                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-                return result
-              }
-               */
 
               for(int i = 0; i < urls.size(); i++) {
                 log.debug("Fetching URL " + urls.get(i))
@@ -473,11 +443,11 @@ class PackageSourceUpdateService {
     return extractedDate
   }
 
-  List<URL> findUrlsToCall (String givenUrl, Source source) {
+  List<URL> findUrlsToCall (String givenUrl, Source source, boolean isFtpTransfer) {
     List<URL> urls = new ArrayList<>()
     boolean dynamic_date = false
     boolean fixed_date = false
-    LocalDate extracted_date = null
+    //LocalDate extracted_date = null
     LocalDate active_date = LocalDate.now()
     LocalDate dateLastFoundUpdateFile = source.dateLastFoundUpdateFile ? source.dateLastFoundUpdateFile.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
 
@@ -486,103 +456,100 @@ class PackageSourceUpdateService {
     if (givenUrl =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
       log.debug("URL contains date placeholder ..")
       givenUrl = givenUrl.replace('{YYYY-MM-DD}', local_date_string)
-      urls.add(new URL(givenUrl))
+      // urls.add(new URL(givenUrl))
       dynamic_date = true
     }
     else {
       if (extractDateFromUrl(givenUrl)) {
-        extracted_date = extractDateFromUrl(givenUrl)
+        // extracted_date = extractDateFromUrl(givenUrl)
         fixed_date = true
       }
     }
 
-    LocalDate lastRunLocal = source.lastRun ? source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
-    source.lastRun = new Date()
-    source.save(flush: true)
+    urls.add(new URL(givenUrl))
 
-    if (!dynamic_date && !lastRunLocal) {
-      urls.add(new URL(givenUrl))
-    }
+    if(!isFtpTransfer) {
+      if (dynamic_date || fixed_date) {
+        // search for the file in most likely order
+        Map<String, Integer> maxCallsPerFrequency = [
+                "Weekly"   : 7,
+                "Monthly"  : 31,
+                "Quarterly": 92,
+                "Yearly"   : 366,
+        ]
 
-    if (dynamic_date || fixed_date) {
-      // search for the file in most likely order
-      Map<String, Integer> maxCallsPerFrequency = [
-              "Weekly"      : 7,
-              "Monthly"     : 31,
-              "Quarterly"   : 92,
-              "Yearly"      : 366,
-      ]
+        // set lastFoundFile + updateInterval as anchor date to search for the new file
+        LocalDate anchorDate
+        TemporalUnit temporalUnit = ChronoUnit.WEEKS
+        boolean isQuarterly = false
 
-      // set lastFoundFile + updateInterval as anchor date to search for the new file
-      LocalDate anchorDate
-      TemporalUnit temporalUnit = ChronoUnit.WEEKS
-      boolean isQuarterly = false
+        long specificTimeUnitsSinceLastFound
+        switch (source.frequency) {
+          case RefdataCategory.lookup("Source.Frequency", "Weekly"):
+            //temporalUnit = ChronoUnit.WEEKS
+            break
+          case RefdataCategory.lookup("Source.Frequency", "Monthly"):
+            temporalUnit = ChronoUnit.MONTHS
+            break
+          case RefdataCategory.lookup("Source.Frequency", "Quarterly"):
+            temporalUnit = ChronoUnit.MONTHS
+            isQuarterly = true
+            break
+          case RefdataCategory.lookup("Source.Frequency", "Yearly"):
+            temporalUnit = ChronoUnit.YEARS
+            break
+          default:
+            break
+        }
 
-      long specificTimeUnitsSinceLastFound
-      switch (source.frequency) {
-        case RefdataCategory.lookup("Source.Frequency", "Weekly"):
-          //temporalUnit = ChronoUnit.WEEKS
-          break
-        case RefdataCategory.lookup("Source.Frequency", "Monthly"):
-          temporalUnit = ChronoUnit.MONTHS
-          break
-        case RefdataCategory.lookup("Source.Frequency", "Quarterly"):
-          temporalUnit = ChronoUnit.MONTHS
-          isQuarterly = true
-          break
-        case RefdataCategory.lookup("Source.Frequency", "Yearly"):
-          temporalUnit = ChronoUnit.YEARS
-          break
-        default:
-          break
-      }
+        LocalDate minDate = active_date.minus(1, temporalUnit)
 
-      LocalDate minDate = active_date.minus(1, temporalUnit)
+        if (dateLastFoundUpdateFile) {
+          // Division for quarterly update results in 'lower Gaussian Number' (i.e. Abrundung)
+          specificTimeUnitsSinceLastFound = isQuarterly ? temporalUnit.between(dateLastFoundUpdateFile, active_date) / 3 : temporalUnit.between(dateLastFoundUpdateFile, active_date)
+          anchorDate = isQuarterly ? dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound * 3, temporalUnit) : dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound, temporalUnit)
+          //we just go back to the last found date
+          if (dateLastFoundUpdateFile.isAfter(minDate)) {
+            minDate = dateLastFoundUpdateFile
+          }
+        } else {
+          anchorDate = active_date
+        }
 
-      if (dateLastFoundUpdateFile) {
-        // Division for quarterly update results in 'lower Gaussian Number' (i.e. Abrundung)
-        specificTimeUnitsSinceLastFound = isQuarterly ? temporalUnit.between(dateLastFoundUpdateFile, active_date)/3 : temporalUnit.between(dateLastFoundUpdateFile, active_date)
-        anchorDate = isQuarterly ? dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound * 3, temporalUnit) : dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound, temporalUnit)
-        //we just go back to the last found date
-        if (dateLastFoundUpdateFile.isAfter(minDate)) {
-          minDate = dateLastFoundUpdateFile
+
+        urls.add(new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, anchorDate.toString())))
+        int added = urls.size()
+        int diff = 1
+        int maxToAdd = maxCallsPerFrequency.get(source.frequency?.value)
+        boolean upperAvailable = true
+        boolean lowerAvailable = true
+
+        while (added <= maxToAdd && (upperAvailable || lowerAvailable)) {
+          if (!active_date.isBefore(anchorDate.plusDays(diff))) {
+            URL urlCandidate = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.plusDays(diff).toString())))
+            if (!urls.contains(urlCandidate)) {
+              urls.add(urlCandidate)
+              added++
+            }
+          } else {
+            upperAvailable = false
+          }
+          if (!minDate.isAfter(anchorDate.minusDays(diff))) {
+            URL urlCandidate = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.minusDays(diff).toString())))
+            if (!urls.contains(urlCandidate)) {
+              urls.add(urlCandidate)
+              added++
+            }
+          } else {
+            lowerAvailable = false
+          }
+          diff++
         }
       }
-      else {
-        anchorDate = active_date
-      }
-
-
-      urls.add(new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, anchorDate.toString())))
-      int added = 1
-      int diff = 1
-      int maxToAdd = maxCallsPerFrequency.get(source.frequency?.value)
-      boolean upperAvailable = true
-      boolean lowerAvailable = true
-
-      while (added <= maxToAdd && (upperAvailable || lowerAvailable)) {
-        if (!minDate.isAfter(anchorDate.minusDays(diff))) {
-          urls.add(new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.minusDays(diff).toString()))))
-          added++
-        }
-        else {
-          lowerAvailable = false
-        }
-        if (!active_date.isBefore(anchorDate.plusDays(diff))) {
-          urls.add(new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.plusDays(diff).toString()))))
-          added++
-        }
-        else {
-          upperAvailable = false
-        }
-
-        diff++
-
-      }
-
     }
 
     log.debug("All URLs to call: " + urls)
+    log.debug("SIZE: " + urls.size())
 
     return urls
   }
@@ -869,7 +836,6 @@ class PackageSourceUpdateService {
           ftp.changeWorkingDirectory(directory)
           List files
 
-          //if(dynamic_date || extracted_date) {
           if(isUrlWithDate) {
 
             def dateMaskMatch = (filename =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)

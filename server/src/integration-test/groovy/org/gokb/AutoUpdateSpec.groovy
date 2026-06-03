@@ -41,7 +41,7 @@ class AutoUpdateSpec extends Specification{
     Source source = Source.findByName("source1")
     String givenUrl = source.url
 
-    List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source)
+    List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
 
     expect:
     res.size() > 0
