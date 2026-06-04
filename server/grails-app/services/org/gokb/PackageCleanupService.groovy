@@ -6,12 +6,18 @@ import grails.gorm.transactions.Transactional
 
 import groovy.util.logging.Slf4j
 
+import java.util.regex.Matcher
+
 import org.gokb.cred.*
+import org.hibernate.Session
 
 @Slf4j
 class PackageCleanupService {
 
   def tippService
+  def autoTimestampEventListener
+  def FTUpdateService
+  def sessionFactory
 
   def reactivateReplacedTipps(pid, Job j = null) {
     def result = [result: 'OK', cases: 0, additionalDeletes: 0, total: 0]
@@ -97,6 +103,75 @@ class PackageCleanupService {
       }
 
       j?.endTime = new Date()
+    }
+
+    result
+  }
+
+  public Map generateYearInfoFromNames() {
+    Map result = [result: 'OK', changed: 0, invalid: 0]
+    Session session = sessionFactory.currentSession
+
+    List candidate_ids = Package.executeQuery("select id from Package where status != :sd and startYear = null and endYear = null", [sd: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
+    int ctr = 0
+
+    autoTimestampEventListener.withoutLastUpdated (Package) {
+      for (pid in candidate_ids) {
+        Package obj = Package.get(pid)
+        boolean changed = false
+        ctr++
+
+        Matcher groups
+
+        if (groups = obj.name =~ /(before\s|\<)(?<end>(1\d|2[0-2])\d{2})/) {
+          // <1990 , before 1990
+          obj.startYear = 1800
+          obj.endYear = Integer.parseInt(groups.group("end")) - 1
+          changed = true
+        }
+        else if (groups = obj.name =~ /\s\(?(?<start>(1\d|2[0-2])\d{2})(\s?[-\/–]\s?(?<end>(\d{4}|\d{2}))?)?\)?/) {
+          // (2020-2022) , 1990/98 , 2024-1
+          String start_string = groups.group("start")
+          String end_string = groups.group("end")
+
+          obj.startYear = Integer.parseInt(start_string)
+
+          if (!end_string) {
+            obj.endYear = Integer.parseInt(start_string)
+          }
+          else if (end_string.length() == 2) {
+            obj.endYear = Integer.parseInt("${start_string.substring(0, 2)}${end_string}".toString())
+          }
+          else {
+            obj.endYear = Integer.parseInt(end_string)
+          }
+
+          changed = true
+        }
+        else if (groups = obj.name =~ /\(\d{2}\/(?<start>\d{4})\s?-\s?\d{2}\/(?<end>\d{4})\)/) {
+          // (04/2020 - 08/2021)
+          obj.startYear = Integer.parseInt(groups.group("start"))
+          obj.endYear = Integer.parseInt(groups.group("end"))
+          changed = true
+        }
+
+        if (changed) {
+          if (obj.validate()) {
+            log.debug("Set new values for package '${obj.name} (${obj})' startYear -> ${obj.startYear}, endYear -> ${obj.endYear} ..")
+            obj.save(flush: true, failOnError: true)
+            FTUpdateService.updateSingleItem(obj)
+            result.changed++
+          }
+          else {
+            result.invalid++
+          }
+        }
+
+        if (ctr % 50 == 0) {
+          session.flush()
+          session.clear()
+        }
+      }
     }
 
     result
