@@ -168,6 +168,15 @@ class ValidationControllerSpec extends Specification {
     resp.body().errors.size() == 1
   }
 
+  void "test /validation/componentName with existing Package name"() {
+    when:
+    HttpRequest request = HttpRequest.GET(baseUrl + "/validation/componentName?value=Test+Name+Existing&componentType=Package")
+    HttpResponse resp = http.exchange(request, Map)
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().result == 'OK'
+  }
+
   void "test /validation/componentName with existing Package name as variant"() {
     when:
     HttpRequest request = HttpRequest.GET(baseUrl + "/validation/componentName?value=Test+Existing+Name+Variant&componentType=Package")

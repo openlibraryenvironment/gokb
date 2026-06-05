@@ -1095,7 +1095,7 @@ class ValidationService {
     Map matches = [:]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     String normname = cls.generateNormname(name)
-    String variant_normname = GOKbTextUtils.normaliseString(name)
+    String normalised_string = GOKbTextUtils.normaliseString(name)
 
     log.debug("Checking by normname ${normname} ..")
 
@@ -1103,23 +1103,25 @@ class ValidationService {
 
     if (name_candidates.size() > 0) {
       name_candidates.each { nc ->
-        if (!matches["${nc.id}"])
-          matches["${nc.id}"] = []
+        if (GOKbTextUtils.normaliseString(nc.name) == normalised_string) {
+          if (!matches["${nc.id}"])
+            matches["${nc.id}"] = []
 
-        matches["${nc.id}"] << [
-          field: 'name',
-          value: name,
-          baddata: name,
-          cls: cls.simpleName,
-          message: "Another ${cls.simpleName} with this name already exists!",
-          messageCode: "validation.name.${isVariant ? 'variant' : 'name'}AsName"
-        ]
+          matches["${nc.id}"] << [
+            field: 'name',
+            value: name,
+            baddata: name,
+            cls: cls.simpleName,
+            message: "Another ${cls.simpleName} with this name already exists!",
+            messageCode: "validation.name.${isVariant ? 'variant' : 'name'}AsName"
+          ]
+        }
       }
     }
 
-    log.debug("Checking as variant normname ${variant_normname} ..")
+    log.debug("Checking as variant normname ${normalised_string} ..")
 
-    List variant_matches = cls.executeQuery("select distinct p from ${cls.simpleName} as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ".toString(), [nvn: variant_normname, sd: status_deleted])
+    List variant_matches = cls.executeQuery("select distinct p from ${cls.simpleName} as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ".toString(), [nvn: normalised_string, sd: status_deleted])
 
     variant_matches.each { vm ->
       if (!matches["${vm.id}"]) {
