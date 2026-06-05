@@ -176,7 +176,6 @@ class PackageCleanupService {
         }
 
         if (ctr % 50 == 0) {
-          log.debug("generateYearInfoFromNames :: Processed ${ctr} packages ..")
           session.flush()
           session.clear()
         }
