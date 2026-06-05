@@ -28,7 +28,7 @@ class PackageCleanupServiceSpec extends Specification {
 
   void "test year range generation for startYear only"() {
     given:
-    Package pkg = new Package(name: "PackageCleanupTest (2020) Test").save(flush: true, failOnError: true)
+    Package pkg = new Package(name: "PackageCleanupTest (2020) Test", contentType: RefdataCategory.lookup("Package.ContentType", "Book")).save(flush: true, failOnError: true)
     when:
     packageCleanupService.generateYearInfoFromNames()
     then:
@@ -37,7 +37,7 @@ class PackageCleanupServiceSpec extends Specification {
 
   void "test year range generation with full start and end"() {
     given:
-    Package pkg = new Package(name: "PackageCleanupTest (2020–2024) Test").save(flush: true, failOnError: true)
+    Package pkg = new Package(name: "PackageCleanupTest (2020–2024) Test", contentType: RefdataCategory.lookup("Package.ContentType", "Book")).save(flush: true, failOnError: true)
     when:
     packageCleanupService.generateYearInfoFromNames()
     then:
@@ -47,7 +47,7 @@ class PackageCleanupServiceSpec extends Specification {
 
   void "test year range generation with full start and shortened end"() {
     given:
-    Package pkg = new Package(name: "PackageCleanupTest 2020-24").save(flush: true, failOnError: true)
+    Package pkg = new Package(name: "PackageCleanupTest 2020-24", contentType: RefdataCategory.lookup("Package.ContentType", "Book")).save(flush: true, failOnError: true)
     when:
     packageCleanupService.generateYearInfoFromNames()
     then:
@@ -57,7 +57,7 @@ class PackageCleanupServiceSpec extends Specification {
 
   void "test year range generation with end year without start preposed with '<'"() {
     given:
-    Package pkg = new Package(name: "PackageCleanupTest (<1990) Test").save(flush: true, failOnError: true)
+    Package pkg = new Package(name: "PackageCleanupTest (<1990) Test", contentType: RefdataCategory.lookup("Package.ContentType", "Book")).save(flush: true, failOnError: true)
     when:
     packageCleanupService.generateYearInfoFromNames()
     then:
@@ -67,7 +67,7 @@ class PackageCleanupServiceSpec extends Specification {
 
   void "test year range generation with end year without start preposed with 'before'"() {
     given:
-    Package pkg = new Package(name: "PackageCleanupTest before 1990 Test").save(flush: true, failOnError: true)
+    Package pkg = new Package(name: "PackageCleanupTest before 1990 Test", contentType: RefdataCategory.lookup("Package.ContentType", "Book")).save(flush: true, failOnError: true)
     when:
     packageCleanupService.generateYearInfoFromNames()
     then:
@@ -77,7 +77,7 @@ class PackageCleanupServiceSpec extends Specification {
 
   void "test year range generation with month/year combo"() {
     given:
-    Package pkg = new Package(name: "PackageCleanupTest (05/2020 - 09/2024) Test").save(flush: true, failOnError: true)
+    Package pkg = new Package(name: "PackageCleanupTest (05/2020 - 09/2024) Test", contentType: RefdataCategory.lookup("Package.ContentType", "Book")).save(flush: true, failOnError: true)
     when:
     packageCleanupService.generateYearInfoFromNames()
     then:
@@ -87,7 +87,7 @@ class PackageCleanupServiceSpec extends Specification {
 
   void "test year range generation with single year partial"() {
     given:
-    Package pkg = new Package(name: "PackageCleanupTest 2024-1").save(flush: true, failOnError: true)
+    Package pkg = new Package(name: "PackageCleanupTest 2024-1", contentType: RefdataCategory.lookup("Package.ContentType", "Book")).save(flush: true, failOnError: true)
     when:
     packageCleanupService.generateYearInfoFromNames()
     then:

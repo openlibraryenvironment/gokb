@@ -111,22 +111,27 @@ class PackageCleanupService {
   public Map generateYearInfoFromNames() {
     Map result = [result: 'OK', changed: 0, invalid: 0]
     Session session = sessionFactory.currentSession
+    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    RefdataValue content_type_book = RefdataCategory.lookup("Package.ContentType", "Book")
 
-    List candidate_ids = Package.executeQuery("select id from Package where status != :sd and startYear = null and endYear = null", [sd: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
+    List candidate_ids = Package.executeQuery("select id from Package where status != :sd and contentType = :ctb and startYear = null and endYear = null", [sd: status_deleted, ctb: content_type_book])
     int ctr = 0
 
     autoTimestampEventListener.withoutLastUpdated (Package) {
       for (pid in candidate_ids) {
-        Package obj = Package.get(pid)
+        Package obj = Package.lock(pid)
         boolean changed = false
+        Integer new_start
+        Integer new_end
         ctr++
 
         Matcher groups
 
         if (groups = obj.name =~ /(before\s|\<)(?<end>(1\d|2[0-2])\d{2})/) {
           // <1990 , before 1990
-          obj.startYear = 1800
-          obj.endYear = Integer.parseInt(groups.group("end")) - 1
+          new_start = 1800
+          new_end = Integer.parseInt(groups.group("end")) - 1
+
           changed = true
         }
         else if (groups = obj.name =~ /\s\(?(?<start>(1\d|2[0-2])\d{2})(\s?[-\/–]\s?(?<end>(\d{4}|\d{2}))?)?\)?/) {
@@ -134,30 +139,33 @@ class PackageCleanupService {
           String start_string = groups.group("start")
           String end_string = groups.group("end")
 
-          obj.startYear = Integer.parseInt(start_string)
+          new_start = Integer.parseInt(start_string)
 
           if (!end_string) {
-            obj.endYear = Integer.parseInt(start_string)
+            new_end = Integer.parseInt(start_string)
           }
           else if (end_string.length() == 2) {
-            obj.endYear = Integer.parseInt("${start_string.substring(0, 2)}${end_string}".toString())
+            new_end = Integer.parseInt("${start_string.substring(0, 2)}${end_string}".toString())
           }
           else {
-            obj.endYear = Integer.parseInt(end_string)
+            new_end = Integer.parseInt(end_string)
           }
 
           changed = true
         }
         else if (groups = obj.name =~ /\(\d{2}\/(?<start>\d{4})\s?-\s?\d{2}\/(?<end>\d{4})\)/) {
           // (04/2020 - 08/2021)
-          obj.startYear = Integer.parseInt(groups.group("start"))
-          obj.endYear = Integer.parseInt(groups.group("end"))
+          new_start = Integer.parseInt(groups.group("start"))
+          new_end = Integer.parseInt(groups.group("end"))
           changed = true
         }
 
         if (changed) {
+          obj.startYear = new_start
+          obj.endYear = new_end
+
           if (obj.validate()) {
-            log.debug("Set new values for package '${obj.name} (${obj})' startYear -> ${obj.startYear}, endYear -> ${obj.endYear} ..")
+            log.debug("Set new values for package '${obj}' startYear -> ${new_start}, endYear -> ${new_end} ..")
             obj.save(flush: true, failOnError: true)
             FTUpdateService.updateSingleItem(obj)
             result.changed++
@@ -168,6 +176,7 @@ class PackageCleanupService {
         }
 
         if (ctr % 50 == 0) {
+          log.debug("generateYearInfoFromNames :: Processed ${ctr} packages ..")
           session.flush()
           session.clear()
         }
