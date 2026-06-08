@@ -16,6 +16,7 @@ class OrgService {
   def componentUpdateService
   def titleAugmentService
   def sessionFactory
+  def validationService
 
   def restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}")
