@@ -407,82 +407,91 @@ class PackageSourceUpdateService {
 
     urls.add(new URL(givenUrl))
 
-    if(!isFtpTransfer) {
-      if (dynamic_date || fixed_date) {
-        // search for the file in most likely order
-        Map<String, Integer> maxCallsPerFrequency = [
-                "Weekly"   : 7,
-                "Monthly"  : 31,
-                "Quarterly": 92,
-                "Yearly"   : 366,
-        ]
+    if(!isFtpTransfer && (dynamic_date || fixed_date)) {
 
-        // set lastFoundFile + n * updateInterval as anchor date to search for the new file
-        LocalDate anchorDate
-        TemporalUnit temporalUnit = ChronoUnit.WEEKS
-        boolean isQuarterly = false
+      // search for the file in most likely order
+      Map<String, Integer> maxCallsPerFrequency = [
+              "Weekly"   : 7,
+              "Monthly"  : 31,
+              "Quarterly": 92,
+              "Yearly"   : 366,
+      ]
 
-        long specificTimeUnitsSinceLastFound
-        switch (source.frequency) {
-          case RefdataCategory.lookup("Source.Frequency", "Weekly"):
-            break
-          case RefdataCategory.lookup("Source.Frequency", "Monthly"):
-            temporalUnit = ChronoUnit.MONTHS
-            break
-          case RefdataCategory.lookup("Source.Frequency", "Quarterly"):
-            temporalUnit = ChronoUnit.MONTHS
-            isQuarterly = true
-            break
-          case RefdataCategory.lookup("Source.Frequency", "Yearly"):
-            temporalUnit = ChronoUnit.YEARS
-            break
-          default:
-            break
+      if (dynamic_date) {
+        urls.remove(0)
+      }
+
+      // set lastFoundFile + n * updateInterval as anchor date to search for the new file
+      LocalDate anchorDate
+      TemporalUnit temporalUnit = ChronoUnit.WEEKS
+      boolean isQuarterly = false
+
+      long specificTimeUnitsSinceLastFound
+      switch (source.frequency) {
+        case RefdataCategory.lookup("Source.Frequency", "Weekly"):
+          break
+        case RefdataCategory.lookup("Source.Frequency", "Monthly"):
+          temporalUnit = ChronoUnit.MONTHS
+          break
+        case RefdataCategory.lookup("Source.Frequency", "Quarterly"):
+          temporalUnit = ChronoUnit.MONTHS
+          isQuarterly = true
+          break
+        case RefdataCategory.lookup("Source.Frequency", "Yearly"):
+          temporalUnit = ChronoUnit.YEARS
+          break
+        default:
+          break
+      }
+
+      LocalDate minDate = isQuarterly ? active_date.minus(3, temporalUnit) : active_date.minus(1, temporalUnit)
+
+      if (dateLastFoundUpdateFile) {
+        // Division for quarterly update results in 'lower Gaussian Number' (i.e. Abrundung)
+        specificTimeUnitsSinceLastFound = isQuarterly ? temporalUnit.between(dateLastFoundUpdateFile, active_date) / 3 : temporalUnit.between(dateLastFoundUpdateFile, active_date)
+        anchorDate = isQuarterly ? dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound * 3, temporalUnit) : dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound, temporalUnit)
+        //we just go back to the last found date
+        if (dateLastFoundUpdateFile.isAfter(minDate)) {
+          minDate = dateLastFoundUpdateFile
         }
+      } else {
+        anchorDate = active_date
+      }
 
-        LocalDate minDate = active_date.minus(1, temporalUnit)
 
-        if (dateLastFoundUpdateFile) {
-          // Division for quarterly update results in 'lower Gaussian Number' (i.e. Abrundung)
-          specificTimeUnitsSinceLastFound = isQuarterly ? temporalUnit.between(dateLastFoundUpdateFile, active_date) / 3 : temporalUnit.between(dateLastFoundUpdateFile, active_date)
-          anchorDate = isQuarterly ? dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound * 3, temporalUnit) : dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound, temporalUnit)
-          //we just go back to the last found date
-          if (dateLastFoundUpdateFile.isAfter(minDate)) {
-            minDate = dateLastFoundUpdateFile
+      urls.add(new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, anchorDate.toString())))
+      int added = urls.size()
+      int diff = 1
+      int maxToAdd = maxCallsPerFrequency.get(source.frequency?.value)
+      boolean upperAvailable = true
+      boolean lowerAvailable = true
+
+      while (added <= maxToAdd && (upperAvailable || lowerAvailable)) {
+        if (!active_date.isBefore(anchorDate.plusDays(diff))) {
+          URL urlCandidate = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.plusDays(diff).toString())))
+          if (!urls.contains(urlCandidate)) {
+            urls.add(urlCandidate)
+            added++
+          }
+          else {
+            log.debug("1111 URLs contains: " + urlCandidate)
           }
         } else {
-          anchorDate = active_date
+          upperAvailable = false
         }
-
-
-        urls.add(new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, anchorDate.toString())))
-        int added = urls.size()
-        int diff = 1
-        int maxToAdd = maxCallsPerFrequency.get(source.frequency?.value)
-        boolean upperAvailable = true
-        boolean lowerAvailable = true
-
-        while (added <= maxToAdd && (upperAvailable || lowerAvailable)) {
-          if (!active_date.isBefore(anchorDate.plusDays(diff))) {
-            URL urlCandidate = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.plusDays(diff).toString())))
-            if (!urls.contains(urlCandidate)) {
-              urls.add(urlCandidate)
-              added++
-            }
-          } else {
-            upperAvailable = false
+        if (!minDate.isAfter(anchorDate.minusDays(diff))) {
+          URL urlCandidate = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.minusDays(diff).toString())))
+          if (!urls.contains(urlCandidate)) {
+            urls.add(urlCandidate)
+            added++
           }
-          if (!minDate.isAfter(anchorDate.minusDays(diff))) {
-            URL urlCandidate = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.minusDays(diff).toString())))
-            if (!urls.contains(urlCandidate)) {
-              urls.add(urlCandidate)
-              added++
-            }
-          } else {
-            lowerAvailable = false
+          else {
+            log.debug("2222 URLs contains: " + urlCandidate)
           }
-          diff++
+        } else {
+          lowerAvailable = false
         }
+        diff++
       }
     }
 

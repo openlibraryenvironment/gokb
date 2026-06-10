@@ -40,7 +40,7 @@ class AutoUpdateSpec extends Specification{
     Source.findByName("source3") ?: new Source(name: "source3", url: urlTwoWeeksBefore, dateLastFoundUpdateFile: lastFound, frequency: freqMonthly).save(flush: true)
     Source.findByName("source4") ?: new Source(name: "source4", url: "https://www.abc.de/kbart-2026-02-03.txt", dateLastFoundUpdateFile: lastFoundBeforeAllTimeIntervals, frequency: freqMonthly).save(flush: true)
     Source.findByName("source5") ?: new Source(name: "source5", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: null, frequency: freqYearly).save(flush: true)
-    Source.findByName("source6") ?: new Source(name: "source6", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: lastFound, frequency: freqMonthly).save(flush: true)
+    Source.findByName("source6") ?: new Source(name: "source6", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: null, frequency: freqQuarterly).save(flush: true)
 
   }
 
@@ -134,6 +134,33 @@ class AutoUpdateSpec extends Specification{
     res.containsAll(urls)
 
   }
+
+
+  void "Test AutoUpdate :: check all dates of a Quarter year"() {
+
+    Source source = Source.findByName("source6")
+    String givenUrl = source.url
+
+    LocalDate now = LocalDate.now()
+    LocalDate oneQuarterBefore = now.minusMonths(3)
+    List<URL> urls = new ArrayList<URL>()
+
+    while(oneQuarterBefore.isBefore(now)){
+      String toAdd = "https://www.abc.de/kbart-" + oneQuarterBefore.toString() + ".txt"
+      urls.add(new URL(toAdd))
+      oneQuarterBefore = oneQuarterBefore.plusDays(1)
+    }
+    boolean contains = true
+
+    List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
+
+    expect:
+    // res.size() == urls.size() + 1
+
+    res.containsAll(urls)
+
+  }
+
 
 
 }
