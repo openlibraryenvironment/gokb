@@ -184,8 +184,8 @@ class PackageSourceUpdateService {
                   else {
                     pkg_source.dateLastFoundUpdateFile = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
                   }
-                  //TODO: ???
-                  // pkg_source.save(flush: true)
+
+                  pkg_source.save(flush: true)
                   break
                 }
                 else {
@@ -241,8 +241,8 @@ class PackageSourceUpdateService {
                     datafile_id = datafile.id
                   } else {
                     log.debug("Found existing datafile ${datafile}")
-
-                    if (!hasFileChanged(pid, datafile.id)) {
+                    // user == null means execution from ui, the same file can be forced to be imported twice
+                    if (!user && !hasFileChanged(pid, datafile.id)) {
                       log.debug("Datafile was already the last import for this package!")
                       result.result = 'SKIPPED'
                       result.message = 'Skipped repeated import of the same file for this package.'
@@ -278,7 +278,7 @@ class PackageSourceUpdateService {
               tmp_file.delete()
             } else {
               result.message = "No KBART found for provided URL!"
-              result.messageCode = 'kbart.transmission.skipped.noFile'
+              result.messageCode = "Yearly".equals(pkg_source.frequency?.value) ? 'kbart.errors.skipped.noFileForAYear' : 'kbart.transmission.skipped.noFile'
               result.result = 'SKIPPED'
 
               result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
@@ -472,9 +472,6 @@ class PackageSourceUpdateService {
             urls.add(urlCandidate)
             added++
           }
-          else {
-            log.debug("1111 URLs contains: " + urlCandidate)
-          }
         } else {
           upperAvailable = false
         }
@@ -483,9 +480,6 @@ class PackageSourceUpdateService {
           if (!urls.contains(urlCandidate)) {
             urls.add(urlCandidate)
             added++
-          }
-          else {
-            log.debug("2222 URLs contains: " + urlCandidate)
           }
         } else {
           lowerAvailable = false

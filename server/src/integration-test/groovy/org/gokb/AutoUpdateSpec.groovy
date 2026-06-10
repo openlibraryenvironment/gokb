@@ -129,7 +129,7 @@ class AutoUpdateSpec extends Specification{
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
 
     expect:
-    // res.size() == urls.size() + 1
+    res.size() - urls.size() <= 1
 
     res.containsAll(urls)
 
@@ -155,7 +155,7 @@ class AutoUpdateSpec extends Specification{
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
 
     expect:
-    // res.size() == urls.size() + 1
+    res.size() - urls.size() <= 1
 
     res.containsAll(urls)
 
