@@ -129,7 +129,7 @@ class PackageSourceUpdateService {
           }
 
           def valid_url_string = validationService.checkUrl(isFtpTransfer ? completeFtpUrl : pkg_source?.url, true)
-          LocalDate extracted_date
+          // LocalDate extracted_date
           skipInvalid = pkg_source.skipInvalid ?: false
           def file_info = [:]
 
@@ -137,8 +137,6 @@ class PackageSourceUpdateService {
 
             urls = findUrlsToCall(valid_url_string, pkg_source, isFtpTransfer)
             src_url = urls.get(0)
-
-            log.debug("++++++ " + src_url.toString())
 
           }
           else {
@@ -186,6 +184,8 @@ class PackageSourceUpdateService {
                   else {
                     pkg_source.dateLastFoundUpdateFile = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
                   }
+                  //TODO: ???
+                  // pkg_source.save(flush: true)
                   break
                 }
                 else {
@@ -193,65 +193,6 @@ class PackageSourceUpdateService {
                 }
 
               }
-
-              /*
-              if (!file_info.file_name && (dynamic_date || extracted_date)) {
-                LocalDate active_date = LocalDate.now()
-                boolean skipLookupByDate = false
-                src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-                log.debug("Fetching dated URL for today..")
-                file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-
-                processErrorState(result, pkg_source, file_info)
-
-                if (result.result == 'ERROR') {
-                  result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-                  return result
-                }
-
-                // Look at first of this month
-                if (!file_info.file_name) {
-                  sleep(500)
-                  log.debug("Fetching first of the month..")
-                  def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
-                  file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
-
-                  processErrorState(result, pkg_source, file_info)
-
-                  if (result.result == 'ERROR') {
-                    result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-                    return result
-                  }
-                }
-
-                // Check all days of this month
-                while (!skipLookupByDate && active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
-                  active_date = active_date.minusDays(1)
-                  src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-                  log.debug("Fetching dated URL for date ${active_date}")
-                  sleep(500)
-                  file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-
-                  processErrorState(result, pkg_source, file_info)
-
-                  if (result.result == 'ERROR') {
-                    result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-                    return result
-                  }
-                }
-
-                if (!skipLookupByDate && !file_info.file_name && extracted_date && extracted_date > lastRunLocal) {
-                  log.debug("Last request with extracted date ..")
-                  file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-
-                  processErrorState(result, pkg_source, file_info)
-
-                  if (result.result == 'ERROR') {
-                    result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-                    return result
-                  }
-                }
-              } */
 
               log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
@@ -447,21 +388,19 @@ class PackageSourceUpdateService {
     List<URL> urls = new ArrayList<>()
     boolean dynamic_date = false
     boolean fixed_date = false
-    //LocalDate extracted_date = null
     LocalDate active_date = LocalDate.now()
     LocalDate dateLastFoundUpdateFile = source.dateLastFoundUpdateFile ? source.dateLastFoundUpdateFile.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
 
     String local_date_string = LocalDate.now().toString()
 
     if (givenUrl =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
-      log.debug("URL contains date placeholder ..")
+      log.debug("URL contains date Mask ..")
       givenUrl = givenUrl.replace('{YYYY-MM-DD}', local_date_string)
-      // urls.add(new URL(givenUrl))
       dynamic_date = true
     }
     else {
       if (extractDateFromUrl(givenUrl)) {
-        // extracted_date = extractDateFromUrl(givenUrl)
+        log.debug("URL contains fix date ..")
         fixed_date = true
       }
     }
@@ -478,7 +417,7 @@ class PackageSourceUpdateService {
                 "Yearly"   : 366,
         ]
 
-        // set lastFoundFile + updateInterval as anchor date to search for the new file
+        // set lastFoundFile + n * updateInterval as anchor date to search for the new file
         LocalDate anchorDate
         TemporalUnit temporalUnit = ChronoUnit.WEEKS
         boolean isQuarterly = false
@@ -486,7 +425,6 @@ class PackageSourceUpdateService {
         long specificTimeUnitsSinceLastFound
         switch (source.frequency) {
           case RefdataCategory.lookup("Source.Frequency", "Weekly"):
-            //temporalUnit = ChronoUnit.WEEKS
             break
           case RefdataCategory.lookup("Source.Frequency", "Monthly"):
             temporalUnit = ChronoUnit.MONTHS
@@ -812,9 +750,8 @@ class PackageSourceUpdateService {
       FTPFile foundFile = null
       boolean isUrlWithDate = false
 
-      // if(dynamic_date){
       if (extractDateFromUrl(urlParts.complete)) {
-        // in case of dynamic_date, in the filename the pattern is already replaced by the actual date
+        // in case of date mask, the pattern in the filename is already replaced by the actual date
         String[] parts = urlParts.complete.split("/")
         filename = parts[parts.length - 1]
         isUrlWithDate = true
