@@ -417,10 +417,6 @@ class PackageSourceUpdateService {
               "Yearly"   : 366,
       ]
 
-      if (dynamic_date) {
-        urls.remove(0)
-      }
-
       // set lastFoundFile + n * updateInterval as anchor date to search for the new file
       LocalDate anchorDate
       TemporalUnit temporalUnit = ChronoUnit.WEEKS
@@ -458,8 +454,11 @@ class PackageSourceUpdateService {
         anchorDate = active_date
       }
 
+      URL firstCall = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, anchorDate.toString()))
+      if (!urls.contains(firstCall)) {
+        urls.add(firstCall)
+      }
 
-      urls.add(new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, anchorDate.toString())))
       int added = urls.size()
       int diff = 1
       int maxToAdd = maxCallsPerFrequency.get(source.frequency?.value)
