@@ -78,6 +78,12 @@
     <dt> <g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate" /> </dd>
 
+    <dt> <g:annotatedLabel owner="${d}" property="startYear">Start Year</g:annotatedLabel> </dt>
+    <dd> <g:xEditable class="ipe" owner="${d}" type="number" field="startYear" /> </dd>
+
+    <dt> <g:annotatedLabel owner="${d}" property="endYear">End Year</g:annotatedLabel> </dt>
+    <dd> <g:xEditable class="ipe" owner="${d}" type="number" field="endYear" /> </dd>
+
     <dt> <g:annotatedLabel owner="${d}" property="lastUpdateComment">Last Update Comment</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" field="lastUpdateComment" /> </dd>
 

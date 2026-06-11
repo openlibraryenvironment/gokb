@@ -6,12 +6,18 @@ import grails.gorm.transactions.Transactional
 
 import groovy.util.logging.Slf4j
 
+import java.util.regex.Matcher
+
 import org.gokb.cred.*
+import org.hibernate.Session
 
 @Slf4j
 class PackageCleanupService {
 
   def tippService
+  def autoTimestampEventListener
+  def FTUpdateService
+  def sessionFactory
 
   def reactivateReplacedTipps(pid, Job j = null) {
     def result = [result: 'OK', cases: 0, additionalDeletes: 0, total: 0]
@@ -97,6 +103,83 @@ class PackageCleanupService {
       }
 
       j?.endTime = new Date()
+    }
+
+    result
+  }
+
+  public Map generateYearInfoFromNames() {
+    Map result = [result: 'OK', changed: 0, invalid: 0]
+    Session session = sessionFactory.currentSession
+    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    RefdataValue content_type_book = RefdataCategory.lookup("Package.ContentType", "Book")
+
+    List candidate_ids = Package.executeQuery("select id from Package where status != :sd and contentType = :ctb and startYear = null and endYear = null", [sd: status_deleted, ctb: content_type_book])
+    int ctr = 0
+
+    autoTimestampEventListener.withoutLastUpdated (Package) {
+      for (pid in candidate_ids) {
+        Package obj = Package.lock(pid)
+        boolean changed = false
+        Integer new_start
+        Integer new_end
+        ctr++
+
+        Matcher groups
+
+        if (groups = obj.name =~ /(before\s|\<)(?<end>(1\d|2[0-2])\d{2})/) {
+          // <1990 , before 1990
+          new_start = 1800
+          new_end = Integer.parseInt(groups.group("end")) - 1
+
+          changed = true
+        }
+        else if (groups = obj.name =~ /\s\(?(?<start>(1\d|2[0-2])\d{2})(\s?[-\/–]\s?(?<end>(\d{4}|\d{2}))?)?\)?/) {
+          // (2020-2022) , 1990/98 , 2024-1
+          String start_string = groups.group("start")
+          String end_string = groups.group("end")
+
+          new_start = Integer.parseInt(start_string)
+
+          if (!end_string) {
+            new_end = Integer.parseInt(start_string)
+          }
+          else if (end_string.length() == 2) {
+            new_end = Integer.parseInt("${start_string.substring(0, 2)}${end_string}".toString())
+          }
+          else {
+            new_end = Integer.parseInt(end_string)
+          }
+
+          changed = true
+        }
+        else if (groups = obj.name =~ /\(\d{2}\/(?<start>\d{4})\s?-\s?\d{2}\/(?<end>\d{4})\)/) {
+          // (04/2020 - 08/2021)
+          new_start = Integer.parseInt(groups.group("start"))
+          new_end = Integer.parseInt(groups.group("end"))
+          changed = true
+        }
+
+        if (changed) {
+          obj.startYear = new_start
+          obj.endYear = new_end
+
+          if (obj.validate()) {
+            log.debug("Set new values for package '${obj}' startYear -> ${new_start}, endYear -> ${new_end} ..")
+            obj.save(flush: true, failOnError: true)
+            FTUpdateService.updateSingleItem(obj)
+            result.changed++
+          }
+          else {
+            result.invalid++
+          }
+        }
+
+        if (ctr % 50 == 0) {
+          session.flush()
+          session.clear()
+        }
+      }
     }
 
     result
