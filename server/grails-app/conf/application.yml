@@ -137,7 +137,7 @@ hibernate:
 environments:
     development:
         dataSource:
-            dbCreate: update
+            dbCreate: none
             url: jdbc:postgresql://pghost:5432/gokbdev
             username: knowint
             password: knowint
@@ -286,7 +286,7 @@ environments:
             config: classpath:logback-test.xml
     production:
         dataSource:
-            dbCreate: update
+            dbCreate: none
             url: jdbc:postgresql://localhost:5432/gokbprod
             username: gokb
             password: knowint

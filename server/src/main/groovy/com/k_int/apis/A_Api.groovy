@@ -37,7 +37,7 @@ abstract class A_Api <T> {
   /**
    * Map to allow quick access to the APIs attached to a particular class.
    */
-  private static final Map<Class<T>, Map<Class<A_Api>, A_Api>> map = [:].withDefault {Class target ->
+  private static final Map<Class<?>, Map<Class<A_Api>, A_Api>> map = [:].withDefault {Class target ->
     [:].withDefault { Class type ->
       type.newInstance(["targetClass" : (target)])
     }

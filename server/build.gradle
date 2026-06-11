@@ -17,6 +17,8 @@ buildscript {
         classpath "gradle.plugin.ua.eshepelyuk:ManifestClasspath:1.0.0"
         classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:4.5.2'
         classpath 'com.bertramlabs.plugins:less-asset-pipeline:4.5.2'
+        classpath 'org.grails.plugins:database-migration:5.0.0'
+        classpath 'org.grails:grails-shell:6.2.3'
     }
 }
 
@@ -56,6 +58,7 @@ configurations {
 }
 
 dependencies {
+    profile "org.grails.profiles:web"
     developmentOnly "org.springframework.boot:spring-boot-devtools"
     developmentOnly "org.springframework.boot:spring-boot-starter-tomcat"
     developmentOnly 'io.github.gpc:greenmail:5.0.0'
@@ -87,7 +90,7 @@ dependencies {
     implementation 'org.hibernate:hibernate-ehcache:5.6.15.Final'
     implementation "org.grails.plugins:gsp"
     implementation "org.grails.plugins:mail:4.0.0"
-    implementation ('org.grails.plugins:database-migration:4.2.1')
+    implementation 'org.grails.plugins:database-migration:5.0.0'
 
     implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
     implementation 'net.bull.javamelody:javamelody-core:1.99.4'

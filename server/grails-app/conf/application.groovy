@@ -10,6 +10,8 @@ grails.plugin.springsecurity.ui.forgotPassword.emailFrom = "GOKB<no-reply@gokb.o
 grails.mime.file.extensions=false
 grails.plugin.springsecurity.ui.register.postRegisterUrl = '/public/index'
 
+grails.plugin.databasemigration.updateOnStart = true
+
 grails {
     plugin {
         auditLog {

@@ -42,7 +42,7 @@ class ConcurrencyManagerService {
   }
 
 
-  public class Job implements Promise, Future {
+  public class Job implements Promise, Future<?> {
     String uuid
     private Promise task
     private Closure work
