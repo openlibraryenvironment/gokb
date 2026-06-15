@@ -42,11 +42,12 @@ class OrgTestSpec extends AbstractAuthSpec {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
 
-    Source new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true)
-    Office new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice").save(flush: true)
-    test_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source, offices:[new_office]).save(flush: true)
-    test_org_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
-    test_org_plt_update = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate", provider: test_org).save(flush: true)
+    Source new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true, failOnError: true)
+    test_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source).save(flush: true, failOnError: true)
+    Office new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice", org: test_org).save(flush: true, failOnError: true)
+
+    test_org_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true, failOnError: true)
+    test_org_plt_update = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate", provider: test_org).save(flush: true, failOnError: true)
   }
 
   def cleanup() {

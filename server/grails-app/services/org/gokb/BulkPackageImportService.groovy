@@ -841,15 +841,7 @@ class BulkPackageImportService {
                       log.debug("Setting new package source..")
 
                       try {
-                        def dupe = Source.findByName(final_name)
-
-                        if (!dupe) {
-                          source = new Source(name: final_name).save(flush:true, failOnError: true)
-                        }
-                        else {
-                          log.warn("Found existing source with package name ${final_name}!")
-                          source = dupe
-                        }
+                        source = new Source(name: final_name).save(flush:true, failOnError: true)
                       }
                       catch (Exception e) {
                         log.error("Exception creating source:", e)
