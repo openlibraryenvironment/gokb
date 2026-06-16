@@ -119,7 +119,7 @@ class PackageCleanupService {
 
     autoTimestampEventListener.withoutLastUpdated (Package) {
       for (pid in candidate_ids) {
-        Package obj = Package.lock(pid)
+        Package obj = Package.get(pid)
         boolean changed = false
         Integer new_start
         Integer new_end
@@ -164,14 +164,14 @@ class PackageCleanupService {
           obj.startYear = new_start
           obj.endYear = new_end
 
-          if (obj.validate()) {
+          if (!obj.validate()) {
+            result.invalid++
+          }
+          else {
             log.debug("Set new values for package '${obj}' startYear -> ${new_start}, endYear -> ${new_end} ..")
             obj.save(flush: true, failOnError: true)
             FTUpdateService.updateSingleItem(obj)
             result.changed++
-          }
-          else {
-            result.invalid++
           }
         }
 
