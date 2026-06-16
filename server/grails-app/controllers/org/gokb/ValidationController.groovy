@@ -81,7 +81,9 @@ class ValidationController {
   }
 
   def componentName() {
-    def result = validationService.checkNewComponentName(params.value, params.componentType)
+    boolean isVariant = params.boolean('variant') ?: false
+
+    Map result = validationService.checkNewComponentName(params.value, params.componentType, isVariant)
 
     render result as JSON
   }

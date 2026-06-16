@@ -126,6 +126,7 @@ class UrlMappings {
       put "/reviews/escalate/$id"(controller: 'reviews', namespace: 'rest', action: 'escalate')
       get "/reviews/deescalatable/$id/$activeGroupId"(controller: 'reviews', namespace: 'rest', action: 'isDeescalatable')
       put "/reviews/deescalate/$id"(controller: 'reviews', namespace: 'rest', action: 'deescalate')
+      put "/reviews/transfer/$id"(controller: 'reviews', namespace: 'rest', action: 'transfer')
 
       get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
       get "/curatoryGroups/$id/jobs"(controller: 'curatoryGroups', namespace: 'rest', action: 'getJobs')
