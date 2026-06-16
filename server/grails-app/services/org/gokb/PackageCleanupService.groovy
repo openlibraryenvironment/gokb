@@ -15,7 +15,6 @@ import org.hibernate.Session
 class PackageCleanupService {
 
   def tippService
-  def autoTimestampEventListener
   def FTUpdateService
   def sessionFactory
 
@@ -117,68 +116,69 @@ class PackageCleanupService {
     List candidate_ids = Package.executeQuery("select id from Package where status != :sd and contentType = :ctb and startYear = null and endYear = null", [sd: status_deleted, ctb: content_type_book])
     int ctr = 0
 
-    autoTimestampEventListener.withoutLastUpdated (Package) {
-      for (pid in candidate_ids) {
-        Package obj = Package.get(pid)
-        boolean changed = false
-        Integer new_start
-        Integer new_end
-        ctr++
+    for (pid in candidate_ids) {
+      Package obj = Package.get(pid)
+      boolean changed = false
+      Integer new_start
+      Integer new_end
+      ctr++
 
-        Matcher groups
+      Matcher groups
 
-        if (groups = obj.name =~ /(before\s|\<)(?<end>(1\d|2[0-2])\d{2})/) {
-          // <1990 , before 1990
-          new_start = 1800
-          new_end = Integer.parseInt(groups.group("end")) - 1
+      if (groups = obj.name =~ /(before\s|\<)(?<end>(1\d|2[0-2])\d{2})/) {
+        // <1990 , before 1990
+        new_start = 1800
+        new_end = Integer.parseInt(groups.group("end")) - 1
 
-          changed = true
+        changed = true
+      }
+      else if (groups = obj.name =~ /\s\(?(?<start>(1\d|2[0-2])\d{2})(\s?[-\/–]\s?(?<end>(\d{4}|\d{2}))?)?\)?/) {
+        // (2020-2022) , 1990/98 , 2024-1
+        String start_string = groups.group("start")
+        String end_string = groups.group("end")
+
+        new_start = Integer.parseInt(start_string)
+
+        if (!end_string) {
+          new_end = Integer.parseInt(start_string)
         }
-        else if (groups = obj.name =~ /\s\(?(?<start>(1\d|2[0-2])\d{2})(\s?[-\/–]\s?(?<end>(\d{4}|\d{2}))?)?\)?/) {
-          // (2020-2022) , 1990/98 , 2024-1
-          String start_string = groups.group("start")
-          String end_string = groups.group("end")
-
-          new_start = Integer.parseInt(start_string)
-
-          if (!end_string) {
-            new_end = Integer.parseInt(start_string)
-          }
-          else if (end_string.length() == 2) {
-            new_end = Integer.parseInt("${start_string.substring(0, 2)}${end_string}".toString())
-          }
-          else {
-            new_end = Integer.parseInt(end_string)
-          }
-
-          changed = true
+        else if (end_string.length() == 2) {
+          new_end = Integer.parseInt("${start_string.substring(0, 2)}${end_string}".toString())
         }
-        else if (groups = obj.name =~ /\(\d{2}\/(?<start>\d{4})\s?-\s?\d{2}\/(?<end>\d{4})\)/) {
-          // (04/2020 - 08/2021)
-          new_start = Integer.parseInt(groups.group("start"))
-          new_end = Integer.parseInt(groups.group("end"))
-          changed = true
+        else {
+          new_end = Integer.parseInt(end_string)
         }
 
-        if (changed) {
-          obj.startYear = new_start
-          obj.endYear = new_end
+        changed = true
+      }
+      else if (groups = obj.name =~ /\(\d{2}\/(?<start>\d{4})\s?-\s?\d{2}\/(?<end>\d{4})\)/) {
+        // (04/2020 - 08/2021)
+        new_start = Integer.parseInt(groups.group("start"))
+        new_end = Integer.parseInt(groups.group("end"))
+        changed = true
+      }
 
-          if (!obj.validate()) {
-            result.invalid++
-          }
-          else {
-            log.debug("Set new values for package '${obj}' startYear -> ${new_start}, endYear -> ${new_end} ..")
-            obj.save(flush: true, failOnError: true)
-            FTUpdateService.updateSingleItem(obj)
-            result.changed++
-          }
-        }
+      if (changed) {
+        obj.startYear = new_start
+        obj.endYear = new_end
 
-        if (ctr % 50 == 0) {
-          session.flush()
-          session.clear()
+        if (!obj.validate()) {
+          result.invalid++
         }
+        else {
+          obj.discard()
+
+          log.debug("Set new values for package '${obj}' startYear -> ${new_start}, endYear -> ${new_end} ..")
+          Package.executeUpdate("update Package set startYear = :start, endYear = :end where id = :oid", [start: new_start, end: new_end, oid: obj.id])
+
+          FTUpdateService.updateSingleItem(obj)
+          result.changed++
+        }
+      }
+
+      if (ctr % 50 == 0) {
+        session.flush()
+        session.clear()
       }
     }
 

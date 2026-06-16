@@ -222,6 +222,8 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
+        result.titleHistory = []
+
         kbc.titleHistory?.each { he ->
           if (he.date) {
             Map event = [
