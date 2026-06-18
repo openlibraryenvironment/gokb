@@ -424,7 +424,7 @@ class WekbIngestionService {
         }
       }
       catch (Exception e) {
-        log.error('Error in updating wekb package', e)
+        log.error("Error in updating wekb package ${pkgInfo}", e)
         result.result = 'ERROR'
         result.exception = e.message
       }

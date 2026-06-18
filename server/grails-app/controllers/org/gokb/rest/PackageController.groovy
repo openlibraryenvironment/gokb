@@ -256,7 +256,7 @@ class PackageController {
       else {
         response.status = 403
         result.result = 'ERROR'
-        response.message = "User is not authorized to create packages for this curatory group!"
+        result.message = "User is not authorized to create packages for this curatory group!"
       }
     }
     else {
