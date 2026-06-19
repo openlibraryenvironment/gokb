@@ -171,7 +171,7 @@ class PackageCleanupService {
           log.debug("Set new values for package '${obj}' startYear -> ${new_start}, endYear -> ${new_end} ..")
           Package.executeUpdate("update Package set startYear = :start, endYear = :end where id = :oid", [start: new_start, end: new_end, oid: obj.id])
 
-          FTUpdateService.updateSingleItem(obj)
+          // FTUpdateService.updateSingleItem(obj)
           result.changed++
         }
       }
