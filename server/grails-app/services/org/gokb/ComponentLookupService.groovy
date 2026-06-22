@@ -1036,4 +1036,18 @@ class ComponentLookupService {
 
     return null
   }
+
+  public boolean isUserCurator(KBComponent obj, User user) {
+    boolean isCurator = true
+
+    if (KBComponent.has(obj, 'curatoryGroups')) {
+      if (obj.curatoryGroups.size() > 0) {
+        if (!user.curatoryGroups?.id.intersect(obj.curatoryGroups.id)) {
+          isCurator = false
+        }
+      }
+    }
+
+    return isCurator
+  }
 }

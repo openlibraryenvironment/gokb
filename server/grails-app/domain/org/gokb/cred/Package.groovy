@@ -113,7 +113,7 @@ class Package extends KBComponent {
     descriptionURL(nullable: true, blank: true)
     startYear(validator: { val, obj ->
       if (val) {
-        if (val < 1700 || val > 9999) {
+        if (val < 1600 || val > 9999) {
           return ['package.yearRange']
         }
         else if (obj.hasChanged('startYear') && !obj.hasChanged('endYear') && obj.endYear && obj.endYear < val) {
@@ -126,7 +126,7 @@ class Package extends KBComponent {
         if (!obj.startYear) {
           return ['package.endYear.missingStartYear']
         }
-        if (val < 1700 || val > 9999) {
+        if (val < 1600 || val > 9999) {
           return ['package.yearRange']
         }
         else if ((obj.hasChanged('endYear') || !obj.hasChanged('startYear')) && obj.startYear > val) {

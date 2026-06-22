@@ -57,10 +57,10 @@ class PackageTestSpec extends AbstractAuthSpec {
     testPlt.provider = testOrg
     testPlt.save(flush: true)
 
-    def http_method = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
-    def kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
-    def freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
-    def combo_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids').save(flush: true)
+    RefdataValue http_method = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
+    RefdataValue kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
+    RefdataValue freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
+    RefdataValue combo_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids').save(flush: true)
     Source testSource = Source.findByName("TestPack") ?: new Source(
         name: "TestPack",
         url: "https://org/package",
@@ -74,12 +74,10 @@ class PackageTestSpec extends AbstractAuthSpec {
     Package testPackageInitNoDates = Package.findByName("TestPackInitNoDates")
     Package testPackageInitWithDates = Package.findByName("TestPackInitWithDates")
     Package testPackageUpdateDates = Package.findByName("TestPackUpdateDates")
+    Package testPackageNormNameMatch = Package.findByName("Test: Package")
 
     if (!testPackage) {
-      testPackage = new Package(name: "TestPack", source: testSource).save(flush: true)
-      testPackage.nominalPlatform = testPlt
-      testPackage.provider = testOrg
-      testPackage.save(flush:true)
+      testPackage = new Package(name: "TestPack", source: testSource, nominalPlatform: testPlt, provider: testOrg).save(flush: true, failOnError: true)
     }
 
     if (!urlTestPackage) {
@@ -115,6 +113,10 @@ class PackageTestSpec extends AbstractAuthSpec {
       testPackageUpdateDates.nominalPlatform = testPlt
       testPackageUpdateDates.provider = testOrg
       testPackageUpdateDates.save(flush: true)
+    }
+
+    if (!testPackageNormNameMatch) {
+      testPackageUpdateDates = new Package(name: "Test: Package", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
     }
 
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle")
@@ -182,7 +184,9 @@ class PackageTestSpec extends AbstractAuthSpec {
       'TestJournalTIPPSkip',
       'TIPP Name',
       'Journal of agricultural and food chemistry',
-      'Book of agricultural and food chemistry'
+      'Book of agricultural and food chemistry',
+      'TestPackOtherTitle1',
+      'TestPackOtherTitle2'
     ].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
@@ -196,7 +200,8 @@ class PackageTestSpec extends AbstractAuthSpec {
       "TestPackPartialError",
       "TestPackInitNoDates",
       "TestPackInitWithDates",
-      "TestPackUpdateDates"
+      "TestPackUpdateDates",
+      "Test: Package"
     ].each {
       Package.findByName(it)?.expunge()
     }
@@ -216,7 +221,9 @@ class PackageTestSpec extends AbstractAuthSpec {
       'TestJournalTIPPSkip',
       'TIPP Name',
       'Journal of agricultural and food chemistry',
-      'Book of agricultural and food chemistry'
+      'Book of agricultural and food chemistry',
+      'TestPackOtherTitle1',
+      'TestPackOtherTitle2'
     ].each {
       TitleInstance.findByName(it)?.expunge()
     }
@@ -341,6 +348,76 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.body().globalNote == "Testing Consortium"
     resp.body().breakable.name == "Yes"
     resp.body()._embedded?.ids?.size() == 1
+  }
+
+  void "test /rest/packages post with duplicate name"() {
+    given:
+    def testSource = Source.findByName("TestPack")
+    Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
+    Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
+    Map new_body = [
+        name           : "Testpack",
+        breakable      : "Yes",
+        consistent     : "Yes",
+        description    : "kjkljslkdfsdf",
+        descriptionURL : "https://heise.de",
+        fixed          : "Yes",
+        global         : "Consortium",
+        globalNote     : "Testing Consortium",
+        ids            : [
+            [
+                "value"    : "ZDB-1-TEST",
+                "namespace": "isil"
+            ]
+        ],
+        provider       : testOrg.id,
+        nominalPlatform: testPlt.id,
+        source         : testSource.id,
+        scope          : [name: "Front File"]
+    ]
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken()
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    } catch (Exception e) {
+      resp = e.response
+    }
+
+    then:
+    resp.body().errors?.name != null
+    Package.findAllByNameIlike("TestPack").size() == 1
+  }
+
+  void "test /rest/packages post with duplicate normname"() {
+    given:
+    Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
+    Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
+    Map new_body = [
+        name           : "Test : Package",
+        provider       : testOrg.id,
+        nominalPlatform: testPlt.id
+    ]
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken()
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    } catch (Exception e) {
+      resp = e.response
+    }
+
+    then:
+    resp.body().errors?.name != null
+    Package.findAllByNameIlike("Test : Package").size() == 0
   }
 
   void "test /rest/packages post with new tipps"() {
@@ -659,7 +736,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     MultipartBody requestBody = MultipartBody.builder()
       .addPart(
         "submissionFile",
-        "test_rest_initial_no_access.txt",
+        "test_rest_mixed_valid_separate_namespaces.txt",
         MediaType.TEXT_PLAIN_TYPE,
         kbart_file.getFile()
       )
@@ -677,5 +754,40 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.status == HttpStatus.OK
     TitleInstancePackagePlatform.findByName('TestPackMixedJournal')?.ids.find { it.namespace == testJournalNs }
     TitleInstancePackagePlatform.findByName('TestPackMixedBook')?.ids.find { it.namespace == testMonoNs }
+  }
+
+  void "test /rest/packages/<id>/ingest with publication_type 'other'"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_other_separate_namespaces.txt")
+    Package pkg = Package.findByName("TestPackHandleUrl")
+    IdentifierNamespace testJournalNs = IdentifierNamespace.findByValue('testj')
+    IdentifierNamespace testMonoNs = IdentifierNamespace.findByValue('testm')
+
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_other_separate_namespaces.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .addPart('titleIdSerial', "${testJournalNs.id}")
+      .addPart('titleIdMonograph', "${testMonoNs.id}")
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().job_result.report.created == 2
+    pkg.refresh().tipps?.size() == 2
+    TitleInstancePackagePlatform.findByName('TestPackOtherTitle1')?.ids.find { it.namespace == testMonoNs }
+    TitleInstancePackagePlatform.findByName('TestPackOtherTitle2')?.ids.find { it.namespace == testMonoNs }
   }
 }

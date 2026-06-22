@@ -1083,4 +1083,120 @@ class TitleAugmentService {
 
     result
   }
+
+  @Transactional
+  public Map mergeTitles(TitleInstance title_to_delete, TitleInstance merge_target_title, params) {
+    log.debug("Starting title merge .. ${title_to_delete} -> ${merge_target_title}")
+    Map errors = [:]
+    RefdataValue id_combo_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+    RefdataValue combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
+    RefdataValue combo_deleted = RefdataCategory.lookup('Combo.Status', 'Active')
+
+    if (params.list('ids')?.size() > 0) {
+      List unused_ids = title_to_delete.ids.collect { it.id }
+
+      params.list('ids').each { tid ->
+        Identifier idObj = Identifier.get(Long.valueOf(tid))
+
+        if (idObj) {
+          boolean is_duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: idObj, nt: merge_target_title, ct: id_combo_type]).size() > 0
+
+          if (!is_duplicate) {
+            merge_target_title.ids.add(idObj)
+            merge_target_title.save(flush: true)
+          }
+          else {
+            log.warn("merge :: Not adding multiple links between title ${merge_target_title} and ID ${idObj}!")
+          }
+
+          unused_ids.removeAll(idObj.id)
+        }
+        else {
+          if (!errors.ids) {
+            errors.ids = []
+          }
+
+          errors.ids << [message: 'Unable to reference ID object!', baddata: tid]
+        }
+      }
+
+      // Transfer other ids and mark them as deleted
+
+      // unused_ids.each { unused_id ->
+      //   boolean is_active = Combo.executeQuery("select id from Combo where toComponent.id = :unid and fromComponent = :ttd and c.type = :ct status = :sa", [unid: unused_id, ttd: title_to_delete, ct: id_combo_type, status: combo_active]).size() > 0
+
+      //   if (is_active) {
+      //     boolean is_duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent.id = :ido and c.fromComponent = :nt and c.type = :ct", [ido: unused_id, nt: merge_target_title, ct: id_combo_type]).size() > 0
+
+      //     if (!is_duplicate) {
+      //       log.debug("Adding deselected Identifier ${unused_id} to ${merge_target_title} as deleted id.")
+      //       Identifier inactive_id = Identifier.get(unused_id)
+
+      //       new Combo(fromComponent: merge_target_title, toComponent: inactive_id, type: id_combo_type, status: combo_deleted).save(flush: true, failOnError: true)
+      //     }
+      //   }
+      // }
+    }
+    else if (params.boolean('mergeIds')) {
+      title_to_delete.ids.each { old_id ->
+        Combo old_combo = Combo.findByFromComponentAndToComponent(title_to_delete, old_id)
+        boolean is_duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: old_id, nt: merge_target_title, ct: id_combo_type]).size() > 0
+
+        if (!is_duplicate){
+          log.debug("Adding Identifier ${old_id} to ${merge_target_title}")
+          new Combo(toComponent: old_id, fromComponent: merge_target_title, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
+        }
+        else{
+          log.debug("Identifier ${old_id} is already connected to ${merge_target_title}..")
+        }
+      }
+    }
+
+    titleHistoryService.transferEvents(title_to_delete, merge_target_title)
+
+    title_to_delete.refresh()
+
+    if (params.list('tipps')?.size() > 0) {
+      params.list('tipps').each { tipp ->
+        Combo tipp_combo = Combo.executeQuery("from Combo where fromComponent = :title and toComponent.id = :tippId", [title: title_to_delete, tippId: Long.valueOf(tipp)])
+
+        if (tipp_combo?.size() == 1) {
+          tipp_combo[0].fromComponent = merge_target_title
+        }
+      }
+    }
+    else if (params.boolean('mergeTipps')) {
+      title_to_delete.tipps.each { tipp ->
+        TitleInstancePackagePlatform tippObj = TitleInstancePackagePlatform.get(tipp.id)
+
+        tippObj.title = merge_target_title
+        tippObj.save(flush: true)
+        merge_target_title.save(flush: true)
+
+        log.debug("Changed TIPP title to ${tippObj.title}")
+      }
+    }
+
+    if (params.boolean('transferName')) {
+      merge_target_title.ensureVariantName(merge_target_title.name)
+      merge_target_title.name = title_to_delete.name
+      merge_target_title.save(flush: true)
+    }
+
+    title_to_delete.subjects.each { cs ->
+      ComponentSubject existing = ComponentSubject.findByComponentAndSubject(merge_target_title, cs.subject)
+
+      if (!existing) {
+        new ComponentSubject(component: merge_target_title, subject: cs.subject).save(flush: true, failOnError: true)
+      }
+    }
+
+    log.debug("Deleting stale title ${title_to_delete}")
+    title_to_delete.deleteSoft()
+    title_to_delete.save(flush: true)
+
+    log.debug("Title is ${title_to_delete.status.value}!")
+
+    errors
+  }
 }

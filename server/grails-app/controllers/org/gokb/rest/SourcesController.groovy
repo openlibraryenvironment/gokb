@@ -95,8 +95,8 @@ class SourcesController {
 
         Map fieldConfig = [:]
 
-        if (!user || !user.isAdmin()) {
-          fieldConfig.ignore = ['importConfig', 'ignoreSizeLimit', 'ezbMatch']
+        if (!user.isAdmin()) {
+          fieldConfig.ignore = ['ignoreSizeLimit', 'ezbMatch']
         }
 
         changed = restMappingService.updateObject(obj, fieldConfig, reqBody)
@@ -166,7 +166,7 @@ class SourcesController {
 
       Map fieldConfig = [:]
 
-      if (!user || !user.isAdmin()) {
+      if (!user.isAdmin()) {
         fieldConfig.ignore = ['importConfig', 'ignoreSizeLimit', 'ezbMatch']
       }
 
