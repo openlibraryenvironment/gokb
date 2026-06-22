@@ -26,6 +26,7 @@ class AutoUpdateSpec extends Specification{
     LocalDate now = LocalDate.now()
     Date lastFound = Date.from(LocalDate.parse("2026-04-12").atStartOfDay(ZoneId.systemDefault()).toInstant())
     Date lastFoundBeforeAllTimeIntervals = Date.from(LocalDate.parse("2024-01-05").atStartOfDay(ZoneId.systemDefault()).toInstant())
+    Date lastFoundThreeWeeksBefore = Date.from(LocalDate.now().minusWeeks(3).atStartOfDay(ZoneId.systemDefault()).toInstant())
     //lastFound = null
     def freqMonthly = RefdataCategory.lookup('Source.Frequency', 'Monthly').save(flush: true)
     def freqWeekly = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
@@ -41,6 +42,8 @@ class AutoUpdateSpec extends Specification{
     Source.findByName("source4") ?: new Source(name: "source4", url: "https://www.abc.de/kbart-2026-02-03.txt", dateLastFoundUpdateFile: lastFoundBeforeAllTimeIntervals, frequency: freqMonthly).save(flush: true)
     Source.findByName("source5") ?: new Source(name: "source5", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: null, frequency: freqYearly).save(flush: true)
     Source.findByName("source6") ?: new Source(name: "source6", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: null, frequency: freqQuarterly).save(flush: true)
+    Source.findByName("source7") ?: new Source(name: "source7", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: lastFoundBeforeAllTimeIntervals, frequency: freqWeekly).save(flush: true)
+    Source.findByName("source8") ?: new Source(name: "source8", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: lastFoundThreeWeeksBefore, frequency: freqMonthly).save(flush: true)
 
   }
 
@@ -51,6 +54,8 @@ class AutoUpdateSpec extends Specification{
     Source.findByName("source4")?.expunge()
     Source.findByName("source5")?.expunge()
     Source.findByName("source6")?.expunge()
+    Source.findByName("source7")?.expunge()
+    Source.findByName("source8")?.expunge()
   }
 
 
@@ -90,10 +95,14 @@ class AutoUpdateSpec extends Specification{
     String givenUrl = source.url
 
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
+    Set<URL> uniques = new HashSet<URL>(res)
 
     expect:
     res.size() > 0
     res.get(0).toString().equals(givenUrl)
+
+    //check that there are no dupes in res - fixed date URL is called first
+    uniques.size() == res.size()
 
   }
 
@@ -103,15 +112,20 @@ class AutoUpdateSpec extends Specification{
     String givenUrl = source.url
 
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
+    Set<URL> uniques = new HashSet<URL>(res)
 
     expect:
     res.size() > 0
     res.get(0).toString().equals(givenUrl)
 
+    //check that there are no dupes in res - fixed date URL is called first
+    uniques.size() == res.size()
+
   }
 
   void "Test AutoUpdate :: check all dates of a year"() {
 
+    given: "no found file, no fix date in URL"
     Source source = Source.findByName("source5")
     String givenUrl = source.url
 
@@ -124,7 +138,6 @@ class AutoUpdateSpec extends Specification{
       urls.add(new URL(toAdd))
       oneYearBefore = oneYearBefore.plusDays(1)
     }
-    boolean contains = true
 
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
 
@@ -138,6 +151,7 @@ class AutoUpdateSpec extends Specification{
 
   void "Test AutoUpdate :: check all dates of a Quarter year"() {
 
+    given: "no found file, no fix date in URL"
     Source source = Source.findByName("source6")
     String givenUrl = source.url
 
@@ -150,14 +164,63 @@ class AutoUpdateSpec extends Specification{
       urls.add(new URL(toAdd))
       oneQuarterBefore = oneQuarterBefore.plusDays(1)
     }
-    boolean contains = true
 
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
 
     expect:
     res.size() - urls.size() <= 1
-
+    packageSourceUpdateService.extractDateFromUrl(res.get(0).toString()) == now
     res.containsAll(urls)
+
+  }
+
+  void "Test AutoUpdate :: Date Mask, lastFoundFile out of interval"() {
+
+    given: "weekly Update"
+    Source source = Source.findByName("source7")
+    LocalDate oneWeekBefore = LocalDate.now().minusWeeks(1)
+    LocalDate today = LocalDate.now()
+
+    List res = packageSourceUpdateService.findUrlsToCall(source.url, source, false)
+    Set<URL> uniques = new HashSet<URL>(res)
+    // edge cases
+    URL lowerBorder = new URL("https://www.abc.de/kbart-" + oneWeekBefore.toString() + ".txt")
+    URL upperBorder = new URL("https://www.abc.de/kbart-" + today.toString() + ".txt")
+
+    expect:
+    res.size() > 0
+
+    uniques.size() == res.size()
+    res.contains(lowerBorder)
+    res.contains(upperBorder)
+
+  }
+
+  void "Test AutoUpdate :: Date Mask, lastFoundFile inside interval"() {
+
+    given: "Monthly Update, lastFoundFile 3 weeks before"
+    Source source = Source.findByName("source8")
+    LocalDate oneMonthBefore = LocalDate.now().minusMonths(1)
+    LocalDate threeWeeksBefore = LocalDate.now().minusWeeks(3)
+    LocalDate today = LocalDate.now()
+
+    List res = packageSourceUpdateService.findUrlsToCall(source.url, source, false)
+    Set<URL> uniques = new HashSet<URL>(res)
+
+    // edge cases
+    URL lowerIntervalBorder = new URL("https://www.abc.de/kbart-" + oneMonthBefore.toString() + ".txt")
+    URL lowerBorder = new URL("https://www.abc.de/kbart-" + threeWeeksBefore.toString() + ".txt")
+    URL upperBorder = new URL("https://www.abc.de/kbart-" + today.toString() + ".txt")
+
+    expect:
+    res.size() > 0
+    // case february
+    res.size() <= 31 - 7
+
+    uniques.size() == res.size()
+    !res.contains(lowerIntervalBorder)
+    res.contains(lowerBorder)
+    res.contains(upperBorder)
 
   }
 

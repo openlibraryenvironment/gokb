@@ -152,11 +152,9 @@ class PackageSourceUpdateService {
           if (src_url?.getProtocol() in ['http', 'https'] || isFtpTransfer) {
             def deposit_token = java.util.UUID.randomUUID().toString()
             File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
-            /* def lastRunLocal = pkg_source.lastRun ? pkg_source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
-            */
+
             pkg_source.lastRun = new Date()
             pkg_source.save(flush: true)
-
 
             if ( isFtpTransfer ) {
                 log.debug("Start FTP Update from Source " + pkg_source )
@@ -484,12 +482,11 @@ class PackageSourceUpdateService {
         } else {
           lowerAvailable = false
         }
+
         diff++
       }
-    }
 
-    log.debug("All URLs to call: " + urls)
-    log.debug("SIZE: " + urls.size())
+    }
 
     return urls
   }
