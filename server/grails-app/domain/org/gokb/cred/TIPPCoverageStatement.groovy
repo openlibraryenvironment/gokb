@@ -4,6 +4,9 @@ import javax.persistence.Transient
 
 class TIPPCoverageStatement {
 
+  static final String RD_COVERAGE_DEPTH = "TIPPCoverageStatement.CoverageDepth"
+  static final String RD_PAYMENT_TYPE = "TIPPCoverageStatement.PaymentType"
+
   TitleInstancePackagePlatform owner
 
   Date startDate
@@ -15,6 +18,7 @@ class TIPPCoverageStatement {
   Date endDate
   String endVolume
   String endIssue
+  RefdataValue paymentType
 
   static belongsTo = [
     owner: TitleInstancePackagePlatform
@@ -30,6 +34,7 @@ class TIPPCoverageStatement {
     embargo column:'tipp_embargo'
     coverageNote column:'tipp_coverage_note',type: 'text'
     coverageDepth column:'tipp_coverage_depth'
+    paymentType column:'tipp_coverage_payment_type'
   }
 
   static constraints = {
@@ -46,6 +51,7 @@ class TIPPCoverageStatement {
     embargo (nullable:true, blank:true)
     coverageNote (nullable:true, blank:true)
     coverageDepth (nullable:true, blank:true)
+    paymentType (nullable:true, blank: true)
   }
 
   def afterUpdate() {
@@ -61,6 +67,10 @@ class TIPPCoverageStatement {
 
     if (!coverageDepth) {
       coverageDepth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', 'Fulltext')
+    }
+
+    if (!paymentType) {
+      paymentType = RefdataCategory.lookup('TIPPCoverageStatement.PaymentType', 'Paid')
     }
   }
 

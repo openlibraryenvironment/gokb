@@ -233,7 +233,7 @@ class TippService {
     tipp_dto.coverage?.eachWithIndex { coverage, idx ->
       LocalDateTime parsedStart = GOKbTextUtils.completeDateString(coverage.startDate)
       LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(coverage.endDate, false)
-      def statement_errors = [:]
+      Map statement_errors = [:]
 
 
       if (coverage.startDate && !parsedStart) {
@@ -507,23 +507,35 @@ class TippService {
 
   @Transactional
   public Boolean updateCoverage(tipp, reqBody) {
-    def cov_list = reqBody.coverageStatements ?: reqBody.coverage
-    def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
+    List cov_list = reqBody.coverageStatements ?: reqBody.coverage
+    List stale_coverage_ids = tipp.coverageStatements.collect { it.id }
 
     Boolean changed = false
 
     cov_list?.each { c ->
-      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+      String parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+      String parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+      Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      Date endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      boolean cs_match = false
+      boolean conflict = false
+      List conflicting_statements = []
 
-      def cs_match = false
-      def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def conflict = false
-      def conflicting_statements = []
+      RefdataValue payment_rdv
+
+      if (c.paymentType) {
+        if (c.paymentType instanceof String) {
+          String payment_statement = determinePaymentTypeString(c.paymentType)
+
+          payment_rdv = RefdataCategory.lookup(TIPPCoverageStatement.RD_PAYMENT_TYPE, payment_statement)
+        }
+        else if (c.paymentType instanceof Integer) {
+          payment_rdv = RefdataValue.findByIdAndOwner(c.paymentType, RefdataCategory.findByLabel(TIPPCoverageStatement.RD_PAYMENT_TYPE))
+        }
+      }
 
       if (c.id) {
-        def idMatch = TIPPCoverageStatement.findByOwnerAndId(tipp, c.id)
+        TIPPCoverageStatement idMatch = TIPPCoverageStatement.findByOwnerAndId(tipp, c.id)
 
         if (idMatch) {
           log.debug("Matched statement by id")
@@ -546,7 +558,7 @@ class TippService {
       }
       else {
         tipp.coverageStatements?.each { tcs ->
-          if (!cs_match) {
+          if (!cs_match && (!tcs.paymentType || tcs.paymentType == payment_rdv)) {
             if (tcs.startVolume && tcs.startVolume == c.startVolume) {
               log.debug("Matched CoverageStatement by startVolume")
               cs_match = true
@@ -596,11 +608,6 @@ class TippService {
         }
       }
 
-      for (def cst : conflicting_statements) {
-        tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(cst))
-        changed = true
-      }
-
       if (!c.id && !cs_match) {
         def cov_depth = null
 
@@ -632,7 +639,8 @@ class TippService {
           'coverageDepth': cov_depth,
           'coverageNote': c.coverageNote,
           'startDate': startAsDate,
-          'endDate ': endAsDate
+          'endDate ': endAsDate,
+          'paymentType': payment_rdv
         ]
 
         tipp.addToCoverageStatements(coverage_item)
@@ -1326,10 +1334,12 @@ class TippService {
     result
   }
 
-  private TIPPCoverageStatement latest(def covStmts) {
-    def latest = null
+  private TIPPCoverageStatement latest(List covStmts) {
+    TIPPCoverageStatement latest = null
+
     if (covStmts?.size() > 0) {
-      def today = LocalDate.now()
+      LocalDate today = LocalDate.now()
+
       covStmts.each {
         if (latest == null ||
             // a valid date beats a null
@@ -1770,8 +1780,8 @@ class TippService {
     result
   }
 
-  def convertCoverageItem(c) {
-    def coverage_item = [:]
+  public Map convertCoverageItem(c) {
+    Map coverage_item = [:]
 
     if (c instanceof TIPPCoverageStatement) {
       coverage_item = [
@@ -1783,20 +1793,21 @@ class TippService {
         'coverageDepth': c.coverageDepth,
         'coverageNote': c.coverageNote,
         'startDate': c.startDate,
-        'endDate': c.endDate
+        'endDate': c.endDate,
+        'paymentType': c.paymentType
       ]
     }
     else {
-      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-      def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def cov_depth = null
+      String parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+      String parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+      Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      Date endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      RefdataValue cov_depth
 
       log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
 
       if (c.coverageDepth instanceof String) {
-        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
+        cov_depth = RefdataCategory.lookup(TIPPCoverageStatement.RD_COVERAGE_DEPTH, c.coverageDepth)
       }
       else if (c.coverageDepth instanceof Integer) {
         cov_depth = RefdataValue.get(c.coverageDepth)
@@ -1806,12 +1817,30 @@ class TippService {
           cov_depth = RefdataValue.get(c.coverageDepth.id)
         }
         else {
-          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+          cov_depth = RefdataCategory.lookup(TIPPCoverageStatement.RD_COVERAGE_DEPTH, (c.coverageDepth.name ?: c.coverageDepth.value))
         }
       }
 
       if (!cov_depth) {
-        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+        cov_depth = RefdataCategory.lookup(TIPPCoverageStatement.RD_COVERAGE_DEPTH, "Fulltext")
+      }
+
+      // PaymentType
+      RefdataValue payment_type
+
+      if (c.paymentType instanceof String) {
+        payment_type = RefdataCategory.lookup(TIPPCoverageStatement.RD_PAYMENT_TYPE, c.paymentType)
+      }
+      else if (c.paymentType instanceof Integer) {
+        payment_type = RefdataValue.get(c.paymentType)
+      }
+      else if (c.paymentType instanceof Map) {
+        if (c.paymentType.id) {
+          payment_type = RefdataValue.get(c.paymentType.id)
+        }
+        else {
+          payment_type = RefdataCategory.lookup(TIPPCoverageStatement.RD_PAYMENT_TYPE, (c.paymentType.name ?: c.paymentType.value))
+        }
       }
 
       coverage_item = [
@@ -1823,7 +1852,8 @@ class TippService {
         'coverageDepth': cov_depth,
         'coverageNote': c.coverageNote,
         'startDate': startAsDate,
-        'endDate': endAsDate
+        'endDate': endAsDate,
+        'paymentType': payment_type
       ]
     }
 
@@ -1842,13 +1872,18 @@ class TippService {
 
   public Boolean existsCoverage(tipp, coverage) {
     Boolean result = false
-    def mapped_statement = convertCoverageItem(coverage)
+    Map mapped_statement = convertCoverageItem(coverage)
 
     tipp.coverageStatements.each { cs ->
       boolean matching = true
 
       mapped_statement.each { k, v ->
-        if (cs[k] != (v ?: null)) {
+        if (k == 'paymentType') {
+          if (cs[k] != null && v != null && cs[k] != v) {
+            matching = false
+          }
+        }
+        else if (cs[k] != (v ?: null)) {
           log.debug("Found differring $k .. $v <> ${cs[k]}!")
           matching = false
         }
@@ -2154,7 +2189,8 @@ class TippService {
             'coverageDepth': c.coverageDepth,
             'coverageNote': c.coverageNote,
             'startDate': c.startDate,
-            'endDate': c.endDate
+            'endDate': c.endDate,
+            'paymentType': c.paymentType
           ]
         }
       }
@@ -2233,5 +2269,21 @@ class TippService {
         return null
       }
     }
+  }
+
+  private String determinePaymentTypeString(String value) {
+    String payment_statement
+
+    if (value == 'P') {
+      payment_statement = 'Paid'
+    }
+    else if (value == 'F') {
+      payment_statement = 'OA'
+    }
+    else {
+      payment_statement = value
+    }
+
+    result
   }
 }

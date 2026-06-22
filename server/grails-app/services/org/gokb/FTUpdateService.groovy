@@ -331,6 +331,7 @@ class FTUpdateService {
             cst.embargo = tcs.embargo ?: ""
             cst.coverageNote = tcs.coverageNote ?: ""
             cst.coverageDepth = tcs.coverageDepth ? tcs.coverageDepth.value : ""
+            cst.paymentType = tcs.paymentType ? tcs.paymentType.value : ""
             result.coverage.add(cst)
           }
         }

@@ -705,6 +705,10 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("TIPPCoverageStatement.CoverageDepth", "Selected Articles")
         RefdataCategory.lookupOrCreate("TIPPCoverageStatement.CoverageDepth", "Abstracts")
 
+        RefdataCategory.lookupOrCreate("TIPPCoverageStatement.PaymentType", "Paid")
+        RefdataCategory.lookupOrCreate("TIPPCoverageStatement.PaymentType", "OA")
+        RefdataCategory.lookupOrCreate("TIPPCoverageStatement.PaymentType", "Unknown")
+
         RefdataCategory.lookupOrCreate("Package.Scope", "Aggregator")
         RefdataCategory.lookupOrCreate("Package.Scope", "Back File")
         RefdataCategory.lookupOrCreate("Package.Scope", "Front File")

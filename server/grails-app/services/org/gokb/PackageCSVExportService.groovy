@@ -852,17 +852,19 @@ class PackageCSVExportService {
   }
 
   private List kbartRecordsFor (TitleInstancePackagePlatform tipp, ExportType exportType) {
-    def recordList = []
-    def record = [:]
-    def ti = ClassUtils.deproxy(tipp.title)
+    List recordList = []
+    Map record = [:]
+    TitleInstance ti = ClassUtils.deproxy(tipp.title)
+    String tipp_payment_type = tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType.value) ? 'F' : 'P'
 
     record.publication_title = pick(tipp.name, ti?.name, exportType)
     record.publication_type = pick(tipp.publicationType, ti?.niceName == 'Book' ? 'Monograph' : 'Serial', exportType)
+
     if (record.publication_type == 'Monograph') {
       record.print_identifier = pick(tipp.getIdentifierValue('pISBN'), ti?.getIdentifierValue('pISBN'), exportType)
       record.online_identifier = pick(tipp.getIdentifierValue('ISBN'), ti?.getIdentifierValue('ISBN'), exportType)
     }
-    else{
+    else {
       record.print_identifier = pick(tipp.getIdentifierValue('ISSN'), ti?.getIdentifierValue('ISSN'), exportType)
       record.online_identifier = pick(tipp.getIdentifierValue('eISSN'), ti?.getIdentifierValue('eISSN'), exportType)
     }
@@ -878,7 +880,6 @@ class PackageCSVExportService {
     record.publisher_name = pick(tipp.publisherName, ti?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = tipp.precedingPublicationTitleId
     record.parent_publication_title_id = tipp.parentPublicationTitleId
-    record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType.value) ? 'F' : 'P'), null, exportType)
     record.zdb_id = pick(tipp.getIdentifierValue('zdb'), ti?.getIdentifierValue('zdb'), exportType, true)
     record.gokb_tipp_uid = tipp.uuid
     record.gokb_title_uid = ti?.uuid
@@ -895,11 +896,12 @@ class PackageCSVExportService {
         record.embargo_info = cst.embargo
         record.coverage_depth = cst.coverageDepth ? cst.coverageDepth.value.toLowerCase() : null
         record.notes = cst.coverageNote
+        record.access_type = cst.paymentType ? (['OA','Uncharged'].contains(cst.paymentType.value) ? 'F' : 'P') : tipp_payment_type
 
         recordList << record.clone()
       }
     }
-    else{
+    else {
       // just one
       record.date_first_issue_online = tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null
       record.num_first_issue_online = tipp.startIssue
@@ -910,6 +912,7 @@ class PackageCSVExportService {
       record.embargo_info = tipp.embargo
       record.coverage_depth = tipp.coverageDepth ? tipp.coverageDepth.value.toLowerCase() : null
       record.notes = tipp.coverageNote
+      record.access_type = tipp_payment_type
 
       recordList << record
     }
@@ -960,7 +963,7 @@ class PackageCSVExportService {
           sanitize(tcs.coverageNote),
           sanitize(tipp.hostPlatform.primaryUrl),
           sanitize(tipp.format?.value),
-          sanitize(tipp.paymentType?.value),
+          sanitize(tcs.paymentType?.value ?: tipp.paymentType?.value),
           sanitize(tipp.getIdentifierValue('doi') ?: ti?.getIdentifierValue('doi')),
           sanitize(tipp.getIdentifierValue('isbn') ?: ti?.getIdentifierValue('isbn')),
           sanitize(tipp.getIdentifierValue('pisbn') ?: ti?.getIdentifierValue('pisbn'))

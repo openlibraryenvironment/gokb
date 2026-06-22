@@ -112,16 +112,17 @@ class TippUpsertService {
       log.debug("Title lookup: ${ti}")
     }
 
-    def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-    def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
-    def curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups*.id.intersect(pkg?.curatoryGroups*.id)) : true
-    def tipp
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    String trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
+    boolean curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups*.id.intersect(pkg?.curatoryGroups*.id)) : true
+    TitleInstancePackagePlatform tipp
+
     if (pkg && plt && curator) {
       log.debug("See if we already have a tipp")
 
-      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
+      TitleInstancePackagePlatform uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
       tipp = null
 
       log.debug("UUID result: ${uuid_tipp} for ${tipp_dto.uuid}")
@@ -173,8 +174,8 @@ class TippUpsertService {
               log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
             }
 
-            def cur_tipps = tipps.findAll { it.status == status_current }
-            def ret_tipps = tipps.findAll { it.status == status_retired }
+            List cur_tipps = tipps.findAll { it.status == status_current }
+            List ret_tipps = tipps.findAll { it.status == status_retired }
 
             if (cur_tipps.size() > 0) {
               tipp = cur_tipps[0]
@@ -199,7 +200,7 @@ class TippUpsertService {
 
       if (!tipp) {
         log.debug("Creating new TIPP..")
-        def tmap = [
+        Map tmap = [
             'pkg'         : pkg,
             'title'       : ti,
             'hostPlatform': plt,
@@ -225,7 +226,7 @@ class TippUpsertService {
     }
 
     if (tipp) {
-      def changed = false
+      boolean changed = false
 
       if (tipp.isRetired() && tipp_dto.status == "Current") {
         if (tipp.accessEndDate) {
@@ -236,29 +237,19 @@ class TippUpsertService {
       }
 
       if (tipp_dto.paymentType) {
+        RefdataValue payment_rdv
+
         if (tipp_dto.paymentType instanceof String) {
-          def payment_statement
+          String payment_statement = tippService.determinePaymentTypeString(tipp_dto.paymentType)
 
-          if (tipp_dto.paymentType == 'P') {
-            payment_statement = 'Paid'
-          }
-          else if (tipp_dto.paymentType == 'F') {
-            payment_statement = 'OA'
-          }
-          else {
-            payment_statement = tipp_dto.paymentType
-          }
-
-          def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
-
-          if (payment_ref) tipp.paymentType = payment_ref
+          payment_rdv = RefdataCategory.lookup(TIPPCoverageStatement.RD_PAYMENT_TYPE, payment_statement)
         }
         else if (tipp_dto.paymentType instanceof Integer) {
-          def int_rdv = RefdataValue.get(tipp_dto.paymentType)
+          payment_rdv = RefdataValue.findByIdAndOwner(tipp_dto.paymentType, RefdataCategory.findByLabel(TIPPCoverageStatement.RD_PAYMENT_TYPE))
+        }
 
-          if (int_rdv?.owner.label == 'TitleInstancePackagePlatform.PaymentType') {
-            tipp.paymentType = int_rdv
-          }
+        if (payment_rdv) {
+          tipp.paymentType = payment_rdv
         }
       }
 
@@ -291,19 +282,31 @@ class TippUpsertService {
         tipp.importId = tipp_dto.importId ?: tipp_dto.titleId
       }
 
-      def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
+      List stale_coverage_ids = tipp.coverageStatements.collect { it.id }
 
       tipp_dto.coverage.each { c ->
-        def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-        def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-        def cs_match = false
-        def conflict = false
-        def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-        def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-        def conflicting_statements = []
+        String parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+        String parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+        boolean cs_match = false
+        boolean conflict = false
+        Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+        Date endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+        List conflicting_statements = []
+        RefdataValue payment_rdv
+
+        if (c.paymentType) {
+          if (c.paymentType instanceof String) {
+            String payment_statement = tippService.determinePaymentTypeString(c.paymentType)
+
+            payment_rdv = RefdataCategory.lookup(TIPPCoverageStatement.RD_PAYMENT_TYPE, payment_statement)
+          }
+          else if (c.paymentType instanceof Integer) {
+            payment_rdv = RefdataValue.findByIdAndOwner(c.paymentType, RefdataCategory.findByLabel(TIPPCoverageStatement.RD_PAYMENT_TYPE))
+          }
+        }
 
         tipp.coverageStatements?.each { tcs ->
-          if (c.id && tcs.id == c.id) {
+          if (c.id && tcs.id == c.id && (!tcs.paymentType || tcs.paymentType == payment_rdv)) {
             changed |= ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
             changed |= ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
             changed |= ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
@@ -317,7 +320,7 @@ class TippUpsertService {
             cs_match = true
             stale_coverage_ids.removeAll { it == tcs.id }
           }
-          else if (!cs_match) {
+          else if (!cs_match && (!tcs.paymentType || tcs.paymentType == payment_rdv)) {
             if (!tcs.endDate && !endAsDate) {
               conflict = true
             }
@@ -356,6 +359,10 @@ class TippUpsertService {
               changed |= ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
               changed |= ClassUtils.setRefdataIfPresent(c.coverageDepth, tcs, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
+              if (payment_rdv) {
+                tcs.paymentType = payment_rdv
+              }
+
               stale_coverage_ids.removeAll { it == tcs.id }
             }
           }
@@ -364,13 +371,8 @@ class TippUpsertService {
           }
         }
 
-        for (def cst : conflicting_statements) {
-          tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(cst))
-        }
-
         if (!cs_match) {
-
-          def cov_depth = null
+          RefdataValue cov_depth
 
           if (c.coverageDepth instanceof String) {
             cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
@@ -396,7 +398,8 @@ class TippUpsertService {
             'coverageDepth': cov_depth,
             'coverageNote': c.coverageNote,
             'startDate': startAsDate,
-            'endDate': endAsDate
+            'endDate': endAsDate,
+            'paymentType': payment_rdv
           ]
 
           tipp.addToCoverageStatements(cst_obj)

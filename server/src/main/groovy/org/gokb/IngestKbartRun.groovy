@@ -676,7 +676,8 @@ class IngestKbartRun {
           startIssue: the_kbart.num_first_issue_online?.trim(),
           endDate: the_kbart.date_last_issue_online?.trim(),
           endVolume: the_kbart.num_last_vol_online?.trim(),
-          endIssue: the_kbart.num_last_issue_online?.trim()
+          endIssue: the_kbart.num_last_issue_online?.trim(),
+          paymentType: the_kbart.access_type?.trim(),
         ]
       ],
       importId: the_kbart.title_id?.trim(),
