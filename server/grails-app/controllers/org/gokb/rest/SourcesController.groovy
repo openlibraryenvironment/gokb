@@ -93,10 +93,11 @@ class SourcesController {
       try {
         obj = new Source(name: reqBody.name)
 
-        Map fieldConfig = [:]
+        Map fieldConfig = obj.jsonMapping
+        fieldConfig.immutable.remove('importConfig')
 
-        if (!user.isAdmin()) {
-          fieldConfig.ignore = ['ignoreSizeLimit', 'ezbMatch']
+        if (user.isAdmin()) {
+          fieldConfig.immutable.removeAll(['ignoreSizeLimit', 'ezbMatch'])
         }
 
         changed = restMappingService.updateObject(obj, fieldConfig, reqBody)
@@ -164,10 +165,10 @@ class SourcesController {
         return
       }
 
-      Map fieldConfig = [:]
+      Map fieldConfig = obj.jsonMapping
 
-      if (!user.isAdmin()) {
-        fieldConfig.ignore = ['importConfig', 'ignoreSizeLimit', 'ezbMatch']
+      if (user.isAdmin()) {
+        fieldConfig.immutable.removeAll(['ignoreSizeLimit', 'ezbMatch'])
       }
 
       result.changed |= restMappingService.updateObject(obj, fieldConfig, reqBody)

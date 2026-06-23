@@ -194,7 +194,7 @@ class RestMappingService {
               break;
 
             case LocalDate.class:
-              new_obj[p.name] = LocalDate.parse(params[p.name])
+              result[p.name] = obj[p.name] ? obj[p.name].toString() : null
               break;
 
             case Date.class:
