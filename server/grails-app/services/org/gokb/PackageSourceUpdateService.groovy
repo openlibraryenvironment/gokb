@@ -130,7 +130,7 @@ class PackageSourceUpdateService {
           }
 
           def valid_url_string = validationService.checkUrl(isFtpTransfer ? completeFtpUrl : pkg_source?.url, true)
-          // LocalDate extracted_date
+
           skipInvalid = pkg_source.skipInvalid ?: false
           def file_info = [:]
 
