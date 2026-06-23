@@ -26,6 +26,7 @@ import java.time.temporal.ChronoUnit
 import java.time.temporal.Temporal
 import java.time.temporal.TemporalUnit
 import java.util.concurrent.TimeUnit
+import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 import org.gokb.cred.*
@@ -177,10 +178,10 @@ class PackageSourceUpdateService {
                 if (file_info.file_name) {
                   // set lastFoundFile property
                   if (extractDateFromUrl(file_info.file_name) != null) {
-                    pkg_source.dateLastFoundUpdateFile = Date.from(extractDateFromUrl(file_info.file_name).atStartOfDay(ZoneId.systemDefault()).toInstant())
+                    pkg_source.lastImportFileDate = extractDateFromUrl(file_info.file_name)
                   }
                   else {
-                    pkg_source.dateLastFoundUpdateFile = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
+                    pkg_source.lastImportFileDate = LocalDate.now()
                   }
 
                   pkg_source.save(flush: true)
@@ -239,7 +240,7 @@ class PackageSourceUpdateService {
                     datafile_id = datafile.id
                   } else {
                     log.debug("Found existing datafile ${datafile}")
-                    // user == null means execution from ui, the same file can be forced to be imported twice
+                    // user != null means execution from ui, the same file can be forced to be imported twice
                     if (!user && !hasFileChanged(pid, datafile.id)) {
                       log.debug("Datafile was already the last import for this package!")
                       result.result = 'SKIPPED'
@@ -373,7 +374,7 @@ class PackageSourceUpdateService {
 
   LocalDate extractDateFromUrl(String url) {
     LocalDate extractedDate = null
-    def date_pattern_match = (url =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
+    Matcher date_pattern_match = (url =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
 
     if (date_pattern_match && date_pattern_match[0].size() > 0) {
       String matched_date_string = date_pattern_match[0][1]
@@ -387,7 +388,7 @@ class PackageSourceUpdateService {
     boolean dynamic_date = false
     boolean fixed_date = false
     LocalDate active_date = LocalDate.now()
-    LocalDate dateLastFoundUpdateFile = source.dateLastFoundUpdateFile ? source.dateLastFoundUpdateFile.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
+    LocalDate lastImportFileDate = source.lastImportFileDate ? source.lastImportFileDate : null
 
     String local_date_string = LocalDate.now().toString()
 
@@ -440,13 +441,13 @@ class PackageSourceUpdateService {
 
       LocalDate minDate = isQuarterly ? active_date.minus(3, temporalUnit) : active_date.minus(1, temporalUnit)
 
-      if (dateLastFoundUpdateFile) {
+      if (lastImportFileDate) {
         // Division for quarterly update results in 'lower Gaussian Number' (i.e. Abrundung)
-        specificTimeUnitsSinceLastFound = isQuarterly ? temporalUnit.between(dateLastFoundUpdateFile, active_date) / 3 : temporalUnit.between(dateLastFoundUpdateFile, active_date)
-        anchorDate = isQuarterly ? dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound * 3, temporalUnit) : dateLastFoundUpdateFile.plus(specificTimeUnitsSinceLastFound, temporalUnit)
+        specificTimeUnitsSinceLastFound = isQuarterly ? temporalUnit.between(lastImportFileDate, active_date) / 3 : temporalUnit.between(lastImportFileDate, active_date)
+        anchorDate = isQuarterly ? lastImportFileDate.plus(specificTimeUnitsSinceLastFound * 3, temporalUnit) : lastImportFileDate.plus(specificTimeUnitsSinceLastFound, temporalUnit)
         //we just go back to the last found date
-        if (dateLastFoundUpdateFile.isAfter(minDate)) {
-          minDate = dateLastFoundUpdateFile
+        if (lastImportFileDate.isAfter(minDate)) {
+          minDate = lastImportFileDate
         }
       } else {
         anchorDate = active_date

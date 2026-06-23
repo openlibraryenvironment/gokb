@@ -24,9 +24,9 @@ class AutoUpdateSpec extends Specification{
   def setup() {
 
     LocalDate now = LocalDate.now()
-    Date lastFound = Date.from(LocalDate.parse("2026-04-12").atStartOfDay(ZoneId.systemDefault()).toInstant())
-    Date lastFoundBeforeAllTimeIntervals = Date.from(LocalDate.parse("2024-01-05").atStartOfDay(ZoneId.systemDefault()).toInstant())
-    Date lastFoundThreeWeeksBefore = Date.from(LocalDate.now().minusWeeks(3).atStartOfDay(ZoneId.systemDefault()).toInstant())
+    LocalDate lastFound = LocalDate.parse("2026-04-12")
+    LocalDate lastFoundBeforeAllTimeIntervals = LocalDate.parse("2024-01-05")
+    LocalDate lastFoundThreeWeeksBefore = now.minusWeeks(3)
     //lastFound = null
     def freqMonthly = RefdataCategory.lookup('Source.Frequency', 'Monthly').save(flush: true)
     def freqWeekly = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
@@ -36,14 +36,14 @@ class AutoUpdateSpec extends Specification{
     String twoWeeksBefore = LocalDate.now().minusWeeks(2).toString()
     String urlTwoWeeksBefore = "https://www.abc.de/kbart-" + twoWeeksBefore + ".txt"
 
-    Source.findByName("source1") ?: new Source(name: "source1", url: "https://www.abc.de/kbart.txt", dateLastFoundUpdateFile: lastFound, frequency: freqMonthly).save(flush: true)
-    Source.findByName("source2") ?: new Source(name: "source2", url: "https://www.abc.de/kbart-2025-12-24.txt", dateLastFoundUpdateFile: null, frequency: freqMonthly).save(flush: true)
-    Source.findByName("source3") ?: new Source(name: "source3", url: urlTwoWeeksBefore, dateLastFoundUpdateFile: lastFound, frequency: freqMonthly).save(flush: true)
-    Source.findByName("source4") ?: new Source(name: "source4", url: "https://www.abc.de/kbart-2026-02-03.txt", dateLastFoundUpdateFile: lastFoundBeforeAllTimeIntervals, frequency: freqMonthly).save(flush: true)
-    Source.findByName("source5") ?: new Source(name: "source5", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: null, frequency: freqYearly).save(flush: true)
-    Source.findByName("source6") ?: new Source(name: "source6", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: null, frequency: freqQuarterly).save(flush: true)
-    Source.findByName("source7") ?: new Source(name: "source7", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: lastFoundBeforeAllTimeIntervals, frequency: freqWeekly).save(flush: true)
-    Source.findByName("source8") ?: new Source(name: "source8", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", dateLastFoundUpdateFile: lastFoundThreeWeeksBefore, frequency: freqMonthly).save(flush: true)
+    Source.findByName("source1") ?: new Source(name: "source1", url: "https://www.abc.de/kbart.txt", lastImportFileDate: lastFound, frequency: freqMonthly).save(flush: true)
+    Source.findByName("source2") ?: new Source(name: "source2", url: "https://www.abc.de/kbart-2025-12-24.txt", lastImportFileDate: null, frequency: freqMonthly).save(flush: true)
+    Source.findByName("source3") ?: new Source(name: "source3", url: urlTwoWeeksBefore, lastImportFileDate: lastFound, frequency: freqMonthly).save(flush: true)
+    Source.findByName("source4") ?: new Source(name: "source4", url: "https://www.abc.de/kbart-2026-02-03.txt", lastImportFileDate: lastFoundBeforeAllTimeIntervals, frequency: freqMonthly).save(flush: true)
+    Source.findByName("source5") ?: new Source(name: "source5", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: null, frequency: freqYearly).save(flush: true)
+    Source.findByName("source6") ?: new Source(name: "source6", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: null, frequency: freqQuarterly).save(flush: true)
+    Source.findByName("source7") ?: new Source(name: "source7", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: lastFoundBeforeAllTimeIntervals, frequency: freqWeekly).save(flush: true)
+    Source.findByName("source8") ?: new Source(name: "source8", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: lastFoundThreeWeeksBefore, frequency: freqMonthly).save(flush: true)
 
   }
 
@@ -200,9 +200,9 @@ class AutoUpdateSpec extends Specification{
 
     given: "Monthly Update, lastFoundFile 3 weeks before"
     Source source = Source.findByName("source8")
-    LocalDate oneMonthBefore = LocalDate.now().minusMonths(1)
-    LocalDate threeWeeksBefore = LocalDate.now().minusWeeks(3)
     LocalDate today = LocalDate.now()
+    LocalDate oneMonthBefore = today.minusMonths(1)
+    LocalDate threeWeeksBefore = today.minusWeeks(3)
 
     List res = packageSourceUpdateService.findUrlsToCall(source.url, source, false)
     Set<URL> uniques = new HashSet<URL>(res)

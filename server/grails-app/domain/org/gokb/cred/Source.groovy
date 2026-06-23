@@ -32,7 +32,7 @@ class Source extends KBComponent {
   WebHookEndpoint webEndpoint
   String ftpPath
   RefdataValue transferMethod
-  Date dateLastFoundUpdateFile
+  LocalDate lastImportFileDate
 
   static manyByCombo = [
     curatoryGroups: CuratoryGroup
@@ -67,7 +67,7 @@ class Source extends KBComponent {
     webEndpoint(nullable: true, blank: true)
     ftpPath(nullable: true, blank: true)
     transferMethod(nullable: true, blank: true)
-    dateLastFoundUpdateFile(nullable: true, blank: true)
+    lastImportFileDate(nullable: true, blank: true)
   }
 
   public static final String restPath = "/sources"
@@ -81,10 +81,11 @@ class Source extends KBComponent {
       'source',
       'bulkConfig'
     ],
-    'admin'        : [
-      'importConfig',
+    'immutable'    : [
       'ignoreSizeLimit',
-      'ezbMatch'
+      'ezbMatch',
+      'lastImportFileDate',
+      'importConfig'
     ],
     'es'           : [],
     'defaultLinks' : [
