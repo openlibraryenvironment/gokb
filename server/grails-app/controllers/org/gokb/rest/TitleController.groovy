@@ -771,9 +771,7 @@ class TitleController {
     }
 
     if (obj && reqBody) {
-      def editable = isUserCurator(obj,user) || user.isAdmin()
-
-      if (editable) {
+      if (componentLookupService.isUserCurator(obj,user) || user.isAdmin()) {
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
           response.status = 409
           result.message = message(code: "default.update.errors.message")
@@ -885,7 +883,7 @@ class TitleController {
     }
 
     if ( obj && obj.isDeletable() ) {
-      def curator = isUserCurator(obj, user)
+      def curator = componentLookupService.isUserCurator(obj, user)
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
@@ -911,21 +909,6 @@ class TitleController {
     render result as JSON
   }
 
-  def isUserCurator(obj, user) {
-    def curator = true
-
-    if (KBComponent.has(obj, 'curatoryGroups')) {
-
-      if (obj.curatoryGroups.size() > 0) {
-        if (!user.curatoryGroups?.id.intersect(obj.curatoryGroups.id)) {
-          curator = false
-        }
-      }
-    }
-
-    return curator
-  }
-
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def retire() {
@@ -934,9 +917,7 @@ class TitleController {
     def obj = TitleInstance.findByUuid(params.id) ?: TitleInstance.get(genericOIDService.oidToId(params.id))
 
     if ( obj && obj.isEditable() ) {
-      def curator = isUserCurator(obj, user)
-
-      if ( curator || user.isAdmin() ) {
+      if (componentLookupService.isUserCurator(obj, user) || user.isAdmin() ) {
         obj.retire()
       }
       else {
@@ -1016,104 +997,21 @@ class TitleController {
   @Transactional
   def merge() {
     log.debug("Merging title ..")
-    def result = ['result':'OK', 'params': params]
-    def errors = [:]
-    def user = User.get(springSecurityService.principal.id)
-    def obj = TitleInstance.findByUuid(params.id) ?: TitleInstance.get(genericOIDService.oidToId(params.id))
-    RefdataValue id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+    Map result = ['result':'OK', 'params': params]
+    Map errors = [:]
+    User user = User.get(springSecurityService.principal.id)
+    TitleInstance obj = TitleInstance.findByUuid(params.id) ?: TitleInstance.get(genericOIDService.oidToId(params.id))
 
     if (obj && obj.isEditable()) {
-      def curator = isUserCurator(obj, user)
-
-      if (curator || user.isAdmin()) {
-        def target = obj.class.get(params.int('target'))
+      if (componentLookupService.isUserCurator(obj, user) || user.isAdmin()) {
+        TitleInstance target = obj.class.get(params.int('target'))
 
         if (target) {
-          if (params.list('ids')?.size() > 0) {
-            params.list('ids').each { tid ->
-              def idObj = Identifier.get(Long.valueOf(tid))
+          errors = titleAugmentService.mergeTitles(obj, target, params)
 
-              if (idObj) {
-                def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: idObj, nt: target, ct: id_combo_type])
-
-                if (!dupes || dupes.size() == 0) {
-                  target.ids.add(idObj)
-                  target.save(flush: true)
-                }
-                else {
-                  log.warn("merge :: Not adding multiple links between title ${target} and ID ${idObj}!")
-                }
-              }
-              else {
-                if (!result.errors.ids) {
-                  result.errors.ids = []
-                }
-
-                result.errors.ids << [message: 'Unable to reference ID object!', baddata: tid]
-              }
-            }
+          if (errors) {
+            result.errors = errors
           }
-          else if (params.boolean('mergeIds')) {
-            obj.ids.each { old_id ->
-
-              def old_combo = Combo.findByFromComponentAndToComponent(obj, old_id)
-
-              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: old_id, nt: target, ct: id_combo_type])
-
-              if (!dupes || dupes.size() == 0){
-                log.debug("Adding Identifier ${old_id} to ${target}")
-                Combo new_id = new Combo(toComponent: old_id, fromComponent: target, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
-              }
-              else{
-                log.debug("Identifier ${old_id} is already connected to ${target}..")
-              }
-            }
-          }
-
-          titleHistoryService.transferEvents(obj, target)
-
-          obj.refresh()
-
-          if (params.list('tipps')?.size() > 0) {
-            params.list('tipps').each { tipp ->
-              def tipp_combo = Combo.executeQuery("from Combo where fromComponent = :title and toComponent.id = :tippId", [title: obj, tippId: Long.valueOf(tipp)])
-
-              if (tipp_combo?.size() == 1) {
-                tipp_combo[0].fromComponent = target
-              }
-            }
-          }
-          else if (params.boolean('mergeTipps')) {
-            obj.tipps.each { tipp ->
-              def tippObj = TitleInstancePackagePlatform.get(tipp.id)
-
-              tippObj.title = target
-              tippObj.save(flush: true)
-              target.save(flush: true)
-
-              log.debug("Changed TIPP title to ${tippObj.title}")
-            }
-          }
-
-          if (params.boolean('transferName')) {
-            target.ensureVariantName(target.name)
-            target.name = obj.name
-            target.save(flush: true)
-          }
-
-          obj.subjects.each { cs ->
-            def existing = ComponentSubject.findByComponentAndSubject(target, cs.subject)
-
-            if (!existing) {
-              new ComponentSubject(component: target, subject: cs.subject).save(flush: true, failOnError: true)
-            }
-          }
-
-          log.debug("Deleting stale title ${obj}")
-          obj.deleteSoft()
-          obj.save(flush: true)
-
-          log.debug("Title is ${obj.status.value}!")
         }
         else {
           result.result = 'ERROR'

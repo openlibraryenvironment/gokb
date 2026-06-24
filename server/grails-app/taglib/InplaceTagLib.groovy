@@ -129,7 +129,7 @@ class InplaceTagLib {
       case 'string':
       default:
         data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue')
-        out << " data-type=\"${attrs.type?:'textarea'}\""
+        out << " data-type=\"${attrs.type ?: 'textarea'}\""
         break;
     }
 

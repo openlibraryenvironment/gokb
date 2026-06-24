@@ -67,10 +67,10 @@ class PackageExportSpec extends Specification {
       pack2.save(flush: true)
     }
 
-    tipp1 = tippUpsertService.tiplAwareCreate(hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date(), importId: "pkgexporttipp1", url: "http://testexporttipp1.de")
-    tipp2 = tippUpsertService.tiplAwareCreate(hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp2", url: "http://testexporttipp2.de")
-    tipp3 = tippUpsertService.tiplAwareCreate(hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date(), importId: "pkgexporttipp3", url: "http://testexporttipp3.de")
-    tipp4 = tippUpsertService.tiplAwareCreate(hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp4", url: "http://testexporttipp4.de")
+    tipp1 = tippUpsertService.tiplAwareCreate(name: "PackageExportJournal1", hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date(), importId: "pkgexporttipp1", url: "http://testexporttipp1.de")
+    tipp2 = tippUpsertService.tiplAwareCreate(name: "PackageExportJournal2", hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp2", url: "http://testexporttipp2.de")
+    tipp3 = tippUpsertService.tiplAwareCreate(name: "PackageExportJournal3", hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date(), importId: "pkgexporttipp3", url: "http://testexporttipp3.de")
+    tipp4 = tippUpsertService.tiplAwareCreate(name: "PackageExportJournal2", hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp4", url: "http://testexporttipp4.de")
   }
 
   def cleanup() {

@@ -284,6 +284,34 @@ class ReviewsController {
     render result as JSON
   }
 
+  @Secured(value=["hasRole('ROLE_ADMIN')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def transfer() {
+    Map result = [result: 'OK', params: params]
+    def reqBody = request.JSON
+
+    ReviewRequest obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
+    CuratoryGroup target = CuratoryGroup.get(reqBody.target)
+
+    if (obj && target) {
+      AllocatedReviewGroup.removeAll(obj)
+      AllocatedReviewGroup.create(target, obj, true)
+    }
+    else if (!obj) {
+      result.result = 'ERROR'
+      response.status = 404
+      result.message = "Unable to reference review by ID ${params.id}!"
+      result.messageCode
+    }
+    else if (!target) {
+      result.result = 'ERROR'
+      response.status = 404
+      result.message = "Unable to reference target group by ID ${reqBody.target}!"
+    }
+
+    render result as JSON
+  }
+
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def delete() {

@@ -43,7 +43,7 @@ class AutoUpdatePackagesJob {
           def result = packageSourceUpdateService.updateFromSource(p.id)
           log.debug("Result of update: ${result}")
 
-          if (result.result == 'ERROR') {
+          if (result.result == 'ERROR' || (result.result == 'SKIPPED' && result.messageCode == 'kbart.errors.skipped.noFileForAYear')) {
             if (result.jobInfo?.groupId) {
               if (result.jobInfo.groupId && !failed_jobs_by_group[result.jobInfo.groupId]) {
                 failed_jobs_by_group[result.jobInfo.groupId] = []

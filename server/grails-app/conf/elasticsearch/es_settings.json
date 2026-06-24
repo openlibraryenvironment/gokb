@@ -7,6 +7,11 @@
           "type": "pattern_replace",
           "pattern": ":",
           "replacement": " "
+        },
+        "url_protocol_filter": {
+          "type": "pattern_replace",
+          "pattern": "https?://",
+          "replacement": ""
         }
       },
       "filter": {
@@ -14,6 +19,10 @@
           "type":     "edge_ngram",
           "min_gram": 1,
           "max_gram": 20
+        },
+        "truncate_30": {
+          "type": "truncate",
+          "length": 30
         }
       },
       "analyzer": {
@@ -38,8 +47,19 @@
         "url": {
           "type":      "custom",
           "tokenizer": "url_tokenizer",
+          "char_filter": [
+            "url_protocol_filter"
+          ],
           "filter": [
             "lowercase"
+          ]
+        },
+        "url_search": {
+          "type":      "custom",
+          "tokenizer": "url_tokenizer",
+          "filter": [
+            "lowercase",
+            "truncate_30"
           ]
         },
         "icu": {
@@ -67,7 +87,7 @@
         "url_tokenizer": {
           "type": "edge_ngram",
           "min_gram": 3,
-          "max_gram": 12,
+          "max_gram": 30,
           "token_chars": [
             "letter",
             "digit"

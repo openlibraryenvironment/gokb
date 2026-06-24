@@ -150,7 +150,7 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
 
   void "test checkUrl with invalid tld"() {
     expect:
-      service.checkUrl('http://test.localhost') == null
+      service.checkUrl('http://urltest.fffddd') == null
   }
 
   void "test checkUrl with new tld"() {
@@ -201,5 +201,20 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
   void "test checkUrl with unencoded param keys"() {
     expect:
       service.checkUrl('https://test.de/search?facet[series_title]=E.T.A.+Hoffmann-Jahrbuch') != null
+  }
+
+  void "test checkDatePair with only startDate"() {
+    expect:
+      service.checkDatePair('2021-01-01', null) == 'ok'
+  }
+
+  void "test checkDatePair with startDate and endDate"() {
+    expect:
+      service.checkDatePair('2021-01-01', '2025-01-01') == 'ok'
+  }
+
+  void "test checkDatePair with endDate before startDate"() {
+    expect:
+      service.checkDatePair('2025-01-01', '2021-01-01') == 'error'
   }
 }

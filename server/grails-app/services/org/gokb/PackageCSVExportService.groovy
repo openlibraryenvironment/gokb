@@ -819,7 +819,11 @@ class PackageCSVExportService {
     return (what && (what.toString().trim() != '')) ? what.toString().trim() : ''
   }
 
-  private String pick(def tippPropValue, def titlePropValue, ExportType exportType) {
+  private String pick(def tippPropValue, def titlePropValue, ExportType exportType, boolean forceFallback = false) {
+    if (exportType == ExportType.KBART_TIPP && !forceFallback) {
+      return tippPropValue
+    }
+
     if (tippPropValue && titlePropValue){
       return (exportType == ExportType.KBART_TIPP) ? tippPropValue : titlePropValue
     }
@@ -831,7 +835,11 @@ class PackageCSVExportService {
     return ''
   }
 
-  private String selectDateField(tippPropValue, titlePropValue, ExportType exportType) {
+  private String selectDateField(tippPropValue, titlePropValue, ExportType exportType, boolean forceFallback = false) {
+    if (exportType == ExportType.KBART_TIPP && !forceFallback) {
+      return tippPropValue ? dateFormatService.formatDate(tippPropValue) : null
+    }
+
     if (tippPropValue && titlePropValue){
       return (exportType == ExportType.KBART_TIPP) ? dateFormatService.formatDate(tippPropValue) : dateFormatService.formatDate(titlePropValue)
     }
@@ -858,6 +866,7 @@ class PackageCSVExportService {
       record.print_identifier = pick(tipp.getIdentifierValue('ISSN'), ti?.getIdentifierValue('ISSN'), exportType)
       record.online_identifier = pick(tipp.getIdentifierValue('eISSN'), ti?.getIdentifierValue('eISSN'), exportType)
     }
+
     record.title_url = tipp.url
     record.first_author = pick(tipp.firstAuthor, ti?.hasProperty('firstAuthor') ? ti.firstAuthor : null, exportType)
     record.first_editor = pick(tipp.firstEditor, ti?.hasProperty('firstEditor') ? ti.firstEditor : null, exportType)
@@ -870,7 +879,7 @@ class PackageCSVExportService {
     record.preceding_publication_title_id = tipp.precedingPublicationTitleId
     record.parent_publication_title_id = tipp.parentPublicationTitleId
     record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType.value) ? 'F' : 'P'), null, exportType)
-    record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), ti?.getIdentifierValue('ZDB'), exportType)
+    record.zdb_id = pick(tipp.getIdentifierValue('zdb'), ti?.getIdentifierValue('zdb'), exportType, true)
     record.gokb_tipp_uid = tipp.uuid
     record.gokb_title_uid = ti?.uuid
 

@@ -334,16 +334,18 @@ class ESSearchService{
   }
 
   private String sanitizeParam(String param) {
-    return param.replaceAll(":", "\\\\:")
-        .replaceAll("/", "\\\\/")
+    return param.replaceAll(":", "\\:")
+        .replaceAll("/", "\\/")
         .replaceAll(/[()]/, " ")
         .replaceAll(/[\[\]]/, "")
   }
 
   private String escapeQueryString(String param) {
-    param = param.replaceAll(/[<>]/, "")
-    param = param.replaceAll(/([=!{}^])/, '\\\\$1')
-    return param
+    return param.replaceAll(":", "\\\\:")
+            .replaceAll("/", "\\\\/")
+            .replaceAll(/[()]/, " ")
+            .replaceAll(/[\[\]<>]/, "")
+            .replaceAll(/([=!{}^])/, '\\\\$1')
   }
 
   private void addDateQueries(query, errors, qpars) {
@@ -713,13 +715,13 @@ class ESSearchService{
       query.must(suggestQuery)
     }
     else if (qpars.qsName) {
-      def sanitized_param = sanitizeParam(qpars.qsName)
-      sanitized_param = escapeQueryString(sanitized_param)
+      String sanitized_param = sanitizeParam(qpars.qsName)
+      String sanitized_qs_param = escapeQueryString(qpars.qsName)
 
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("name", 8f))
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("altname", 5.2f))
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("normname", 6f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_qs_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("name", 8f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_qs_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("altname", 5.2f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_qs_param).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field("normname", 6f))
 
       if (!defaultOr) {
         // search in OR-mode, but for ALL terms across different name fields
@@ -930,10 +932,10 @@ class ESSearchService{
    *         then the end of scrolling is reached.
    **/
   def scroll(params) throws Exception{
-    def result = [:]
+    Map result = [:]
     def esClient = ESWrapperService.getClient()
-    def unknown_fields = []
-    def usedComponentTypes = getUsedComponentTypes(params, result)
+    List unknown_fields = []
+    Map usedComponentTypes = getUsedComponentTypes(params, result)
 
     if (result.result == 'ERROR'){
       return result
@@ -942,7 +944,7 @@ class ESSearchService{
     // now search
     int scrollSize = 5000
 
-    def scrollSizeParam = params.int('scrollSize')
+    Integer scrollSizeParam = params.int('scrollSize')
 
     if (scrollSizeParam) {
       if (scrollSizeParam <= scrollSize) {
@@ -964,10 +966,13 @@ class ESSearchService{
 
     if (!params.scrollId){
       QueryBuilder scrollQuery = QueryBuilders.boolQuery()
+
       if (params.component_type || params.componentType) {
         def final_type = deriveComponentType(params.componentType ?: params.component_type)
-        scrollQuery.must(QueryBuilders.termQuery('componentType', final_type))
+
+        filterByComponentType(scrollQuery, final_type, params)
       }
+
       addDateQueries(scrollQuery, errors, params)
       addNumberRanges(scrollQuery, errors, params)
       specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
@@ -1257,7 +1262,7 @@ class ESSearchService{
         }
       }
       else if (requestMapping.queryString.contains(k)){
-        exactQuery.must(QueryBuilders.queryStringQuery(sanitizeParam(v)).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field(k, 1f))
+        exactQuery.must(QueryBuilders.queryStringQuery(escapeQueryString(v)).defaultOperator(defaultOr ? Operator.OR : Operator.AND).field(k, 1f))
       }
       else if (requestMapping.simpleMap?.containsKey(k)){
         exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v).operator(Operator.AND))

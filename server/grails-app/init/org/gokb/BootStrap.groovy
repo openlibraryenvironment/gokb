@@ -438,7 +438,7 @@ class BootStrap {
             ComponentStatisticService.updateCompStats()
 
             if (Environment.current != Environment.TEST) {
-                if (grailsApplication.config.getProperty('gokb.packageCaching.enabled', Boolean, false)) {
+                if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
                     log.info("Package export caching is active.")
                 }
                 else {
@@ -709,6 +709,9 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("Package.Scope", "Back File")
         RefdataCategory.lookupOrCreate("Package.Scope", "Front File")
         RefdataCategory.lookupOrCreate("Package.Scope", "Master File")
+        RefdataCategory.lookupOrCreate("Package.Scope", "EBA Master")
+        RefdataCategory.lookupOrCreate("Package.Scope", "EBA Selection")
+
         RefdataCategory.lookupOrCreate("Package.ListStatus", "Checked")
         RefdataCategory.lookupOrCreate("Package.ListStatus", "In Progress")
         RefdataCategory.lookupOrCreate("Package.Breakable", "No")

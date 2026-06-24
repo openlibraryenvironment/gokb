@@ -843,6 +843,9 @@ class AjaxSupportController {
         else if (params.name == 'uuid' || params.name == 'password') {
           errors[params.name] = "This property is not editable."
         }
+        else if (params.type == 'number') {
+          target_object."${params.name}" = params.int('value')
+        }
         else {
           def binding_properties = [:]
           def new_val = params.value?.trim() ?: null

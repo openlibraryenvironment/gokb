@@ -41,13 +41,17 @@ class ValidationControllerSpec extends Specification {
       http = HttpClient.create(new URL(baseUrl)).toBlocking()
     }
 
-    def existing_pkg = Package.findByName("Test Existing Name") ?: new Package(name: "Test Existing Name").save(flush:true)
-    def new_ns = IdentifierNamespace.findByValue('newtestns') ?: new IdentifierNamespace(value: 'newtestns', pattern: "^pack\\w+ID\$").save(flush:true)
+    def existing_pkg = Package.findByName("Test Existing Name") ?: new Package(name: "Test Existing Name").save(flush: true, failOnError: true)
+
+    existing_pkg.ensureVariantName("Test Existing Name Variant")
+    existing_pkg.save(flush: true, failOnError: true)
+
+    def new_ns = IdentifierNamespace.findByValue('newtestns') ?: new IdentifierNamespace(value: 'newtestns', pattern: "^pack\\w+ID\$").save(flush:true, failOnError: true)
   }
 
   def cleanup() {
     Package.findByName("Test Existing Name")?.expunge()
-    IdentifierNamespace.findByValue('newtestns')?.delete(flush:true)
+    IdentifierNamespace.findByValue('newtestns')?.delete(flush: true, failOnError: true)
   }
 
   void "test /validation/kbart with valid serials KBART and missing monograph columns"() {
@@ -159,6 +163,26 @@ class ValidationControllerSpec extends Specification {
     HttpRequest request = HttpRequest.GET(baseUrl + "/validation/componentName?value=Test+Existing+Name&componentType=Package")
     HttpResponse resp = http.exchange(request, Map)
     then:
+    resp.status == HttpStatus.OK
+    resp.body().result == 'ERROR'
+    resp.body().errors.size() == 1
+  }
+
+  void "test /validation/componentName with existing Package name"() {
+    when:
+    HttpRequest request = HttpRequest.GET(baseUrl + "/validation/componentName?value=Test+Name+Existing&componentType=Package")
+    HttpResponse resp = http.exchange(request, Map)
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().result == 'OK'
+  }
+
+  void "test /validation/componentName with existing Package name as variant"() {
+    when:
+    HttpRequest request = HttpRequest.GET(baseUrl + "/validation/componentName?value=Test+Existing+Name+Variant&componentType=Package")
+    HttpResponse resp = http.exchange(request, Map)
+    then:
+    Package.findByName("Test Existing Name").variantNames.size() == 1
     resp.status == HttpStatus.OK
     resp.body().result == 'ERROR'
     resp.body().errors.size() == 1

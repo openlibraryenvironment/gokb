@@ -621,6 +621,13 @@ class AdminController {
     render result as JSON
   }
 
+  def generateMissingPackageYears() {
+
+    Map result = packageCleanupService.generateYearInfoFromNames()
+
+    render result as JSON
+  }
+
 
   def setupAcl() {
 

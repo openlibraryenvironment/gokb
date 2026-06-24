@@ -9,6 +9,7 @@ import grails.gorm.transactions.*
 
 import org.gokb.DomainClassExtender
 import org.gokb.cred.*
+import org.hibernate.Session
 
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -752,10 +753,34 @@ class TippService {
     }
   }
 
-  @Transactional
-  def matchPackage(pkgId, def job = null, def parentJob = null) {
+  public Map matchPackage(pkgId, Job job = null, Job parentJob = null) {
+    Map result = [:]
+    boolean new_session = false
+    Session session
+
+    try {
+      session = sessionFactory.currentSession
+    }
+    catch (Exception e) {
+      new_session = true
+    }
+
+    if (new_session) {
+      Package.withNewSession { nsession ->
+        result = processMatchPackage(pkgId, nsession, job, parentJob)
+      }
+    }
+    else {
+      result = processMatchPackage(pkgId, session, job, parentJob)
+    }
+
+    result
+  }
+
+
+  private Map processMatchPackage(pkgId, session, Job job = null, Job parentJob = null) {
     log.debug("Matching titles for package ${pkgId}")
-    def result = [
+    Map result = [
       result: 'OK',
       matched: 0,
       created: 0,
@@ -763,11 +788,11 @@ class TippService {
       error: 0,
       reviews: 0
     ]
+
     Boolean more = true
     int offset = 0
     int total = 0
-    def tippIDs = []
-    def session = sessionFactory.currentSession
+    List tippIDs = []
 
     try {
       tippIDs = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp

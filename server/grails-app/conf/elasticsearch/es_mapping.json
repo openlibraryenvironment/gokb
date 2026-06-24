@@ -322,7 +322,7 @@
     "primaryUrl" : {
       "type" : "text",
       "analyzer" : "url",
-      "search_analyzer": "standard"
+      "search_analyzer": "url_search"
     },
     "publishedFrom": {
       "type": "date"
