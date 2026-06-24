@@ -963,7 +963,7 @@ class ValidationService {
     }
   }
 
-  public Map checkNewComponentName(String value, String componentType, boolean isVariant = false) {
+  public Map checkNewComponentName(String value, String componentType, Boolean isVariant = false) {
     Map result = [result: 'OK']
     List errors = []
 
@@ -1077,7 +1077,7 @@ class ValidationService {
     result
   }
 
-  public boolean matchesExistingName(Class cls, String name_string, boolean isVariant = false) {
+  public boolean matchesExistingName(Class cls, String name_string, Boolean isVariant = false) {
     boolean hasMatches = false
 
     Map matches = matchForName(cls, name_string, isVariant)
@@ -1091,7 +1091,7 @@ class ValidationService {
     hasMatches
   }
 
-  public Map matchForName(Class cls, String name, boolean isVariant = false) {
+  public Map matchForName(Class cls, String name, Boolean isVariant = false) {
     Map matches = [:]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     String normname = cls.generateNormname(name)
