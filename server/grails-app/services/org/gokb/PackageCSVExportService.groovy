@@ -837,7 +837,7 @@ class PackageCSVExportService {
 
   private String selectDateField(tippPropValue, titlePropValue, ExportType exportType, boolean forceFallback = false) {
     if (exportType == ExportType.KBART_TIPP && !forceFallback) {
-      return tippPropValue
+      return tippPropValue ? dateFormatService.formatDate(tippPropValue) : null
     }
 
     if (tippPropValue && titlePropValue){

@@ -22,7 +22,11 @@ import java.security.MessageDigest
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+import java.time.temporal.Temporal
+import java.time.temporal.TemporalUnit
 import java.util.concurrent.TimeUnit
+import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 import org.gokb.cred.*
@@ -84,6 +88,7 @@ class PackageSourceUpdateService {
     def pkgInfo = [:]
     def startTime = new Date()
     def ftpUrlParts
+    List<URL> urls
 
     Package.withNewSession {
       Package p = Package.get(pid)
@@ -125,28 +130,14 @@ class PackageSourceUpdateService {
           }
 
           def valid_url_string = validationService.checkUrl(isFtpTransfer ? completeFtpUrl : pkg_source?.url, true)
-          LocalDate extracted_date
+
           skipInvalid = pkg_source.skipInvalid ?: false
           def file_info = [:]
 
           if (valid_url_string) {
-            String local_date_string = LocalDate.now().toString()
 
-            if (valid_url_string =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
-              log.debug("URL contains date placeholder ..")
-              src_url = new URL(valid_url_string.replace('{YYYY-MM-DD}', local_date_string))
-              dynamic_date = true
-            } else {
-              def date_pattern_match = (valid_url_string =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
-
-              if (date_pattern_match && date_pattern_match[0].size() > 0) {
-                String matched_date_string = date_pattern_match[0][1]
-                log.debug("${matched_date_string}")
-                extracted_date = LocalDate.parse(matched_date_string)
-              }
-
-              src_url = new URL(valid_url_string)
-            }
+            urls = findUrlsToCall(valid_url_string, pkg_source, isFtpTransfer)
+            src_url = urls.get(0)
 
           }
           else {
@@ -162,7 +153,6 @@ class PackageSourceUpdateService {
           if (src_url?.getProtocol() in ['http', 'https'] || isFtpTransfer) {
             def deposit_token = java.util.UUID.randomUUID().toString()
             File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
-            def lastRunLocal = pkg_source.lastRun ? pkg_source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
 
             pkg_source.lastRun = new Date()
             pkg_source.save(flush: true)
@@ -170,28 +160,13 @@ class PackageSourceUpdateService {
             if ( isFtpTransfer ) {
                 log.debug("Start FTP Update from Source " + pkg_source )
                 ftpUrlParts["complete"] = src_url.toString()
-                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, dynamic_date, extracted_date, lastRunLocal, restrictSize)
+                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, restrictSize)
             }
             else { // start not-FTP
 
-              if (!extracted_date || !lastRunLocal) {
-                log.debug("Request initial URL..")
-                file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-
-                processErrorState(result, pkg_source, file_info)
-              }
-
-              if (result.result == 'ERROR') {
-                result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-                return result
-              }
-
-              if (!file_info.file_name && (dynamic_date || extracted_date)) {
-                LocalDate active_date = LocalDate.now()
-                boolean skipLookupByDate = false
-                src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-                log.debug("Fetching dated URL for today..")
-                file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
+              for(int i = 0; i < urls.size(); i++) {
+                log.debug("Fetching URL " + urls.get(i))
+                file_info = fetchKbartFile(tmp_file, urls.get(i), restrictSize)
 
                 processErrorState(result, pkg_source, file_info)
 
@@ -200,48 +175,22 @@ class PackageSourceUpdateService {
                   return result
                 }
 
-                // Look at first of this month
-                if (!file_info.file_name) {
+                if (file_info.file_name) {
+                  // set lastFoundFile property
+                  if (extractDateFromUrl(file_info.file_name) != null) {
+                    pkg_source.lastImportFileDate = extractDateFromUrl(file_info.file_name)
+                  }
+                  else {
+                    pkg_source.lastImportFileDate = LocalDate.now()
+                  }
+
+                  pkg_source.save(flush: true)
+                  break
+                }
+                else {
                   sleep(500)
-                  log.debug("Fetching first of the month..")
-                  def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
-                  file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
-
-                  processErrorState(result, pkg_source, file_info)
-
-                  if (result.result == 'ERROR') {
-                    result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-                    return result
-                  }
                 }
 
-                // Check all days of this month
-                while (!skipLookupByDate && active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
-                  active_date = active_date.minusDays(1)
-                  src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-                  log.debug("Fetching dated URL for date ${active_date}")
-                  sleep(500)
-                  file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-
-                  processErrorState(result, pkg_source, file_info)
-
-                  if (result.result == 'ERROR') {
-                    result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-                    return result
-                  }
-                }
-
-                if (!skipLookupByDate && !file_info.file_name && extracted_date && extracted_date > lastRunLocal) {
-                  log.debug("Last request with extracted date ..")
-                  file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
-
-                  processErrorState(result, pkg_source, file_info)
-
-                  if (result.result == 'ERROR') {
-                    result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
-                    return result
-                  }
-                }
               }
 
               log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
@@ -291,8 +240,8 @@ class PackageSourceUpdateService {
                     datafile_id = datafile.id
                   } else {
                     log.debug("Found existing datafile ${datafile}")
-
-                    if (!hasFileChanged(pid, datafile.id)) {
+                    // user != null means execution from ui, the same file can be forced to be imported twice
+                    if (!user && !hasFileChanged(pid, datafile.id)) {
                       log.debug("Datafile was already the last import for this package!")
                       result.result = 'SKIPPED'
                       result.message = 'Skipped repeated import of the same file for this package.'
@@ -328,7 +277,7 @@ class PackageSourceUpdateService {
               tmp_file.delete()
             } else {
               result.message = "No KBART found for provided URL!"
-              result.messageCode = 'kbart.transmission.skipped.noFile'
+              result.messageCode = "Yearly".equals(pkg_source.frequency?.value) ? 'kbart.errors.skipped.noFileForAYear' : 'kbart.transmission.skipped.noFile'
               result.result = 'SKIPPED'
 
               result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
@@ -421,6 +370,126 @@ class PackageSourceUpdateService {
     }
 
     result
+  }
+
+  LocalDate extractDateFromUrl(String url) {
+    LocalDate extractedDate = null
+    Matcher date_pattern_match = (url =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
+
+    if (date_pattern_match && date_pattern_match[0].size() > 0) {
+      String matched_date_string = date_pattern_match[0][1]
+      extractedDate = LocalDate.parse(matched_date_string)
+    }
+    return extractedDate
+  }
+
+  List<URL> findUrlsToCall (String givenUrl, Source source, boolean isFtpTransfer) {
+    List<URL> urls = new ArrayList<>()
+    boolean dynamic_date = false
+    boolean fixed_date = false
+    LocalDate active_date = LocalDate.now()
+    LocalDate lastImportFileDate = source.lastImportFileDate ? source.lastImportFileDate : null
+
+    String local_date_string = LocalDate.now().toString()
+
+    if (givenUrl =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
+      log.debug("URL contains date Mask ..")
+      givenUrl = givenUrl.replace('{YYYY-MM-DD}', local_date_string)
+      dynamic_date = true
+    }
+    else {
+      if (extractDateFromUrl(givenUrl)) {
+        log.debug("URL contains fix date ..")
+        fixed_date = true
+      }
+    }
+
+    urls.add(new URL(givenUrl))
+
+    if(!isFtpTransfer && (dynamic_date || fixed_date)) {
+
+      // search for the file in most likely order
+      Map<String, Integer> maxCallsPerFrequency = [
+              "Weekly"   : 7,
+              "Monthly"  : 31,
+              "Quarterly": 92,
+              "Yearly"   : 366,
+      ]
+
+      // set lastFoundFile + n * updateInterval as anchor date to search for the new file
+      LocalDate anchorDate
+      TemporalUnit temporalUnit = ChronoUnit.WEEKS
+      boolean isQuarterly = false
+
+      long specificTimeUnitsSinceLastFound
+      switch (source.frequency) {
+        case RefdataCategory.lookup("Source.Frequency", "Weekly"):
+          break
+        case RefdataCategory.lookup("Source.Frequency", "Monthly"):
+          temporalUnit = ChronoUnit.MONTHS
+          break
+        case RefdataCategory.lookup("Source.Frequency", "Quarterly"):
+          temporalUnit = ChronoUnit.MONTHS
+          isQuarterly = true
+          break
+        case RefdataCategory.lookup("Source.Frequency", "Yearly"):
+          temporalUnit = ChronoUnit.YEARS
+          break
+        default:
+          break
+      }
+
+      LocalDate minDate = isQuarterly ? active_date.minus(3, temporalUnit) : active_date.minus(1, temporalUnit)
+
+      if (lastImportFileDate) {
+        // Division for quarterly update results in 'lower Gaussian Number' (i.e. Abrundung)
+        specificTimeUnitsSinceLastFound = isQuarterly ? temporalUnit.between(lastImportFileDate, active_date) / 3 : temporalUnit.between(lastImportFileDate, active_date)
+        anchorDate = isQuarterly ? lastImportFileDate.plus(specificTimeUnitsSinceLastFound * 3, temporalUnit) : lastImportFileDate.plus(specificTimeUnitsSinceLastFound, temporalUnit)
+        //we just go back to the last found date
+        if (lastImportFileDate.isAfter(minDate)) {
+          minDate = lastImportFileDate
+        }
+      } else {
+        anchorDate = active_date
+      }
+
+      URL firstCall = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, anchorDate.toString()))
+      if (!urls.contains(firstCall)) {
+        urls.add(firstCall)
+      }
+
+      int added = urls.size()
+      int diff = 1
+      int maxToAdd = maxCallsPerFrequency.get(source.frequency?.value)
+      boolean upperAvailable = true
+      boolean lowerAvailable = true
+
+      while (added <= maxToAdd && (upperAvailable || lowerAvailable)) {
+        if (!active_date.isBefore(anchorDate.plusDays(diff))) {
+          URL urlCandidate = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.plusDays(diff).toString())))
+          if (!urls.contains(urlCandidate)) {
+            urls.add(urlCandidate)
+            added++
+          }
+        } else {
+          upperAvailable = false
+        }
+        if (!minDate.isAfter(anchorDate.minusDays(diff))) {
+          URL urlCandidate = new URL(givenUrl.replaceFirst(DATE_PLACEHOLDER_PATTERN, (anchorDate.minusDays(diff).toString())))
+          if (!urls.contains(urlCandidate)) {
+            urls.add(urlCandidate)
+            added++
+          }
+        } else {
+          lowerAvailable = false
+        }
+
+        diff++
+      }
+
+    }
+
+    return urls
   }
 
   private void processErrorState(result, pkg_source, file_info) {
@@ -663,7 +732,7 @@ class PackageSourceUpdateService {
     return info_map
   }
 
-  def fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean dynamic_date, LocalDate extracted_date, LocalDate lastRunLocal, boolean restrictSize = true) {
+  def fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean restrictSize = true) {
 
       def result = [content_mime_type: null, file_name: null]
       Long max_length = 20971520L // 1024 * 1024 * 20
@@ -679,11 +748,13 @@ class PackageSourceUpdateService {
       String filename = urlParts.filename
       String foundFileName = null
       FTPFile foundFile = null
+      boolean isUrlWithDate = false
 
-      if(dynamic_date){
-        // in case of dynamic_date, in the filename the pattern is already replaced by the actual date
+      if (extractDateFromUrl(urlParts.complete)) {
+        // in case of date mask, the pattern in the filename is already replaced by the actual date
         String[] parts = urlParts.complete.split("/")
         filename = parts[parts.length - 1]
+        isUrlWithDate = true
       }
 
       try {
@@ -702,7 +773,7 @@ class PackageSourceUpdateService {
           ftp.changeWorkingDirectory(directory)
           List files
 
-          if(dynamic_date || extracted_date) {
+          if(isUrlWithDate) {
 
             def dateMaskMatch = (filename =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
             String matchedDate = dateMaskMatch[0][1]
@@ -773,5 +844,9 @@ class PackageSourceUpdateService {
       return result
 
   }
+
+
+
+
 
 }

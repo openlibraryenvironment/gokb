@@ -171,6 +171,7 @@ class PackageController {
 
           if (errors.size() > 0) {
             log.debug("Object has validation errors!")
+            obj?.discard()
           }
           else if (lookup_result.to_create && !obj) {
             log.debug("Could not upsert object!")
@@ -255,7 +256,7 @@ class PackageController {
       else {
         response.status = 403
         result.result = 'ERROR'
-        response.message = "User is not authorized to create packages for this curatory group!"
+        result.message = "User is not authorized to create packages for this curatory group!"
       }
     }
     else {
@@ -364,6 +365,7 @@ class PackageController {
             }
           }
           else {
+            obj.discard()
             response.status = 400
             result.message = message(code: "default.update.errors.message")
           }
@@ -372,6 +374,7 @@ class PackageController {
           result.result = 'ERROR'
           response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request_locale)
+          obj.discard()
         }
       }
       else {
