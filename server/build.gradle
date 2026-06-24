@@ -18,7 +18,6 @@ buildscript {
         classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:4.5.2'
         classpath 'com.bertramlabs.plugins:less-asset-pipeline:4.5.2'
         classpath 'org.grails.plugins:database-migration:5.0.0'
-        classpath 'org.grails:grails-shell:6.2.3'
     }
 }
 
@@ -49,13 +48,13 @@ allprojects {
     }
 }
 
-configurations {
-    developmentOnly
-    runtimeClasspath {
-        extendsFrom developmentOnly
-        exclude group: 'org.grails', module: 'grails-shell'
-    }
-}
+// configurations {
+//     developmentOnly
+//     runtimeClasspath {
+//         extendsFrom developmentOnly
+//         exclude group: 'org.grails', module: 'grails-shell'
+//     }
+// }
 
 dependencies {
     profile "org.grails.profiles:web"
@@ -71,7 +70,6 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation "org.grails:grails-web-boot"
     implementation "org.grails:grails-logging"
-    implementation "org.grails:grails-shell"
     implementation "org.grails:grails-plugin-rest"
     implementation "org.grails:grails-plugin-databinding"
     implementation "org.grails:grails-plugin-i18n"
@@ -84,6 +82,9 @@ dependencies {
     implementation("org.quartz-scheduler:quartz:2.5.2") {
         exclude group: 'slf4j-api', module: 'c3p0'
     }
+
+    console "org.grails:grails-console"
+
     implementation "org.grails.plugins:quartz:3.0.0"
     implementation "org.grails.plugins:hibernate5"
     implementation "org.hibernate:hibernate-core:5.6.15.Final"
@@ -97,6 +98,7 @@ dependencies {
 
     runtimeOnly 'com.bertramlabs.plugins:asset-pipeline-gradle:4.5.2'
     runtimeOnly 'com.bertramlabs.plugins:less-asset-pipeline:4.5.2'
+    runtimeOnly "org.fusesource.jansi:jansi"
 
     assets 'com.bertramlabs.plugins:less-asset-pipeline:4.5.2'
 
@@ -119,6 +121,7 @@ dependencies {
     implementation 'org.slf4j:log4j-over-slf4j:2.0.17'
     implementation 'org.apache.tika:tika-core:3.2.3'
     implementation 'dk.glasius:external-config:4.0.0'
+    implementation "org.liquibase:liquibase-core:4.19.1"
 
     implementation 'commons-net:commons-net:3.12.0'
     implementation 'org.apache.httpcomponents:httpclient:4.5.14'
@@ -144,6 +147,8 @@ dependencies {
     testImplementation "org.seleniumhq.selenium:selenium-support:$seleniumVersion"
 
     testImplementation 'org.mockftpserver:MockFtpServer:3.2.0'
+
+    compileJava.options.release = 17
 }
 
 bootRun {
