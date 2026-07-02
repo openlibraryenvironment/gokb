@@ -39,69 +39,40 @@ class Org extends KBComponent {
   Date importInfoLastUpdated
   RefdataValue kbartScope
   RefdataValue kbartPublicationType
-
+  Org parent
+  Org successor
+  Imprint imprint
 
 
   Set roles = []
 
   def availableActions() {
     [
-        [code: 'org::transferPackages', label: 'Transfer Packages to...', perm: 'admin'],
-        [code: 'org::deprecateReplace', label: 'Merge into...', perm: 'delete'],
-        [code: 'org::deprecateDelete', label: 'Remove all links and delete...', perm: 'delete'],
-        [code: 'method::deleteSoft', label: 'Delete Org', perm: 'delete'],
-        [code: 'method::retire', label: 'Retire Org', perm: 'admin'],
-        [code: 'method::setActive', label: 'Set Current']
+      [code: 'org::transferPackages', label: 'Transfer Packages to...', perm: 'admin'],
+      [code: 'org::deprecateReplace', label: 'Merge into...', perm: 'delete'],
+      [code: 'org::deprecateDelete', label: 'Remove all links and delete...', perm: 'delete'],
+      [code: 'method::deleteSoft', label: 'Delete Org', perm: 'delete'],
+      [code: 'method::retire', label: 'Retire Org', perm: 'admin'],
+      [code: 'method::setActive', label: 'Set Current']
     ]
   }
 
 
-  static manyByCombo = [
-      providedPackages : Package,
-      children         : Org,
-      'previous'       : Org,
-      ownedImprints    : Imprint,
-      curatoryGroups   : CuratoryGroup,
-      publishedTitles  : TitleInstance,
-      issuedTitles     : TitleInstance,
-      providedPlatforms: Platform,
-      brokeredPackages : Package,
-      licensedPackages : Package,
-      vendedPackages   : Package,
-      offeredLicenses  : License,
-      heldLicenses     : License,
-      offices          : Office,
-      offeredPackages  : Package
-  ]
-
-  static hasByCombo = [
-      parent   : Org,
-      successor: Org,
-      imprint  : Imprint
-  ]
-
-  static mappedByCombo = [
-      providedPackages : 'provider',
-      providedPlatforms: 'provider',
-      publishedTitles  : 'publisher',
-      issuedTitles     : 'issuer',
-      children         : 'parent',
-      successor        : 'previous',
-      brokeredPackages : 'broker',
-      licensedPackages : 'licensor',
-      vendedPackages   : 'vendor',
-      offeredLicenses  : 'licensor',
-      heldLicenses     : 'licensee',
-      offices          : 'org',
-      offeredPackages  : 'contentProvider'
-  ]
-
-  //  static mappedBy = [
-  //    ids: 'component',
-  //  ]
-
   static hasMany = [
       roles: RefdataValue,
+      children: Org,
+      'previous': Org,
+      ownedImprints: Imprint,
+      curatoryGroups: CuratoryGroup,
+      offices: Office,
+      providedPlatforms: Platform
+  ]
+
+  static mappedBy = [
+      children: 'parent',
+      offices: 'org',
+      ownedImprints: 'orgs',
+      providedPlatforms: 'provider'
   ]
 
   static mapping = {
@@ -110,6 +81,9 @@ class Org extends KBComponent {
     mission column: 'org_mission_fk_rv'
     homepage column: 'org_homepage'
     preferredShortname column: 'org_preferred_shortname'
+    parent column: 'org_parent_fk'
+    successor column: 'org_successor_fk'
+    imprint column: 'org_imprint_fk'
   }
 
   static constraints = {
@@ -133,6 +107,9 @@ class Org extends KBComponent {
     titleNamespaceSerial(nullable: true)
     titleNamespaceMonograph(nullable: true)
     packageNamespace(nullable: true)
+    parent(nullable: true)
+    successor(nullable: true)
+    imprint(nullable: true)
   }
 
   static jsonMapping = [

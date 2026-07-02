@@ -39,58 +39,7 @@
                 id="">Finished Upload Jobs</g:link>
             </div>
           </div>
-          <g:if test="${request.user.getFolderList()}">
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <h3 class="panel-title">Your Lists</h3>
-              </div>
-              <div class="panel-body">
-                <table class="table table-striped table-responsive">
-                  <thead>
-                    <tr>
-                      <th>List Name</th>
-                      <th>Owner</th>
-                      <th>Last Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <g:each in="${request.user.getFolderList()}" var="f">
-                      <tr>
-                        <td><g:link controller="resource" action="show" id="${f.class.name}:${f.id}">${f.name}</g:link></td>
-                        <td><g:link controller="resource" action="show" id="${f.owner.class.name}:${f.owner.id}">${f.owner.displayName}</g:link></td>
-                        <td>${f.lastUpdated}</td>
-                      </tr>
-                    </g:each>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </g:if>
         </div>
-
-<%--         <div class="col-md-4">
-          <div class="panel panel-default">
-            <div class="panel-heading clearfix">
-              <h3 class="panel-title">Curatorial groups you are a member of</h3>
-            </div>
-            <div class="panel-body">
-              <table class="table table-striped">
-                <thead>
-                </thead>
-                <tbody>
-                  <g:each in="${request.user.curatoryGroups}" var="ucg">
-                    <tr>
-                      <td style="font-weight:bold;">${ucg.name}</td>
-                      <td><g:link controller="resource" action="show" id="org.gokb.cred.CuratoryGroup:${ucg.id}">users</g:link></td>
-                      <td><g:link controller="group" action="index" id="${ucg.id}">curated content</g:link></td>
-                    </tr>
-                  </g:each>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div> --%>
-
       </div>
     </div>
   </body>

@@ -2,10 +2,13 @@ package org.gokb
 
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
+
+import groovy.json.JsonSlurper
+
 import org.gokb.cred.*
 import org.hibernate.criterion.CriteriaSpecification
-
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.acls.domain.BasePermission
 
@@ -587,6 +590,77 @@ class AdminController {
     render result as JSON
   }
 
+  def getJobInfo() {
+    def result = ['result': 'OK', 'params': params]
+    String uuid = params.id
+    log.info("getJobInfo($uuid)")
+
+    if (uuid == null) {
+      result.result = "ERROR"
+      response.setStatus(400)
+      result.message = "Request has no id parameter."
+    }
+    else {
+      Job job = concurrencyManagerService.getJob(uuid)
+
+      if (job) {
+        log.debug("${job}")
+
+        result.description = job.description
+        result.type = job.type ? [value: job.type.value, id: job.type.id] : null
+        result.linkedItem = job.linkedItem
+        result.startTime = job.startTime
+
+        if (job.endTime || job.isCancelled()) {
+          result.finished = true
+          result.endTime = job.endTime
+          try {
+            result.job_result = job.get()
+          }
+          catch (CancellationException ce) {
+            result.cancelled = true
+          }
+        }
+        else {
+          result.finished = false
+          result.progress = job.progress
+        }
+      }
+      else {
+        def persistedResult = JobResult.findByUuid(uuid)
+
+        if (persistedResult) {
+          def linkedItemMap = null
+
+          if (persistedResult.linkedItemId) {
+            def linkedItem = KBComponent.get(persistedResult.linkedItemId)
+
+            if (linkedItem) {
+              linkedItemMap = [id: linkedItem.id, name: linkedItem.name, uuid: linkedItem.uuid, type: linkedItem.niceName]
+            }
+          }
+
+          result.description = persistedResult.description
+          result.type = persistedResult.type ? [value: persistedResult.type.value, id: persistedResult.type.id] : null
+          result.linkedItem = linkedItemMap
+          result.startTime = persistedResult.startTime
+          result.endTime = persistedResult.endTime
+          result.job_result = new JsonSlurper().parseText(persistedResult.resultObject)
+          result.finished = true
+
+          if (result.job_result?.result == 'CANCELLED') {
+            result.cancelled = true
+          }
+        }
+        else {
+          result.result = "ERROR"
+          response.setStatus(404)
+          result.message = "Could not find job with ID ${uuid}."
+        }
+      }
+    }
+    render result as JSON
+  }
 
   def setupAcl() {
 

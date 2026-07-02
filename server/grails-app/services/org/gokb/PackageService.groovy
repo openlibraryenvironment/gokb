@@ -344,10 +344,10 @@ class PackageService {
     results
   }
 
-  public def generatePackageTypes(Job j = null, def pkg_id = null) {
+  public Map generatePackageTypes(Job j = null, def pkg_id = null) {
     log.debug("Generating missing package content types.")
-    def result = [book: 0, db: 0, journal: 0, mixed: 0, errors: 0]
-    def pkg_list = []
+    List result = [book: 0, db: 0, journal: 0, mixed: 0, errors: 0]
+    List pkg_list = []
 
     if (!pkg_id) {
       pkg_list = Package.executeQuery("select id from Package where contentType is null")
@@ -356,20 +356,15 @@ class PackageService {
       pkg_list << pkg_id
     }
 
-    def msg_list = []
-    def rdv_journal = RefdataCategory.lookup("TitleInstance.Medium", "Journal")
-    def rdv_book = RefdataCategory.lookup("TitleInstance.Medium", "Book")
-    def rdv_db = RefdataCategory.lookup("TitleInstance.Medium", "Database")
+    List msg_list = []
     int ctr = 0
 
     for (pkg in pkg_list) {
-
       Package.withNewTransaction {
-
-        def pkg_obj = Package.get(pkg)
-        def has_db = pkg_obj.tipps.title.find { it.medium == rdv_db }
-        def has_journal = pkg_obj.tipps.title.find { it.medium == rdv_journal }
-        def has_book = pkg_obj.tipps.title.find { it.medium == rdv_book }
+        Package pkg_obj = Package.get(pkg)
+        boolean has_db = TitleInstance.executeQuery('select id from TitleInstancePackagePlatform as tipp where pkg = :pkg and exists (select 1 from DatabaseInstance where id = tipp.title.id)', [pkg: pkg_obj],[max: 1]).size() > 0
+        boolean has_journal = TitleInstance.executeQuery('select id from TitleInstancePackagePlatform as tipp where pkg = :pkg and exists (select 1 from JournalInstance where id = tipp.title.id)', [pkg: pkg_obj], [max: 1]).size() > 0
+        boolean has_book = TitleInstance.executeQuery('select id from TitleInstancePackagePlatform as tipp where pkg = :pkg and exists (select 1 from BookInstance where id = tipp.title.id)', [pkg: pkg_obj], [max: 1]).size() > 0
 
         if (has_db && !has_journal && !has_book) {
           pkg_obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Database')
@@ -396,7 +391,9 @@ class PackageService {
           result.errors++
           msg_list.add(msg)
         }
+
         ctr++
+
         if (j) {
           j.setProgress(ctr, pkg_list.size())
         }
@@ -414,19 +411,27 @@ class PackageService {
     }
   }
 
-  def compareLists(listOne, listTwo, def full = true, Date date = null, Job j = null) {
-    def result = [:]
-    def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-    def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-    def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    def tipp_status = [status_current]
+  public Map compareLists(listOne, listTwo, def full = true, Date date = null, Job j = null) {
+    Map result = [:]
+
+    RefdataValue status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    RefdataValue status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+    List tipp_status = [RefdataCategory.lookup('KBComponent.Status', 'Current')]
     Date checkDate = date ?: new Date()
-    def tipp_params = [:]
-    def totals = [one: [tipps: 0, titles: 0], two: [tipps: 0, titles: 0]]
-    def titlesOne = [:]
-    def titlesTwo = [:]
-    def currentPkgNum = 0
+    Map tipp_params = [:]
+    Map totals = [
+      one: [
+        tipps: 0,
+        titles: 0
+      ],
+      two: [
+        tipps: 0,
+        titles: 0
+      ]
+    ]
+    Map titlesOne = [:]
+    Map titlesTwo = [:]
+    Integer currentPkgNum = 0
     int batchSize = 50
     boolean cancelled = false
 
@@ -437,16 +442,24 @@ class PackageService {
     }
 
     if (full) {
-      result = ['new': [], 'both':[], 'missing':[]]
+      result = [
+        'new': [],
+        'both':[],
+        'missing':[]
+      ]
     }
     else {
-      result = ['new': 0, 'both': 0, 'missing': 0]
+      result = [
+        'new': 0,
+        'both': 0,
+        'missing': 0
+      ]
     }
 
     log.debug("Building titles map 1 ..")
 
     for (p1 in listOne) {
-      def pkg = Package.get(genericOIDService.oidToId(p1))
+      Package pkg = Package.get(genericOIDService.oidToId(p1))
       currentPkgNum++
 
       if (pkg && !cancelled) {
@@ -457,7 +470,7 @@ class PackageService {
         int currentOffset = 0
 
         while (currentOffset < total) {
-          def tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
+          List tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
                                                                   where tipp.status in (:tippStatus)
                                                                   and exists (
                                                                     select c from Combo as c
@@ -472,7 +485,7 @@ class PackageService {
                                                                 [max: batchSize, offset: currentOffset, readOnly: true])
 
           tipps.each { tipp ->
-            def ti = ClassUtils.deproxy(tipp.title)
+            TitleInstance ti = ClassUtils.deproxy(tipp.title)
 
             if (!titlesOne[ti.id]){
               titlesOne[ti.id] = [id: ti.id, name: ti.name, tipps: []]
@@ -508,7 +521,7 @@ class PackageService {
     log.debug("Building titles map 2 ..")
 
     for (p2 in listTwo) {
-      def pkg = Package.get(genericOIDService.oidToId(p2))
+      Package pkg = Package.get(genericOIDService.oidToId(p2))
       currentPkgNum++
 
       if (pkg && !cancelled) {
@@ -516,7 +529,7 @@ class PackageService {
         int currentOffset = 0
 
         while (currentOffset < total) {
-          def tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
+          List tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
                                                                     where tipp.status in (:tippStatus)
                                                                     and exists (
                                                                       select c from Combo as c
@@ -531,7 +544,7 @@ class PackageService {
                                                                     [max: 50, offset: currentOffset, readOnly: true])
 
           tipps.each { tipp ->
-            def ti = ClassUtils.deproxy(tipp.title)
+            TitleInstance ti = ClassUtils.deproxy(tipp.title)
 
             if (!titlesTwo[ti.id]){
               titlesTwo[ti.id] = [id: ti.id, name: ti.name, tipps: []]

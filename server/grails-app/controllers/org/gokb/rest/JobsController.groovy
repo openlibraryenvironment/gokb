@@ -454,33 +454,4 @@ class JobsController {
 
     render result as JSON
   }
-
-  public static def filterJobResults(String propName, def id, def max, def offset, Map result) {
-    if (['ownerId', 'groupId', 'linkedItemId'].contains(propName)) {
-      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr." + propName + " = :val", [val: id.toLong()])[0]
-      def jobs = JobResult.executeQuery("from JobResult as jr where jr." + propName + " = :val order by jr.startTime desc", [val: id.toLong()], [max: max, offset: offset])
-      jobs.each { j ->
-        def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
-        // No JsonObject for list view
-        CuratoryGroup cg = CuratoryGroup.get(j.groupId)
-        result.data << [
-            group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
-            uuid       : j.uuid,
-            description: j.description,
-            type       : j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-            linkedItem : (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-            startTime  : j.startTime,
-            endTime    : j.endTime,
-            status     : j.statusText
-        ]
-      }
-
-      result['_pagination'] = [
-          offset: offset,
-          limit : max,
-          total : hqlTotal
-      ]
-    }
-    return result
-  }
 }

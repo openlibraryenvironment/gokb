@@ -1,7 +1,5 @@
 package org.gokb.cred
 
-import javax.persistence.Transient
-
 class Subject extends KBComponent {
 
   RefdataValue scheme

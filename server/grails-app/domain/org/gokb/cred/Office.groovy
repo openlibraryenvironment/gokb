@@ -19,14 +19,9 @@ class Office extends KBComponent {
   String state
   RefdataValue country
   RefdataValue function
+  Org org
 
-  static hasByCombo = [
-    org : Org,
-  ]
-
-  static manyByCombo = [
-	  curatoryGroups : CuratoryGroup
-  ]
+  static belongsTo = [Org]
 
   static mapping = {
     includes KBComponent.mapping
@@ -42,6 +37,7 @@ class Office extends KBComponent {
     state column:'office_state'
     country column:'office_country_fk_rv'
     function column:'office_function_fk_rv'
+    org column: 'office_org_fk'
   }
 
   static constraints = {
@@ -57,6 +53,7 @@ class Office extends KBComponent {
     state (nullable:true, blank:true)
     country (nullable:true, blank:true)
     function (nullable: true, blank: false)
+    org (nullable: false, blank: false)
   }
 
   private static refdataDefaults = [

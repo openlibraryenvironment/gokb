@@ -1052,11 +1052,16 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Country', 'Yemen')
         RefdataCategory.lookupOrCreate('Country', 'Zambia')
         RefdataCategory.lookupOrCreate('Country', 'Zimbabwe')
-        //    RefdataCategory.lookupOrCreate("Combo.Type", "Content Provider").save()
-        RefdataCategory.lookupOrCreate("Combo.Status", Combo.STATUS_ACTIVE)
-        RefdataCategory.lookupOrCreate("Combo.Status", Combo.STATUS_DELETED)
-        RefdataCategory.lookupOrCreate("Combo.Status", Combo.STATUS_SUPERSEDED)
-        RefdataCategory.lookupOrCreate("Combo.Status", Combo.STATUS_EXPIRED)
+
+        RefdataCategory.lookupOrCreate(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
+        RefdataCategory.lookupOrCreate(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_DELETED)
+        RefdataCategory.lookupOrCreate(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_SUPERSEDED)
+        RefdataCategory.lookupOrCreate(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_EXPIRED)
+
+        RefdataCategory.lookupOrCreate(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_ACTIVE)
+        RefdataCategory.lookupOrCreate(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_DELETED)
+        RefdataCategory.lookupOrCreate(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_SUPERSEDED)
+        RefdataCategory.lookupOrCreate(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_EXPIRED)
 
         RefdataCategory.lookupOrCreate('License.Type', 'Template')
         RefdataCategory.lookupOrCreate('License.Type', 'Other')

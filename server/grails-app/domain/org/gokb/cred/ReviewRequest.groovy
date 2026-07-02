@@ -1,15 +1,10 @@
 package org.gokb.cred
 
-import javax.persistence.Transient
-import org.gokb.refine.RefineProject
 import grails.converters.JSON
 
 class ReviewRequest {
 
-  @Transient
   def springSecurityService
-
-  def allComboPropertyNames = []
 
   KBComponent componentToReview
   String descriptionOfCause
@@ -21,7 +16,6 @@ class ReviewRequest {
   User closedBy
   User reviewedBy
   Boolean needsNotify
-  RefineProject refineProject
   String additionalInfo
   String editingNotes
 
@@ -50,7 +44,6 @@ class ReviewRequest {
     dateCreated(nullable:true, blank:true)
     lastUpdated(nullable:true, blank:true)
     needsNotify(nullable:true, blank:true)
-    refineProject(nullable:true, blank:true)
     additionalInfo(nullable:true, blank:false)
   }
 
@@ -58,7 +51,6 @@ class ReviewRequest {
                                      String actionRequired,
                                      String cause = null,
                                      User raisedBy = null,
-                                     refineProject = null,
                                      additionalInfo = null,
                                      RefdataValue stdDesc = null) {
 
@@ -68,7 +60,6 @@ class ReviewRequest {
         raisedBy : (raisedBy),
         descriptionOfCause : (cause),
         reviewRequest : (actionRequired),
-        refineProject : (refineProject),
         stdDesc : (stdDesc),
         additionalInfo : (additionalInfo),
         componentToReview : (forComponent)
@@ -87,7 +78,6 @@ class ReviewRequest {
 
   static jsonMapping = [
     'ignore'       : [
-      'refineProject',
       'additionalInfo',
       'needsNotify'
     ],
@@ -100,7 +90,6 @@ class ReviewRequest {
       "${this.class.name}:${id}"
   }
 
-  @Transient
   def availableActions() {
     [
       [code:'method::RRTransfer', label:'Transfer To...'],
@@ -108,7 +97,6 @@ class ReviewRequest {
     ]
   }
 
-  @Transient
   static def globalActions() {
     [
       [code:'method::RRTransfer', label:'Transfer To...'],
@@ -179,7 +167,6 @@ class ReviewRequest {
     this.delete(failOnError: true)
   }
 
-  @Transient
   public userAvailableActions() {
     def user = springSecurityService.currentUser
     def allActions = []

@@ -9,6 +9,16 @@ class AllocatedReviewGroup implements Serializable {
   RefdataValue status
 	AllocatedReviewGroup escalatedFrom
 
+	static mapping = {
+		id composite: ['review', 'group']
+		escalatedFrom column: 'arg_escalated_from'
+		version false
+	}
+
+	static constraints = {
+		group(nullable:false, blank:false)
+    review(nullable:false, blank:false)
+	}
 
 	boolean equals(other) {
 		if (!(other instanceof AllocatedReviewGroup)) {
@@ -53,16 +63,5 @@ class AllocatedReviewGroup implements Serializable {
 
 	static void removeAll(ReviewRequest review) {
 		executeUpdate 'DELETE FROM AllocatedReviewGroup WHERE review=:review', [review: review]
-	}
-
-	static mapping = {
-		id composite: ['review', 'group']
-		escalatedFrom column: 'arg_escalated_from'
-		version false
-	}
-
-	static constraints = {
-		group(nullable:false, blank:false)
-    review(nullable:false, blank:false)
 	}
 }

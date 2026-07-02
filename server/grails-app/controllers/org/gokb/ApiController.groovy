@@ -475,7 +475,6 @@ class ApiController {
   /**
    * show : Returns a simplified JSON serialization of a domain class object
    * @param oid : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the object
-   * @param withCombos : Also return all combos directly linked to the object
   **/
 
   @Secured("hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()")
@@ -488,9 +487,7 @@ class ApiController {
 
         if(obj.class in KBComponent) {
 
-          result.resource = obj.getAllPropertiesWithLinks(params.withCombos ? true : false)
-
-          result.resource.combo_props = obj.allComboPropertyNames
+          result.resource = obj.getAllPropertiesWithLinks()
         }
         else if (obj.class.name == 'org.gokb.cred.User'){
 

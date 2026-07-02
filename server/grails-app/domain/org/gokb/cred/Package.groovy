@@ -4,13 +4,10 @@ import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
+import org.grails.web.json.JSONObject
 
-import javax.persistence.Transient
 import groovy.util.logging.*
 import groovy.time.TimeCategory
-
-
-import org.gokb.refine.*
 
 @Slf4j
 class Package extends KBComponent {
@@ -36,7 +33,6 @@ class Package extends KBComponent {
   RefdataValue fixed
   RefdataValue paymentType
   RefdataValue global
-  RefineProject lastProject
   String globalNote
   String listVerifier
   User userListVerifier
@@ -45,6 +41,11 @@ class Package extends KBComponent {
   String descriptionURL
   Integer startYear
   Integer endYear
+  Org provider
+  Org contentProvider
+  Platform nominalPlatform
+  Package parent
+  Package previous
 
   private static refdataDefaults = [
     "scope"      : "Front File",
@@ -56,35 +57,19 @@ class Package extends KBComponent {
     "global"     : "Global"
   ]
 
-  static manyByCombo = [
-    tipps         : TitleInstancePackagePlatform,
+  static hasMany = [
     children      : Package,
     curatoryGroups: CuratoryGroup
   ]
 
-  static hasByCombo = [
-    parent         : Package,
-    broker         : Org,
-    provider       : Org,
-    contentProvider: Org,
-    licensor       : Org,
-    vendor         : Org,
-    nominalPlatform: Platform,
-    'previous'     : Package,
-    successor      : Package
-  ]
-
-  static mappedByCombo = [
+  static mappedBy = [
     children : 'parent',
-    successor: 'previous',
+    successor: 'previous'
   ]
-
-  static hasOne = [updateToken: UpdateToken]
 
   static mapping = {
     includes KBComponent.mapping
     listStatus column: 'pkg_list_status_rv_fk'
-    lastProject column: 'pkg_refine_project_fk'
     scope column: 'pkg_scope_rv_fk'
     breakable column: 'pkg_breakable_rv_fk'
     consistent column: 'pkg_consistent_rv_fk'
@@ -97,6 +82,11 @@ class Package extends KBComponent {
     descriptionURL column: 'pkg_descr_url'
     startYear column: 'pkg_start_year'
     endYear column: 'pkg_end_year'
+    provider column: 'pkg_provider_fk'
+    contentProvider column: 'pkg_content_provider_fk'
+    nominalPlatform column: 'pkg_nominal_platform_fk'
+    parent column: 'pkg_parent_fk'
+    previous column: 'pkg_previous_fk'
   }
 
   static constraints = {
@@ -149,6 +139,11 @@ class Package extends KBComponent {
         }
       }
     })
+    provider(nullable: true, blank: true)
+    contentProvider(nullable: true, blank: true)
+    nominalPlatform(nullable: true, blank: true)
+    parent(nullable: true, blank: true)
+    previous(nullable: true, blank: true)
   }
 
   public String getRestPath() {
@@ -157,8 +152,6 @@ class Package extends KBComponent {
 
   static jsonMapping = [
     'ignore'       : [
-      'lastProject',
-      'updateToken'
     ],
     'es'           : [
       'nominalPlatformUuid': "nominalPlatform.uuid",
@@ -216,38 +209,34 @@ class Package extends KBComponent {
     result
   }
 
-  @Transient
+
   public getTitles(Boolean onlyCurrent = true, Integer max = 10, Integer offset = 0) {
-    def all_titles = null
+    List all_titles = []
     log.debug("getTitles :: current ${onlyCurrent} - max ${max} - offset ${offset}")
 
     if (this.id) {
       if (onlyCurrent) {
         def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
-        all_titles = TitleInstance.executeQuery('''select distinct title
-          from TitleInstance as title,
-            Combo as pkgCombo,
-            Combo as titleCombo,
-            TitleInstancePackagePlatform as tipp
-          where pkgCombo.toComponent=tipp
-            and pkgCombo.fromComponent=:pkg
-            and titleCombo.toComponent=tipp
-            and titleCombo.fromComponent=title
-            and tipp.status = :stipp
+        all_titles = TitleInstance.executeQuery('''select title
+          from TitleInstance as title
+            where exists (
+              select 1 from TitleInstancePackagePlatform as tipp
+              where tipp.pkg = :pkg
+              and tipp.title = title
+              and tipp.status = :stipp
+            )
             and title.status = :stitle'''
           , [pkg: this, stipp: refdata_current, stitle: refdata_current], [max: max, offset: offset])
       }
       else {
-        all_titles = TitleInstance.executeQuery('''select distinct title
-          from TitleInstance as title,
-            Combo as pkgCombo,
-            Combo as titleCombo,
-            TitleInstancePackagePlatform as tipp
-          where pkgCombo.toComponent=tipp
-            and pkgCombo.fromComponent=:pkg
-            and titleCombo.toComponent=tipp
-            and titleCombo.fromComponent=title'''
+        all_titles = TitleInstance.executeQuery('''select title
+          from TitleInstance as title
+            where exists (
+              select 1 from TitleInstancePackagePlatform as tipp
+              where tipp.pkg = :pkg
+              and tipp.title = title
+            )'''
           , [pkg: this], [max: max, offset: offset])
       }
     }
@@ -255,78 +244,71 @@ class Package extends KBComponent {
     return all_titles
   }
 
-  @Transient
-  public getCurrentTitleCount() {
-    def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current');
 
-    int result = TitleInstance.executeQuery('''select count(distinct title.id)
-      from TitleInstance as title,
-        Combo as pkgCombo,
-        Combo as titleCombo,
-        TitleInstancePackagePlatform as tipp
-      where pkgCombo.toComponent=tipp
-        and pkgCombo.fromComponent=:pkg
-        and titleCombo.toComponent=tipp
-        and titleCombo.fromComponent=title
-        and tipp.status = :stipp
-        and title.status = :stitle'''
-      , [pkg: this, stipp: refdata_current, stitle: refdata_current])[0]
+  public Integer getCurrentTitleCount() {
+    RefdataValue refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+
+    Integer result = TitleInstance.executeQuery('''select count(title.id)
+                                                    from TitleInstance as title
+                                                      where exists (
+                                                        select 1 from TitleInstancePackagePlatform as tipp
+                                                        where tipp.pkg = :pkg
+                                                        and tipp.title = title
+                                                        and tipp.status = :sc
+                                                      )
+                                                      and title.status = :sc''',
+                                                [pkg: this, sc: refdata_current])[0]
 
     result
   }
 
-  @Transient
-  public getCurrentTippCount() {
-    def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-    def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
-    int result = Combo.executeQuery("select count(c.id) from Combo as c where c.fromComponent = :pkg and c.type = :ct and c.toComponent.status = :sc"
-      , [pkg: this, ct: combo_tipps, sc: refdata_current])[0]
+  public Integer getCurrentTippCount() {
+    RefdataValue refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
-    result
-  }
-
-  @Transient
-  public int getTippCountForStatus(status) {
-    def refdata_status = RefdataCategory.lookup('KBComponent.Status', status)
-    def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-
-    int result = Combo.executeQuery("select count(c.id) from Combo as c where c.fromComponent = :pkg and c.type = :ct and c.toComponent.status = :sc"
-            , [pkg: this, ct: combo_tipps, sc: refdata_status])[0]
+    Integer result = TitleInstancePackagePlatform.executeQuery("select count(t.id) from TitleInstancePackagePlatform as t where t.pkg = :pkg and t.status = :sc"
+      , [pkg: this, sc: refdata_current])[0]
 
     result
   }
 
-  @Transient
-  public getReviews(boolean onlyOpen = true, boolean onlyCurrent = false, int max = 0, int offset = 0) {
+
+  public Integer getTippCountForStatus(status) {
+    RefdataValue refdata_status = RefdataCategory.lookup('KBComponent.Status', status)
+
+    Integer result = TitleInstancePackagePlatform.executeQuery("select count(t.id) from TitleInstancePackagePlatform as t where t.pkg = :pkg and t.status = :sc"
+            , [pkg: this, sc: refdata_status])[0]
+
+    result
+  }
+
+
+  public List getReviews(boolean onlyOpen = true, boolean onlyCurrent = false, int max = 0, int offset = 0) {
     def qry = '''select rr from ReviewRequest as rr,
             TitleInstance as title,
-            Combo as pkgCombo,
-            Combo as titleCombo,
             TitleInstancePackagePlatform as tipp
-          where pkgCombo.toComponent=tipp
-            and pkgCombo.fromComponent=:pkg
-            and titleCombo.toComponent=tipp
-            and titleCombo.fromComponent=title
-            and rr.componentToReview = title'''
+          where tipp.pkg = :pkg
+            and tipp.title = title
+            and (
+              rr.componentToReview = title
+              or rr.componentToReview = tipp
+            )'''
 
-    def qry_params = [
-      pkg: this
-    ]
+    Map qry_params = [pkg: this]
 
     if (onlyOpen) {
-      def refdata_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+      RefdataValue refdata_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
       qry_params.rs = refdata_open
       qry = qry + ' and rr.status = :rs'
     }
 
     if (onlyCurrent) {
-      def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      RefdataValue refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       qry_params.stipp = refdata_current
       qry = qry + ' and tipp.status = :stipp'
     }
 
-    def all_rrs = ReviewRequest.executeQuery(qry, qry_params, [max: max, offset: offset])
+    List all_rrs = ReviewRequest.executeQuery(qry, qry_params, [max: max, offset: offset])
 
     log.debug("Got ${all_rrs.size()} indirect reviews")
 
@@ -377,14 +359,12 @@ class Package extends KBComponent {
     RefdataValue expected_status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
     RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
     RefdataValue rr_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
-    RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
     def qry_params = [
       ret: new_status,
       sce: [expected_status, current_status],
       comment: "Status set to ${new_status.value} due to package change!",
       pkg: this.id,
-      ctype: combo_type,
       now: new Date(),
       rdate: date
     ]
@@ -399,29 +379,22 @@ class Package extends KBComponent {
                   t.lastUpdated = :now,
                   t.accessEndDate = :rdate
                   where t.status in :sce
-                  and exists (
-                    select 1 from Combo
-                    where fromComponent.id = :pkg
-                    and toComponent.id = t.id
-                    and type = :ctype
-                  )'''
+                  and t.pkg = :pkg'''
 
     def rr_qry = '''update ReviewRequest as rr
                     set rr.status = :closed,
                     rr.lastUpdated = :now
                     where rr.status = :open
                     and exists (
-                      select 1 from Combo
-                      where fromComponent.id = :pkg
-                      and toComponent.id = rr.componentToReview.id
-                      and type = :ctype
+                      select 1 from TitleInstancePackagePlatform as t
+                      where t.pkg = :pkg
+                      and rr.componentToReview = t
                     )'''
 
     def params_rr = [
       closed: rr_closed,
       open: rr_open,
       pkg: this.id,
-      ctype: combo_type,
       now: new Date()
     ]
 
@@ -430,7 +403,7 @@ class Package extends KBComponent {
   }
 
 
-  @Transient
+
   def availableActions() {
     [
       [code: 'method::deleteSoft', label: 'Delete (with associated TIPPs)', perm: 'delete'],
@@ -443,7 +416,7 @@ class Package extends KBComponent {
     ]
   }
 
-  @Transient
+
   def getWebHooks() {
     def result = []
 
@@ -452,7 +425,7 @@ class Package extends KBComponent {
     result
   }
 
-  @Transient
+
   static def oaiConfig = [
     id             : 'packages',
     textDescription: 'Package repository for GOKb',
@@ -465,7 +438,7 @@ class Package extends KBComponent {
   /**
    *  Render this package as OAI_dc
    */
-  @Transient
+
   def toOaiDcXml(builder, attr) {
     builder.'dc'(attr) {
       'dc:title'(name)
@@ -475,20 +448,18 @@ class Package extends KBComponent {
   /**
    *  Render this package as GoKBXML
    */
-  @Transient
-  def toGoKBXml(builder, attr) {
+
+  public void toGoKBXml(builder, attr) {
 
     log.debug("toGoKBXml... ${this.class.name}:${id}");
 
-    def identifier_prefix = "uri://gokb/${grailsApplication.config.getProperty('sysid')}/title/"
-
-    def refdata_package_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-    def refdata_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
-    def tipp_hql_params = [pkg: this, ctype: refdata_package_tipps]
+    String identifier_prefix = "uri://gokb/${grailsApplication.config.getProperty('sysid')}/title/"
+    RefdataValue refdata_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    String tipp_hql = "from TitleInstancePackagePlatform as tipp where pkg = :pkg"
+    Map tipp_hql_params = [pkg: this]
 
     // Get the tipps manually rather than iterating over the collection - For better management
-    def tipps_count = this.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
+    Integer tipps_count = this.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
     log.debug("Query complete...");
 
     builder.'gokb'(attr) {
@@ -578,7 +549,8 @@ class Package extends KBComponent {
                   start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null,
                   end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null
                 )
-                def cov_statements = getCoverageStatements(tipp.id)
+                List cov_statements = getCoverageStatements(tipp.id)
+
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
                     'coverage'(
@@ -606,27 +578,26 @@ class Package extends KBComponent {
     log.debug("toGoKBXml complete...")
   }
 
-  @Transient
-  private static getTitleClass(Long title_id) {
-    def result = KBComponent.get(title_id)?.class.getSimpleName()
+
+  private static String getTitleClass(Long title_id) {
+    String result = KBComponent.get(title_id)?.class.getSimpleName()
 
     result
   }
 
-  @Transient
-  private static getCoverageStatements(Long tipp_id) {
-    def result = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement as tcs where tcs.owner.id = :tipp", ['tipp': tipp_id], [readOnly: true])
+
+  private static List getCoverageStatements(Long tipp_id) {
+    List result = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement as tcs where tcs.owner.id = :tipp", ['tipp': tipp_id], [readOnly: true])
     result
   }
 
-  @Transient
-  public getRecentActivity(Integer count, Integer offset = 0) {
-    def result = []
+
+  public List getRecentActivity(Integer count, Integer offset = 0) {
+    List result = []
 
     if (this.id) {
       RefdataValue status_deleted = RefdataCategory.lookup(super.RD_STATUS, super.STATUS_DELETED)
-      def changes = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as c ' +
-        'where c.fromComponent= :pkg and c.toComponent=tipp order by tipp.lastUpdated DESC',
+      List changes = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp where tipp.pkg = :pkg order by tipp.lastUpdated DESC',
         [pkg: this], [max: count, offset: offset])
 
       use(TimeCategory) {
@@ -650,7 +621,7 @@ class Package extends KBComponent {
       result = result.reverse()
     }
 
-    return result;
+    return result
   }
 
   def beforeUpdate() {
@@ -676,13 +647,14 @@ class Package extends KBComponent {
 
   public void addCuratoryGroupIfNotPresent(String cgname) {
     boolean add_needed = true;
+
     curatoryGroups.each { cgtest ->
       if (cgtest.name.equalsIgnoreCase(cgname))
         add_needed = false;
     }
 
     if (add_needed) {
-      def cg = CuratoryGroup.findByName(cgname) ?: new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
+      CuratoryGroup cg = CuratoryGroup.findByName(cgname) ?: new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
       curatoryGroups.add(cg);
     }
   }
@@ -690,7 +662,7 @@ class Package extends KBComponent {
   /**
    * Definitive rules for a valid package header
    */
-  public static def validateDTO(packageHeaderDTO, locale) {
+  public static def validateDTO(JSONObject packageHeaderDTO, Locale locale) {
     def result = [valid: true, errors: [:], match: false]
 
     if (!packageHeaderDTO.name?.trim()) {
@@ -699,23 +671,25 @@ class Package extends KBComponent {
     }
 
     String idJsonKey = 'ids'
-    def ids_list = packageHeaderDTO[idJsonKey]
+    List ids_list = packageHeaderDTO[idJsonKey] ?: []
+
     if (!ids_list) {
       idJsonKey = 'identifiers'
-      ids_list = packageHeaderDTO[idJsonKey]
+      ids_list = packageHeaderDTO[idJsonKey] ?: []
     }
     if (ids_list) {
-      def id_errors = Identifier.validateDTOs(ids_list, locale)
+      List  id_errors = Identifier.validateDTOs(ids_list, locale)
+
       if (id_errors.size() > 0) {
         result.errors.put(idJsonKey, id_errors)
       }
     }
     if (result.valid) {
-      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-      def pkg_normname = GOKbTextUtils.cleanTitleString(packageHeaderDTO.name)
+      RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      String pkg_normname = GOKbTextUtils.cleanTitleString(packageHeaderDTO.name)
 
-      def name_candidates = Package.findAllByNameIlikeAndStatusNotEqual(pkg_normname, status_deleted)
-      def full_matches = []
+      List name_candidates = Package.findAllByNameIlikeAndStatusNotEqual(pkg_normname, status_deleted)
+      List full_matches = []
 
       if (packageHeaderDTO.uuid) {
         result.match = Package.findByUuid(packageHeaderDTO.uuid) ? true : false
@@ -726,8 +700,8 @@ class Package extends KBComponent {
       }
 
       if (!result.match) {
-        def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
-        def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
+        String variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
+        List variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
         if (variant_candidates.size() == 1) {
           result.match = true
@@ -738,7 +712,7 @@ class Package extends KBComponent {
       if (!result.match) {
         log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
         packageHeaderDTO.variantNames.each {
-          def vname = null
+          String vname
 
           if (it instanceof String) {
             if (it.trim()) {
@@ -751,15 +725,15 @@ class Package extends KBComponent {
           }
 
           if (vname) {
-            def var_pkg = Package.findByName(vname)
+            Package var_pkg = Package.findByName(vname)
 
             if (var_pkg) {
               log.debug("Found existing package name for variantName ${vname}")
+              result.match = true
             }
             else {
-
-              def variant_normname = GOKbTextUtils.normaliseString(vname)
-              def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
+              String variant_normname = GOKbTextUtils.normaliseString(vname)
+              List variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
               if (variant_candidates.size() == 1) {
                 log.debug("Found existing package variant name for variantName ${vname}")
@@ -772,7 +746,7 @@ class Package extends KBComponent {
     }
 
     if (packageHeaderDTO.provider && packageHeaderDTO.provider instanceof Integer) {
-      def prov = Org.get(packageHeaderDTO.provider)
+      Org prov = Org.get(packageHeaderDTO.provider)
 
       if (!prov) {
         result.errors.provider = [[message: messageService.resolveCode('crossRef.error.lookup', ["Provider", "ID"], locale), code: 404, baddata: packageHeaderDTO.provider]]
@@ -781,9 +755,9 @@ class Package extends KBComponent {
     }
 
     if (packageHeaderDTO.nominalPlatform && packageHeaderDTO.nominalPlatform instanceof Integer) {
-      def prov = Platform.get(packageHeaderDTO.nominalPlatform)
+      Platform plt = Platform.get(packageHeaderDTO.nominalPlatform)
 
-      if (!prov) {
+      if (!plt) {
         result.errors.nominalPlatform = [[message: messageService.resolveCode('crossRef.error.lookup', ["Platform", "ID"], locale), code: 404, baddata: packageHeaderDTO.nominalPlatform]]
         result.valid = false
       }

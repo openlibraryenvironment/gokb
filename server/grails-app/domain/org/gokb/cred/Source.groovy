@@ -34,7 +34,7 @@ class Source extends KBComponent {
   RefdataValue transferMethod
   LocalDate lastImportFileDate
 
-  static manyByCombo = [
+  static hasMany = [
     curatoryGroups: CuratoryGroup
   ]
 

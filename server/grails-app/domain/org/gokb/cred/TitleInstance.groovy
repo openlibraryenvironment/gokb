@@ -12,16 +12,15 @@ import groovy.util.logging.*
 @Slf4j
 class TitleInstance extends KBComponent {
 
-  // title is now NAME in the base component class...
   RefdataValue medium
   RefdataValue pureOA
-  RefdataValue continuingSeries
-  RefdataValue reasonRetired
   RefdataValue OAStatus
   Work work
   Date publishedFrom
   Date publishedTo
   String coverImage
+
+  Set publisher = []
 
   private static refdataDefaults = [
     "medium"  : "Journal",
@@ -35,6 +34,38 @@ class TitleInstance extends KBComponent {
     medium column: 'medium_id', index: 'ti_medium_idx'
   }
 
+  static hasMany = [
+    tipps: TitleInstancePackagePlatform,
+    publisherLinks: TitlePublisher,
+    tipls: TitleInstancePlatform
+  ]
+
+  static mappedBy = [
+    tipps: 'title',
+    tipls: 'title'
+  ]
+
+  static constraints = {
+
+    medium(nullable: true, blank: false)
+    pureOA(nullable: true, blank: false)
+    reasonRetired(nullable: true, blank: false)
+    OAStatus(nullable: true, blank: false)
+    publishedFrom(nullable: true, blank: false)
+    publishedTo(validator: { val, obj ->
+      if (obj.publishedFrom && val && (obj.hasChanged('publishedTo') || obj.hasChanged('publishedFrom')) && obj.publishedFrom > val) {
+        return ['endDate.endPriorToStart']
+      }
+    })
+    coverImage(nullable: true, blank: true)
+    work(nullable: true, blank: false)
+    name(validator: { val, obj ->
+      if (!val && obj.hasChanged('name')) {
+        return ['notNull']
+      }
+    })
+  }
+
   @Override
   String getLogEntityId() {
     "${this.class.name}:${id}"
@@ -42,7 +73,7 @@ class TitleInstance extends KBComponent {
 
   public static final String restPath = "/titles"
 
-  static jsonMapping = [
+  static Map jsonMapping = [
     'ignore'       : [
       'pureOA',
       'continuingSeries',
@@ -69,51 +100,7 @@ class TitleInstance extends KBComponent {
     ]
   ]
 
-  // This map is used to convey information about the title in general processing. The initial usecase is so that we can attach
-  // information about how this specific title was located, for example, by class 1 identifier match, or some other method
-  // title_status_properties.matched_by='Title In Title History' is used when the title was matched by a title string in the context of a title history
-  @Transient
-  public title_status_properties = [:]
-
-  static hasByCombo = [
-    issuer        : Org,
-    translatedFrom: TitleInstance,
-    absorbedBy    : TitleInstance,
-    mergedWith    : TitleInstance,
-    renamedTo     : TitleInstance,
-    splitFrom     : TitleInstance,
-    imprint       : Imprint
-  ]
-
-  static manyByCombo = [
-    tipps    : TitleInstancePackagePlatform,
-    publisher: Org,
-    tipls    : TitleInstancePlatform
-    //        ids     :  Identifier
-  ]
-
-  static constraints = {
-
-    medium(nullable: true, blank: false)
-    pureOA(nullable: true, blank: false)
-    reasonRetired(nullable: true, blank: false)
-    OAStatus(nullable: true, blank: false)
-    publishedFrom(nullable: true, blank: false)
-    publishedTo(validator: { val, obj ->
-      if (obj.publishedFrom && val && (obj.hasChanged('publishedTo') || obj.hasChanged('publishedFrom')) && obj.publishedFrom > val) {
-        return ['endDate.endPriorToStart']
-      }
-    })
-    coverImage(nullable: true, blank: true)
-    work(nullable: true, blank: false)
-    name(validator: { val, obj ->
-      if (!val && obj.hasChanged('name')) {
-        return ['notNull']
-      }
-    })
-  }
-
-  def availableActions() {
+  public Map availableActions() {
     [[code: 'method::deleteSoft', label: 'Delete', perm: 'delete'],
      [code: 'setStatus::Current', label: 'Set Current', perm: 'admin'],
      [code: 'setStatus::Expected', label: 'Mark Expected'],
@@ -125,25 +112,25 @@ class TitleInstance extends KBComponent {
   }
 
   public boolean addVariantTitle(String title, String locale = null) {
+    boolean result = false
 
     // Check that the variant is not equal to the name of this title first.
     if (!title.equalsIgnoreCase(this.name)) {
 
-      def normTitle = GOKbTextUtils.normaliseString(title)
+      String normTitle = GOKbTextUtils.normaliseString(title)
 
       // Need to compare the existing variant names here. Rather than use the equals method,
       // we are going to compare certain attributes here.
       RefdataValue title_type = RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title")
-      def locale_rd = null
+      RefdataValue locale_rd = null
 
       if (locale) {
         locale_rd = RefdataValue.findByOwnerAndValue(RefdataCategory.findByDesc("KBComponentVariantName.Locale"), (locale))
       }
 
       // Each of the variants...
-      def existing = variantNames.find {
-        KBComponentVariantName name = it
-        return (name.getNormVariantName().equals(normTitle))
+      List existing = variantNames.find { kv ->
+        kv.normname == normTitle
       }
 
       if (!existing) {
@@ -154,18 +141,18 @@ class TitleInstance extends KBComponent {
           "status"     : RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
           "variantName": (title)
         ])
-        return true
+        result = true
       }
       else {
         log.debug("Not adding variant title as it is the same as an existing variant.")
-        return false
       }
 
     }
     else {
       log.debug("Not adding variant title as it is the same as the actual title.")
-      return false
     }
+
+    result
   }
 
   @Override
@@ -174,34 +161,22 @@ class TitleInstance extends KBComponent {
   }
 
   public Org getCurrentPublisher() {
-    def result = null;
-    def publisher_combos = getCombosByPropertyNameAndStatus('publisher', 'Active')
-    def highest_end_date = null
+    Org result = null
+    List publishers = TitlePublisher.findByTitle(this)
+    Date highest_end_date
 
-    publisher_combos.each { Combo pc ->
+    publishers.each { TitlePublisher pc ->
       if ((pc.endDate == null) ||
         (highest_end_date == null) ||
         (pc.endDate > highest_end_date)) {
 
-        if (isComboReverse('publisher')) {
-          if (pc.fromComponent.status?.value == 'Deleted') {
-          }
-          else if (result && !highest_end_date) {
-          }
-          else {
-            highest_end_date = pc.endDate
-            result = pc.fromComponent
-          }
+        if (pc.publisher.status?.value == 'Deleted') {
+        }
+        else if (result && !highest_end_date) {
         }
         else {
-          if (pc.toComponent.status?.value == 'Deleted') {
-          }
-          else if (result && !highest_end_date) {
-          }
-          else {
-            highest_end_date = pc.endDate
-            result = pc.toComponent
-          }
+          highest_end_date = pc.endDate
+          result = pc.publisher
         }
       }
     }
@@ -210,24 +185,46 @@ class TitleInstance extends KBComponent {
     result
   }
 
+  public List getPublisher() {
+    List result = []
+
+    publisherLinks.each {
+      result << it.publisher
+    }
+
+    return result
+  }
+
 
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
    *  objects implementing this method can be easily located and listed / selected
    */
-  static def refdataFind(params) {
-    def result = [];
-    def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
-    def status_filter = null
+  static List refdataFind(params) {
+    List result = [];
+    RefdataValue status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    RefdataValue status_filter = null
 
     if (params.filter1) {
       status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
     }
 
-    def ql = null;
     // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
     // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
-    ql = TitleInstance.executeQuery("select t from TitleInstance as t where t.status <> :sd and ( lower(t.name) like :lcqry or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like :qry ) ) )", [sd: status_deleted, lcqry: "${params.q?.toLowerCase()}%", qry: "${params.q}%"], [max: 20])
+    List ql = TitleInstance.executeQuery('''select t from TitleInstance as t
+                                            where t.status <> :sd
+                                            and (
+                                              lower(t.name) like :lcqry
+                                              or exists (
+                                                select c from ComponentIdentifier as c
+                                                where c.component = t
+                                                and c.identifier in (
+                                                  select id from Identifier as id
+                                                  where id.value like :qry
+                                                )
+                                              )
+                                            )''',
+                                          [sd: status_deleted, lcqry: "${params.q?.toLowerCase()}%", qry: "${params.q}%"], [max: 20])
 
     if (ql) {
       ql.each { t ->
@@ -241,7 +238,7 @@ class TitleInstance extends KBComponent {
   }
 
   @Transient
-  static def oaiConfig = [
+  static Map oaiConfig = [
     id             : 'titles',
     textDescription: 'Title repository for GOKb',
     query          : " from TitleInstance as o ",
@@ -254,7 +251,7 @@ class TitleInstance extends KBComponent {
    *  Render this title as OAI_dc
    */
   @Transient
-  def toOaiDcXml(builder, attr) {
+  public void toOaiDcXml(builder, attr) {
     builder.'dc'(attr) {
       'dc:title'(name)
     }
@@ -264,15 +261,12 @@ class TitleInstance extends KBComponent {
    *  Render this title as GoKBXML
    */
   @Transient
-  def toGoKBXml(builder, attr) {
+  public void toGoKBXml(builder, attr) {
 
     try {
-      Org theIssuer = getIssuer()
-      def publisher_combos = getCombosByPropertyName('publisher')
-      def history = getTitleHistory()
-      def tipps = getTipps()
-      RefdataValue type_pkg_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-      RefdataValue type_plt_tipp = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
+      List publisher_links = getPublisherLinks()
+      List history = getTitleHistory()
+      List tipps = getTipps()
 
       builder.'gokb'(attr) {
         builder.'title'(['id': (id), 'uuid': (uuid)]) {
@@ -299,15 +293,8 @@ class TitleInstance extends KBComponent {
           builder.'publishedTo'(this.publishedTo ? DateFormatService.formatDate(this.publishedTo)  : null)
 
           builder.'publishers' {
-            publisher_combos?.each { Combo pc ->
-              def pub_info = null
-
-              if (isComboReverse('publisher')) {
-                pub_info = Org.executeQuery("select id, uuid, name from Org where id = :fc", [fc: pc.fromComponent.id])
-              }
-              else {
-                pub_info = Org.executeQuery("select id, uuid, name from Org where id = :fc", [fc: pc.toComponent.id])
-              }
+            publisher_links?.each { TitlePublisher pc ->
+              List pub_info = Org.executeQuery("select id, uuid, name from Org where id = :fc", [fc: pc.publisher.id])
 
               if (pub_info) {
                 builder."publisher"(['id': pub_info[0], 'uuid': pub_info[1]]) {
@@ -326,12 +313,6 @@ class TitleInstance extends KBComponent {
                   }
                 }
               }
-            }
-          }
-
-          if (theIssuer) {
-            builder."issuer"(['id': theIssuer.id, 'uuid': theIssuer.uuid]) {
-              "name"(theIssuer.name)
             }
           }
 
@@ -381,13 +362,13 @@ class TitleInstance extends KBComponent {
                 builder.'name'(tipp.name)
                 builder.'status'(tipp.status.value)
 
-                def pkg_info = tipp.getResolvedCombosByPropertyNameAndStatus('pkg', 'Active')[0]
+                List pkg_info = Package.executeQuery("select id, uuid, name from Package where id = :pid", [pid: tipp.pkg.id])
 
                 builder.'package'(['id': pkg_info[0], 'uuid': pkg_info[1]]) {
                   builder.'name'(pkg_info[2])
                 }
 
-                def plt_info = tipp.getResolvedCombosByPropertyNameAndStatus('hostPlatform', 'Active')[0]
+                List plt_info = Platform.executeQuery("select id, uuid, name from Platform where id = :pid", [pid: tipp.hostPlatform.id])
 
                 builder.'platform'(['id': plt_info[0], 'uuid': plt_info[1]]) {
                   builder.'name'(plt_info[2])
@@ -399,14 +380,14 @@ class TitleInstance extends KBComponent {
                 builder.'accessEndDate'(tipp.accessEndDate ? DateFormatService.formatDate(tipp.accessEndDate) : null)
 
                 builder."identifiers" {
-                  def tipp_id_list = tipp.activeIdInfo
+                  List tipp_id_list = tipp.activeIdInfo
 
                   tipp_id_list.each { tid ->
                     builder.'identifier'(tid)
                   }
                 }
 
-                def cov_statements = tipp.coverageStatements
+                List cov_statements = tipp.coverageStatements
 
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
@@ -437,44 +418,68 @@ class TitleInstance extends KBComponent {
     }
   }
 
-  @Transient
-  def getTitleHistory() {
-    def result = []
-    def all_related_history_events = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant = :ti and ehp.event = eh ) order by eh.eventDate', [ti: this])
-    all_related_history_events.each { he ->
-      def from_titles = he.participants.findAll { it.participantRole == 'in' };
-      def to_titles = he.participants.findAll { it.participantRole == 'out' };
+  public List getTitleHistory() {
+    List result = []
+    List all_related_history_events = ComponentHistoryEvent.executeQuery('''select eh from ComponentHistoryEvent as eh
+                                                                            where exists (
+                                                                              select ehp from ComponentHistoryEventParticipant as ehp
+                                                                              where ehp.participant = :ti
+                                                                              and ehp.event = eh
+                                                                            )
+                                                                            order by eh.eventDate''',
+                                                                          [ti: this])
 
-      def hint = "unknown"
+    all_related_history_events.each { he ->
+      List from_titles = he.participants.findAll { it.participantRole == 'in' }
+      List to_titles = he.participants.findAll { it.participantRole == 'out' }
+
+      String hint = "unknown"
+
       if ((from_titles?.size() == 1) && (to_titles?.size() == 1) && (from_titles[0].participant?.id != to_titles[0].participant?.id)) {
         hint = "Rename"
       }
 
-      result.add(["id": (he.id), date: he.eventDate, from: from_titles.collect { it.participant }, to: to_titles.collect { it.participant }, hint: hint]);
+      result.add([
+        "id": (he.id),
+        date: he.eventDate,
+        from: from_titles.collect { it.participant },
+        to: to_titles.collect { it.participant },
+        hint: hint
+      ])
     }
-    return result;
+
+    return result
   }
 
-  def addTitlesToHistory(title, final_list, depth) {
-    def result = false;
+  public void addTitlesToHistory(title, final_list, depth) {
+    Boolean result = false
 
     if (title) {
       // Check to see whether this component has an id first. If not then return an empty set.
       if (title.id && title.id > 0) {
         if (final_list.contains(title)) {
-          return;
+          // already in list
         }
         else {
           // Find all history events relating to this title, and for each title related, add it to the final_list if it's not already in the list
           final_list.add(title)
-          def all_related_history_events = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant = :ti and ehp.event = eh ) order by eh.eventDate', [ti: title])
+
+          List all_related_history_events = ComponentHistoryEvent.executeQuery('''select eh from ComponentHistoryEvent as eh
+                                                                                  where exists (
+                                                                                    select ehp from ComponentHistoryEventParticipant as ehp
+                                                                                    where ehp.participant = :ti
+                                                                                    and ehp.event = eh
+                                                                                  )
+                                                                                  order by eh.eventDate''',
+                                                                                [ti: title])
+
           all_related_history_events.each { the ->
             the.participants.each { p ->
               if (p.participant) {
                 addTitlesToHistory(p.participant, final_list, depth + 1)
               }
               else {
-                log.error("Title history participant was null - HistoryEvent==${the}");
+                log.error("Title history participant was null - HistoryEvent==${the}")
               }
             }
           }
@@ -482,30 +487,42 @@ class TitleInstance extends KBComponent {
       }
     }
     else {
-      log.error("Attempt to addTitlesToHistory for a null title");
+      log.error("Attempt to addTitlesToHistory for a null title")
     }
-
-    result;
   }
 
-  @Transient
-  def getFullTitleHistory() {
-    def result = [:]
+  public Map getFullTitleHistory() {
+    Map result = [:]
 
     // Check to see whether this component has an id first. If not then return an empty set.
     if (id && id > 0) {
-      def il = []
+      List il = []
       addTitlesToHistory(this, il, 0)
-      result.fh = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant in (:titleList) and ehp.event = eh ) order by eh.eventDate asc', [titleList: il])
+      result.fh = ComponentHistoryEvent.executeQuery('''select eh from ComponentHistoryEvent as eh
+                                                        where exists (
+                                                          select ehp from ComponentHistoryEventParticipant as ehp
+                                                          where ehp.participant in (:titleList)
+                                                          and ehp.event = eh )
+                                                          order by eh.eventDate asc''',
+                                                    [titleList: il])
     }
     result;
   }
 
-  def getPrecedingTitleId() {
+  public List getPrecedingTitleId() {
     log.debug('getPrecedingTitleId')
-    def preceeding_titles = []
+    List preceeding_titles = []
     // Work through title history, see if there is a preceeding title...
-    def ths = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant = :ti and ehp.participantRole = :pr and ehp.event = eh ) order by eh.eventDate desc', [ti: this, pr: 'out'])
+    List ths = ComponentHistoryEvent.executeQuery('''select eh from ComponentHistoryEvent as eh
+                                                    where exists (
+                                                      select ehp from ComponentHistoryEventParticipant as ehp
+                                                      where ehp.participant = :ti
+                                                      and ehp.participantRole = :pr
+                                                      and ehp.event = eh
+                                                    )
+                                                    order by eh.eventDate desc''',
+                                                [ti: this, pr: 'out'])
+
     if (ths.size() > 0) {
       ths[0].participants.each { p ->
         if (p.participantRole == 'in') {
@@ -513,13 +530,15 @@ class TitleInstance extends KBComponent {
         }
       }
     }
+
     return preceeding_titles.join(', ')
   }
 
-  def findInTitleHistory(title) {
-    def result = null;
+  public ComponentHistoryEventParticipant findInTitleHistory(title) {
+    ComponentHistoryEventParticipant result
 
-    def full_th = getFullTitleHistory()
+    Map full_th = getFullTitleHistory()
+
     full_th.fh.each { history_event ->
       history_event.participants.each { history_event_participant ->
         if (history_event_participant.participant.name == title) {
@@ -541,9 +560,9 @@ class TitleInstance extends KBComponent {
    *   type:'Serial' or 'Monograph'
    *}*/
   @Transient
-  static def validateDTO(JSONObject titleDTO, Locale locale) {
-    def result = ['valid': true]
-    def valErrors = [:]
+  public static Map validateDTO(JSONObject titleDTO, Locale locale) {
+    Map result = ['valid': true]
+    Map valErrors = [:]
 
     if (!titleDTO.name||titleDTO.name.trim()=='') {
       result.valid = false
@@ -565,24 +584,22 @@ class TitleInstance extends KBComponent {
 
       if (startDate && endDate && (endDate < startDate)) {
         valErrors.put('publishedTo', [message: "Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo])
-        // switch dates
-        def tmp = titleDTO.publishedTo
-        titleDTO.publishedTo = titleDTO.publishedFrom
-        titleDTO.publishedFrom = tmp
+        result.valid = false
       }
 
       String idJsonKey = 'ids'
-      def ids_list = titleDTO[idJsonKey]
+      List ids_list = titleDTO[idJsonKey] ?: []
 
       if (!ids_list) {
         idJsonKey = 'identifiers'
         ids_list = titleDTO[idJsonKey]
       }
 
-      def id_errors = Identifier.validateDTOs(ids_list, locale)
+      List id_errors = Identifier.validateDTOs(ids_list, locale)
 
       if (id_errors.size() > 0) {
         valErrors.put(idJsonKey, id_errors)
+
         if (titleDTO[idJsonKey].size() == 0) {
           valErrors.put(idJsonKey, [message: 'no valid identifiers left'])
         }
@@ -591,18 +608,18 @@ class TitleInstance extends KBComponent {
 
     if (titleDTO.medium) {
       RefdataValue medRef = determineMediumRef(titleDTO)
-      if (medRef) {
-        titleDTO.medium = medRef.value
-      }
-      else {
+
+      if (!medRef) {
         valErrors.put('medium', [message: "cannot parse", baddata: titleDTO.medium])
-        titleDTO.remove(titleDTO.medium)
       }
     }
 
-    def ti_language = titleDTO.language ? RefdataCategory.lookup('KBComponent.Language', titleDTO.language) : null
-    if (ti_language){
-      titleDTO.language = ti_language
+    if (titleDTO.language){
+      RefdataValue ti_language = titleDTO.language ? RefdataCategory.lookup('KBComponent.Language', titleDTO.language) : null
+
+      if (!ti_language) {
+        valErrors.put('language', [message: "cannot parse", baddata: titleDTO.language])
+      }
     }
 
     if (valErrors.size() > 0) {
@@ -616,7 +633,7 @@ class TitleInstance extends KBComponent {
     result
   }
 
-  static determineMediumRef(titleObj) {
+  public static RefdataValue determineMediumRef(titleObj) {
     if (titleObj.medium instanceof String) {
       switch (titleObj.medium.toLowerCase()) {
         case "a & i database":
@@ -678,14 +695,14 @@ class TitleInstance extends KBComponent {
       }
     }
     else if (titleObj.medium instanceof Integer) {
-      def rdv = RefdataValue.get(titleObj.medium)
+      RefdataValue rdv = RefdataValue.get(titleObj.medium)
 
       if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstance.Medium")) {
         return rdv
       }
     }
     else if (titleObj.medium instanceof Map && titleObj.medium.id) {
-      def rdv = RefdataValue.get(titleObj.medium.id)
+      RefdataValue rdv = RefdataValue.get(titleObj.medium.id)
 
       if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstance.Medium")) {
         return rdv
@@ -698,7 +715,7 @@ class TitleInstance extends KBComponent {
   // This is called by the titleLookupService::remapTitleInstance method but NOTE:: this is done
   // primarily so that the cpu-work and object creation of the work instance is done outside the
   // context of the primary hibernate session.
-  def remapWork() {
+  public void remapWork() {
     log.debug('remapWork');
     // BKM:TITLE + then FIRSTAUTHOR if duplicates found
 
@@ -706,38 +723,38 @@ class TitleInstance extends KBComponent {
       (normname.length() > 0) &&
       (!normname.startsWith('unknown title'))) {
       // book bucket (Work) hashes are based on the normalised name.
-      def h = GOKbTextUtils.generateComponentHash([normname]);
+      String h = GOKbTextUtils.generateComponentHash([normname])
 
       log.debug("Searching for bucket matches for ${h}");
-      def bucketMatches = Work.executeQuery('select w from Work as w where w.bucketHash = :h', [h: h]);
+      List bucketMatches = Work.executeQuery('select w from Work as w where w.bucketHash = :h', [h: h])
 
       switch (bucketMatches.size()) {
         case 0:
-          log.debug("No matches - create work");
-          def w = new Work(name: name, bucketHash: h).save(flush: true, failOnError: true)
+          log.debug("No matches - create work")
+          Work w = new Work(name: name, bucketHash: h).save(flush: true, failOnError: true)
           this.work = w
           this.save(flush: true, failOnError: true)
           break;
         case 1:
-          log.debug("Good enough unique match on bucketHash");
+          log.debug("Good enough unique match on bucketHash")
           this.work = bucketMatches[0]
           this.save(flush: true, failOnError: true)
           break;
         default:
-          log.debug("Mached multiple works - use discriminator properties");
+          log.debug("Mached multiple works - use discriminator properties")
           break;
       }
     }
   }
 
   @Override
-  @Transient
-  def ensureVariantName(String name) {
-    def result = null
+  public KBComponentVariantName ensureVariantName(String name) {
+    KBComponentVariantName result
+
     if (name.trim().size() != 0) {
 
       // Variant names use different normalisation method.
-      def variant_normname = GOKbTextUtils.normaliseString(name)
+      String variant_normname = GOKbTextUtils.normaliseString(name)
 
       // not already a name
       // Make sure not already a variant name
@@ -755,28 +772,28 @@ class TitleInstance extends KBComponent {
   }
 
   def beforeUpdate() {
-    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    def review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
+    RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
 
     if (this.isDirty('status') && this.status == deleted_status) {
       // Delete all TIPP combos and TIPLs
-      def tipps = getTipps()
-      def tipls = getTipls()
+      List tipps = getTipps()
+      List tipls = getTipls()
 
       if (tipps?.size() > 0) {
-        def tipp_ids = tipps?.collect { it.id }
-
-        Combo.executeUpdate("delete from Combo as c where c.fromComponent = :ti and c.toComponent.id IN (:ttd)", [ti: this, ttd: tipp_ids])
+        tipps.each {
+          it.title = null
+        }
       }
 
       if (tipls?.size() > 0) {
-        def tipl_ids = tipls?.collect { it.id }
+        List tipl_ids = tipls?.collect { it.id }
         Date now = new Date()
 
         TitleInstancePlatform.executeUpdate("update TitleInstancePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd) and t.status != :del", [del: deleted_status, ttd: tipl_ids, now: now])
       }
 
-      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: this])
+      List events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: this])
 
       events_to_delete.each {
         ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])

@@ -34,31 +34,13 @@ class CuratoryGroup extends KBComponent {
     subordinatedGroups: "superordinatedGroup"
   ]
 
-  static manyByCombo = [
-    licenses: License,
-    packages: Package,
-    platforms: Platform,
-    orgs: Org,
-    offices: Office,
-    sources: Source
-  ]
-
-  static mappedByCombo = [
-    licenses: 'curatoryGroups',
-    packages: 'curatoryGroups',
-    platforms: 'curatoryGroups',
-    orgs: 'curatoryGroups',
-    offices: 'curatoryGroups',
-    sources: 'curatoryGroups'
-  ]
-
   static constraints = {
     owner (nullable:true, blank:false)
     name (validator: { val, obj ->
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
-          def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-          def dupes = CuratoryGroup.findAllByNameIlikeAndStatusNotEqual(val, status_deleted)
+          RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+          List dupes = CuratoryGroup.findAllByNameIlikeAndStatusNotEqual(val, status_deleted) ?: []
 
           if (dupes?.size() > 0 && dupes.any { it != obj }) {
             return ['notUnique']

@@ -3,12 +3,6 @@ package org.gokb.cred
 import grails.plugin.springsecurity.SpringSecurityService
 import groovy.util.logging.*
 
-import java.lang.reflect.Field
-
-import javax.persistence.Transient
-
-import org.hibernate.proxy.HibernateProxy
-
 @Slf4j
 class Party {
 
@@ -20,16 +14,6 @@ class Party {
   // Timestamps
   Date dateCreated
   Date lastUpdated
-
-  Set memberships = []
-
-  static hasMany = [
-    memberships: UserOrganisationMembership
-  ]
-
-  static mappedBy = [
-    memberships: 'party'
-  ]
 
   static constraints = {
     displayName blank: true, nullable:true

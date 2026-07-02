@@ -11,15 +11,13 @@ class ReviewRequestService {
 
   def grailsApplication
 
-  def raise(KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null,
-            refineProject = null, additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
+  def raise(KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
     // Create a request.
     ReviewRequest req = new ReviewRequest(
       status: RefdataCategory.lookup('ReviewRequest.Status', 'Open'),
       raisedBy: (raisedBy),
       descriptionOfCause: (cause),
       reviewRequest: (actionRequired),
-      refineProject: (refineProject),
       stdDesc: (stdDesc),
       additionalInfo: (additionalInfo),
       componentToReview: (forComponent)

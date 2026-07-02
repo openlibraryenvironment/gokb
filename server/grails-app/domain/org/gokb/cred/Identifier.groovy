@@ -12,14 +12,18 @@ import groovy.util.logging.*
 
 
 @Slf4j
-class Identifier extends KBComponent {
+class Identifier {
 
   static def messageService
 
   IdentifierNamespace namespace
   String value
 
-  @Override
+  String normname
+
+  Date dateCreated
+  Date lastUpdated
+
   String getLogEntityId() {
     "${this.class.name}:${id}"
   }
@@ -30,20 +34,20 @@ class Identifier extends KBComponent {
 
   static jsonMapping = [
     'ignore'      : [
-      'lastUpdatedBy',
-      'dateCreated',
-      'editStatus',
-      'name',
-      'status',
-      'lastUpdated',
-      'description',
-      'source',
       '_links'
     ],
     'defaultLinks': [
       'namespace'
     ]
   ]
+
+  static mapping = {
+    value column: 'id_value', index: 'id_value_idx'
+    namespace column: 'id_namespace_fk', index: 'id_namespace_idx',
+    normname column: 'id_normname', index: 'id_normname_idx'
+    dateCreated column: 'id_date_created'
+    lastUpdated column: 'id_last_updated'
+  }
 
   static constraints = {
     namespace(nullable: false, blank: false)
@@ -52,10 +56,10 @@ class Identifier extends KBComponent {
         return ['notNull']
       }
 
-      def norm_id = Identifier.normalizeIdentifier(val)
-      def dupes = Identifier.findAllByNamespaceAndNormname(obj.namespace, norm_id)
-      def pattern = obj.namespace.pattern ? ~"${obj.namespace.pattern}" : null
-      def isDupe = false
+      String norm_id = Identifier.normalizeIdentifier(val)
+      List dupes = Identifier.findAllByNamespaceAndNormname(obj.namespace, norm_id)
+      String pattern = obj.namespace.pattern ? ~"${obj.namespace.pattern}" : null
+      boolean isDupe = false
 
       dupes.each { d ->
         if (d != obj) {
@@ -70,24 +74,22 @@ class Identifier extends KBComponent {
         return ['illegalIdForm']
       }
     })
+    normname(nullable: true, blank: false, maxSize: 2048)
   }
 
-  static mapping = {
-    includes KBComponent.mapping
-    value column: 'id_value', index: 'id_value_idx'
-    namespace column: 'id_namespace_fk', index: 'id_namespace_idx'
+  def beforeInsert() {
+    // Generate any necessary values.
+    generateNormname()
+    generateUuid()
   }
 
-  static manyByCombo = [
-    identifiedComponents: KBComponent
-  ]
+  private void generateUuid() {
+    if (!uuid) {
+      uuid = UUID.randomUUID().toString()
+    }
+  }
 
-  static mappedByCombo = [
-    identifiedComponents: 'ids',
-  ]
-
-  @Override
-  protected def generateNormname() {
+  private void generateNormname() {
     if (!normname && value) {
       normname = Identifier.normalizeIdentifier(value)
     }
@@ -97,18 +99,26 @@ class Identifier extends KBComponent {
     return id.toLowerCase().trim().replaceAll("\\W", "")
   }
 
-  @Override
-  protected def generateShortcode() {
+  private void generateShortcode() {
     if (!shortcode && namespace && value) {
       // Generate the short code.
       shortcode = generateShortcode("${namespace.value}:${value}").replaceAll("\\W", "-")
     }
   }
 
-  public def getActiveIdentifiedComponents(def classFilter = null) {
-    def result = []
+  public List getIdentifiedComponents() {
+    List result = []
+
+    ComponentIdentifier.findAllByIdentifier(this).each {
+      result << it.component
+    }
+
+    result
+  }
+
+  public List getIdentifiedComponentsOfType(String classFilter) {
+    List result = []
     Collection<String> classNames = []
-    def combos = this.getCombosByPropertyNameAndStatus('identifiedComponents', 'Active')
 
     if (classFilter == 'TitleInstance') {
       classNames = ['JournalInstance', 'BookInstance', 'DatabaseInstance', 'OtherInstance']
@@ -117,9 +127,41 @@ class Identifier extends KBComponent {
       classNames = [classFilter]
     }
 
-    combos.each {
-      if (!classFilter || classNames.contains(it.fromComponent.class.simpleName)) {
-        result << it.fromComponent
+    ComponentIdentifier.findAllByIdentifier(this).each {
+      if (classNames.contains(it.component.class.simpleName)) {
+        result << it.component
+      }
+    }
+
+    result
+  }
+
+  public List getActiveIdentifiedComponents() {
+    List result = []
+    RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
+
+    ComponentIdentifier.findAllByIdentifierAndStatus(this, status_active).each {
+      result << it.component
+    }
+
+    result
+  }
+
+  public def getActiveIdentifiedComponentsOfType(String classFilter) {
+    List result = []
+    RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
+    Collection<String> classNames = []
+
+    if (classFilter == 'TitleInstance') {
+      classNames = ['JournalInstance', 'BookInstance', 'DatabaseInstance', 'OtherInstance']
+    }
+    else if (classFilter) {
+      classNames = [classFilter]
+    }
+
+    ComponentIdentifier.findAllByIdentifierAndStatus(this, status_active).each {
+      if (classNames.contains(it.component.class.simpleName)) {
+        result << it.component
       }
     }
 
@@ -149,9 +191,10 @@ class Identifier extends KBComponent {
   }
 
   @Transient
-  public static def validateDTOs(JSONArray identifierDTOs, Locale locale) {
-    def id_errors = [:]
-    def to_remove = []
+  public static Map validateDTOs(JSONArray identifierDTOs, Locale locale) {
+    Map id_errors = [:]
+    List to_remove = []
+
     identifierDTOs?.each { idobj ->
       def id_def = [:]
       def ns_obj = null

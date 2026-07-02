@@ -14,31 +14,17 @@ class Platform extends KBComponent {
   RefdataValue ipAuthentication
   RefdataValue shibbolethAuthentication
   RefdataValue passwordAuthentication
+  Org provider
 
   Set roles = []
 
   static hasMany = [
     roles: RefdataValue
-  ]
-
-  static hasByCombo = [
-    provider: Org
+    curatoryGroups: CuratoryGroup
   ]
 
   private static refdataDefaults = [
     "authentication": "Unknown"
-  ]
-
-  static manyByCombo = [
-    hostedPackages: Package,
-    hostedTipps   : TitleInstancePackagePlatform,
-    linkedTipps   : TitleInstancePackagePlatform,
-    hostedTitles  : TitleInstancePlatform,
-    curatoryGroups: CuratoryGroup
-  ]
-
-  static mappedByCombo = [
-    hostedPackages: 'nominalPlatform'
   ]
 
   static mapping = {
@@ -50,6 +36,7 @@ class Platform extends KBComponent {
     ipAuthentication column: 'plat_auth_by_ip_fk_rv'
     shibbolethAuthentication column: 'plat_auth_by_shib_fk_rv'
     passwordAuthentication column: 'plat_auth_by_pass_fk_rv'
+    provider column: 'plat_provider_fk'
   }
 
   static constraints = {
@@ -74,6 +61,7 @@ class Platform extends KBComponent {
         }
       }
     })
+    provider(nullable: true)
   }
 
   public static final String restPath = "/platforms"
@@ -186,6 +174,20 @@ class Platform extends KBComponent {
     }
 
     result
+  }
+
+  public Integer getProvidedPackagesCount() {
+    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    Integer result = Package.executeQuery("select count(id) from Package where status != :sd and nominalPlatform = :plt", [plt: this, sd: status_deleted])[0]
+
+    return result
+  }
+
+  public Integer getHostedTippsCount() {
+    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    Integer result = TitleInstancePackagePlatform.executeQuery("select count(id) from TitleInstancePackagePlatform where status != :sd and hostPlatform = :plt", [plt: this, sd: status_deleted])[0]
+
+    return result
   }
 
   def availableActions() {

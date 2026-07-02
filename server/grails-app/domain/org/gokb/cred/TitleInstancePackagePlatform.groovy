@@ -2,9 +2,6 @@ package org.gokb.cred
 
 import gokbg3.DateFormatService
 
-import javax.persistence.Transient
-
-import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
 
@@ -22,18 +19,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   static final String RD_PRIMARY = "TitleInstancePackagePlatform.Primary"
   static final String RD_PAYMENT_TYPE = "TitleInstancePackagePlatform.PaymentType"
 
-  @Deprecated
-  Date startDate
-  @Deprecated
-  String startVolume
-  @Deprecated
-  String startIssue
-  @Deprecated
-  String embargo
-  @Deprecated
-  RefdataValue coverageDepth
-  @Deprecated
-  String coverageNote
   RefdataValue format
   RefdataValue delayedOA
   String delayedOAEmbargo
@@ -41,12 +26,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   String hybridOAUrl
   RefdataValue primary
   RefdataValue paymentType
-  @Deprecated
-  Date endDate
-  @Deprecated
-  String endVolume
-  @Deprecated
-  String endIssue
   String url
   Date accessStartDate
   Date accessEndDate
@@ -65,6 +44,9 @@ class TitleInstancePackagePlatform extends KBComponent {
   Date lastChangedExternal
   RefdataValue medium
   String importId
+  Package pkg
+  TitleInstance title
+  Platform hostPlatform
 
   Set coverageStatements = []
 
@@ -135,27 +117,6 @@ class TitleInstancePackagePlatform extends KBComponent {
       ]
   ]
 
-  static hasByCombo = [
-      pkg         : Package,
-      hostPlatform: Platform,
-      title       : TitleInstance,
-      derivedFrom : TitleInstancePackagePlatform,
-      masterTipp  : TitleInstancePackagePlatform,
-  ]
-
-  static mappedByCombo = [
-      pkg                : 'tipps',
-      hostPlatform       : 'hostedTipps',
-      additionalPlatforms: 'linkedTipps',
-      title              : 'tipps',
-      derivatives        : 'derivedFrom'
-  ]
-
-  static manyByCombo = [
-      derivatives        : TitleInstancePackagePlatform,
-      additionalPlatforms: Platform,
-  ]
-
   static hasMany = [
       coverageStatements: TIPPCoverageStatement
   ]
@@ -174,15 +135,6 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   static mapping = {
     includes KBComponent.mapping
-    startDate column: 'tipp_start_date'
-    startVolume column: 'tipp_start_volume'
-    startIssue column: 'tipp_start_issue'
-    endDate column: 'tipp_end_date'
-    endVolume column: 'tipp_end_volume'
-    endIssue column: 'tipp_end_issue'
-    embargo column: 'tipp_embargo'
-    coverageDepth column: 'tipp_coverage_depth'
-    coverageNote column: 'tipp_coverage_note', type: 'text'
     format column: 'tipp_format_rv_fk'
     delayedOA column: 'tipp_delayed_oa'
     delayedOAEmbargo column: 'tipp_delayed_oa_embargo'
@@ -202,18 +154,12 @@ class TitleInstancePackagePlatform extends KBComponent {
     lastChangedExternal column: 'tipp_last_change_ext'
     medium column: 'tipp_medium_rv_fk'
     importId column: 'tipp_import_id', index: 'kbc_import_id_idx'
+    pkg column: 'tipp_pkg_fk'
+    title column: 'tipp_title_fk'
+    hostPlatform column: 'tipp_host_platform_fk'
   }
 
   static constraints = {
-    startDate(nullable: true, blank: true)
-    startVolume(nullable: true, blank: true)
-    startIssue(nullable: true, blank: true)
-    endDate(nullable: true, blank: true)
-    endVolume(nullable: true, blank: true)
-    endIssue(nullable: true, blank: true)
-    embargo(nullable: true, blank: true)
-    coverageDepth(nullable: true, blank: true)
-    coverageNote(nullable: true, blank: true)
     format(nullable: true, blank: true)
     delayedOA(nullable: true, blank: true)
     delayedOAEmbargo(nullable: true, blank: true)
@@ -238,7 +184,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     lastChangedExternal(nullable: true, blank: true)
     medium(nullable: true, blank: true)
     importId(nullable: true, blank: true)
-    publisherName(nullabe: true, blank: true)
+    publisherName(nullable: true, blank: true)
+    title(nullable: true, blank: true)
   }
 
   public static final String restPath = "/package-titles"
@@ -253,25 +200,17 @@ class TitleInstancePackagePlatform extends KBComponent {
     ]
   }
 
-  @Transient
-  def getPermissableCombos() {
-    [
-    ]
-  }
-
   @Override
   String getNiceName() {
     return "TIPP"
   }
 
   @Override
-  @Transient
   public String getDisplayName() {
     return name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
   }
 
   @Override
-  @Transient
   static TitleInstancePackagePlatform lookupByIO(String idtype, String idvalue) {
     def result = null
     def normid = Identifier.normalizeIdentifier(idvalue)
@@ -293,7 +232,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   @Override
-  @Transient
   static def lookupAllByIO(String idtype, String idvalue) {
     Set result = []
     def normid = Identifier.normalizeIdentifier(idvalue)
@@ -323,20 +261,13 @@ class TitleInstancePackagePlatform extends KBComponent {
                                                   editStatus: tipp_editstatus,
                                                   name: tipp_fields.name,
                                                   language: tipp_language,
-                                                  url: tipp_fields.url).save(failOnError: true, flush:true)
+                                                  url: tipp_fields.url,
+                                                  pkg: tipp_fields.pkg,
+                                                  hostPlatform: tipp_fields.hostPlatform
+                                                  title: tipp_fields.title).save(failOnError: true, flush:true)
 
     if (result) {
-
-      RefdataValue pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
-      new Combo(toComponent: result, fromComponent: tipp_fields.pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
-
-      RefdataValue plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
-      new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
-
       if (tipp_fields.title) {
-        RefdataValue ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-        new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
-
         TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
       }
     }
@@ -350,7 +281,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   /**
    * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
    */
-  @Transient
   public static def validateDTO(tipp_dto, locale) {
     def result = ['valid': true]
     def errors = [:]
@@ -570,8 +500,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     return result
   }
 
-  @Transient
-  static def oaiConfig = [
+  static Map oaiConfig = [
       id             : 'tipps',
       textDescription: 'TIPP repository for GOKb',
       pkg            : 'Package.Tipps',
@@ -583,7 +512,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   /**
    *  Render this tipp as OAI_dc
    */
-  @Transient
   def toOaiDcXml(builder, attr) {
     builder.'dc'(attr) {
       'dc:title'(title.name)
@@ -593,10 +521,9 @@ class TitleInstancePackagePlatform extends KBComponent {
   /**
    *  Render this TIPP as GoKBXML
    */
-  @Transient
-  def toGoKBXml(builder, attr) {
-    def linked_pkg = KBComponent.deproxy(getPkg())
-    def ti = KBComponent.deproxy(getTitle())
+  public void toGoKBXml(builder, attr) {
+    Package linked_pkg = KBComponent.deproxy(getPkg())
+    TitleInstance ti = KBComponent.deproxy(getTitle())
 
     builder.'gokb'(attr) {
       builder.'tipp'([id: (id), uuid: (uuid)]) {
@@ -652,8 +579,9 @@ class TitleInstancePackagePlatform extends KBComponent {
             builder.'contentType'(contentType?.value)
             builder.'listVerifiedDate'(listVerifiedDate ? DateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
             builder.'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
+
             if (provider) {
-              def prov = KBComponent.deproxy(provider)
+              Org prov = KBComponent.deproxy(provider)
 
               builder.'provider'([id: prov.id, uuid: prov.uuid]) {
                 builder.'name'(prov.name)
@@ -663,8 +591,9 @@ class TitleInstancePackagePlatform extends KBComponent {
             else {
               builder.'provider'()
             }
+
             if (nominalPlatform) {
-              def pkg_plt = KBComponent.deproxy(nominalPlatform)
+              Platform pkg_plt = KBComponent.deproxy(nominalPlatform)
 
               builder.'nominalPlatform'([id: pkg_plt.id, uuid: pkg_plt.uuid]) {
                 builder.'name'(pkg_plt.name?.trim())
@@ -674,6 +603,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             else {
               builder.'nominalPlatform'()
             }
+
             builder.'curatoryGroups' {
               curatoryGroups.each { cg ->
                 builder.'group' {
@@ -688,7 +618,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           'name'(hostPlatform.name?.trim())
         }
         'access'([start: (accessStartDate ? DateFormatService.formatDate(accessStartDate) : null), end: (accessEndDate ? DateFormatService.formatDate(accessEndDate) : null)])
-        def cov_statements = getCoverageStatements()
+        List cov_statements = getCoverageStatements()
+
         if (cov_statements?.size() > 0) {
           cov_statements.each { tcs ->
             'coverage'(
@@ -704,6 +635,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             )
           }
         }
+
         if (prices && prices.size() > 0) {
           builder.'prices'() {
             prices.each { price ->
@@ -712,6 +644,7 @@ class TitleInstancePackagePlatform extends KBComponent {
                 builder.'amount'(price.price)
                 builder.'currency'(price.currency)
                 builder.'startDate'(price.startDate ? DateFormatService.formatDate(price.startDate) : null)
+
                 if (price.endDate) {
                   builder.'endDate'(price.startDate ? DateFormatService.formatDate(price.endDate) : null)
                 }
@@ -723,13 +656,11 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
   }
 
-  @Transient
-  public getTitleClass() {
-    def result = title ? KBComponent.get(title.id)?.class?.getSimpleName() : (publicationType?.value ?: null)
-    result
+  public String getTitleClass() {
+    return title ? KBComponent.get(title.id)?.class?.getSimpleName() : (publicationType?.value ?: null)
   }
 
-  static RefdataValue determineMediumRef(def mediumType) {
+  public static RefdataValue determineMediumRef(Object mediumType) {
     if (mediumType instanceof String) {
       def rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
 
@@ -755,7 +686,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     return null
   }
 
-  static RefdataValue determinePubTypeRef(def someType) {
+  public static RefdataValue determinePubTypeRef(Object someType) {
     if (someType instanceof String) {
       RefdataValue pubType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, someType)
 
@@ -777,6 +708,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         return pubType
       }
     }
+
     return null
   }
 }

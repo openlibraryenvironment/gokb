@@ -328,33 +328,6 @@ kbart2.personCategory='SPR'
 kbart2.authorRole='Author'
 kbart2.editorRole='Editor'
 
-project_dir = new java.io.File(org.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
-
-refine_min_version = "3.0.0"
-
-// ftupdate_enabled = true
-
-// Config for the refine extension build process.
-refine = [
-  refineRepoURL           : "https://github.com/OpenRefine/OpenRefine.git",
-  refineRepoBranch        : "master",
-  refineRepoTagPattern    : /\Q2.6-rc.2\E/,
-  refineRepoPath          : "gokb-build/refine",
-  gokbRepoURL             : "https://github.com/k-int/gokb-phase1.git",
-  gokbRepoBranch          : "release",
-  gokbRepoTagPattern      : "\\QCLIENT_\\E(${TextUtils.VERSION_REGEX})",
-  gokbRepoTestURL         : "https://github.com/k-int/gokb-phase1.git",
-  gokbRepoTestBranch      : "test",
-  gokbRepoTestTagPattern  : "\\QTEST_CLIENT_\\E(${TextUtils.VERSION_REGEX})",
-  extensionRepoPath       : "gokb-build/extension",
-  gokbExtensionPath       : "refine/extensions/gokb",
-  gokbExtensionTarget     : "extensions/gokb/",
-  refineBuildFile         : "build.xml",
-  refineBuildTarget       : null,
-  extensionBuildFile      : "build.xml",
-  extensionBuildTarget    : "dist",
-]
-
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
 grails.mime.use.accept.header = false

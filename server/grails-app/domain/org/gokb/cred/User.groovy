@@ -2,7 +2,6 @@ package org.gokb.cred
 
 import groovy.util.logging.*
 import java.lang.reflect.Field
-import javax.persistence.Transient
 import org.hibernate.proxy.HibernateProxy
 import grails.core.GrailsApplication
 
@@ -103,32 +102,6 @@ class User extends Party {
 
     // Default to false.
     false
-  }
-
-  transient def getOwnedGroups() {
-    UserOrganisation.executeQuery('select uo from UserOrganisation as uo where uo.owner = :owner',[owner:this])
-  }
-
-  transient def getGroupMemberships() {
-    UserOrganisationMembership.executeQuery('select uo from UserOrganisationMembership as uo where uo.party = :owner',[owner:this])
-  }
-
-  /**
-   *  Return a list of all folders this user has access to
-   */
-  transient def getFolderList() {
-
-    def direct_ownership = Folder.executeQuery('select f from Folder as f where f.owner = :user',[user:this]);
-    // This query finds all folders where the user is a direct member of the group
-    def via_group = Folder.executeQuery('select f from Folder as f where f.owner in ( select uom.memberOf from UserOrganisationMembership as uom where uom.party = :user )',[user:this])
-
-    def result = direct_ownership + via_group
-
-    result.each {
-      log.debug("${it}")
-    }
-
-    return result
   }
 
   transient boolean isAdmin() {
@@ -328,17 +301,7 @@ class User extends Party {
           ref:'role_api', cls:'org.gokb.Role',
           heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_API'] ] ] ],
           creation:[ onMissing:false, ]
-        ],
-        [
-          ref:'role_refineuser', cls:'org.gokb.Role',
-          heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_REFINEUSER'] ] ] ],
-          creation:[ onMissing:false, ]
-        ],
-        [
-          ref:'role_refinetester', cls:'org.gokb.Role',
-          heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_REFINETESTER'] ] ] ],
-          creation:[ onMissing:false, ]
-        ],
+        ]
       ],
 
       // Determine what this row can create (Referenced objects hanging off the primary User
@@ -372,14 +335,6 @@ class User extends Party {
         [
           whenPresent:[[type:'val',colname:'api_authority']], ref:'api_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
             [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_api' ] ] ]
-        ],
-        [
-          whenPresent:[[type:'val',colname:'refine_user_authority']], ref:'refine_user_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
-            [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_refineuser' ] ] ]
-        ],
-        [
-          whenPresent:[[type:'val',colname:'refine_tester_authority']], ref:'refine_tester_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
-            [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_refinetester' ] ] ]
         ],
         [
           whenPresent:[[type:'val',colname:'editor_authority']], ref:'editor_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[

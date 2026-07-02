@@ -1,7 +1,5 @@
 package org.gokb.cred
 
-import javax.persistence.Transient
-
 class ComponentSubject {
 
   KBComponent component

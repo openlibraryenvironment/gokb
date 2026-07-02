@@ -471,45 +471,6 @@ globalSearchTemplates = [
       ]
     ]
   ],
-  'rules':[
-    baseclass:'org.gokb.refine.Rule',
-    title:'Rules',
-    group:'Secondary',
-    qbeConfig:[
-      qbeForm:[
-        [
-          prompt:'Description',
-          qparam:'qp_description',
-          placeholder:'Rule Description',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'description']
-        ],
-      ],
-      qbeResults:[
-        [heading:'Fingerprint', property:'fingerprint'],
-        [heading:'Description', property:'description', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-      ]
-    ]
-  ],
-  'projects':[
-    baseclass:'org.gokb.refine.RefineProject',
-    title:'Projects',
-    group:'Secondary',
-    qbeConfig:[
-      qbeForm:[
-        [
-          prompt:'Name',
-          qparam:'qp_name',
-          placeholder:'Project Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
-        ],
-      ],
-      qbeResults:[
-        [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Provider', sort:'provider.name', property:'provider?.name'],
-        [heading:'Status', sort:'status', property:'status?.value'],
-      ]
-    ]
-  ],
   '3tipps':[
     baseclass:'org.gokb.cred.TitleInstancePackagePlatform',
     title:'TIPPs',

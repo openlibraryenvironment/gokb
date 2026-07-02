@@ -6,7 +6,6 @@ import grails.gorm.transactions.Transactional
 import grails.gsp.PageRenderer
 import org.apache.commons.validator.routines.EmailValidator
 import org.gokb.cred.*
-import org.gokb.refine.RefineProject
 import org.springframework.beans.factory.annotation.Autowired
 
 @Transactional
@@ -188,11 +187,7 @@ class UserProfileService {
       ReviewRequest.executeUpdate("update ReviewRequest set raisedBy = :del where raisedBy = :utd", [utd: user_to_delete, del: del_user])
       ReviewRequest.executeUpdate("update ReviewRequest set closedBy = :del where closedBy = :utd", [utd: user_to_delete, del: del_user])
       ReviewRequest.executeUpdate("update ReviewRequest set reviewedBy = :del where reviewedBy = :utd", [utd: user_to_delete, del: del_user])
-      RefineProject.executeUpdate("update RefineProject set createdBy = :del where createdBy = :utd", [utd: user_to_delete, del: del_user])
-      RefineProject.executeUpdate("update RefineProject set modifiedBy = :del where modifiedBy = :utd", [utd: user_to_delete, del: del_user])
-      RefineProject.executeUpdate("update RefineProject set lastCheckedOutBy = :del where lastCheckedOutBy = :utd", [utd: user_to_delete, del: del_user])
       ReviewRequestAllocationLog.executeUpdate("update ReviewRequestAllocationLog set allocatedTo = :del where allocatedTo = :utd", [utd: user_to_delete, del: del_user])
-      Folder.executeUpdate("update Folder set owner = :del where owner = :utd", [utd: user_to_delete, del: del_user])
       CuratoryGroup.executeUpdate("update CuratoryGroup set owner = :del where owner = :utd", [utd: user_to_delete, del: del_user])
       Note.executeUpdate("update Note set creator = :del where creator = :utd", [utd: user_to_delete, del: del_user])
       KBComponent.executeUpdate("update KBComponent set lastUpdatedBy = :del where lastUpdatedBy = :utd", [utd: user_to_delete, del: del_user])
@@ -206,7 +201,6 @@ class UserProfileService {
       BulkImportListConfig.executeUpdate("update BulkImportListConfig set owner = null where owner = :utd", [utd: user_to_delete])
 
       log.debug("Deleting dependent entities ..")
-      DSAppliedCriterion.executeUpdate("delete from DSAppliedCriterion where user = :utd", [utd: user_to_delete])
       ComponentLike.executeUpdate("delete from ComponentLike where user = :utd", [utd: user_to_delete])
       History.executeUpdate("delete from History where owner = :utd", [utd: user_to_delete])
       UserOrganisationMembership.executeUpdate("delete from UserOrganisationMembership where party = :utd", [utd: user_to_delete])
