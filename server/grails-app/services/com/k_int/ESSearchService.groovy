@@ -109,7 +109,9 @@ class ESSearchService{
           "publishedFrom",
           "publishedTo",
           "dateFirstInPrint",
-          "dateFirstOnline"
+          "dateFirstOnline",
+          "createdSince",
+          "createdBefore"
       ],
       ignore: [
           "controller",
@@ -361,6 +363,24 @@ class ESSearchService{
       }
       if (qpars.changedBefore) {
         dateQuery.lt(qpars.changedBefore)
+      }
+      dateQuery.format("yyyy-MM-dd'T'HH:mm:ss'Z'||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
+
+      query.must(dateQuery)
+    }
+
+    if (qpars.createdSince || qpars.createdBefore) {
+      QueryBuilder dateQuery = QueryBuilders.rangeQuery("dateCreated")
+
+      if (qpars.sort == null) {
+        qpars.sort = 'lastUpdatedDisplay'
+      }
+
+      if (qpars.createdSince) {
+        dateQuery.gte(qpars.createdSince)
+      }
+      if (qpars.createdBefore) {
+        dateQuery.lt(qpars.createdBefore)
       }
       dateQuery.format("yyyy-MM-dd'T'HH:mm:ss'Z'||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
 
