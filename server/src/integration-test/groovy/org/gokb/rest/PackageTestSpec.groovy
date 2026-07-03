@@ -275,11 +275,69 @@ class PackageTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/packages/${testPackage.id}", upd_body)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.exchange(request, Map)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    } catch (Exception e) {
+      resp = e.response
+    }
 
     then:
     resp.status == HttpStatus.OK
     resp.body().name == "UpdPack"
+  }
+
+  void "test /rest/packages with rejected update name"() {
+    given:
+    String urlPath = getUrlPath()
+    Package testPackage = Package.findByName("TestPack")
+
+    Map upd_body = [
+      name: 'TestPackPartialError'
+    ]
+
+    when:
+    String accessToken = getAccessToken()
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/packages/${testPackage.id}", upd_body)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    } catch (Exception e) {
+      resp = e.response
+    }
+
+    then:
+    resp.body().errors?.name != null
+  }
+
+  void "test /rest/packages with rejected variant name"() {
+    given:
+    String urlPath = getUrlPath()
+    Package testPackage = Package.findByName("TestPack")
+
+    Map upd_body = [
+      variantNames: [
+        "TestPackPartialError"
+      ]
+    ]
+
+    when:
+    String accessToken = getAccessToken()
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/packages/${testPackage.id}", upd_body)
+      .bearerAuth(accessToken)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    } catch (Exception e) {
+      resp = e.response
+    }
+
+    then:
+    resp.body().errors?.variantNames != null
   }
 
   void "test /rest/packages update comboList"() {
@@ -296,9 +354,15 @@ class PackageTestSpec extends AbstractAuthSpec {
 
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body)
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/packages/${testPackage.id}", upd_body)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.exchange(request, Map)
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    } catch (Exception e) {
+      resp = e.response
+    }
 
     then:
     resp.status == HttpStatus.OK

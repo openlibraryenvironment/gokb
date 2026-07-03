@@ -687,7 +687,6 @@ class TitleAugmentService {
         queryString += " and ti.dateCreated > :date"
       }
 
-      result.total = JournalInstance.executeQuery("select count(ti.id) ${queryString}".toString(), params)
       List id_list = JournalInstance.executeQuery("select ti.id ${queryString}".toString(), params)
 
       result.total = id_list.size()
