@@ -94,7 +94,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     Map json_record = [
       name             : "TestOrgPost",
       ids              : [
-        [namespace: "global", value: "test-org-id-val"]
+        [namespace: "viaf", value: "3454555533"]
       ],
       providedPlatforms: ["TestOrgPlt"],
       offices: [
