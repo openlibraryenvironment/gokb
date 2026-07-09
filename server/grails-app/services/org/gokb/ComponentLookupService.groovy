@@ -126,14 +126,14 @@ class ComponentLookupService {
   }
 
   @Synchronized
-  static def lookupOrCreateCanonicalIdentifier(String ns, String value, boolean ns_create = true) {
+  static def lookupOrCreateCanonicalIdentifier(String ns, String value, boolean ns_create = false) {
     return findOrCreateId(ns, value, ns_create)
   }
 
-  private static def findOrCreateId(String ns, String value, boolean ns_create = true) {
+  private static Identifier findOrCreateId(String ns, String value, boolean ns_create = false) {
     log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
-    def namespace = null
-    def identifier = null
+    IdentifierNamespace namespace = null
+    Identifier identifier = null
     def namespaces = IdentifierNamespace.findAllByValueIlike(ns)
 
     switch ( namespaces.size() ) {

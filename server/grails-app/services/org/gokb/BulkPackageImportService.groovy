@@ -799,6 +799,15 @@ class BulkPackageImportService {
                           ]
                         }
                       }
+                      else {
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Unknown namespace for additional package identifier!",
+                            messageCode: "import.bulk.error.ids.unknown",
+                            baddata: opid
+                          ]
+                        ]
+                      }
                     }
 
 
