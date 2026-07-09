@@ -66,6 +66,7 @@ class WekbIngestionService {
 
     def packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
     int titleCount = packageInfo[0]?.titleCount
+    List<String> validTippStatusList = Arrays.asList("Deleted", "Retired", "Current", "Expected")
 
     if ( restrictSize && titleCount > SIZE_LIMIT ) {
       result.result = 'ERROR'
@@ -178,9 +179,9 @@ class WekbIngestionService {
             tippNum++
             log.debug('TIPP ' + tippNum + ": " + tipp)
 
-            if (tipp.status == 'Deleted') {
+            if (tipp.status == 'Deleted' || !validTippStatusList.contains(tipp.status)) {
               //in der WEKB gelöschte Titel werden nicht importiert
-              log.debug("Title is deleted --> SKIP")
+              log.debug("Title is deleted or status not valid --> SKIP")
               result.report["skipped"]++
               continue
             }
@@ -350,9 +351,6 @@ class WekbIngestionService {
 
               if (actualTippStatus) {
                 importedTipp.setStatus(actualTippStatus)
-              }
-              else if (tipp.status == "Removed") {
-                importedTipp.setStatus(RefdataCategory.lookup('KBComponent.Status', 'Retired'))
               }
               else {
                 log.error("Unable to process wekb TIPP status value ${tipp.status} for TIPP ${tipp.uuid}!")
