@@ -464,6 +464,12 @@ class BulkPackageImportService {
 
     if (list_info.url) {
       log.debug("Fetching config from ${list_info.url} ..")
+
+      def remote_config = fetchRemoteConfig(list_info.url)
+
+      if (remote_config) {
+        allCollections = remote_config.collections
+      }
     }
     else if (list_info.cfg != null) {
       log.debug("Parsing static config ..")
