@@ -5,7 +5,7 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import org.gokb.cred.*
 import org.hibernate.criterion.CriteriaSpecification
-
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.acls.domain.BasePermission
 
@@ -35,6 +35,8 @@ class AdminController {
   CleanupService cleanupService
   ConcurrencyManagerService concurrencyManagerService
   TippService tippService
+  @Autowired
+  FTIndexCleanupService ftIndexCleanupService
 
   def index() {
     redirect(controller: 'admin', action: 'jobs')
@@ -792,4 +794,19 @@ class AdminController {
 
     render(view: "logViewer", model: logViewer())
   }
+
+  def cleanupFTIndex () {
+    // Map result = ftIndexCleanupService.syncTippsBetweenIndexAndDB()
+
+    Job j = concurrencyManagerService.createJob { Job j ->
+      ftIndexCleanupService.syncTippsBetweenIndexAndDB(j)
+    }.startOrQueue()
+
+    j.description = "Cleanup TIPP FT Index "
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'FTIndexCleanupJob')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
 }
