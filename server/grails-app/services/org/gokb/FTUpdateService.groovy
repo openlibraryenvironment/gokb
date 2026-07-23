@@ -675,6 +675,7 @@ class FTUpdateService {
           }
 
           long recId = record[0]
+          // TODO: is empty lastUpdated possible?
           Date recLastUpdated = dateFormatService.parseTimestampMs(record[1]?.toString())
 
           Object r = domain.get(recId)
