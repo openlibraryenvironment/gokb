@@ -797,9 +797,18 @@ class AdminController {
 
   def cleanupFTIndex () {
     // Map result = ftIndexCleanupService.syncTippsBetweenIndexAndDB()
+    LocalDateTime date = null
+
+    if (params.updatedSince) {
+      date = GOKbTextUtils.completeDateString(params.updatedSince)
+
+      if (!date) {
+        log.debug("No Date given - proceed with default, i.e. 1 Week")
+      }
+    }
 
     Job j = concurrencyManagerService.createJob { Job j ->
-      ftIndexCleanupService.syncTippsBetweenIndexAndDB(j)
+      ftIndexCleanupService.syncTippsBetweenIndexAndDB(j, date)
     }.startOrQueue()
 
     j.description = "Cleanup TIPP FT Index "

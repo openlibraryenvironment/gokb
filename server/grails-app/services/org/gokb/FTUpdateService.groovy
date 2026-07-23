@@ -563,6 +563,68 @@ class FTUpdateService {
     tippsRunning = false
   }
 
+
+  def updateSpecifiedTippBulk(List<TitleInstancePackagePlatform> tipps, Job job = null) {
+    tippsRunning = true
+
+    def esClient = ESWrapperService.getClient()
+    // def indexName = grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType.get(domain.simpleName))
+    def indexName = grailsApplication.config.getProperty('gokb.es.indices.tipps')
+
+    BulkRequest bulkRequest = new BulkRequest()
+    int count = 0
+    int total = 0
+    for (TitleInstancePackagePlatform tipp: tipps) {
+      if (Thread.currentThread().isInterrupted()) {
+        log.warn("Job cancelling ..")
+        break
+      }
+
+      def osRecord = buildEsRecord(tipp)
+
+      log.debug("+++ OS-Record: " + osRecord)
+
+      if (osRecord != null) {
+        IndexRequest singleRequest = new IndexRequest(indexName)
+        singleRequest.id(osRecord['_id'].toString())
+        osRecord.remove('_id')
+        singleRequest.source((osRecord as JSON).toString(), XContentType.JSON)
+        bulkRequest.add(singleRequest)
+      }
+
+      count++
+      total++
+
+      if (count > 50) {
+        count = 0
+        // log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
+        BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+
+        if (bulkResponse.hasFailures()) {
+          logBulkFailures(bulkResponse)
+          log.error("Bulk Update had errors!")
+          break
+        }
+        log.debug("... BulkResponse: ${bulkResponse}")
+      }
+
+    }
+
+    if (count > 0) {
+      BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+      log.debug("... final BulkResponse: ${bulkFinalResponse}")
+      logBulkFailures(bulkFinalResponse)
+    }
+
+    if (job) {
+      job.message("Indexing finished for ${total} Tipps...")
+    }
+
+    log.debug("... final:: Processed ${total} out of ${tipps.size()} records. ")
+
+    tippsRunning = false
+  }
+
   def updateES(esClient, domain, job, boolean reindex = false) {
     log.debug("updateES(${domain}...)")
     def indexType = ESWrapperService.indicesPerType[domain.name]
@@ -598,17 +660,24 @@ class FTUpdateService {
         if (job) job.message("Indexing start for ${countq} ${domain.simpleName} ..".toString())
 
         log.debug("Will process ${countq} records")
-        def q = domain.executeQuery("select o.id from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id", [ts: from, lid: latest_ft_record.lastId], [readonly: true])
+        def q = domain.executeQuery("select o.id, o.lastUpdated from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id", [ts: from, lid: latest_ft_record.lastId], [readonly: true])
         log.debug("Query completed.. processing rows...")
         BulkRequest bulkRequest = new BulkRequest()
 
-        for (r_id in q) {
+        log.info("################################################################################################")
+        log.info("queryresult: " + q)
+
+
+        for (record in q) {
           if (Thread.currentThread().isInterrupted()) {
             log.warn("Job cancelling ..")
             break
           }
 
-          Object r = domain.get(r_id)
+          long recId = record[0]
+          Date recLastUpdated = dateFormatService.parseTimestampMs(record[1]?.toString())
+
+          Object r = domain.get(recId)
           log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
 
           def idx_record = buildEsRecord(r)
@@ -621,8 +690,8 @@ class FTUpdateService {
             bulkRequest.add(singleRequest)
           }
 
-          if (r.lastUpdated?.getTime() > highest_timestamp) {
-            highest_timestamp = r.lastUpdated?.getTime()
+          if (recLastUpdated?.getTime() > highest_timestamp) {
+            highest_timestamp = recLastUpdated?.getTime()
           }
 
           highest_id = r.id

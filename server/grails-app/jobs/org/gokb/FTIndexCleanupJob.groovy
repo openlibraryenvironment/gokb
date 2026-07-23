@@ -1,15 +1,19 @@
 package org.gokb
 
+import org.springframework.beans.factory.annotation.Autowired
+
 
 class FTIndexCleanupJob {
 
     static concurrent = false
 
+    @Autowired
     FTIndexCleanupService ftIndexCleanupService
 
     static triggers = {
         // Cron timer executes every Saturday 15:30.
         cron name: 'FTCleanupTrigger', cronExpression: "30 15 * * 6 ?", startDelay:120000
+        // cron name: 'FTCleanupTrigger', cronExpression: "* */2 * * * ?", startDelay:120000
     }
 
     def execute() {
