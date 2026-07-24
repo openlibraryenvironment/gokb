@@ -244,97 +244,10 @@ class ComponentLookupService {
     String order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
 
     if ( KBComponent.isAssignableFrom(cls) ) {
-      String comboFilterStr = ""
-
-      // Check params for known combo properties
-      if (cls != KBComponent) {
-        def cls_obj = grailsApplication.getArtefact("Domain", cls.name).newInstance()
-        def comboProps = cls_obj.allComboPropertyNames
-
-        comboProps.each { propName ->
-          if (params[propName] || params['_sort'] == propName) {
-            boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, propName)
-            log.debug("Combo prop ${propName}: ${incoming ? 'incoming' : 'outgoing'}")
-
-            if (first) {
-              comboFilterStr += " WHERE "
-              first = false
-            }
-            else {
-              comboFilterStr += " AND "
-            }
-
-            comboFilterStr += "EXISTS (SELECT ${propName}combo FROM Combo as ${propName}combo WHERE ${incoming ? 'toComponent' : 'fromComponent'} = p"
-            comboFilterStr += " AND type = :${propName}type AND "
-            comboFilterStr += "status = :${propName}status "
-
-            qryParams["${propName}type"] = RefdataCategory.lookupOrCreate ("Combo.Type", cls.getComboTypeValueFor(cls, propName))
-            qryParams["${propName}status"] = DomainClassExtender.comboStatusActive
-
-            def validLong = []
-            def validStr = []
-            def paramStr = ""
-
-            if (params[propName]) {
-              params.list(propName)?.each { a ->
-                def addedLong = false
-
-                try {
-                  validLong.add(Long.valueOf(a))
-                  addedLong = true
-                }
-                catch (java.lang.NumberFormatException nfe) {
-                }
-
-                if (a instanceof String && a?.trim() ) {
-                  if (propName == 'ids') {
-                    validStr.add(Identifier.normalizeIdentifier(a))
-                  }
-                  else {
-                    validStr.add(a.toLowerCase())
-                  }
-                }
-              }
-
-              if (validStr.size() > 0 || validLong.size() > 0) {
-                paramStr += " AND ("
-
-                if (propName != 'ids' && validLong.size() > 0) {
-                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.id IN :${propName}"
-                  qryParams["${propName}"] = validLong
-                }
-
-                if (validStr.size() > 0) {
-                  if (propName != 'ids' && validLong.size() > 0) {
-                    paramStr += " OR "
-                  }
-                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.uuid IN :${propName}_str OR "
-
-                  if (propName == 'ids') {
-                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.normname) IN :${propName}_str"
-                  }
-                  else {
-                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.name) IN :${propName}_str"
-                  }
-                  qryParams["${propName}_str"] = validStr
-                }
-                paramStr += "))"
-                comboFilterStr += paramStr
-              }
-            }
-            else {
-              comboFilterStr += ")"
-              sortField = "${incoming ? 'fromComponent' : 'toComponent'}.name"
-              sort = " order by ${incoming ? 'fromComponent' : 'toComponent'}.name ${order ?: ''}"
-            }
-          }
-        }
-      }
-
       if (params.q?.trim()) {
         log.debug("Using generic term search with '${params.q}'..")
 
-        def validLong = null
+        Long validLong = null
 
         try {
           validLong = Long.valueOf(params.q)
@@ -343,50 +256,45 @@ class ComponentLookupService {
         }
 
         if (first) {
-          comboFilterStr += " WHERE "
+          hqlQry += " WHERE "
           first = false
         }
         else {
-          comboFilterStr += " AND "
+          hqlQry += " AND "
         }
 
         if (params.q ==~ /^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/) {
-          comboFilterStr += "p.uuid = :idqval"
+          hqlQry += "p.uuid = :idqval"
         }
         else {
-          comboFilterStr += "("
-          comboFilterStr += '''lower(p.name) like lower(:qname)
-                                OR EXISTS (
-                                  select ci from Combo as ci
-                                  where ci.type = :idtype
-                                  and ci.fromComponent = p
-                                  and lower(ci.toComponent.value) like lower(:idqval)
-                                  and ci.status = :idqstatus
-                                )
-                                OR EXISTS (
-                                  select an from KBComponentVariantName as an
-                                  where lower(an.variantName) like lower(:qname)
-                                  and an.owner = p
-                                )'''
+          hqlQry += "("
+          hqlQry += '''lower(p.name) like lower(:qname)
+                        OR EXISTS (
+                          select ci from ComponentIdentifier as ci
+                          where ci.component = p
+                          and lower(ci.identifier.value) like lower(:idqval)
+                          and ci.status = :idqstatus
+                        )
+                        OR EXISTS (
+                          select an from KBComponentVariantName as an
+                          where lower(an.variantName) like lower(:qname)
+                          and an.owner = p
+                        )'''
 
           if (validLong) {
             qryParams["qid"] = validLong
-            comboFilterStr += " OR p.id = :qid"
+            hqlQry += " OR p.id = :qid"
           }
 
-          comboFilterStr += ")"
+          hqlQry += ")"
 
-          qryParams['idtype'] = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
-          qryParams['idqstatus'] = RefdataCategory.lookup('Combo.Status', 'Active')
+          qryParams['idqstatus'] = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
           qryParams['qname'] = "%${params.q}%"
         }
 
         qryParams['idqval'] = params.q
       }
 
-      hqlQry += comboFilterStr
-
-      log.debug("comboFilterString: ${comboFilterStr}")
       log.debug("Params: ${qryParams}")
     }
 
@@ -569,22 +477,34 @@ class ComponentLookupService {
           }
           else if (mapped_field == 'publisher') {
             int idx = 0
+            List pub_pars = validLong + validStr
 
-            validStr.each {
-              if (sub_obj) {
-                if (idx > 0) {
-                  paramStr += " AND "
+            pub_pars.each { pubp ->
+
+              if (idx > 0) {
+                paramStr += " AND "
+              }
+
+              if (idp instanceof Long)  {
+                paramStr += "EXISTS (SELECT 1 FROM TitlePublisher where title = p AND publisher.id = :idval${idx})"
+              }
+              else {
+                paramStr += "EXISTS (SELECT 1 FROM TitlePublisher where title = p AND ("
+
+                if (idp ==~ /^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/) {
+                  paramStr += "publisher.uuid = :idval${idx})"
                 }
+                else {
+                  paramStr += "lower(publisher.name) = :idval${idx} OR publisher.normname = :idval${idx})"
+                }
+              }
 
-                paramStr += "EXISTS (SELECT 1 FROM ComponentIdentifier where component = p AND subject = :subject${idx})"
-                qryParams["subject${idx}"] = sub_obj
-              }
-              else if (scheme) {
-                qryParams["subjectScheme${idx}"] = scheme
-                qryParams["subjectHeading${idx}"] = it.split(';')[1]
-                paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject.scheme = :subjectScheme${idx} AND subject.heading = :subjectHeading${idx})"
-              }
+              qryParams["idval${idx}"] = idp
+
+              idx++
             }
+
+            paramStr += ")"
           }
           else if (p instanceof ManyToMany) {
             if (validLong.size() > 0) {
@@ -662,7 +582,7 @@ class ComponentLookupService {
         }
       }
 
-      if (params['_sort'] == p.name) {
+      if (params['_sort'] == mapped_field) {
         sortField = "p.${p.name}"
         sort = " order by p.${p.name} ${order ?: ''}"
       }
