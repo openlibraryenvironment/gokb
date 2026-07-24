@@ -184,9 +184,7 @@ class TitleInstance extends KBComponent {
         (pc.endDate > highest_end_date)) {
 
         if (isComboReverse('publisher')) {
-          if (pc.fromComponent.status?.value == 'Deleted') {
-          }
-          else if (result && !highest_end_date) {
+          if (result && !highest_end_date) {
           }
           else {
             highest_end_date = pc.endDate
