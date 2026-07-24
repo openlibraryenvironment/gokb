@@ -5,14 +5,28 @@ import java.time.LocalDateTime
 
 class ScheduledJobControl {
 
-  RefdataValue jobTyoe
+  RefdataValue jobType
   LocalDateTime lastStart
   LocalDateTime lastStartComplete
   LocalDateTime lastEnd
   LocalDateTime lastEndComplete
 
   static constraints = {
-    jobType (nullable: false, blank: false, unique: true)
+    jobType (validator: { val, obj ->
+      if (val) {
+        if (val.owner?.label != "Job.Type") {
+          return ['wrongRefdataCategory']
+        }
+        List<ScheduledJobControl> dupes = ScheduledJobControl.findAllByJobType(val)
+
+        if (dupes?.size() > 0 && dupes.any { it != obj }) {
+          return ['notUnique']
+        }
+      }
+      else {
+        return ['notNull']
+      }
+    })
   }
 
 }
