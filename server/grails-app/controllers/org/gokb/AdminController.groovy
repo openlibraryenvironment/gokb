@@ -340,9 +340,9 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
-  def rejectWrongTitles() {
+  def rejectUnlinkedTitles() {
     Job j = concurrencyManagerService.createJob { Job j ->
-      cleanupService.rejectWrongTitles(j)
+      cleanupService.rejectUnlinkedTitles(j)
     }.startOrQueue()
 
     log.debug("Reject wrong titles. Started job #${j.uuid}")
@@ -377,20 +377,6 @@ class AdminController {
 
     j.description = "Find invalid identifier occurrences"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'MarkInvalidIdentifiers')
-    j.startTime = new Date()
-
-    render(view: "logViewer", model: logViewer())
-  }
-
-  def cleanupPlatforms() {
-    Job j = concurrencyManagerService.createJob { Job j ->
-      cleanupService.deleteNoUrlPlatforms(j)
-    }.startOrQueue()
-
-    log.debug("Triggering cleanup task. Started job #${j.uuid}")
-
-    j.description = "Platform Cleanup"
-    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'PlatformCleanup')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())

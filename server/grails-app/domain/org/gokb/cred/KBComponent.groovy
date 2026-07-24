@@ -355,7 +355,8 @@ where cp.owner = :c
     people              : 'component',
     subjects            : 'component',
     prices              : 'owner',
-    comments            : 'owner'
+    comments            : 'owner',
+    linkedIds           : 'component'
   ]
 
   static hasMany = [
@@ -472,6 +473,19 @@ where cp.owner = :c
 
     this.linkedIds.each { cio ->
       result << cio.identifier
+    }
+
+    result
+  }
+
+  public List getActiveIds() {
+    RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
+    List result = []
+
+    this.linkedIds.each { cio ->
+      if (cio.status == status_active) {
+        result << cio.identifier
+      }
     }
 
     result

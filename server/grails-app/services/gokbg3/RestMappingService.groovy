@@ -24,7 +24,7 @@ class RestMappingService {
   def dateFormatService
   def validationService
 
-  def defaultIgnore = [
+  static final List<String> defaultIgnore = [
       'bucketHash',
       'shortcode',
       'normname',
@@ -38,19 +38,17 @@ class RestMappingService {
       'componentHash',
       'lastUpdateComment',
       'duplicateOf',
-      'componentDiscriminator',
-      'incomingCombos',
-      'outgoingCombos'
+      'componentDiscriminator'
   ]
 
-  def defaultEmbed = [
-      'ids',
+  static final List<String> defaultEmbed = [
+      'linkedIds',
       'variantNames',
       'additionalProperties',
       'reviewRequests'
   ]
 
-  def defaultImmmutable = [
+  static final List<String> defaultImmmutable = [
       'id',
       'uuid',
       'lastUpdated',
@@ -60,24 +58,30 @@ class RestMappingService {
       'version'
   ]
 
+  static final Map<String,String> mappedProps = [
+      'linkedIds': 'ids',
+      'publisherLinks': 'publisher'
+  ]
+
   /**
    *  mapObjectToJson : Maps an domain class object to JSON based on its jsonMapping config.
    * @param proxy : The object to be mapped
    * @param params : The map of request parameters
    */
 
-  def mapObjectToJson(proxy, params, def user = null) {
+  public Map mapObjectToJson(proxy, params, def user = null) {
     log.debug("mapObjectToJson: ${proxy.class.name} -- ${params}")
-    def obj = ClassUtils.deproxy(proxy).refresh()
-    def result = [:]
-    def embed_active = params['_embed']?.split(',') ?: []
-    def include_list = params['_include']?.split(',') ?: null
-    def exclude_list = params['_exclude']?.split(',') ?: null
-    def nested = params['nested'] ? true : false
-    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
-    def curatedClass = obj.respondsTo('curatoryGroups')
+    Object obj = ClassUtils.deproxy(proxy).refresh()
+    Map result = [:]
+    List<String> embed_active = params['_embed']?.split(',') ?: []
+    List<String> include_list = params['_include']?.split(',') ?: null
+    List<String> exclude_list = params['_exclude']?.split(',') ?: null
     Map jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
-    def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
+    String base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
+    boolean nested = params['nested'] ? true : false
+    boolean curatedClass = obj.respondsTo('curatoryGroups')
+    boolean process_deleted_links = params.boolean('_showdeleted') ?: false
+    boolean is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
@@ -153,20 +157,45 @@ class RestMappingService {
           }
           else {
             if ((embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) || (!nested && ['reviewRequests', 'comments'].contains(p.name) && user?.editorStatus)) {
-              log.debug("Handling embeds for ${p.name}: ${obj[p.name]}")
-              result['_embedded'][p.name] = []
+              String mapped_field = mappedProps[p.name] ?: p.name
+
+              log.debug("Handling embeds for ${p.name}: ${obj[mapped_field]}")
+
+
+              result['_embedded'][mapped_field] = []
 
               obj[p.name].each { ao ->
-                def assoc_obj = ClassUtils.deproxy(ao)
+                Object assoc_obj = ClassUtils.deproxy(ao)
+                boolean addToList = false
+                Map mapped_item = [:]
 
                 if (assoc_obj instanceof ComponentSubject) {
-                  assoc_obj = assoc_obj.subject
+                  mapped_item = getEmbeddedJson(assoc_obj.subject, user)
                   log.debug("Using subject ${assoc_obj} for embed mapping ..")
                 }
+                else if (assoc_obj instanceof ComponentIdentifier) {
+                  if (process_deleted_links || assoc_obj.status?.value == 'Active') {
+                    mapped_item = getEmbeddedJson(assoc_obj.identifier, user)
 
-                result['_embedded'][p.name] << getEmbeddedJson(assoc_obj, user)
+                    mapped_item.['_linkStatus'] = assoc_obj.status.value
+                  }
+                }
+                else if (assoc_obj instanceof TitlePublisher) {
+                  if (process_deleted_links || assoc_obj.status?.value == 'Active') {
+                    mapped_item = getEmbeddedJson(assoc_obj.publisher, user)
 
-                log.debug("${result['_embedded'][p.name]}")
+                    mapped_item.['_linkStatus'] = assoc_obj.status.value
+                  }
+                }
+                else if (!assoc_obj.hasProperty('status') || process_deleted_links || assoc_obj.status?.value != 'Deleted') {
+                  mapped_item = getEmbeddedJson(assoc_obj, user)
+                }
+
+                if (mapped_item) {
+                  result['_embedded'][mapped_field] << mapped_item
+                }
+
+                log.debug("${result['_embedded'][mapped_field]}")
               }
             }
           }
@@ -212,70 +241,8 @@ class RestMappingService {
         }
       }
     }
-    // Handle combo properties
-    if (KBComponent.isAssignableFrom(obj.class)) {
-      def combo_props = obj.allComboPropertyNames
 
-      combo_props.each { cp ->
-        if (obj.getCardinalityFor(obj.class, cp) == 'hasByCombo') {
-          def cval = null
-
-          if ((include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp))) {
-            RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue(cp))
-            def chql = null
-            def reverse = obj.isComboReverse(cp)
-
-            if (reverse) {
-              chql = "from Combo as c where c.toComponent = :o and c.type = :ct"
-            }
-            else {
-              chql = "from Combo as c where c.fromComponent = :o and c.type = :ct"
-            }
-            def combo = Combo.executeQuery(chql, [o: obj, ct: combo_type])
-
-            if (combo.size() == 0) {
-              result[cp] = null
-            }
-            else {
-              cval = reverse ? ClassUtils.deproxy(combo[0].fromComponent) : ClassUtils.deproxy(combo[0].toComponent)
-              result[cp] = ['id': cval.id, 'name': cval.name, 'type': cval.niceName, 'uuid': cval.uuid]
-            }
-          }
-
-          if (embed_active.contains(cp)) {
-            cval = obj[cp]
-            result['_embedded'][cp] = cval ? getEmbeddedJson(cval, user) : null
-          }
-        }
-        else {
-          if (embed_active.contains(cp)) {
-            log.debug("Handling embeds for ${cp}: ${obj[cp]}")
-            result['_embedded'][cp] = []
-
-            def combos = obj.getCombosByPropertyName(cp)
-            boolean reverse = obj.isComboReverse(cp)
-
-            combos.each { c ->
-              def linked_obj = getEmbeddedJson(reverse ? c.fromComponent : c.toComponent, user)
-
-              if (c.status?.value == 'Active' && linked_obj?.status?.name != 'Deleted') {
-                result['_embedded'][cp] << linked_obj
-              }
-              else {
-                log.debug("Skipping ${c.status.value} combo..")
-              }
-            }
-          }
-
-          if (include_list?.contains('publisher') && TitleInstance.isAssignableFrom(obj.class)) {
-            def pub = obj.currentPublisher
-
-            result.publisher = pub ? getEmbeddedJson(pub, user) : null
-          }
-        }
-      }
-    }
-    else if (obj.class == ReviewRequest && embed_active.contains('allocatedGroups')) {
+    if (obj.class == ReviewRequest && embed_active.contains('allocatedGroups')) {
       result.allocatedGroups = []
       def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
 
@@ -337,6 +304,8 @@ class RestMappingService {
             case Date.class:
               updateDateField(obj, p.name, newVal)
               break;
+            case LocalDate.class:
+              updateLocalDateField(obj, p.name, newVal)
             case String.class:
               obj[p.name] = newVal ? newVal.trim() : null
               break;
@@ -518,21 +487,21 @@ class RestMappingService {
   @Transactional
   public def updateIdentifiers(obj, ids, boolean remove = true) {
     log.debug("updating ids ${ids}")
-    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
-    def id_combos = obj.getCombosByPropertyNameAndStatus('ids', 'Active')
+    List id_links = obj.linkedIds
+    RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
+    RefdataValue ci_status_deleted = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_DELETED)
     def result = [changed: false, errors: []]
     Set new_ids = []
 
     if (obj && ids instanceof Collection) {
       ids?.each { i ->
         Identifier id = null
-        def valid = true
+        boolean valid = true
 
         if (i instanceof Integer) {
           id = Identifier.get(i)
         }
-        else if (i instanceof Map) {
+        else if (i instanceof Map && (!i['_linkStatus'] || i['_linkStatus'] == 'Active')) {
           if (i.id instanceof Integer) {
             id = Identifier.get(i.id)
           }
@@ -596,18 +565,17 @@ class RestMappingService {
 
       if (result.errors.size() == 0) {
         new_ids.each { i ->
+          List dupes = ComponentIdentifier.executeQuery("from ComponentIdentifier where component = :fc and identifier = :tc", [fc: obj, tc: i])
 
-          def dupe = Combo.executeQuery("from Combo where type = :ct and fromComponent = :fc and toComponent = :tc", [ct: combo_id_type, fc: obj, tc: i])
-
-          if (dupe.size() == 0) {
-            new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true, failOnError: true)
+          if (dupes.size() == 0) {
+            new ComponentIdentifier(component: obj, identifier: i).save(flush: true, failOnError: true)
             result.changed = true
           }
-          else if (dupe.size() == 1) {
-            if (dupe[0].status == combo_deleted) {
-              log.debug("Matched ID combo was marked as deleted!")
-              dupe[0].delete(flush: true)
-              new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true, failOnError: true)
+          else if (dupes.size() == 1) {
+            if (dupes[0].status == ci_status_deleted) {
+              log.debug("Matched active ID link was marked as deleted!")
+              dupes[0].delete(flush: true)
+              new ComponentIdentifier(component: obj, identifier: i).save(flush: true, failOnError: true)
               result.changed = true
             }
             else {
@@ -616,21 +584,20 @@ class RestMappingService {
           }
           else {
             result.errors << [message: "There seem to be duplicate links for an identifier against this title!", baddata: i]
-            log.error("Multiple ID combos for ${obj} -- ${i}!")
+            log.error("Multiple ID links for ${obj} -- ${i}!")
           }
         }
 
         if (remove && result.errors.size() == 0) {
-          Iterator items = id_combos.iterator()
-          List removedIds = []
+          Iterator items = id_links.iterator()
           Object element
           while (items.hasNext()) {
             element = items.next()
-            if (!new_ids.contains(element.toComponent)) {
+
+            if (!new_ids.contains(element.identifier)) {
               // Remove.
-              log.debug("Removing newly missing ID ${element.toComponent}")
-              element.status = combo_deleted
-              removedIds.add(element.toComponent)
+              log.debug("Removing newly missing ID ${element.identifier}")
+              element.status = ci_status_deleted
               result.changed = true
             }
           }
@@ -691,17 +658,16 @@ class RestMappingService {
 
 
   @Transactional
-  public def updateCuratoryGroups(obj, cgs, boolean remove = true) {
+  public Map updateCuratoryGroups(obj, cgs, boolean remove = true) {
     log.debug("Update curatory Groups ${cgs}")
+    Map result = [changed: false, errors: []]
     Set new_cgs = []
-    def result = [changed: false, errors: []]
 
     CuratoryGroup.withTransaction {
-      def current_cgs = obj.getCombosByPropertyName('curatoryGroups')
-      RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue('curatoryGroups'))
+      List current_cgs = obj.curatoryGroups
 
       cgs?.each { cg ->
-        def cg_obj = null
+        CuratoryGroup cg_obj
 
         if (cg instanceof String) {
           cg_obj = CuratoryGroup.findByNameIlike(cg)
@@ -724,7 +690,7 @@ class RestMappingService {
       if (result.errors.size() == 0) {
         new_cgs.each { c ->
           if (!obj.curatoryGroups.contains(c)) {
-            new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush: true, failOnError: true)
+            obj.addToCuratoryGroups(c)
             result.changed = true
           }
           else {
@@ -733,40 +699,38 @@ class RestMappingService {
         }
 
         if (remove) {
-          Iterator items = current_cgs.iterator();
-          Object element;
-          while (items.hasNext()) {
-            element = items.next();
-            if (!new_cgs.contains(element.toComponent)) {
+          current_cgs.each { ncg ->
+            if (!new_cgs.contains(ncg)) {
               // Remove.
-              element.delete()
+              obj.removeFromCuratoryGroups(ncg)
               result.changed = true
             }
           }
         }
       }
     }
-    log.debug("New cgs: ${obj.curatoryGroups}")
+
+    log.debug("New cgs: ${new_cgs}")
     result
   }
 
   @Transactional
-  public def updateVariantNames(obj, vals, boolean remove = true) {
+  public Map updateVariantNames(obj, vals, boolean remove = true) {
     log.debug("Update Variants ${vals} ..")
-    def result = [changed: false, errors: []]
-    def remaining = []
-    def notFound = []
-    def toRemove = []
+    Map result = [changed: false, errors: []]
+    List remaining = []
+    List notFound = []
+    List toRemove = []
 
     try {
       KBComponentVariantName.withTransaction {
         vals?.each {
-          def newVariant = null
+          KBComponentVariantName newVariant = null
 
           if (it instanceof String) {
             if (it.trim()) {
-              def nvn = GOKbTextUtils.normaliseString(it)
-              def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
+              String nvn = GOKbTextUtils.normaliseString(it)
+              List dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj) ?: []
 
               if (dupes) {
                 log.debug("Not adding duplicate variant")
@@ -811,8 +775,8 @@ class RestMappingService {
               }
             }
             else if (it.variantName) {
-              def nvn = GOKbTextUtils.normaliseString(it.variantName)
-              def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
+              String nvn = GOKbTextUtils.normaliseString(it.variantName)
+              List dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj) ?: []
 
               if (dupes) {
                 log.debug("Not adding duplicate variant")
@@ -902,8 +866,8 @@ class RestMappingService {
   }
 
   @Transactional
-  def updateComments(obj, comments, boolean remove = true) {
-    def result = [changed: false, errors: []]
+  public Map updateComments(obj, comments, boolean remove = true) {
+    Map result = [changed: false, errors: []]
     RefdataCategory cat_lang = RefdataCategory.findByDesc(KBComponent.RD_LANGUAGE)
     Boolean changed = false
     List remaining = []
@@ -995,10 +959,10 @@ class RestMappingService {
   }
 
   @Transactional
-  def updatePrices(obj, prices, boolean remove = true) {
-    def result = [changed: false, errors: []]
-    def existing_prices_ids = obj.prices?.collect { it.id }
-    def new_prices = []
+  public Map updatePrices(obj, prices, boolean remove = true) {
+    Map result = [changed: false, errors: []]
+    List existing_prices_ids = obj.prices?.collect { it.id } ?: []
+    List new_prices = []
 
     try {
       ComponentPrice.withTransaction {
@@ -1061,11 +1025,11 @@ class RestMappingService {
   }
 
   @Transactional
-  def updateSubjects(obj, subjects, boolean remove = true) {
+  public Map updateSubjects(obj, subjects, boolean remove = true) {
     log.debug("Update subjects ${subjects}")
-    def result = [changed: false, errors: []]
-    def existing_subjects_ids = obj.subjects?.collect { it.id }
-    def new_subjects = []
+    Map result = [changed: false, errors: []]
+    List existing_subjects_ids = obj.subjects?.collect { it.id } ?: []
+    List new_subjects = []
 
     try {
       ComponentSubject.withTransaction {
@@ -1157,69 +1121,80 @@ class RestMappingService {
   /**
    *  updatePublisher : Updates the list of publishers linked to a TitleInstance.
    * @param obj : The TitleInstance object to be updated
-   * @param new_pubs : A list of Org IDs
+   * @param new_vals : A list of Orgs
    * @param remove : Flag for removal of existing Combos not present in the new list
    */
 
   @Transactional
-  public def updatePublisherList(obj, new_pubs, boolean remove = true) {
-    def result = [changed: false, errors: []]
-    def publisher_combos = obj.getCombosByPropertyName('publisher')
-    def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+  public Map updatePublisherList(TitleInstance obj, List new_vals, boolean remove = true) {
+    Map result = [changed: false, errors: []]
+    List existing_links = TitlePublisher.executeQuery("select id from TitlePublisher where title = :ti ", [ti: obj])
+    List new_links = []
 
-    String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
-    String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
-    def pubs_to_add = []
+    new_vals.each { pub ->
+      Org pub_obj = null
 
-    new_pubs.each { pub ->
-      if (!pubs_to_add.findAll { it.id == pub }) {
-        def pub_obj = Org.get(pub)
+      if (pub instanceof Map) {
+        pub_obj = Org.get(pub.id)
+      }
+      else {
+        pub_obj = Org.get(pub)
+      }
 
-        if (pub_obj) {
-          pubs_to_add << Org.get(pub)
+      if (!pub_obj) {
+        result.errors << [message: "Unable to reference publisher with info ${pub}!", baddata: pub]
+      }
+      else {
+        TitlePublisher tp = TitlePublisher.findByTitleAndPublisher(obj, pub_obj)
+
+        if (!tp) {
+          tp = new TitlePublisher(title: obj, publisher: pub_obj).save(flush:true, failOnError: true)
+          result.changed = true
+        }
+
+        new_links << tp
+
+        if (pub instanceof Map) {
+          if (pub.containsKey('_linkStart')) {
+            updateLocalDateField(tp, 'startDate', pub['_linkStart'])
+          }
+
+          if (pub.containsKey('_linkEnd')) {
+            updateLocalDateField(tp, 'endDate', pub['_linkEnd'])
+          }
+
+          if (pub.containsKey('_linkedStatus')) {
+            RefdataValue link_status = pub['_linkedStatus'] ? RefdataCategory.lookup(TitlePublisher.RD_STATUS, pub['_linkedStatus']) : null
+
+            if (!link_status || (pub['_linkedStatus'] && link_status)) {
+              tp.status = link_status
+            }
+            else {
+              result.errors << [message: "Unable to save status for publisher link with info ${pub}!", baddata: pub['_linkedStatus']]
+            }
+          }
+        }
+
+        if (tp.validate()) {
+          tp.save(flush: true, failOnError: true)
         }
         else {
-          result.errors << [message: "Unable to reference publisher with ID ${new_pubs}!", baddata: pub]
+          result.errors << [message: "Unable to save dates for publisher link with info ${pub}!", baddata: pub]
         }
       }
       else {
         log.warn("Duplicate for incoming publisher ${pub}!")
       }
     }
-
-    if (!result.errors) {
-      def new_items = []
-
-      pubs_to_add.each { publisher ->
-        boolean found = false
-
-        for (int i = 0; !found && i < publisher_combos.size(); i++) {
-          Combo pc = publisher_combos[i]
-          def idMatch = pc."${propName}".id == publisher.id
-
-          if (idMatch) {
-            found = true
-          }
-        }
-
-        if (!found) {
-          new_items << publisher
-          result.changed = true
-        }
-        else {
-          log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
-        }
-      }
-
-      obj.publisher.addAll(new_items)
-      obj.save(flush: true)
-    }
-
-    log.debug("New list of pubs: ${pubs_to_add}")
+    log.debug("New list of pubs: ${new_pubs}")
 
     if (remove && !result.errors) {
-      result.changed |= obj.publisher.retainAll(pubs_to_add)
-      obj.save(flush: true)
+      existing_links.each { elid ->
+        if (!new_links*.id.contains(elid)) {
+          TitlePublisher.findById(elid).delete(flush: true, failOnError: true)
+          result.changed = true
+        }
+      }
     }
 
     result
@@ -1283,6 +1258,32 @@ class RestMappingService {
         obj.errors.rejectValue(
             prop,
             'typeMismatch.java.util.Date'
+        )
+      }
+      log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))")
+    }
+  }
+
+
+  public def updateLocalDateField(obj, prop, val) {
+    if (val == null || !val.trim()) {
+      obj[prop] = null
+    }
+    else if (val.trim()) {
+      LocalDate dateObj = GOKbTextUtils.completeDateString(val)?.toLocalDate()
+
+      if (dateObj) {
+        obj[prop] = dateObj
+      }
+      else {
+        obj.errors.reject(
+            'typeMismatch.java.util.LocalDate',
+            [prop] as Object[],
+            '[Invalid date value for property [{0}]]'
+        )
+        obj.errors.rejectValue(
+            prop,
+            'typeMismatch.java.util.LocalDate'
         )
       }
       log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))")

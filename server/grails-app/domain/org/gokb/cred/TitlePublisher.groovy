@@ -13,8 +13,8 @@ class TitlePublisher {
 
   RefdataValue status
 
-  Date startDate
-  Date endDate
+  LocalDate startDate
+  LocalDate endDate
 
   Date dateCreated
   Date lastUpdated
@@ -33,7 +33,11 @@ class TitlePublisher {
     publisher(nullable:false, blank:false)
     title(nullable:false, blank:false)
     startDate(nullable: true)
-    endDate(nullable: true)
+    endDate(validator: { val, obj ->
+      if (obj.startDate && val && (obj.hasChanged('endDate') || obj.hasChanged('startDate')) && obj.startDate > val) {
+        return ['endDate.endPriorToStart']
+      }
+    })
     status(nullable:true, blank:false)
   }
 

@@ -20,8 +20,6 @@ class TitleInstance extends KBComponent {
   Date publishedTo
   String coverImage
 
-  Set publisher = []
-
   private static refdataDefaults = [
     "medium"  : "Journal",
     "pureOA"  : "No",
@@ -35,14 +33,15 @@ class TitleInstance extends KBComponent {
   }
 
   static hasMany = [
-    tipps: TitleInstancePackagePlatform,
     publisherLinks: TitlePublisher,
+    tipps: TitleInstancePackagePlatform,
     tipls: TitleInstancePlatform
   ]
 
   static mappedBy = [
+    publisherLinks: 'title'
     tipps: 'title',
-    tipls: 'title'
+    tipls: 'title',
   ]
 
   static constraints = {
@@ -162,10 +161,9 @@ class TitleInstance extends KBComponent {
 
   public Org getCurrentPublisher() {
     Org result = null
-    List publishers = TitlePublisher.findByTitle(this)
     Date highest_end_date
 
-    publishers.each { TitlePublisher pc ->
+    publisherLinks.each { TitlePublisher pc ->
       if ((pc.endDate == null) ||
         (highest_end_date == null) ||
         (pc.endDate > highest_end_date)) {
@@ -776,7 +774,6 @@ class TitleInstance extends KBComponent {
     RefdataValue review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
 
     if (this.isDirty('status') && this.status == deleted_status) {
-      // Delete all TIPP combos and TIPLs
       List tipps = getTipps()
       List tipls = getTipls()
 

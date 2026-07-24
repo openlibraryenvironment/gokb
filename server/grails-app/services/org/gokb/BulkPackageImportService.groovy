@@ -738,7 +738,7 @@ class BulkPackageImportService {
                     pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
 
                     if (collection_id && !obj.ids.contains(collection_id)) {
-                      obj.ids << collection_id
+                      new ComponentIdentifier(component: obj, identifier: collection_id).save(flush: true, failOnError: true)
                     }
 
                     item.other_package_identifiers.each { opid ->
@@ -780,7 +780,7 @@ class BulkPackageImportService {
                         boolean already_linked = obj.ids?.contains(other_id)
 
                         if (!already_linked && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
-                          obj.ids << other_id
+                          new ComponentIdentifier(component: obj, identifier: other_id).save(flush: true, failOnError: true)
                         }
                         else if (already_linked) {
                           log.debug("Skipping existing id ${other_id}")
@@ -804,29 +804,22 @@ class BulkPackageImportService {
 
                     RefdataValue type_pc = RefdataCategory.lookup("Combo.Type", "Package.CuratoryGroups")
 
-                    def existing_combos_count = Combo.executeQuery('''select count(*) from Combo
-                                                                      where type = :ct
-                                                                      and fromComponent = :pkg
-                                                                      and toComponent = :ncg
-                                                                  ''', [
-                                                                    ct: type_pc,
-                                                                    pkg: obj,
-                                                                    ncg: curator
-                                                                  ])[0]
-
-                    if (existing_combos_count == 0) {
+                    if (!obj.curatoryGroups.contains(curator)) {
                       log.debug("Handling changed curator ..")
 
                       if (pkg_created || listInfo.curatorPolicy?.value == 'Add' || listInfo.curatorPolicy?.value == 'New') {
                         log.debug("Adding new curator ${curator}")
 
+                        if (listInfo.curatorPolicy?.value == 'New') {
+                          List to_remove = obj.curatoryGroups
+
+                          to_remove.each { ocg ->
+                            obj.removeFromCuratoryGroups(ocg)
+                          }
+                        }
+
                         obj.curatoryGroups << curator
                         obj.save(flush: true)
-
-                        if (listInfo.curatorPolicy?.value == 'New') {
-                          log.debug("Removing old groups ..")
-                          obj.curatoryGroups.retainAll([curator])
-                        }
                       }
                       else if (listInfo.curatorPolicy?.value == 'Old') {
                         log.debug("Not changing existing package curator ..")

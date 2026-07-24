@@ -41,7 +41,6 @@ class Org extends KBComponent {
   RefdataValue kbartPublicationType
   Org parent
   Org successor
-  Imprint imprint
 
 
   Set roles = []
@@ -62,7 +61,6 @@ class Org extends KBComponent {
       roles: RefdataValue,
       children: Org,
       'previous': Org,
-      ownedImprints: Imprint,
       curatoryGroups: CuratoryGroup,
       offices: Office,
       providedPlatforms: Platform
@@ -71,7 +69,6 @@ class Org extends KBComponent {
   static mappedBy = [
       children: 'parent',
       offices: 'org',
-      ownedImprints: 'orgs',
       providedPlatforms: 'provider'
   ]
 
@@ -83,7 +80,6 @@ class Org extends KBComponent {
     preferredShortname column: 'org_preferred_shortname'
     parent column: 'org_parent_fk'
     successor column: 'org_successor_fk'
-    imprint column: 'org_imprint_fk'
   }
 
   static constraints = {
@@ -109,7 +105,6 @@ class Org extends KBComponent {
     packageNamespace(nullable: true)
     parent(nullable: true)
     successor(nullable: true)
-    imprint(nullable: true)
   }
 
   static jsonMapping = [

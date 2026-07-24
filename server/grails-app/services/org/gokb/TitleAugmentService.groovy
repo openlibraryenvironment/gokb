@@ -959,7 +959,7 @@ class TitleAugmentService {
       Org publisher = Org.findByName(publisher_name)
       def norm_pub_name = Org.generateNormname(publisher_name);
       def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
-      def combo_type_pub = RefdataCategory.lookup("TitleInstance.Publisher")
+      def combo_type_pub = RefdataCategory.lookup("Combo.Type", "TitleInstance.Publisher")
 
       if (!publisher) {
         // Lookup using norm name.

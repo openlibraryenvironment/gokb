@@ -19,16 +19,16 @@ class AutoUpdatePackagesJob {
   }
 
   def execute() {
-    def failed_jobs_by_group = [:]
-    def failed_jobs_no_group = []
+    Map failed_jobs_by_group = [:]
+    List failed_jobs_no_group = []
 
     if (grailsApplication.config.getProperty('gokb.packageUpdate.enabled', Boolean, false)) {
       log.debug("Beginning scheduled auto update packages job.")
-      def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-      def status_expected = RefdataCategory.lookup("KBComponent.Status", "Expected")
+      RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+      RefdataValue status_expected = RefdataCategory.lookup("KBComponent.Status", "Expected")
 
       // find all updateable packages
-      def updPacks = Package.executeQuery(
+      List<Long> updPacks = Package.executeQuery(
         '''select p.id from Package p
            where p.source is not null and
            p.source.automaticUpdates = true
@@ -40,7 +40,7 @@ class AutoUpdatePackagesJob {
         Package p = Package.findById(pid)
 
         if (p.source?.needsUpdate() == true) {
-          def result = packageSourceUpdateService.updateFromSource(p.id)
+          Map result = packageSourceUpdateService.updateFromSource(p.id)
           log.debug("Result of update: ${result}")
 
           if (result.result == 'ERROR' || (result.result == 'SKIPPED' && result.messageCode == 'kbart.errors.skipped.noFileForAYear')) {

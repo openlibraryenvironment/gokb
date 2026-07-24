@@ -13,8 +13,8 @@ class ComponentIdentifier {
 
   RefdataValue status
 
-  Date startDate
-  Date endDate
+  LocalDate startDate
+  LocalDate endDate
 
   Date dateCreated
   Date lastUpdated
@@ -31,13 +31,36 @@ class ComponentIdentifier {
     component(nullable:false, blank:false)
     identifier(nullable:false, blank:false)
     status(nullable:true, blank:false)
+    startDate(nullable: true)
+    endDate(validator: { val, obj ->
+      if (obj.startDate && val && (obj.hasChanged('endDate') || obj.hasChanged('startDate')) && obj.startDate > val) {
+        return ['endDate.endPriorToStart']
+      }
+    })
   }
 
-  def beforeInsert() {
+  def afterInsert() {
     RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
 
     if (this.status == null) {
       this.status = status_active
+      save()
     }
+  }
+
+  public Date expire (Date endDate = null, boolean replaced = false) {
+
+    if (endDate == null) endDate = new Date ()
+
+    // Expire this combo...
+    setStatus (RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, (replaced ? ComponentIdentifier.STATUS_SUPERSEDED : ComponentIdentifier.STATUS_EXPIRED)))
+    setEndDate(endDate)
+    save()
+
+    endDate
+  }
+
+  static void removeAll(KBComponent comp) {
+    executeUpdate 'DELETE FROM ComponentIdentifier WHERE component = :comp', [comp: comp]
   }
 }

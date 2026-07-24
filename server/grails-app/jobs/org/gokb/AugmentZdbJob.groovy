@@ -31,18 +31,16 @@ class AugmentZdbJob implements InterruptableJob {
                                 ti.dateCreated > :lastRun
                                 or (
                                   not exists (
-                                    Select ci from Combo as ci
-                                    where ci.type = :ctype
-                                    and ci.status = :cstatus
-                                    and ci.fromComponent = ti
-                                    and ci.toComponent.namespace = :ns
+                                    Select ci from ComponentIdentifier as ci
+                                    where ci.status = :cstatus
+                                    and ci.component = ti
+                                    and ci.identifier.namespace = :ns
                                   )
                                   and exists (
-                                    Select ci from Combo as ci
-                                    where ci.type = :ctype
-                                    and ci.status = :cstatus
-                                    and ci.fromComponent = ti
-                                    and ci.toComponent.namespace IN (:issns)
+                                    Select ci from ComponentIdentifier as ci
+                                    where ci.status = :cstatus
+                                    and ci.component = ti
+                                    and ci.identifier.namespace IN (:issns)
                                   )
                                 )
                               )'''
@@ -61,6 +59,7 @@ class AugmentZdbJob implements InterruptableJob {
           result:'STARTED',
           counts:[:]
         ]
+
         JobDataMap dataMap = context.mergedJobDataMap
         dataMap.put('start', new Date())
         dataMap.put('progress', '0')
@@ -69,12 +68,12 @@ class AugmentZdbJob implements InterruptableJob {
         log.info("Starting ZDB augment job.")
         Float reduced_rate = null
         RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-        RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-        RefdataValue combo_active = RefdataCategory.lookup("Combo.Status", "Active")
+        RefdataValue ci_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
         IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
-        List issnNs = []
+        List<IdentifierNamespace> issnNs = []
         issnNs << IdentifierNamespace.findByValue('issn')
         issnNs << IdentifierNamespace.findByValue('eissn')
+
         int offset = 0
         ZonedDateTime zdt_minus_one = ZonedDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS)
         boolean run_full_update = (ZonedDateTime.now(ZoneId.of("Europe/Berlin")).getHour() == 22) // -> 23:30
@@ -89,15 +88,14 @@ class AugmentZdbJob implements InterruptableJob {
           qry_params = [
             current: status_current,
             lastRun: lastStart,
-            ctype: idComboType,
-            cstatus: combo_active,
+            cstatus: ci_active,
             ns: zdbNs,
             issns: issnNs
           ]
         }
 
         result.total = JournalInstance.executeQuery("select count(ti.id) ${run_full_update ? query_full : query_new_only}".toString(), qry_params)[0]
-        List journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${run_full_update ? query_full : query_new_only}".toString(), qry_params)
+        List<Long> journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${run_full_update ? query_full : query_new_only}".toString(), qry_params)
 
         log.debug("Processing ${result.total}")
 

@@ -14,7 +14,23 @@ class AugmentEzbJob{
   def titleAugmentService
   def sessionFactory
 
-  static final String query = "from JournalInstance as ti where ti.status = :current and (ti.dateCreated > :lastRun or (not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)))"
+  static final String query = '''from JournalInstance as ti
+                                  where ti.status = :current
+                                  and (
+                                    ti.dateCreated > :lastRun
+                                    or (
+                                      not exists (
+                                        Select ci from ComponentIdentifier as ci
+                                        where ci.component = ti
+                                        and ci.identifier.namespace = :ns
+                                      )
+                                      and exists (
+                                        Select ci from ComponentIdentifier as ci
+                                        where ci.component = ti
+                                        and ci.identifier.namespace IN :issns
+                                      )
+                                    )
+                                  )'''
 
   static triggers = {
     // see Bootstrap.groovy
@@ -24,22 +40,22 @@ class AugmentEzbJob{
     long breakInMs = Long.valueOf(grailsApplication.config.getProperty('gokb.ezbAugment.breakInMs', Long, 0L))
     if (grailsApplication.config.getProperty('gokb.ezbAugment.enabled', Boolean.class)) {
       log.info("Starting EZB augment job.")
-      def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-      def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-      def ezbNs = IdentifierNamespace.findByValue('ezb')
-      def issnNs = []
+      RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+      IdentifierNamespace ezbNs = IdentifierNamespace.findByValue('ezb')
+      List<IdentifierNamespace> issnNs = []
       issnNs << IdentifierNamespace.findByValue('issn')
       issnNs << IdentifierNamespace.findByValue('eissn')
+
       int offset = 0
       int batchSize = 50
       Instant start = Instant.now()
       ZonedDateTime zdt = ZonedDateTime.ofInstant(start, ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS)
       Date startDate = Date.from(zdt.toInstant())
 
-      def count_journals_without_ezb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(),[current: status_current, ctype: idComboType, ns: ezbNs, issns: issnNs, lastRun: startDate])[0]
+      int count_journals_without_ezb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(),[current: status_current, ns: ezbNs, issns: issnNs, lastRun: startDate])[0]
 
       while (offset < count_journals_without_ezb_id) {
-        def journals_without_ezb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(),[current: status_current, ctype: idComboType, ns: ezbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
+        List<Long> journals_without_ezb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(),[current: status_current, ns: ezbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
         log.debug("Processing ${count_journals_without_ezb_id} journals.")
 
         journals_without_ezb_id.each { ti_id ->

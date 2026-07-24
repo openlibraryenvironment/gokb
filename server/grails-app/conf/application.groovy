@@ -866,28 +866,6 @@ globalSearchTemplates = [
       ]
     ]
   ],
-  'imprints':[
-    baseclass:'org.gokb.cred.Imprint',
-    title:'Imprints',
-    defaultSort:'name',
-    defaultOrder:'asc',
-    qbeConfig:[
-      qbeForm:[
-        [
-          prompt:'Name',
-          qparam:'qp_name',
-          placeholder:'Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
-        ],
-      ],
-      qbeGlobals:[
-      ],
-      qbeResults:[
-        [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Status', property:'status?.value',sort:'status'],
-      ]
-    ]
-  ],
   'Namespaces':[
     baseclass:'org.gokb.cred.IdentifierNamespace',
     title:'Namespaces',

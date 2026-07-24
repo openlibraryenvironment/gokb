@@ -126,11 +126,11 @@ class ComponentLookupService {
   }
 
   @Synchronized
-  static def lookupOrCreateCanonicalIdentifier(String ns, String value, boolean ns_create = true) {
+  static def lookupOrCreateCanonicalIdentifier(String ns, String value, boolean ns_create = false) {
     return findOrCreateId(ns, value, ns_create)
   }
 
-  private static def findOrCreateId(String ns, String value, boolean ns_create = true) {
+  private static def findOrCreateId(String ns, String value, boolean ns_create = false) {
     log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     def namespace = null
     def identifier = null
@@ -153,10 +153,10 @@ class ComponentLookupService {
     }
 
     if (namespace) {
-      def isValid = grails.util.Holders.applicationContext.getBean('validationService').checkIdForNamespace(value, namespace)
+      String validation_result = grails.util.Holders.applicationContext.getBean('validationService').checkIdForNamespace(value, namespace)
 
-      if (isValid) {
-        def final_val = value
+      if (validation_result) {
+        String final_val = value
 
         if (namespace.family == 'isxn') {
           final_val = final_val.replaceAll("x","X")
@@ -166,7 +166,7 @@ class ComponentLookupService {
           final_val = ISBN.parseIsbn(final_val).getIsbn13()
         }
 
-        def norm_id = Identifier.normalizeIdentifier(final_val)
+        String norm_id = Identifier.normalizeIdentifier(final_val)
 
         def existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
         log.debug("Found ID: ${existing}")
@@ -194,13 +194,15 @@ class ComponentLookupService {
             }
             catch (ValidationException ve) {
               log.debug("Caught validation exception: ${ve.message}")
-              if (ve.message.contains('already exists')) {
-                def dupe = Identifier.executeQuery("from Identifier where normname = :nid and namespace = :ns",[nid: norm_id, ns: namespace])
 
-                if (dupe.size() == 1) {
-                  identifier = dupe[0]
+              if (ve.message.contains('already exists')) {
+                List dupes = Identifier.executeQuery("from Identifier where normname = :nid and namespace = :ns",[nid: norm_id, ns: namespace])
+
+                if (dupes.size() == 1) {
+                  identifier = dupes[0]
                 }
-                log.error("Thread synchronization failed for ID ${dupe} ...")
+
+                log.error("Thread synchronization failed for ID ${dupes} ...")
               }
               else {
                 throw new ValidationException(ve.message, ve.errors)
@@ -224,20 +226,20 @@ class ComponentLookupService {
    * @param context : Possible override of the self link path
    */
 
-  public def restLookup (user, cls, params, def context = null, boolean idOnly = false) {
+  public Map restLookup (user, cls, params, def context = null, boolean idOnly = false) {
     log.debug("restLookup: ${params}")
-    def result = [:]
-    def hqlQry = "from ${cls.simpleName} as p".toString()
-    def qryParams = new HashMap()
-    def max = params.limit ? params.long('limit') : 10
-    def offset = params.offset ? params.long('offset') : 0
-    def first = true
-    def sort = null
-    def sortField = null
-    def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
+    Map result = [:]
+    String hqlQry = "from ${cls.simpleName} as p".toString()
+    Map qryParams = new HashMap()
+    int max = params.limit ? params.long('limit') : 10
+    int offset = params.offset ? params.long('offset') : 0
+    boolean first = true
+    String sort = null
+    String sortField = null
+    String order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
 
     if ( KBComponent.isAssignableFrom(cls) ) {
-      def comboFilterStr = ""
+      String comboFilterStr = ""
 
       // Check params for known combo properties
       if (cls != KBComponent) {
@@ -402,17 +404,26 @@ class ComponentLookupService {
         def alts = params.list(p.name)
 
         if ( p instanceof Association ) {
-          def validLong = []
-          def validStr = []
+          List<Long> validLong = []
+          List<String> validStr = []
 
           alts.each { a ->
-            def addedLong = false
+            boolean addedLong = false
 
             try {
               validLong.add(Long.valueOf(a))
               addedLong = true
             }
             catch (java.lang.NumberFormatException nfe) {
+            }
+
+            if (a instanceof String && a?.trim() ) {
+              if (propName == 'ids') {
+                validStr.add(Identifier.normalizeIdentifier(a))
+              }
+              else {
+                validStr.add(a.toLowerCase())
+              }
             }
 
             if (!addedLong && a instanceof String && a?.trim() ) {
@@ -539,6 +550,24 @@ class ComponentLookupService {
 
 
               idx++
+            }
+          }
+          else if (p.name == 'ids' || p.name == 'linkedIds') {
+            int idx = 0
+            def id_pars = validLong + validStr
+
+            if (sub_obj) {
+              if (idx > 0) {
+                paramStr += " AND "
+              }
+
+              paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject = :subject${idx})"
+              qryParams["subject${idx}"] = sub_obj
+            }
+            else if (scheme) {
+              qryParams["subjectScheme${idx}"] = scheme
+              qryParams["subjectHeading${idx}"] = it.split(';')[1]
+              paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject.scheme = :subjectScheme${idx} AND subject.heading = :subjectHeading${idx})"
             }
           }
           else if (p instanceof ManyToMany) {

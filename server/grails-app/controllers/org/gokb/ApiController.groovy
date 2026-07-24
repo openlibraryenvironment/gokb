@@ -2,7 +2,6 @@ package org.gokb
 
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ExtendedHibernateDetachedCriteria
-import com.k_int.TsvSuperlifterService
 import grails.converters.JSON
 import grails.util.GrailsNameUtils
 import groovy.util.logging.*
@@ -22,8 +21,6 @@ import java.security.SecureRandom
  */
 @Slf4j
 class ApiController {
-
-  TsvSuperlifterService tsvSuperlifterService
   SecureRandom rand = new SecureRandom()
   UploadAnalysisService uploadAnalysisService
   def ESWrapperService
@@ -602,29 +599,6 @@ class ApiController {
     // ETag DSL must return a String and not a GString due to GStringImpl.equals(String) failing even if their character sequences are equal.
     // See: https://jira.grails.org/browse/GPCACHEHEADERS-14
     "${capabilities.app.version}${capabilities.app.buildNumber}".toString()
-  }
-
-  @Secured("hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()")
-  def bulkLoadUsers() {
-
-    log.debug("bulkLoadUsers");
-
-    def result = [:]
-
-    if ( request.method=='POST') {
-      log.debug("Handling post")
-      User.withNewSession() {
-
-        if ( request instanceof MultipartHttpServletRequest ) {
-          def users_stream = request.getFile("users")?.inputStream
-          result.loaderResult = tsvSuperlifterService.load(users_stream,
-                                                           User.tsv_dataload_config,
-                                                           params.dryRun=='Y'?true:false)
-        }
-      }
-    }
-
-    render result as JSON
   }
 
   private final def checkAlias = { def criteria, Map aliasStack, String dotNotationString, int joint_type = CriteriaSpecification.INNER_JOIN ->
