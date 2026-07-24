@@ -58,7 +58,7 @@ class RestMappingService {
       'version'
   ]
 
-  static final Map<String,String> mappedProps = [
+  static final Map<String,String> MAPPED_PROPS = [
       'linkedIds': 'ids',
       'publisherLinks': 'publisher'
   ]
@@ -157,7 +157,7 @@ class RestMappingService {
           }
           else {
             if ((embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) || (!nested && ['reviewRequests', 'comments'].contains(p.name) && user?.editorStatus)) {
-              String mapped_field = mappedProps[p.name] ?: p.name
+              String mapped_field = MAPPED_PROPS[p.name] ?: p.name
 
               log.debug("Handling embeds for ${p.name}: ${obj[mapped_field]}")
 

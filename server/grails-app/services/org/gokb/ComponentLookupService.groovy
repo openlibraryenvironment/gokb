@@ -23,7 +23,12 @@ class ComponentLookupService {
   def grailsApplication
   def restMappingService
 
-  public static final def ID_REGEX_TEMPLATE = ["^gokb::\\{", "\\:(\\d+)\\}\$"]
+  public static final List<String> ID_REGEX_TEMPLATE = ["^gokb::\\{", "\\:(\\d+)\\}\$"]
+
+  static final Map<String,String> MAPPED_PROPS = [
+      'linkedIds': 'ids',
+      'publisherLinks': 'publisher'
+  ]
 
 
   public <T extends KBComponent> Map<String, T> lookupComponents(String... comp_name_strings) {
@@ -389,10 +394,12 @@ class ComponentLookupService {
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(cls.name)
 
     pent.getPersistentProperties().each { p ->
-      if (params[p.name]) {
+      String mapped_field = MAPPED_PROPS[p.name] ?: p.name
+
+      if (params[p.name] || params[mapped_field]) {
         log.debug("Handling persistent param prop: ${p.name}")
-        def paramStr = ""
-        def addParam = true
+        String paramStr = ""
+        boolean addParam = true
 
         if (first) {
           paramStr += " WHERE "
@@ -401,7 +408,7 @@ class ComponentLookupService {
         else {
           paramStr += " AND "
         }
-        def alts = params.list(p.name)
+        List alts = params[p.name] ? params.list(p.name) : params.list(mapped_field)
 
         if ( p instanceof Association ) {
           List<Long> validLong = []
@@ -418,16 +425,12 @@ class ComponentLookupService {
             }
 
             if (a instanceof String && a?.trim() ) {
-              if (propName == 'ids') {
+              if (mapped_field == 'ids') {
                 validStr.add(Identifier.normalizeIdentifier(a))
               }
-              else {
+              else if (!addedLong) {
                 validStr.add(a.toLowerCase())
               }
-            }
-
-            if (!addedLong && a instanceof String && a?.trim() ) {
-              validStr.add(a)
             }
           }
 
@@ -435,19 +438,12 @@ class ComponentLookupService {
             boolean pkg_qry = false
 
             if (validLong.size() == 1 && p.name == 'componentToReview') {
-              def ctr = KBComponent.get(validLong[0])
-              def ctr_ids = [ctr.id]
-              RefdataValue combo_package_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-              RefdataValue combo_title_tipp = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+              KBComponent ctr = KBComponent.get(validLong[0])
+              List ctr_ids = [ctr.id]
 
               if (ctr?.class == Package) {
-                def linked_select = '''select tipp.id from TitleInstancePackagePlatform as tipp
-                    where exists (
-                      select 1 from Combo
-                      where fromComponent = :ctr
-                      and toComponent = tipp
-                      and type = :combo_package_tipp
-                    )
+                String linked_select = '''select tipp.id from TitleInstancePackagePlatform as tipp
+                    where tipp.pkg = :ctr
                     and exists (
                       select 1 from ReviewRequest
                       where id = p.id
@@ -455,28 +451,19 @@ class ComponentLookupService {
                     )'''
 
                 qryParams['ctr'] = ctr
-                qryParams['combo_package_tipp'] = combo_package_tipp
 
                 if (params.titlereviews) {
                   linked_select = '''select ti.id from TitleInstance as ti
                       where exists (
-                        select 1 from Combo as ct
-                        where fromComponent = ti
-                        and type = :combo_title_tipp
-                        and exists (
-                          select 1 from Combo
-                          where toComponent = ct.toComponent
-                          and type = :combo_package_tipp
-                          and fromComponent = :ctr
-                        )
+                        select tipp.id from TitleInstancePackagePlatform as tipp
+                        where tipp.pkg = :ctr
+                        and tipp.title = ti
                       )
                       and exists (
                         select 1 from ReviewRequest
                         where id = p.id
                         and componentToReview = ti
                       )'''
-
-                  qryParams['combo_title_tipp'] = combo_title_tipp
                 }
 
                 paramStr += "(p.componentToReview = :ctr OR EXISTS (${linked_select}))"
@@ -511,7 +498,7 @@ class ComponentLookupService {
           else if (p.name == 'subjects') {
             log.debug("Handling Subjects ..")
             int idx = 0
-            def subject_pars = validLong + validStr
+            List subject_pars = validLong + validStr
 
             subject_pars.each {
               RefdataValue scheme
@@ -552,22 +539,51 @@ class ComponentLookupService {
               idx++
             }
           }
-          else if (p.name == 'ids' || p.name == 'linkedIds') {
+          else if (mapped_field == 'ids') {
             int idx = 0
-            def id_pars = validLong + validStr
+            List id_pars = validLong + validStr
 
-            if (sub_obj) {
+            paramStr += "("
+
+            id_pars.each { idp ->
               if (idx > 0) {
-                paramStr += " AND "
+                paramStr += " OR "
               }
 
-              paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject = :subject${idx})"
-              qryParams["subject${idx}"] = sub_obj
+              if (idp instanceof Long)  {
+                paramStr += "EXISTS (SELECT 1 FROM ComponentIdentifier where component = p AND identifier.id = :idval${idx}) OR "
+              }
+
+              paramStr += "EXISTS (SELECT 1 FROM ComponentIdentifier where component = p AND ("
+              paramStr += "identifier.value = :idval${idx} "
+              paramStr += "OR identifier.uuid = :idval${idx} "
+              paramStr += "OR identifier.normname = :idval${idx})"
+
+              qryParams["idval${idx}"] = idp
+
+              idx++
             }
-            else if (scheme) {
-              qryParams["subjectScheme${idx}"] = scheme
-              qryParams["subjectHeading${idx}"] = it.split(';')[1]
-              paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject.scheme = :subjectScheme${idx} AND subject.heading = :subjectHeading${idx})"
+
+            paramStr += ")"
+
+          }
+          else if (mapped_field == 'publisher') {
+            int idx = 0
+
+            validStr.each {
+              if (sub_obj) {
+                if (idx > 0) {
+                  paramStr += " AND "
+                }
+
+                paramStr += "EXISTS (SELECT 1 FROM ComponentIdentifier where component = p AND subject = :subject${idx})"
+                qryParams["subject${idx}"] = sub_obj
+              }
+              else if (scheme) {
+                qryParams["subjectScheme${idx}"] = scheme
+                qryParams["subjectHeading${idx}"] = it.split(';')[1]
+                paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject.scheme = :subjectScheme${idx} AND subject.heading = :subjectHeading${idx})"
+              }
             }
           }
           else if (p instanceof ManyToMany) {
