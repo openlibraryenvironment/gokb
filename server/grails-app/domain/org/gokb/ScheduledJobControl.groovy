@@ -12,7 +12,7 @@ class ScheduledJobControl {
   LocalDateTime lastEndComplete
 
   static constraints = {
-    jobTyoe (nullable: false, blank: false)
+    jobType (nullable: false, blank: false, unique: true)
   }
 
 }
