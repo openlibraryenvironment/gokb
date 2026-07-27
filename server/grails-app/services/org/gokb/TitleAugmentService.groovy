@@ -956,19 +956,20 @@ class TitleAugmentService {
     if (publisher_name != null && publisher_name.trim()) {
       log.debug("Add publisher ${publisher_name}")
       Org publisher = Org.findByName(publisher_name)
-      def norm_pub_name = Org.generateNormname(publisher_name);
-      def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
-      def combo_type_pub = RefdataCategory.lookup("TitleInstance.Publisher")
+      String norm_pub_name = Org.generateNormname(publisher_name);
+      RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+      RefdataValue combo_type_pub = RefdataCategory.lookup("Combo.Type", "TitleInstance.Publisher")
 
       if (!publisher) {
         // Lookup using norm name.
         log.debug("Using normname ${norm_pub_name} for lookup")
-        publisher = Org.findByNormname(norm_pub_name)
+        publisher = Org.findByNormnameAndStatus(norm_pub_name, status_current)
       }
 
       if (!publisher || publisher.status == status_deleted) {
-        def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
-        def candidate_orgs = Org.executeQuery('''select distinct o from Org as o join o.variantNames as v
+        String variant_normname = GOKbTextUtils.normaliseString(publisher_name)
+        List candidate_orgs = Org.executeQuery('''select distinct o from Org as o join o.variantNames as v
                                               where v.normVariantName = :nvn
                                               and o.status != :sd''',
                                               [nvn: variant_normname, sd: status_deleted])
@@ -982,7 +983,7 @@ class TitleAugmentService {
 
       log.debug("Found publisher ${publisher}")
 
-      def existing_combos = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :pub and type = :ct", [ti: ti, pub: publisher, ct: combo_type_pub])
+      List existing_combos = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :pub and type = :ct", [ti: ti, pub: publisher, ct: combo_type_pub])
 
       if (publisher && existing_combos.size() == 0) {
         // new Combo(fromComponent: ti, toComponent: publisher, type: combo_type_pub).save(flush: true, failOnError: true)
