@@ -19,7 +19,7 @@ class FTIndexCleanupService {
     @Autowired
     FTUpdateService ftUpdateService
 
-    def  syncTippsBetweenIndexAndDB (def job = null, LocalDateTime updatedSince = null) {
+    def  syncTippsBetweenIndexAndDB (def job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill) {
         Map result = [result: "OK"]
         int numberUpdatedTippsInPeriod = 0
         int numberCheckedTipps = 0
@@ -28,6 +28,7 @@ class FTIndexCleanupService {
         List<TitleInstancePackagePlatform> tippsToReindex = new ArrayList<>()
 
         Date from = null
+        Date till = null
 
         if (!updatedSince) {
             //default to 1 week before, start of day
@@ -36,6 +37,10 @@ class FTIndexCleanupService {
         }
         else {
             from = Date.from(updatedSince.atZone(ZoneOffset.UTC).toInstant())
+        }
+
+        if (!updatedTill) {
+            till = Date.from(LocalDateTime.now())
         }
         log.debug("Start Syncing Tipps that were updated since: ... " + updatedSince)
 

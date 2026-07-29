@@ -564,8 +564,10 @@ class FTUpdateService {
   }
 
 
-  def updateSpecifiedTippBulk(List<TitleInstancePackagePlatform> tipps, Job job = null) {
+  Map updateSpecifiedTippBulk(List<TitleInstancePackagePlatform> tipps, Job job = null) {
     tippsRunning = true
+
+    Map result = [result: "OK"]
 
     def esClient = ESWrapperService.getClient()
     // def indexName = grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType.get(domain.simpleName))
@@ -623,6 +625,8 @@ class FTUpdateService {
     log.debug("... final:: Processed ${total} out of ${tipps.size()} records. ")
 
     tippsRunning = false
+
+    reurn result
   }
 
   def updateES(esClient, domain, job, boolean reindex = false) {
@@ -663,10 +667,6 @@ class FTUpdateService {
         def q = domain.executeQuery("select o.id, o.lastUpdated from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id", [ts: from, lid: latest_ft_record.lastId], [readonly: true])
         log.debug("Query completed.. processing rows...")
         BulkRequest bulkRequest = new BulkRequest()
-
-        log.info("################################################################################################")
-        log.info("queryresult: " + q)
-
 
         for (record in q) {
           if (Thread.currentThread().isInterrupted()) {
