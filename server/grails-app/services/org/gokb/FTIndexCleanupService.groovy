@@ -19,7 +19,7 @@ class FTIndexCleanupService {
     @Autowired
     FTUpdateService ftUpdateService
 
-    Map syncTippsBetweenIndexAndDB (def job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill = null) {
+    Map syncTippsBetweenIndexAndDB (def job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill = null, boolean dryRun) {
         Map result = [result: "OK"]
         int numberUpdatedTippsInPeriod = 0
         int numberCheckedTipps = 0
@@ -95,8 +95,11 @@ class FTIndexCleanupService {
 
             log.debug("######## REINDEX " + tippsToReindex.size() + " TIPPS ######################")
 
-            // Reindex not-up-to-date Tipps
-            Map updateResult = ftUpdateService.updateSpecifiedTippBulk(tippsToReindex, job)
+            if (!dryRun) {
+                // Reindex not-up-to-date Tipps
+                Map updateResult = ftUpdateService.updateSpecifiedTippBulk(tippsToReindex, job)
+                numberNewIndexedTipps = updateResult.indexed
+            }
 
             result.report = [
                     periodStart: from.toString(),
@@ -105,7 +108,7 @@ class FTIndexCleanupService {
                     numberCheckedTipps: numberCheckedTipps,
                     numberNotActualTipps: numberNotActualTipps,
                     numberNotYetIndexedTipps: numberNotYetIndexedTipps,
-                    numberNewIndexedTipps: updateResult.indexed
+                    numberNewIndexedTipps: numberNewIndexedTipps
             ]
 
 

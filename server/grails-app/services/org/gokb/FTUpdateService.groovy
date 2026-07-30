@@ -584,8 +584,6 @@ class FTUpdateService {
 
       def osRecord = buildEsRecord(tipp)
 
-      log.debug("+++ OS-Record: " + osRecord)
-
       if (osRecord != null) {
         IndexRequest singleRequest = new IndexRequest(indexName)
         singleRequest.id(osRecord['_id'].toString())
