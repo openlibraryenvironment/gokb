@@ -24,6 +24,7 @@ class FTIndexCleanupService {
         int numberUpdatedTippsInPeriod = 0
         int numberCheckedTipps = 0
         int numberNotActualTipps = 0
+        int numberNotYetIndexedTipps = 0
         int numberNewIndexedTipps = 0
         List<TitleInstancePackagePlatform> tippsToReindex = new ArrayList<>()
 
@@ -53,15 +54,17 @@ class FTIndexCleanupService {
             List<TitleInstancePackagePlatform> tipps = TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where (tipp.lastUpdated > :us OR tipp.dateCreated > :us) order by tipp.lastUpdated, tipp.id", [us: from], [readonly: true])
             numberUpdatedTippsInPeriod = tipps.size()
 
-            log.debug("#### " + tipps)
+            log.debug("Checking " + tipps.size() + " TIPPS...")
 
             for (TitleInstancePackagePlatform tipp: tipps) {
-                //log.debug("TIPP: " + tipp)
-
                 Map esRepresentation = esSearchService.find([componentType: 'TitleInstancePackagePlatform', uuid: tipp.getUuid(), skipDomainMapping: true])
                 Map esTipp = null
                 if (esRepresentation.records?.size() != 1) {
-
+                    if (esRepresentation.records?.size() == 0) {
+                        numberNotYetIndexedTipps++
+                        tippsToReindex.add(tipp)
+                        log.info("NOT YET INDEXED: " + tipp.getName() + ": " + tipp.getUuid())
+                    }
                 }
                 else {
                     esTipp = esRepresentation.records.get(0)
@@ -83,8 +86,7 @@ class FTIndexCleanupService {
                     } else {
                         numberNotActualTipps++
                         tippsToReindex.add(tipp)
-                        log.debug("NOT ACTUAL: " + tipp.getName() + ": " + (dbDate.getTime() - esDate.getTime()))
-
+                        log.info("NOT ACTUAL: " + tipp.getName() + ", " + tipp.getUuid() +  ", diff: " + (dbDate.getTime() - esDate.getTime()))
                     }
                 }
 
