@@ -19,7 +19,7 @@ class FTIndexCleanupService {
     @Autowired
     FTUpdateService ftUpdateService
 
-    def  syncTippsBetweenIndexAndDB (def job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill) {
+    Map syncTippsBetweenIndexAndDB (def job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill = null) {
         Map result = [result: "OK"]
         int numberUpdatedTippsInPeriod = 0
         int numberCheckedTipps = 0
@@ -33,16 +33,20 @@ class FTIndexCleanupService {
         if (!updatedSince) {
             //default to 1 week before, start of day
             LocalDateTime oneWeekBefore = LocalDate.now().minusWeeks(1).atStartOfDay()
-            from = Date.from(oneWeekBefore.atZone(ZoneOffset.UTC).toInstant())
+            from = Date.from(oneWeekBefore.atZone(ZoneId.systemDefault()).toInstant())
         }
         else {
-            from = Date.from(updatedSince.atZone(ZoneOffset.UTC).toInstant())
+            from = Date.from(updatedSince.atZone(ZoneId.systemDefault()).toInstant())
         }
 
         if (!updatedTill) {
-            till = Date.from(LocalDateTime.now())
+            till = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant())
         }
-        log.debug("Start Syncing Tipps that were updated since: ... " + updatedSince)
+        else {
+            till = Date.from(updatedTill.atZone(ZoneId.systemDefault()).toInstant())
+        }
+
+        log.debug("Start Syncing Tipps that were updated between: ... " + from + " - " + till)
 
 
         TitleInstancePackagePlatform.withNewSession {
@@ -71,7 +75,7 @@ class FTIndexCleanupService {
 
                     Date dbDate = tipp.getLastUpdated()
 
-                    //Due to the fact that in OS we have no milliseconds, we accept a deviation of 999 milliseconds
+                    // We accept a deviation of 999 milliseconds as loss of precision due to the different Time Formats in DB and Index
                     // dbDate.getTime() should always be >= esDate.getTime
                     long epsilon = Math.abs(dbDate.getTime() - esDate.getTime())
                     if (epsilon < 1000) {
@@ -80,8 +84,7 @@ class FTIndexCleanupService {
                         numberNotActualTipps++
                         tippsToReindex.add(tipp)
                         log.debug("NOT ACTUAL: " + tipp.getName() + ": " + (dbDate.getTime() - esDate.getTime()))
-                        log.debug("11111: " + tipp)
-                        log.debug("22222: " + esTipp)
+
                     }
                 }
 
@@ -91,16 +94,18 @@ class FTIndexCleanupService {
             log.debug("######## REINDEX " + tippsToReindex.size() + " TIPPS ######################")
 
             // Reindex not-up-to-date Tipps
-            ftUpdateService.updateSpecifiedTippBulk(tippsToReindex, job)
+            Map updateResult = ftUpdateService.updateSpecifiedTippBulk(tippsToReindex, job)
 
             result.report = [
-                    periodStart: "",
-                    periodEnd: "",
+                    periodStart: from.toString(),
+                    periodEnd: till.toString(),
                     numberUpdatedTippsInPeriod: numberUpdatedTippsInPeriod,
                     numberCheckedTipps: numberCheckedTipps,
                     numberNotActualTipps: numberNotActualTipps,
-                    numberNewIndexedTipps: numberNewIndexedTipps
+                    numberNewIndexedTipps: updateResult.indexed
             ]
+
+
             log.debug("Result: " + result)
 
         }

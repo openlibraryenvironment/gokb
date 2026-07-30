@@ -618,6 +618,8 @@ class FTUpdateService {
       logBulkFailures(bulkFinalResponse)
     }
 
+    result.indexed = total
+
     if (job) {
       job.message("Indexing finished for ${total} Tipps...")
     }
@@ -626,7 +628,7 @@ class FTUpdateService {
 
     tippsRunning = false
 
-    reurn result
+    return result
   }
 
   def updateES(esClient, domain, job, boolean reindex = false) {
