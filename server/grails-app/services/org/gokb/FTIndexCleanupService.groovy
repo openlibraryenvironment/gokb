@@ -104,6 +104,7 @@ class FTIndexCleanupService {
                     numberUpdatedTippsInPeriod: numberUpdatedTippsInPeriod,
                     numberCheckedTipps: numberCheckedTipps,
                     numberNotActualTipps: numberNotActualTipps,
+                    numberNotYetIndexedTipps: numberNotYetIndexedTipps,
                     numberNewIndexedTipps: updateResult.indexed
             ]
 
