@@ -471,9 +471,10 @@ class ComponentUpdateService {
           ClassUtils.setStringIfDifferent(located_or_new_source, 'defaultAccessURL', data.defaultAccessURL)
           ClassUtils.setStringIfDifferent(located_or_new_source, 'explanationAtSource', data.explanationAtSource)
           ClassUtils.setStringIfDifferent(located_or_new_source, 'contextualNotes', data.contextualNotes)
-          ClassUtils.setStringIfDifferent(located_or_new_source, 'frequency', data.frequency)
+
           ClassUtils.setStringIfDifferent(located_or_new_source, 'ruleset', data.ruleset)
 
+          ClassUtils.setRefdataIfPresent(data.frequency, located_or_new_source, 'frequency', 'Source.Frequency')
           ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
           ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
 
