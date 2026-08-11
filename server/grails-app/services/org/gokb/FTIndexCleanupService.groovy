@@ -57,8 +57,10 @@ class FTIndexCleanupService {
             log.debug("Checking " + tipps.size() + " TIPPS...")
 
             for (TitleInstancePackagePlatform tipp: tipps) {
+                log.debug("11111: " + tipp.getUuid())
                 Map esRepresentation = esSearchService.find([componentType: 'TitleInstancePackagePlatform', uuid: tipp.getUuid(), skipDomainMapping: true])
                 Map esTipp = null
+
                 if (esRepresentation.records?.size() != 1) {
                     if (esRepresentation.records?.size() == 0) {
                         numberNotYetIndexedTipps++

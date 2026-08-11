@@ -577,6 +577,9 @@ class FTUpdateService {
     int count = 0
     int total = 0
     for (TitleInstancePackagePlatform tipp: tipps) {
+
+      log.info("22222: " + tipp.getUuid())
+
       if (Thread.currentThread().isInterrupted()) {
         log.warn("Job cancelling ..")
         break
