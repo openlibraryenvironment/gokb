@@ -575,10 +575,8 @@ class FTUpdateService {
 
     BulkRequest bulkRequest = new BulkRequest()
     int count = 0
-    int total = 0
+    int total = tipps.size()
     for (TitleInstancePackagePlatform tipp: tipps) {
-
-      log.info("22222: " + tipp.getUuid())
 
       if (Thread.currentThread().isInterrupted()) {
         log.warn("Job cancelling ..")
@@ -596,10 +594,9 @@ class FTUpdateService {
       }
 
       count++
-      total++
 
-      if (count > 50) {
-        count = 0
+
+      if (count % 50 == 0 || count == total) {
         // log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
         BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
 
@@ -609,23 +606,24 @@ class FTUpdateService {
           break
         }
         log.debug("... BulkResponse: ${bulkResponse}")
+
+        if (count != total) {
+          bulkRequest = new BulkRequest()
+        }
+
+        log.info("Index Update: completed Bulk. Now indexed: " + count + " of " + total)
+
       }
 
-    }
-
-    if (count > 0) {
-      BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
-      log.debug("... final BulkResponse: ${bulkFinalResponse}")
-      logBulkFailures(bulkFinalResponse)
     }
 
     result.indexed = total
 
     if (job) {
-      job.message("Indexing finished for ${total} Tipps...")
+      job.message("Indexing finished for ${count} Tipps...")
     }
 
-    log.debug("... final:: Processed ${total} out of ${tipps.size()} records. ")
+    log.debug("... final:: Processed ${count} out of ${total} records. ")
 
     tippsRunning = false
 
@@ -636,7 +634,6 @@ class FTUpdateService {
     log.debug("updateES(${domain}...)")
     def indexType = ESWrapperService.indicesPerType[domain.name]
     def indexName = grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType.get(domain.simpleName))
-    def count = 0
 
     domain.withNewSession {
       try {
@@ -660,7 +657,6 @@ class FTUpdateService {
 
         log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
 
-        def total = 0
         Date from = new Date(latest_ft_record.lastTimestamp)
         def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) ", [ts: from, lid: latest_ft_record.lastId], [readonly: true])[0]
 
@@ -669,7 +665,11 @@ class FTUpdateService {
         log.debug("Will process ${countq} records")
         def q = domain.executeQuery("select o.id, o.lastUpdated from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id", [ts: from, lid: latest_ft_record.lastId], [readonly: true])
         log.debug("Query completed.. processing rows...")
+
         BulkRequest bulkRequest = new BulkRequest()
+
+        int total = q.size()
+        int count = 0
 
         for (record in q) {
           if (Thread.currentThread().isInterrupted()) {
@@ -700,10 +700,9 @@ class FTUpdateService {
           highest_id = r.id
 
           count++
-          total++
 
-          if (count > 50) {
-            count = 0
+          if (count % 50 == 0 || count == total) {
+
             log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
             BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
 
@@ -724,24 +723,15 @@ class FTUpdateService {
               log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update")
             }
 
+            bulkRequest = new BulkRequest()
+
             cleanUpGorm()
           }
-        }
-        if (count > 0) {
-          BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
-          log.debug("... final BulkResponse: ${bulkFinalResponse}")
-          logBulkFailures(bulkFinalResponse)
-        }
-        // update timestamp
-        if (total > 0) {
-          latest_ft_record.lastTimestamp = highest_timestamp
-          latest_ft_record.lastId = highest_id
-          latest_ft_record.save(flush: true, failOnError: true)
         }
 
         if (job) job.message("Indexing finished for ${countq} ${domain.simpleName}.".toString())
 
-        log.debug("... final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
+        log.debug("... final:: Processed ${count} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
       }
       catch (Exception e) {
         log.error("Problem with FT index", e)

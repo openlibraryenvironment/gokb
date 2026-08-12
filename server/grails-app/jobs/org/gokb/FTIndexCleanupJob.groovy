@@ -27,7 +27,7 @@ class FTIndexCleanupJob {
             log.debug("FTUpdate is not enabled - set config.ftupdate_enabled = true in config to enable")
         } */
 
-        ftIndexCleanupService.syncTippsBetweenIndexAndDB()
+        // ftIndexCleanupService.syncTippsBetweenIndexAndDB()
     }
 
 }

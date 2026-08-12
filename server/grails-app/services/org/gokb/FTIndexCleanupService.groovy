@@ -114,7 +114,15 @@ class FTIndexCleanupService {
             ]
 
 
-            log.debug("Result: " + result)
+            log.info("FT Index Cleanup Result: " + result)
+
+            if ( (numberNotYetIndexedTipps + numberNotActualTipps) != numberNewIndexedTipps ) {
+                log.warn("FT Index Cleanup: not all found TIPPs were indexed. Expected number: " + (numberNotYetIndexedTipps + numberNotActualTipps) + ", but was: " + numberNewIndexedTipps )
+            }
+
+            if ( numberUpdatedTippsInPeriod != (numberCheckedTipps + numberNotYetIndexedTipps) ) {
+                log.warn("FT Index Cleanup: found TIPP with ambiguous OS representation. Expected number: " + numberUpdatedTippsInPeriod + ", but was: " + (numberCheckedTipps + numberNotYetIndexedTipps) )
+            }
 
         }
         return result
