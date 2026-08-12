@@ -723,7 +723,9 @@ class FTUpdateService {
               log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update")
             }
 
-            bulkRequest = new BulkRequest()
+            if (count != total) {
+              bulkRequest = new BulkRequest()
+            }
 
             cleanUpGorm()
           }

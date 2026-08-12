@@ -51,7 +51,7 @@ class FTIndexCleanupService {
 
 
         TitleInstancePackagePlatform.withNewSession {
-            List<TitleInstancePackagePlatform> tipps = TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where (tipp.lastUpdated > :us OR tipp.dateCreated > :us) order by tipp.lastUpdated, tipp.id", [us: from], [readonly: true])
+            List<TitleInstancePackagePlatform> tipps = TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where ( (tipp.lastUpdated > :us OR tipp.dateCreated > :us) AND tipp.lastUpdated <= :ut AND tipp.dateCreated <= :ut) order by tipp.lastUpdated, tipp.id", [us: from, ut: till], [readonly: true])
             numberUpdatedTippsInPeriod = tipps.size()
 
             log.debug("Checking " + tipps.size() + " TIPPS...")
