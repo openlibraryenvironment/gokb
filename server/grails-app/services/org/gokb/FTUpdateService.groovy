@@ -576,48 +576,55 @@ class FTUpdateService {
     BulkRequest bulkRequest = new BulkRequest()
     int count = 0
     int total = tipps.size()
-    for (TitleInstancePackagePlatform tipp: tipps) {
 
-      if (Thread.currentThread().isInterrupted()) {
-        log.warn("Job cancelling ..")
-        break
-      }
+    try {
 
-      def osRecord = buildEsRecord(tipp)
-
-      if (osRecord != null) {
-        IndexRequest singleRequest = new IndexRequest(indexName)
-        singleRequest.id(osRecord['_id'].toString())
-        osRecord.remove('_id')
-        singleRequest.source((osRecord as JSON).toString(), XContentType.JSON)
-        bulkRequest.add(singleRequest)
-      }
-
-      count++
-
-
-      if (count % 50 == 0 || count == total) {
-        // log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
-        BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
-
-        if (bulkResponse.hasFailures()) {
-          logBulkFailures(bulkResponse)
-          log.error("Bulk Update had errors!")
+      for (TitleInstancePackagePlatform tipp : tipps) {
+        if (Thread.currentThread().isInterrupted()) {
+          log.warn("Job cancelling ..")
           break
         }
-        log.debug("... BulkResponse: ${bulkResponse}")
 
-        if (count != total) {
-          bulkRequest = new BulkRequest()
+        def osRecord = buildEsRecord(tipp)
+
+        if (osRecord != null) {
+          IndexRequest singleRequest = new IndexRequest(indexName)
+          singleRequest.id(osRecord['_id'].toString())
+          osRecord.remove('_id')
+          singleRequest.source((osRecord as JSON).toString(), XContentType.JSON)
+          bulkRequest.add(singleRequest)
         }
 
-        log.info("Index Update: completed Bulk. Now indexed: " + count + " of " + total)
+        count++
+
+
+        if (count % 50 == 0 || count == total) {
+          // log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
+          BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+
+          if (bulkResponse.hasFailures()) {
+            logBulkFailures(bulkResponse)
+            log.error("Bulk Update had errors!")
+            break
+          }
+          log.debug("... BulkResponse: ${bulkResponse}")
+
+          if (count != total) {
+            bulkRequest = new BulkRequest()
+          }
+
+          log.info("Index Update: completed Bulk. Now indexed: " + count + " of " + total)
+
+        }
 
       }
-
+    } catch (Exception e) {
+      result.result = "ERROR"
+      log.error("Error while indexing ", e)
     }
 
-    result.indexed = total
+
+    result.indexed = count
 
     if (job) {
       job.message("Indexing finished for ${count} Tipps...")
@@ -671,6 +678,18 @@ class FTUpdateService {
         int total = q.size()
         int count = 0
 
+        // Performance statistics
+        int p_bulksTotal = (total + 49) / 50
+        int p_actualBulk = 1
+        long p_bulkStartTime = new Date().getTime()
+        long p_bulkTimeTotal = 0
+        long p_highestBulkTime = 0
+
+        long p_dbBulkStartTime = new Date().getTime()
+        long p_dbBulkTimeTotal = 0
+        long p_dbHighestBulkTime = 0
+
+
         for (record in q) {
           if (Thread.currentThread().isInterrupted()) {
             log.warn("Job cancelling ..")
@@ -703,6 +722,12 @@ class FTUpdateService {
 
           if (count % 50 == 0 || count == total) {
 
+            long p_dbBulkDuration = new Date().getTime() - p_dbBulkStartTime
+            if (p_dbBulkDuration > p_dbHighestBulkTime) {
+              p_dbHighestBulkTime = p_dbBulkDuration
+            }
+            p_dbBulkTimeTotal += p_dbBulkDuration
+
             log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
             BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
 
@@ -728,6 +753,24 @@ class FTUpdateService {
             }
 
             cleanUpGorm()
+
+            long p_bulkDuration = new Date().getTime() - p_bulkStartTime
+            p_bulkTimeTotal += p_bulkDuration
+            if (p_bulkDuration > p_highestBulkTime) {
+              p_highestBulkTime = p_bulkDuration
+            }
+
+            log.info("Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${p_bulkTimeTotal/p_actualBulk} " +
+                    "slowest: ${p_highestBulkTime}" )
+
+            log.info("Statistik - Database, Bulk: ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_dbBulkDuration}, Avg.: ${p_dbBulkTimeTotal/p_actualBulk} " +
+                    "slowest: ${p_dbHighestBulkTime}" )
+
+            p_actualBulk++
+            p_bulkStartTime = new Date().getTime()
+            p_dbBulkStartTime = new Date().getTime()
+
+
           }
         }
 
