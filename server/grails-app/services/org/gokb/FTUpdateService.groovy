@@ -760,10 +760,10 @@ class FTUpdateService {
               p_highestBulkTime = p_bulkDuration
             }
 
-            log.info("Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${p_bulkTimeTotal/p_actualBulk} " +
+            log.info("${domain.simpleName} Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_bulkTimeTotal/p_actualBulk)} " +
                     "slowest: ${p_highestBulkTime}" )
 
-            log.info("Statistik - Database, Bulk: ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_dbBulkDuration}, Avg.: ${p_dbBulkTimeTotal/p_actualBulk} " +
+            log.info("${domain.simpleName} Statistik - Database, Bulk: ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_dbBulkDuration}, Avg.: ${(long)(p_dbBulkTimeTotal/p_actualBulk)} " +
                     "slowest: ${p_dbHighestBulkTime}" )
 
             p_actualBulk++
