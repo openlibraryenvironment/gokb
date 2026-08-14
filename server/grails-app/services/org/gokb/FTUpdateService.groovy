@@ -640,8 +640,10 @@ class FTUpdateService {
   }
 
   def updateES(esClient, domain, job, boolean reindex = false) {
-    int bulkSize = 500
-    int limitPerJob = 250000
+    // int bulkSize = 500
+    // int limitPerJob = 250000
+    int bulkSize = 5
+    int limitPerJob = 25
 
     log.debug("updateES(${domain}...)")
     def indexType = ESWrapperService.indicesPerType[domain.name]
@@ -670,12 +672,12 @@ class FTUpdateService {
         log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
 
         Date from = new Date(latest_ft_record.lastTimestamp)
-        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) limit :lim", [ts: from, lid: latest_ft_record.lastId, lim: limitPerJob], [readonly: true])[0]
+        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts)", [ts: from, lid: latest_ft_record.lastId, max: limitPerJob], [readonly: true])[0]
 
         if (job) job.message("Indexing start for ${countq} ${domain.simpleName} ..".toString())
 
         log.debug("Will process ${countq} records")
-        def q = domain.executeQuery("select o.id, o.lastUpdated from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id limit :lim", [ts: from, lid: latest_ft_record.lastId, lim: limitPerJob], [readonly: true])
+        def q = domain.executeQuery("select o.id, o.lastUpdated from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id", [ts: from, lid: latest_ft_record.lastId, max: limitPerJob], [readonly: true])
         log.debug("Query completed.. processing rows...")
 
         BulkRequest bulkRequest = new BulkRequest()
