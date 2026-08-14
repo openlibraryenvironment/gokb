@@ -14,6 +14,8 @@ import org.opensearch.common.xcontent.XContentType
 
 import groovy.transform.Synchronized
 
+import java.util.concurrent.TimeUnit
+
 class FTUpdateService {
 
   def ESWrapperService
@@ -638,6 +640,9 @@ class FTUpdateService {
   }
 
   def updateES(esClient, domain, job, boolean reindex = false) {
+    int bulkSize = 500
+    int limitPerJob = 250000
+
     log.debug("updateES(${domain}...)")
     def indexType = ESWrapperService.indicesPerType[domain.name]
     def indexName = grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType.get(domain.simpleName))
@@ -665,12 +670,12 @@ class FTUpdateService {
         log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
 
         Date from = new Date(latest_ft_record.lastTimestamp)
-        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) ", [ts: from, lid: latest_ft_record.lastId], [readonly: true])[0]
+        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) limit :lim", [ts: from, lid: latest_ft_record.lastId, lim: limitPerJob], [readonly: true])[0]
 
         if (job) job.message("Indexing start for ${countq} ${domain.simpleName} ..".toString())
 
         log.debug("Will process ${countq} records")
-        def q = domain.executeQuery("select o.id, o.lastUpdated from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id", [ts: from, lid: latest_ft_record.lastId], [readonly: true])
+        def q = domain.executeQuery("select o.id, o.lastUpdated from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id limit :lim", [ts: from, lid: latest_ft_record.lastId, lim: limitPerJob], [readonly: true])
         log.debug("Query completed.. processing rows...")
 
         BulkRequest bulkRequest = new BulkRequest()
@@ -679,16 +684,15 @@ class FTUpdateService {
         int count = 0
 
         // Performance statistics
-        int p_bulksTotal = (total + 49) / 50
+        int p_bulksTotal = (total + bulkSize - 1) / bulkSize
         int p_actualBulk = 1
+        int p_bulkAtHour = 1
         long p_bulkStartTime = new Date().getTime()
-        long p_bulkTimeTotal = 0
+        long p_timeTotal = 0
         long p_highestBulkTime = 0
 
-        long p_dbBulkStartTime = new Date().getTime()
-        long p_dbBulkTimeTotal = 0
-        long p_dbHighestBulkTime = 0
-
+        long p_totalStartTime = new Date().getTime()
+        long p_hourStartTime = new Date().getTime()
 
         for (record in q) {
           if (Thread.currentThread().isInterrupted()) {
@@ -720,13 +724,7 @@ class FTUpdateService {
 
           count++
 
-          if (count % 50 == 0 || count == total) {
-
-            long p_dbBulkDuration = new Date().getTime() - p_dbBulkStartTime
-            if (p_dbBulkDuration > p_dbHighestBulkTime) {
-              p_dbHighestBulkTime = p_dbBulkDuration
-            }
-            p_dbBulkTimeTotal += p_dbBulkDuration
+          if (count % bulkSize == 0 || count == total) {
 
             log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
             BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
@@ -755,21 +753,28 @@ class FTUpdateService {
             cleanUpGorm()
 
             long p_bulkDuration = new Date().getTime() - p_bulkStartTime
-            p_bulkTimeTotal += p_bulkDuration
+            p_timeTotal += p_bulkDuration
             if (p_bulkDuration > p_highestBulkTime) {
               p_highestBulkTime = p_bulkDuration
             }
 
-            log.info("${domain.simpleName} Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_bulkTimeTotal/p_actualBulk)} " +
+            log.info("${domain.simpleName} Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal/p_actualBulk)} " +
                     "slowest: ${p_highestBulkTime}" )
 
-            log.info("${domain.simpleName} Statistik - Database, Bulk: ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_dbBulkDuration}, Avg.: ${(long)(p_dbBulkTimeTotal/p_actualBulk)} " +
-                    "slowest: ${p_dbHighestBulkTime}" )
+
+            if (new Date().getTime() - p_hourStartTime >= 3600 * 1000) {
+              long estimatedDuration = ((long) (p_timeTotal/p_actualBulk)) * (p_bulksTotal - p_actualBulk)
+              log.info("${domain.name} Indexing Update: ${(p_actualBulk - p_bulkAtHour) * bulkSize} Records were updated in the last hour. " +
+                      "##### Estimated Duration is: " + String.format("%02d min, %02d sec",
+                      TimeUnit.MILLISECONDS.toMinutes(estimatedDuration),
+                      TimeUnit.MILLISECONDS.toSeconds(estimatedDuration) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(estimatedDuration))))
+              p_hourStartTime = new Date().getTime()
+              p_bulkAtHour = p_actualBulk
+            }
+
 
             p_actualBulk++
             p_bulkStartTime = new Date().getTime()
-            p_dbBulkStartTime = new Date().getTime()
-
 
           }
         }
