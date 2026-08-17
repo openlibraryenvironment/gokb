@@ -690,9 +690,14 @@ class FTUpdateService {
         long p_bulkStartTime = new Date().getTime()
         long p_timeTotal = 0
         long p_highestBulkTime = 0
+        int p_estimationInterval = 15 // in minutes
 
         long p_totalStartTime = new Date().getTime()
         long p_hourStartTime = new Date().getTime()
+
+        int p_journals = 0
+        int p_books = 0
+
 
         for (record in q) {
           if (Thread.currentThread().isInterrupted()) {
@@ -714,6 +719,15 @@ class FTUpdateService {
             idx_record.remove('_id')
             singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)
             bulkRequest.add(singleRequest)
+
+            if (domain.simpleName == "TitleInstancePackagePlatform") {
+              if (idx_record.titleType == "Journal") {
+                p_journals++
+              }
+              else if (idx_record.titleType == "Book") {
+                p_books++
+              }
+            }
           }
 
           if (recLastUpdated?.getTime() > highest_timestamp) {
@@ -758,13 +772,18 @@ class FTUpdateService {
               p_highestBulkTime = p_bulkDuration
             }
 
-            log.info("${domain.simpleName} Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal/p_actualBulk)} " +
-                    "slowest: ${p_highestBulkTime}" )
+            if (domain.simpleName == "TitleInstancePackagePlatform") {
+              log.info("TIPP Statistik - Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal/p_actualBulk)} " +
+                      "slowest: ${p_highestBulkTime}, Books: ${p_books}, Journals: ${p_journals}" )
+            }
+            else {
+              log.info("${domain.simpleName} Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal / p_actualBulk)} " +
+                      "slowest: ${p_highestBulkTime}")
+            }
 
-
-            if (new Date().getTime() - p_hourStartTime >= 3600 * 1000) {
+            if (new Date().getTime() - p_hourStartTime >= p_estimationInterval * 60 * 1000) {
               long estimatedDuration = ((long) (p_timeTotal/p_actualBulk)) * (p_bulksTotal - p_actualBulk)
-              log.info("${domain.name} Indexing Update: ${(p_actualBulk - p_bulkAtHour) * bulkSize} Records were updated in the last hour. " +
+              log.info("${domain.name} Indexing Update: ${(p_actualBulk - p_bulkAtHour) * bulkSize} Records were updated in the last ${p_estimationInterval} Minutes. " +
                       "##### Estimated Duration is: " + String.format("%02d min, %02d sec",
                       TimeUnit.MILLISECONDS.toMinutes(estimatedDuration),
                       TimeUnit.MILLISECONDS.toSeconds(estimatedDuration) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(estimatedDuration))))
@@ -772,6 +791,10 @@ class FTUpdateService {
               p_bulkAtHour = p_actualBulk
             }
 
+            if (domain.simpleName == "TitleInstancePackagePlatform") {
+              p_books = 0
+              p_journals = 0
+            }
 
             p_actualBulk++
             p_bulkStartTime = new Date().getTime()
