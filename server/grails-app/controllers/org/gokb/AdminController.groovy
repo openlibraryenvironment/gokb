@@ -37,6 +37,7 @@ class AdminController {
   TippService tippService
   @Autowired
   FTIndexCleanupService ftIndexCleanupService
+  RuntimeVariableService runtimeVariableService
 
   def index() {
     redirect(controller: 'admin', action: 'jobs')
@@ -831,5 +832,19 @@ class AdminController {
     //render result as JSON
 
   }
+
+  def setRuntimeVariable () {
+    boolean remove = params.boolean('remove') ?: false
+
+    if (remove && params.name) {
+      runtimeVariableService.removeRuntimeVariable(params.name)
+    }
+    else if (params.name && params.value) {
+      runtimeVariableService.addOrUpdateRuntimeVariable(params.name, params.value)
+    }
+
+    render(view: "logViewer", model: logViewer())
+  }
+
 
 }

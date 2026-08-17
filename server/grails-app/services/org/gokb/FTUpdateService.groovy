@@ -640,8 +640,8 @@ class FTUpdateService {
   }
 
   def updateES(esClient, domain, job, boolean reindex = false) {
-    int bulkSize = 500
-    int limitPerJob = 250000
+    int bulkSize = 100
+    int limitPerJob = Integer.MAX_VALUE //no limit
 
     log.debug("updateES(${domain}...)")
     def indexType = ESWrapperService.indicesPerType[domain.name]

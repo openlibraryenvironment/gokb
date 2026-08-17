@@ -13,6 +13,7 @@ class AutoCachePackagesJob implements InterruptableJob {
   private boolean interrupted = false
 
   def packageCachingService
+  RuntimeVariableService runtimeVariableService
 
   static triggers = {
     // Cron timer.
@@ -20,7 +21,10 @@ class AutoCachePackagesJob implements InterruptableJob {
   }
 
   public void execute(JobExecutionContext context) {
-    if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
+    if (runtimeVariableService.getRuntimeVariable("disablePackageCaching") && runtimeVariableService.getRuntimeVariable("disablePackageCaching") == "true") {
+      log.info("AutoCachePackagesJob not started because of Environment-Variable: " + runtimeVariableService.getRuntimeVariables())
+    }
+    else if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
       JobDataMap dataMap = context.mergedJobDataMap
       dataMap.put('start', new Date())
       dataMap.put('progress', '0')
