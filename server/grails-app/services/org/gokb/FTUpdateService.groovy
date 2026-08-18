@@ -322,7 +322,7 @@ class FTUpdateService {
         if (ti?.niceName == 'Journal') {
           long startCoverage = new Date().getTime()
           result.coverage = []
-          def coverage_src = kbc.coverageStatements?.size() > 0 ? kbc.coverageStatements : [kbc]
+          ArrayList coverage_src = kbc.coverageStatements?.size() > 0 ? kbc.coverageStatements : [kbc]
           coverage_src.each { tcs ->
             def cst = [:]
             if (tcs.startDate) cst.startDate = dateFormatService.formatDate(tcs.startDate)
