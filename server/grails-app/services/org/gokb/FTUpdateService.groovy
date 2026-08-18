@@ -320,7 +320,6 @@ class FTUpdateService {
         result.url = kbc.url
 
         if (ti?.niceName == 'Journal') {
-          long startCoverage = new Date().getTime()
           result.coverage = []
           ArrayList coverage_src = kbc.coverageStatements?.size() > 0 ? kbc.coverageStatements : [kbc]
           coverage_src.each { tcs ->
@@ -336,7 +335,6 @@ class FTUpdateService {
             cst.coverageDepth = tcs.coverageDepth ? tcs.coverageDepth.value : ""
             result.coverage.add(cst)
           }
-          log.info("Journal's Coverage mapping lasted: ${new Date().getTime() - startCoverage} ms.")
         }
         else if (ti?.niceName == 'Book') {
           // edition for eBooks
