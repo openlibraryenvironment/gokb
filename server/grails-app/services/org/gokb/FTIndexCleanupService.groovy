@@ -47,7 +47,7 @@ class FTIndexCleanupService {
             till = Date.from(updatedTill.atZone(ZoneId.systemDefault()).toInstant())
         }
 
-        log.debug("Start Syncing Tipps that were updated between: ... " + from + " - " + till)
+        log.info("Start Syncing Tipps that were updated between: ... " + from + " - " + till)
 
 
         TitleInstancePackagePlatform.withNewSession {

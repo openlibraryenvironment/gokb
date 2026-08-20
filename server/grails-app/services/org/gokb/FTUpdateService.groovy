@@ -599,9 +599,8 @@ class FTUpdateService {
 
         count++
 
+        if (count % 100 == 0 || count == total) {
 
-        if (count % 50 == 0 || count == total) {
-          // log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
           BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
 
           if (bulkResponse.hasFailures()) {
@@ -624,7 +623,6 @@ class FTUpdateService {
       result.result = "ERROR"
       log.error("Error while indexing ", e)
     }
-
 
     result.indexed = count
 
@@ -773,11 +771,11 @@ class FTUpdateService {
             }
 
             if (domain.simpleName == "TitleInstancePackagePlatform") {
-              log.info("TIPP Statistik - Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal/p_actualBulk)} " +
+              log.debug("TIPP Statistik - Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal/p_actualBulk)} " +
                       "slowest: ${p_highestBulkTime}, Books: ${p_books}, Journals: ${p_journals}" )
             }
             else {
-              log.info("${domain.simpleName} Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal / p_actualBulk)} " +
+              log.debug("${domain.simpleName} Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal / p_actualBulk)} " +
                       "slowest: ${p_highestBulkTime}")
             }
 
