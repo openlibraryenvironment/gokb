@@ -2,6 +2,7 @@ package org.gokb
 
 import com.k_int.ESSearchService
 import grails.core.GrailsApplication
+import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -19,7 +20,7 @@ class FTIndexCleanupService {
     @Autowired
     FTUpdateService ftUpdateService
 
-    Map syncTippsBetweenIndexAndDB (def job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill = null, boolean dryRun) {
+    Map syncTippsBetweenIndexAndDB (def job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill = null, boolean dryRun, boolean isStartedFromQuartz) {
         Map result = [result: "OK"]
         int numberUpdatedTippsInPeriod = 0
         int numberCheckedTipps = 0
@@ -31,26 +32,58 @@ class FTIndexCleanupService {
         Date from = null
         Date till = null
 
-        if (!updatedSince) {
-            //default to 1 week before, start of day
-            LocalDateTime oneWeekBefore = LocalDate.now().minusWeeks(1).atStartOfDay()
-            from = Date.from(oneWeekBefore.atZone(ZoneId.systemDefault()).toInstant())
-        }
-        else {
-            from = Date.from(updatedSince.atZone(ZoneId.systemDefault()).toInstant())
-        }
-
-        if (!updatedTill) {
-            till = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant())
-        }
-        else {
-            till = Date.from(updatedTill.atZone(ZoneId.systemDefault()).toInstant())
-        }
-
-        log.info("Start Syncing Tipps that were updated between: ... " + from + " - " + till)
-
 
         TitleInstancePackagePlatform.withNewSession {
+
+            ScheduledJobControl scheduledJobControl = ScheduledJobControl.findByJobType(RefdataCategory.lookup("Job.Type", "FTIndexCleanupJob"))
+            boolean completed = true
+
+            if (scheduledJobControl) {
+                // try waiting for completion if other indexing-job is running in parallel, max 10 minutes
+                long startWaitingTime = new Date().getTime()
+                while (scheduledJobControl.lastStart && scheduledJobControl.lastEnd == null) {
+                    sleep(20 * 1000)
+                    if (new Date().getTime() - startWaitingTime > 10 * 60 * 1000) {
+                        result.result = "WARNING"
+                        result.message = "FT Index Cleanup Job could not start."
+                        log.warn("FT Index Cleanup Job could not start because of other concurrent job running.")
+                        return result
+                    }
+                }
+
+                scheduledJobControl.lastEnd = null
+
+            } else {
+                scheduledJobControl = new ScheduledJobControl()
+            }
+
+            scheduledJobControl.lastStart = LocalDateTime.now()
+            scheduledJobControl.save(flush: true)
+
+            if (!updatedSince) {
+                //default is last successful starttime of job, fallback minus 1 week start of day
+                if (scheduledJobControl && scheduledJobControl.lastStartComplete) {
+                    from = Date.from(scheduledJobControl.lastStartComplete.atZone(ZoneId.systemDefault()).toInstant())
+                }
+                else {
+                    LocalDateTime oneWeekBefore = LocalDate.now().minusWeeks(1).atStartOfDay()
+                    from = Date.from(oneWeekBefore.atZone(ZoneId.systemDefault()).toInstant())
+                }
+            }
+            else {
+                from = Date.from(updatedSince.atZone(ZoneId.systemDefault()).toInstant())
+            }
+
+            if (!updatedTill) {
+                till = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant())
+            }
+            else {
+                till = Date.from(updatedTill.atZone(ZoneId.systemDefault()).toInstant())
+            }
+
+            log.info("Start Syncing Tipps that were updated between: ... " + from + " - " + till)
+
+
             List<TitleInstancePackagePlatform> tipps = TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where ( (tipp.lastUpdated > :us OR tipp.dateCreated > :us) AND tipp.lastUpdated <= :ut AND tipp.dateCreated <= :ut) order by tipp.lastUpdated, tipp.id", [us: from, ut: till], [readonly: true])
             numberUpdatedTippsInPeriod = tipps.size()
 
@@ -117,12 +150,20 @@ class FTIndexCleanupService {
             log.info("FT Index Cleanup Result: " + result)
 
             if ( (numberNotYetIndexedTipps + numberNotActualTipps) != numberNewIndexedTipps ) {
+                completed = false
                 log.warn("FT Index Cleanup: not all found TIPPs were indexed. Expected number: " + (numberNotYetIndexedTipps + numberNotActualTipps) + ", but was: " + numberNewIndexedTipps )
             }
 
             if ( numberUpdatedTippsInPeriod != (numberCheckedTipps + numberNotYetIndexedTipps) ) {
                 log.warn("FT Index Cleanup: found TIPP with ambiguous OS representation. Expected number: " + numberUpdatedTippsInPeriod + ", but was: " + (numberCheckedTipps + numberNotYetIndexedTipps) )
             }
+
+            scheduledJobControl.lastEnd = LocalDateTime.now()
+            if (completed) {
+                scheduledJobControl.lastStartComplete = scheduledJobControl.lastStart
+                scheduledJobControl.lastEndComplete = LocalDateTime.now()
+            }
+            scheduledJobControl.save(flush: true)
 
         }
         return result

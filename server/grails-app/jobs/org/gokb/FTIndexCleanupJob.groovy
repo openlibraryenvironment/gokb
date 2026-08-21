@@ -18,16 +18,15 @@ class FTIndexCleanupJob {
 
     def execute() {
         //TODO: set Config property
-        /* if ( grailsApplication.config.getProperty('gokb.ftcleanup_enabled', Boolean, false) ) {
+        if ( grailsApplication.config.getProperty('gokb.ftcleanup_enabled', Boolean, false) ) {
             log.debug ("Start Job FT Index Cleanup... ")
-            ftIndexCleanupService.syncTippsBetweenIndexAndDB()
+            ftIndexCleanupService.syncTippsBetweenIndexAndDB(this, null, null, false, true)
             log.debug ("FT Index Cleanup finished.")
         }
         else {
             log.debug("FTUpdate is not enabled - set config.ftupdate_enabled = true in config to enable")
-        } */
+        }
 
-        // ftIndexCleanupService.syncTippsBetweenIndexAndDB()
     }
 
 }

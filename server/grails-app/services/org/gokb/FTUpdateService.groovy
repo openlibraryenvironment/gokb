@@ -648,7 +648,7 @@ class FTUpdateService {
     domain.withNewSession {
       try {
         log.debug("updateES - ${domain.name}")
-        def latest_ft_record = null
+        FTControl latest_ft_record = null
         def highest_timestamp = 0
         def highest_id = 0
         def activity_type = reindex ? 'ESReindex' : 'ESIndex'

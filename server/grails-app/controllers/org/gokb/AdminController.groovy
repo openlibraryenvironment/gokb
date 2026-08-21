@@ -820,7 +820,7 @@ class AdminController {
     boolean dryRun = params.boolean('dryRun') ?: false
 
     Job j = concurrencyManagerService.createJob { Job j ->
-      Map result = ftIndexCleanupService.syncTippsBetweenIndexAndDB(j, dateFrom, dateTill, dryRun)
+      Map result = ftIndexCleanupService.syncTippsBetweenIndexAndDB(j, dateFrom, dateTill, dryRun, false)
     }.startOrQueue()
 
     j.description = "Cleanup TIPP FT Index "
