@@ -464,6 +464,12 @@ class BulkPackageImportService {
 
     if (list_info.url) {
       log.debug("Fetching config from ${list_info.url} ..")
+
+      Map remote_config = fetchRemoteConfig(list_info.url)
+
+      if (remote_config) {
+        allCollections = remote_config.collections
+      }
     }
     else if (list_info.cfg != null) {
       log.debug("Parsing static config ..")
@@ -798,6 +804,15 @@ class BulkPackageImportService {
                             ]
                           ]
                         }
+                      }
+                      else {
+                        pkg_result.errors.other_package_identifiers << [
+                          [
+                            message: "Unknown namespace for additional package identifier!",
+                            messageCode: "import.bulk.error.ids.unknown",
+                            baddata: opid
+                          ]
+                        ]
                       }
                     }
 

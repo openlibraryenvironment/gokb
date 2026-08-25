@@ -303,7 +303,6 @@ where cp.owner = :c
 
   String lastUpdateComment
 
-  // Set tags = []
   List additionalProperties = []
   Set reviewRequests = []
   Set variantNames = []
@@ -356,13 +355,13 @@ where cp.owner = :c
     subjects            : 'component',
     prices              : 'owner',
     comments            : 'owner',
-    linkedIds           : 'component'
+    linkedIds           : 'component',
+    fileAttachments     : 'component'
   ]
 
   static hasMany = [
-    // tags:RefdataValue,
     linkedIds           : ComponentIdentifier,
-    fileAttachments     : DataFile,
+    fileAttachments     : ComponentAttachment,
     additionalProperties: KBComponentAdditionalProperty,
     variantNames        : KBComponentVariantName,
     reviewRequests      : ReviewRequest,
@@ -387,7 +386,6 @@ where cp.owner = :c
     status column: 'kbc_status_rv_fk', index: 'kbc_status_idx'
     language column: 'kbc_language_rv_fk'
     shortcode column: 'kbc_shortcode', index: 'kbc_shortcode_idx'
-    // tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
     dateCreated column: 'kbc_date_created', index: 'kbc_date_created_idx'
     lastUpdated column: 'kbc_last_updated', index: 'kbc_last_updated_idx'
     duplicateOf column: 'kbc_duplicate_of'
@@ -429,20 +427,20 @@ where cp.owner = :c
    * their own way of generating a shortcode.
    * @return
    */
-  protected def generateShortcode() {
+  protected String generateShortcode() {
     if (!shortcode && name) {
       // Generate the short code.
       shortcode = generateShortcode(name)
     }
   }
 
-  protected def generateUuid() {
+  protected String generateUuid() {
     if (!uuid) {
       uuid = UUID.randomUUID().toString()
     }
   }
 
-  static def generateShortcode(String text) {
+  static String generateShortcode(String text) {
     def candidate = text.trim().replaceAll(" ", "_")
 
     if (candidate.length() > 100)
@@ -451,9 +449,9 @@ where cp.owner = :c
     return incUntilUnique(candidate);
   }
 
-  static def incUntilUnique(name) {
-    def result = name;
-    def l = KBComponent.executeQuery('select id from KBComponent where shortcode = :n', [n: name]);
+  static String incUntilUnique(name) {
+    String result = name;
+    List l = KBComponent.executeQuery('select id from KBComponent where shortcode = :n', [n: name]);
     // if ( KBComponent.findWhere([shortcode : (name)]) ) {
     if (l.size() > 0) {
       // There is already a shortcode for that identifier
@@ -485,6 +483,21 @@ where cp.owner = :c
     this.linkedIds.each { cio ->
       if (cio.status == status_active) {
         result << cio.identifier
+      }
+    }
+
+    result
+  }
+
+  public ComponentIdentifier addIdentifier(Identifier ido, boolean update_comment = true) {
+    ComponentIdentifier result
+
+    if (!this.linkedIds*.identifier.contains(ido)) {
+      result = new ComponentIdentifier(component: this, identifier: ido).save(flush: true, failOnError: true)
+
+      if (update_comment) {
+        this.lastUpdateComment = "Added new ID: ${new_id}"
+        save(flush: true)
       }
     }
 
@@ -666,50 +679,58 @@ where cp.owner = :c
     }
   }
 
-  String getIdentifierValue(idtype) {
+  public String getIdentifierValue(idtype) {
     RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
-    List candidates = Identifier.executeQuery("from Identifier as ido where exists (select 1 from ComponentIdentifier where identifier = ido and component = :kbc and status = :cs)", [kbc: this, cs: status_active])
+    List candidates = Identifier.executeQuery('''select ido.value from Identifier as ido
+                                                  where ido.namespace.value = :type
+                                                  and exists (
+                                                    select 1 from ComponentIdentifier
+                                                    where identifier = ido
+                                                    and component = :kbc
+                                                    and status = :cs
+                                                  )''',
+                                                  [kbc: this, cs: status_active, type: idtype.toLowerCase()])
 
-    candidates.find { it.namespace.value.toLowerCase() == idtype.toLowerCase() }?.value
+    return candidates ? candidates[0] : null
   }
 
   public void deleteSoft(context) {
     // Set the status to deleted.
-    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
+    setStatus(RefdataCategory.lookup(RD_STATUS, STATUS_DELETED))
     save(flush: true, failOnError: true)
   }
 
   public void retire(def context = null) {
     log.debug("KBComponent::retire");
     // Set the status to retired.
-    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
+    setStatus(RefdataCategory.lookup(RD_STATUS, STATUS_RETIRED))
     save(flush: true, failOnError: true)
   }
 
   public void setActive(context) {
-    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
+    setStatus(RefdataCategory.lookup(RD_STATUS, STATUS_CURRENT))
     save(flush: true, failOnError: true)
   }
 
   public void setExpected(context) {
-    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_EXPECTED))
+    setStatus(RefdataCategory.lookup(RD_STATUS, STATUS_EXPECTED))
     save(flush: true, failOnError: true)
   }
 
   public boolean isRetired() {
-    return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
+    return (getStatus() == RefdataCategory.lookup(RD_STATUS, STATUS_RETIRED))
   }
 
   public boolean isDeleted() {
-    return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
+    return (getStatus() == RefdataCategory.lookup(RD_STATUS, STATUS_DELETED))
   }
 
   public boolean isCurrent() {
-    return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
+    return (getStatus() == RefdataCategory.lookup(RD_STATUS, STATUS_CURRENT))
   }
 
   public boolean isExpected() {
-    return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_EXPECTED))
+    return (getStatus() == RefdataCategory.lookup(RD_STATUS, STATUS_EXPECTED))
   }
 
   public String getDerivedName() {
@@ -783,7 +804,6 @@ where cp.owner = :c
     // should have been called on el not val.
     def ignore_list = [
       'id',
-      'tags',
       'systemOnly',
       'additionalProperties',
       'variantNames',
@@ -845,7 +865,6 @@ where cp.owner = :c
     def ignore_list = [
       'id',
       'reviewRequests',
-      'tags',
       'systemOnly',
       'additionalProperties',
       'ids',
@@ -1064,6 +1083,7 @@ where cp.owner = :c
 
     TitlePublisher.executeUpdate("delete from TitlePublisher where title = :component", [component: this])
     ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component=:component", [component: this])
+    ComponentAttachment.executeUpdate("delete from ComponentAttachment as c where c.component=:component", [component: this])
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component", [component: this])
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: this])
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: this])
@@ -1135,15 +1155,6 @@ where cp.owner = :c
         }
       }
     }
-
-    // Tags
-//     if ( tags ) {
-//       builder.'tags' {
-//         tags.each { tag ->
-//           builder.'tag' (tag.value)
-//         }
-//       }
-//     }
 
     if (additionalProperties) {
       builder.'additionalProperties' {

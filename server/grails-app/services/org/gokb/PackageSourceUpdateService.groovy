@@ -54,14 +54,14 @@ class PackageSourceUpdateService {
     log.info("Initialising source update service...")
   }
 
-  def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false, boolean restrictSize = true) {
+  public Map updateFromSource(Long pkgId, Long userId = null, Job job = null, Long activeGroupId = null, boolean dryRun = false, boolean restrictSize = true) {
     log.debug("updateFromSource ${pkgId}")
-    def result = [result: 'OK']
-    def activeJobs = concurrencyManagerService?.getComponentJobs(pkgId)
+    Map result = [result: 'OK']
+    Map activeJobs = concurrencyManagerService?.getComponentJobs(pkgId)
 
     if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
-      result = startSourceUpdate(pkgId, user, job, activeGroupId, dryRun, restrictSize)
+      result = startSourceUpdate(pkgId, userId, job, activeGroupId, dryRun, restrictSize)
 
       if (job && !job.endTime) {
         job.endTime = new Date()
@@ -74,20 +74,20 @@ class PackageSourceUpdateService {
     result
   }
 
-  private def startSourceUpdate(pid, user, job, activeGroupId, dryRun, restrictSize) {
+  private Map startSourceUpdate(pid, userId, job, activeGroupId, dryRun, restrictSize) {
     log.debug("Source update start..")
-    def result = [result: 'OK', dryRun: dryRun]
-    Boolean async = (user ? true : false)
-    def preferred_group
+    Map result = [result: 'OK', dryRun: dryRun]
+    Boolean async = (userId ? true : false)
+    Long preferred_group_id
     Long title_ns_id
     Long title_ns_serial_id
     Long title_ns_mono_id
     Long datafile_id
-    def skipInvalid = false
-    Boolean deleteMissing = false
-    def pkgInfo = [:]
-    def startTime = new Date()
-    def ftpUrlParts
+    boolean skipInvalid = false
+    boolean deleteMissing = false
+    Map pkgInfo = [:]
+    Date startTime = new Date()
+    Map ftpUrlParts = [:]
     List<URL> urls
 
     Package.withNewSession {
@@ -96,13 +96,13 @@ class PackageSourceUpdateService {
       Platform pkg_plt = p.nominalPlatform ? Platform.get(p.nominalPlatform.id) : null
       Org pkg_prov = p.provider ? Org.get(p.provider.id) : null
       Source pkg_source = p.source
-      preferred_group = activeGroupId ?: (p.curatoryGroups?.size() > 0 ? p.curatoryGroups[0].id : null)
+      preferred_group_id = activeGroupId ?: (p.curatoryGroups?.size() > 0 ? p.curatoryGroups[0].id : null)
       title_ns_id = pkg_source?.targetNamespace?.id ?: null
       title_ns_serial_id = pkg_source?.titleIdSerial?.id ?: null
       title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: null
 
       if ( restrictSize ) {
-        def ignoreSizeLimit = pkg_source?.getIgnoreSizeLimit()
+        boolean ignoreSizeLimit = pkg_source?.getIgnoreSizeLimit()
         restrictSize = !ignoreSizeLimit
       }
 
@@ -115,24 +115,23 @@ class PackageSourceUpdateService {
         result = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job, async, restrictSize)
 
       } else {
-        def transferMethod = pkg_source?.getTransferMethod()
-        def rdv_FTP = RefdataCategory.lookup('Source.TransferMethod', 'FTP')
+        RefdataValue transferMethod = pkg_source?.getTransferMethod()
+        RefdataValue rdv_FTP = RefdataCategory.lookup('Source.TransferMethod', 'FTP')
         boolean isFtpTransfer = (transferMethod == rdv_FTP)
 
         if (pkg_source?.url || (isFtpTransfer && pkg_source?.ftpPath)) {
           URL src_url = null
-          Boolean dynamic_date = false
           String completeFtpUrl = null
 
-          if(isFtpTransfer){
+          if (isFtpTransfer){
             ftpUrlParts = webEndpointService.extractFtpUrlParts(pkg_source.getWebEndpoint()?.getUrl(), pkg_source.getFtpPath())
             completeFtpUrl = ftpUrlParts.complete
           }
 
-          def valid_url_string = validationService.checkUrl(isFtpTransfer ? completeFtpUrl : pkg_source?.url, true)
+          String valid_url_string = validationService.checkUrl(isFtpTransfer ? completeFtpUrl : pkg_source?.url, true)
 
           skipInvalid = pkg_source.skipInvalid ?: false
-          def file_info = [:]
+          Map file_info = [:]
 
           if (valid_url_string) {
 
@@ -146,7 +145,7 @@ class PackageSourceUpdateService {
             result.messageCode = 'kbart.errors.url.invalid'
             result.message = "Package source URL is invalid!"
 
-            result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+            result.jobInfo = createJobResult(p, job, startTime, dryRun, userId, preferred_group_id, result)
 
             return result
           }
@@ -171,7 +170,7 @@ class PackageSourceUpdateService {
                 processErrorState(result, pkg_source, file_info)
 
                 if (result.result == 'ERROR') {
-                  result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                  result.jobInfo = createJobResult(p, job, startTime, dryRun, userId, preferred_group_id, result)
                   return result
                 }
 
@@ -240,8 +239,8 @@ class PackageSourceUpdateService {
                     datafile_id = datafile.id
                   } else {
                     log.debug("Found existing datafile ${datafile}")
-                    // user != null means execution from ui, the same file can be forced to be imported twice
-                    if (!user && !hasFileChanged(pid, datafile.id)) {
+                    // userId != null means execution from ui, the same file can be forced to be imported twice
+                    if (!userId && !hasFileChanged(pid, datafile.md5)) {
                       log.debug("Datafile was already the last import for this package!")
                       result.result = 'SKIPPED'
                       result.message = 'Skipped repeated import of the same file for this package.'
@@ -249,7 +248,7 @@ class PackageSourceUpdateService {
 
                       tmp_file.delete()
 
-                      result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                      result.jobInfo = createJobResult(p, job, startTime, dryRun, userId, preferred_group_id, result)
 
                       return result
                     }
@@ -264,7 +263,7 @@ class PackageSourceUpdateService {
 
                   tmp_file.delete()
 
-                  result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+                  result.jobInfo = createJobResult(p, job, startTime, dryRun, userId, preferred_group_id, result)
 
                   return result
                 }
@@ -280,7 +279,7 @@ class PackageSourceUpdateService {
               result.messageCode = "Yearly".equals(pkg_source.frequency?.value) ? 'kbart.errors.skipped.noFileForAYear' : 'kbart.transmission.skipped.noFile'
               result.result = 'SKIPPED'
 
-              result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+              result.jobInfo = createJobResult(p, job, startTime, dryRun, userId, preferred_group_id, result)
 
               return result
             }
@@ -291,7 +290,7 @@ class PackageSourceUpdateService {
             result.message = "KBART URL has an unsupported protocol!"
             log.debug("Unsupported protocol for URL ${src_url}")
 
-            result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+            result.jobInfo = createJobResult(p, job, startTime, dryRun, userId, preferred_group_id, result)
 
             return result
           }
@@ -314,8 +313,8 @@ class PackageSourceUpdateService {
                                                     title_ns_id,
                                                     async,
                                                     false,
-                                                    user,
-                                                    preferred_group,
+                                                    userId,
+                                                    preferred_group_id,
                                                     dryRun,
                                                     skipInvalid,
                                                     deleteMissing,
@@ -330,8 +329,8 @@ class PackageSourceUpdateService {
                                             title_ns_id,
                                             async,
                                             false,
-                                            user,
-                                            preferred_group,
+                                            userId,
+                                            preferred_group_id,
                                             dryRun,
                                             skipInvalid,
                                             deleteMissing,
@@ -340,12 +339,12 @@ class PackageSourceUpdateService {
                                             title_ns_mono_id)
         }
 
-        if (preferred_group) {
-          update_job.groupId = preferred_group
+        if (preferred_group_id) {
+          update_job.groupId = preferred_group_id
         }
 
-        if (user) {
-          update_job.ownerId = user
+        if (userId) {
+          update_job.ownerId = userId
         }
 
         update_job.description = "KBART Source ingest (${pkgInfo.name})".toString()
@@ -406,7 +405,7 @@ class PackageSourceUpdateService {
 
     urls.add(new URL(givenUrl))
 
-    if(!isFtpTransfer && (dynamic_date || fixed_date)) {
+    if (!isFtpTransfer && (dynamic_date || fixed_date) && source.frequency) {
 
       // search for the file in most likely order
       Map<String, Integer> maxCallsPerFrequency = [
@@ -662,16 +661,13 @@ class PackageSourceUpdateService {
     result
   }
 
-  public Boolean hasFileChanged(pkgId, datafileId) {
-    RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+  public Boolean hasFileChanged(pkgId, checksum) {
+    List ordered_links = ComponentAttachment.executeQuery('''select c.file.md5 from ComponentAttachment as c
+                                                              where c.component.id = :pkg
+                                                              order by c.dateCreated desc''',
+                                                              [ct: type_fa, pkg: pkgId], [max: 1])
 
-    def ordered_combos = Combo.executeQuery('''select c.toComponent.id from Combo as c
-                                              where c.type = :ct
-                                              and c.fromComponent.id = :pkg
-                                              order by c.dateCreated desc''',
-                                              [ct: type_fa, pkg: pkgId])
-
-    return (ordered_combos.size() == 0 || ordered_combos[0] != datafileId)
+    return (ordered_links.size() == 0 || ordered_links[0] != checksum)
   }
 
   private def createJobResult(pkg, job, startTime, dryRun, ownerId, groupId, result) {

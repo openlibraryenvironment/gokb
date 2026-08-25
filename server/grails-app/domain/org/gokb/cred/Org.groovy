@@ -80,6 +80,7 @@ class Org extends KBComponent {
     preferredShortname column: 'org_preferred_shortname'
     parent column: 'org_parent_fk'
     successor column: 'org_successor_fk'
+    roles joinTable: 'org_role'
   }
 
   static constraints = {

@@ -60,8 +60,8 @@ class FTUpdateService {
     result.shortcode = kbc.shortcode
     result.status = kbc.status?.value ?: ""
     result.identifiers = []
-    kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
-      Identifier id_obj = Identifier.get(idc.toComponent.id)
+    kbc.activeIds.each { idc ->
+      Identifier id_obj = Identifier.get(idc.id)
 
       result.identifiers.add([
         namespace    : id_obj.namespace.value,
@@ -130,14 +130,16 @@ class FTUpdateService {
             frequency       : (kbc.source.frequency?.value ?: ""),
             importConfig    : (kbc.source.importConfig?.value ?: "")
           ]
-          if (kbc.source.lastRun)
+          if (kbc.source.lastRun) {
             result.source.lastRun = dateFormatService.formatIsoTimestamp(kbc.source.lastRun)
+          }
         }
 
         result.curatoryGroups = []
 
         kbc.curatoryGroups?.each { cg ->
-          def cgobj = CuratoryGroup.get(cg.id)
+          CuratoryGroup cgobj = CuratoryGroup.get(cg.id)
+
           result.curatoryGroups.add(cgobj.name)
         }
 
@@ -165,20 +167,23 @@ class FTUpdateService {
         result.curatoryGroups = []
 
         kbc.curatoryGroups?.each { cg ->
-          def cgobj = CuratoryGroup.get(cg.id)
+          CuratoryGroup cgobj = CuratoryGroup.get(cg.id)
+
           result.curatoryGroups.add(cgobj.name)
         }
 
         result.platforms = []
 
         kbc.providedPlatforms?.each { plt ->
-          def pobj = Platform.get(plt.id)
+          Platform pobj = Platform.get(plt.id)
 
           if (pobj.status.value == 'Current') {
-            def platform = [:]
+            Map platform = [:]
+
             platform.uuid = pobj.uuid ?: ""
             platform.url = pobj.primaryUrl ?: ""
             platform.name = pobj.name ?: ""
+
             result.platforms.add(platform)
           }
         }
@@ -195,7 +200,8 @@ class FTUpdateService {
         result.curatoryGroups = []
 
         kbc.curatoryGroups?.each { cg ->
-          def cgobj = CuratoryGroup.get(cg.id)
+          CuratoryGroup cgobj = CuratoryGroup.get(cg.id)
+
           result.curatoryGroups.add(cgobj.name)
         }
 
@@ -208,9 +214,9 @@ class FTUpdateService {
         break
       case JournalInstance:
         result.updater = 'journal'
-        def current_pub = kbc.currentPublisher
+        Org current_pub = kbc.currentPublisher
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
-        result.publisherName = current_pub?.name
+        result.publisherName = current_pub?.name ?: ""
         result.publisherUuid = current_pub?.uuid ?: ""
 
         if (kbc.publishedFrom) result.publishedFrom = dateFormatService.formatDate(kbc.publishedFrom)
@@ -248,7 +254,7 @@ class FTUpdateService {
         break
       case DatabaseInstance:
         result.updater = 'database'
-        def current_pub = kbc.currentPublisher
+        Org current_pub = kbc.currentPublisher
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
@@ -265,7 +271,7 @@ class FTUpdateService {
         break
       case OtherInstance:
         result.updater = 'other'
-        def current_pub = kbc.currentPublisher
+        Org current_pub = kbc.currentPublisher
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
@@ -282,7 +288,7 @@ class FTUpdateService {
         break
       case BookInstance:
         result.updater = 'book'
-        def current_pub = kbc.currentPublisher
+        Org current_pub = kbc.currentPublisher
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
@@ -311,48 +317,60 @@ class FTUpdateService {
         result.curatoryGroups = []
 
         pkg?.curatoryGroups?.each { cg ->
-          def cgobj = CuratoryGroup.get(cg.id)
+          CuratoryGroup cgobj = CuratoryGroup.get(cg.id)
+
           result.curatoryGroups.add(cgobj.name)
         }
+
         result.titleType = ti?.niceName ?: 'Unknown'
         result.url = kbc.url
 
         if (ti?.niceName == 'Journal') {
           result.coverage = []
-          ArrayList coverage_src = kbc.coverageStatements?.size() > 0 ? kbc.coverageStatements : [kbc]
+
+          ArrayList coverage_src = kbc.coverageStatements?.size() > 0 ? kbc.coverageStatements : [[:]]
+
           coverage_src.each { tcs ->
-            def cst = [:]
-            if (tcs.startDate) cst.startDate = dateFormatService.formatDate(tcs.startDate)
+            Map cst = [:]
+
+            cst.startDate = tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null
             cst.startVolume = tcs.startVolume ?: ""
             cst.startIssue = tcs.startIssue ?: ""
-            if (tcs.endDate) cst.endDate = dateFormatService.formatDate(tcs.endDate)
+            cst.endDate = tcs.startDate ? dateFormatService.formatDate(tcs.endDate) : null
             cst.endVolume = tcs.endVolume ?: ""
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
             cst.coverageNote = tcs.coverageNote ?: ""
             cst.coverageDepth = tcs.coverageDepth ? tcs.coverageDepth.value : ""
+
             result.coverage.add(cst)
           }
         }
         else if (ti?.niceName == 'Book') {
           // edition for eBooks
-          def edition = [:]
+          Map edition = [:]
+
           if (ti?.editionDifferentiator) {
             edition.differentiator = ti.editionDifferentiator
           }
-          if (ti?.editionStatement) {
+
+          if (ti.editionStatement) {
             edition.statement = ti.editionStatement
           }
+
           if (!edition.isEmpty()) {
             result.titleEdition = edition
           }
+
           // simple eBook fields
           result.titleVolumeNumber = ti?.volumeNumber ?: ""
-          if (ti?.dateFirstInPrint) result.titleDateFirstInPrint = dateFormatService.formatDate(ti.dateFirstInPrint)
-          if (ti?.dateFirstOnline) result.titleDateFirstOnline = dateFormatService.formatDate(ti.dateFirstOnline)
-          result.titleFirstEditor = ti?.firstEditor ?: ""
-          result.titleFirstAuthor = ti?.firstAuthor ?: ""
-          result.titleImprint = ti?.imprint?.name ?: ""
+
+          result.titleDateFirstInPrint = ti.dateFirstInPrint ? dateFormatService.formatDate(ti.dateFirstInPrint) : null
+
+          result.titleDateFirstOnline = ti.dateFirstOnline ? dateFormatService.formatDate(ti.dateFirstOnline) : null
+
+          result.titleFirstEditor = ti.firstEditor ?: ""
+          result.titleFirstAuthor = ti.firstAuthor ?: ""
         }
 
         if (kbc.pkg) {
@@ -383,8 +401,8 @@ class FTUpdateService {
           result.titleIdentifiers = []
           result.titleSubjects = []
 
-          ti.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
-            Identifier id_obj = Identifier.get(idc.toComponent.id)
+          ti.activeIds.each { idc ->
+            Identifier id_obj = Identifier.get(idc.id)
 
             result.titleIdentifiers.add([
               namespace    : id_obj.namespace.value,
@@ -417,12 +435,15 @@ class FTUpdateService {
           }
 
           ti.publisher?.each { pub ->
-            def publisher = [:]
+            Map publisher = [:]
+
             publisher.name = pub.name ?: ""
             publisher.id = pub.id ?: ""
             publisher.uuid = pub.uuid ?: ""
+
             result.titlePublishers.add(publisher)
           }
+
           ti.variantNames.each { vn ->
             result.altname.add(vn.variantName)
           }
@@ -433,9 +454,10 @@ class FTUpdateService {
 
         if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatDate(kbc.dateFirstOnline)
         if (kbc.dateFirstInPrint) result.dateFirstInPrint = dateFormatService.formatDate(kbc.dateFirstInPrint)
-        if (kbc.accessStartDate) result.accessStartDate = dateFormatService.formatDate(kbc.accessStartDate)
-        if (kbc.accessEndDate) result.accessEndDate = dateFormatService.formatDate(kbc.accessEndDate)
-        if (kbc.lastChangedExternal) result.lastChangedExternal = dateFormatService.formatDate(kbc.lastChangedExternal)
+
+        result.accessStartDate = kbc.accessStartDate ? dateFormatService.formatDate(kbc.accessStartDate) : null
+        result.accessEndDate = kbc.accessEndDate ? dateFormatService.formatDate(kbc.accessEndDate) : null
+        result.lastChangedExternal = kbc.lastChangedExternal ? dateFormatService.formatDate(kbc.lastChangedExternal) : null
 
         if (kbc.publisherName) result.publisherName = kbc.publisherName
         if (kbc.subjectArea) result.subjectArea = kbc.subjectArea
@@ -468,28 +490,6 @@ class FTUpdateService {
         break
     }
     result
-  }
-
-  def doBackgroundReindex(j) {
-    log.debug("doFTUpdate")
-    log.debug("Execute IndexUpdateJob starting at ${new Date()}")
-    def esclient = ESWrapperService.getClient()
-
-    try {
-      updateES(esclient, Package.class, j, true)
-      updateES(esclient, Org.class, j, true)
-      updateES(esclient, Platform.class, j, true)
-      updateES(esclient, JournalInstance.class, j, true)
-      updateES(esclient, DatabaseInstance.class, j, true)
-      updateES(esclient, OtherInstance.class, j, true)
-      updateES(esclient, BookInstance.class, j, true)
-      updateES(esclient, TitleInstancePackagePlatform.class, j, true)
-    }
-    catch (Exception e) {
-      log.error("Problem", e)
-    }
-
-    return new Date()
   }
 
   def updateSingleItem(kbc) {
@@ -642,6 +642,8 @@ class FTUpdateService {
             }
 
             log.debug("... BulkResponse: ${bulkResponse}")
+
+            bulkRequest = new BulkRequest()
 
             if (latest_ft_record) {
               latest_ft_record.lastTimestamp = highest_timestamp

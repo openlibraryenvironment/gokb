@@ -22,47 +22,40 @@ class TippUpsertService {
    */
 
 
-  public TitleInstancePackagePlatform tiplAwareCreate(tipp_fields = [:]) {
-    def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
-    def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
-    def tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
-    def tipp_pubtype = tipp_fields.publicationType ? RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', tipp_fields.publicationType) : null
-    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid,
-                                                  status: tipp_status,
-                                                  editStatus: tipp_editstatus,
-                                                  publicationType: tipp_pubtype,
-                                                  name: tipp_fields.name,
-                                                  language: tipp_language,
-                                                  url: tipp_fields.url).save(failOnError: true, flush:true)
+  public TitleInstancePackagePlatform tiplAwareCreate(Map tipp_fields) {
+    TitleInstancePackagePlatform result
+    RefdataValue tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
+    RefdataValue tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
+    RefdataValue tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
+    RefdataValue tipp_pubtype = tipp_fields.publicationType ? RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', tipp_fields.publicationType) : null
 
-    if (result) {
-      RefdataValue pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
-      new Combo(toComponent: result, fromComponent: tipp_fields.pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
-
-      RefdataValue plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
-      new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
+    if (tipp_fields.pkg && tipp_fields.hostPlatform) {
+      result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid,
+                                                    pkg: tipp_fields.pkg,
+                                                    hostPlatform: tipp_fields.hostPlatform,
+                                                    title: tipp_fields.title
+                                                    status: tipp_status,
+                                                    editStatus: tipp_editstatus,
+                                                    publicationType: tipp_pubtype,
+                                                    name: tipp_fields.name,
+                                                    language: tipp_language,
+                                                    url: tipp_fields.url).save(failOnError: true, flush:true)
 
       if (tipp_fields.title) {
-        RefdataValue ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-        new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
-
         tippService.ensureTipl(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
       }
-    }
-    else {
-      log.error("TIPP creation failed!")
     }
 
     result
   }
 
   @Transactional
-  public TitleInstancePackagePlatform upsertDTO(tipp_dto, def user = null) {
-    def result = null
+  public TitleInstancePackagePlatform upsertDTO(tipp_dto, User user = null) {
     log.debug("upsertDTO(${tipp_dto})")
-    def pkg = null
-    def plt = null
-    def ti = null
+    TitleInstancePackagePlatform result = null
+    Package pkg = null
+    Platform plt = null
+    TitleInstance ti = null
 
     if (tipp_dto.pkg || tipp_dto.package) {
       def pkg_info = tipp_dto.package ?: tipp_dto.pkg
@@ -112,16 +105,17 @@ class TippUpsertService {
       log.debug("Title lookup: ${ti}")
     }
 
-    def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-    def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
-    def curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups*.id.intersect(pkg?.curatoryGroups*.id)) : true
-    def tipp
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    String trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
+    boolean curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups*.id.intersect(pkg?.curatoryGroups*.id)) : true
+    TitleInstancePackagePlatform tipp
+
     if (pkg && plt && curator) {
       log.debug("See if we already have a tipp")
 
-      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
+      TitleInstancePackagePlatform uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
       tipp = null
 
       log.debug("UUID result: ${uuid_tipp} for ${tipp_dto.uuid}")
@@ -135,15 +129,15 @@ class TippUpsertService {
         }
       }
 
-      def tipps = []
+      List tipps = []
 
       if (tipps.size() == 0 && ti) {
-        tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
-          'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent = :pkg ' +
-          'and platform_combo.toComponent=tipp and platform_combo.fromComponent = :plt ' +
-          'and title_combo.toComponent=tipp and title_combo.fromComponent = :ti ' +
-          'and tipp.status != :sd',
-          [pkg: pkg, plt: plt, ti: ti, sd: status_deleted])
+        tipps = TitleInstancePackagePlatform.executeQuery('''select tipp from TitleInstancePackagePlatform as tipp
+                                                              where tipp.pkg = :pkg
+                                                              and tipp.hostPlatform = :plt
+                                                              and tipp.title = :ti
+                                                              and tipp.status != :sd''',
+                                                              [pkg: pkg, plt: plt, ti: ti, sd: status_deleted])
       }
 
       if (!tipp) {
@@ -199,17 +193,17 @@ class TippUpsertService {
 
       if (!tipp) {
         log.debug("Creating new TIPP..")
-        def tmap = [
-            'pkg'         : pkg,
-            'title'       : ti,
-            'hostPlatform': plt,
-            'url'         : trimmed_url,
-            'uuid'        : (tipp_dto.uuid ?: null),
-            'status'      : (tipp_dto.status ?: null),
-            'name'        : (tipp_dto.name ?: null),
-            'editStatus'  : (tipp_dto.editStatus ?: null),
-            'language'    : (tipp_dto.language ?: null),
-            'importId'    : (tipp_dto.titleId ? (tipp_dto.importId ?: null) : null)
+        Map tmap = [
+          pkg: pkg,
+          title: ti,
+          hostPlatform: plt,
+          url: trimmed_url,
+          uuid: (tipp_dto.uuid ?: null),
+          status: (tipp_dto.status ?: null),
+          name: (tipp_dto.name ?: null),
+          editStatus: (tipp_dto.editStatus ?: null),
+          language: (tipp_dto.language ?: null),
+          importId: (tipp_dto.titleId ? (tipp_dto.importId ?: null) : null)
         ]
 
         tipp = tiplAwareCreate(tmap)
@@ -225,7 +219,7 @@ class TippUpsertService {
     }
 
     if (tipp) {
-      def changed = false
+      boolean changed = false
 
       if (tipp.isRetired() && tipp_dto.status == "Current") {
         if (tipp.accessEndDate) {
@@ -249,12 +243,12 @@ class TippUpsertService {
             payment_statement = tipp_dto.paymentType
           }
 
-          def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
+          RefdataValue payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
 
           if (payment_ref) tipp.paymentType = payment_ref
         }
         else if (tipp_dto.paymentType instanceof Integer) {
-          def int_rdv = RefdataValue.get(tipp_dto.paymentType)
+          RefdataValue int_rdv = RefdataValue.get(tipp_dto.paymentType)
 
           if (int_rdv?.owner.label == 'TitleInstancePackagePlatform.PaymentType') {
             tipp.paymentType = int_rdv
@@ -291,16 +285,16 @@ class TippUpsertService {
         tipp.importId = tipp_dto.importId ?: tipp_dto.titleId
       }
 
-      def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
+      List stale_coverage_ids = tipp.coverageStatements.collect { it.id }
 
       tipp_dto.coverage.each { c ->
-        def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-        def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-        def cs_match = false
-        def conflict = false
-        def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-        def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-        def conflicting_statements = []
+        LocalDateTime parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+        LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+        boolean cs_match = false
+        boolean conflict = false
+        Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+        Date endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+        List conflicting_statements = []
 
         tipp.coverageStatements?.each { tcs ->
           if (c.id && tcs.id == c.id) {
@@ -364,13 +358,13 @@ class TippUpsertService {
           }
         }
 
-        for (def cst : conflicting_statements) {
+        for (Long cst : conflicting_statements) {
           tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(cst))
         }
 
         if (!cs_match) {
 
-          def cov_depth = null
+          RefdataValue cov_depth = null
 
           if (c.coverageDepth instanceof String) {
             cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
@@ -387,7 +381,7 @@ class TippUpsertService {
             }
           }
 
-          def cst_obj = [
+          Map cst_obj = [
             'startVolume': c.startVolume,
             'startIssue': c.startIssue,
             'endVolume': c.endVolume,

@@ -127,19 +127,6 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
-  def masterListUpdate() {
-    log.debug("Force master list update")
-    Job j = concurrencyManagerService.createJob {
-      packageService.updateAllMasters(true)
-    }.startOrQueue()
-
-    j.description = "Master List Update"
-    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'MasterListUpdate')
-    j.startTime = new Date()
-
-    render(view: "logViewer", model: logViewer())
-  }
-
   def clearBlockCache() {
     // clear the cache used by the blocks tag…
     log.debug("Clearing block cache .. ")

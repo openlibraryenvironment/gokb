@@ -21,329 +21,6 @@ class PackageService {
   def platformService
   def validationService
 
-  /**
-   * @return The scope value to be used by "Master Packages"
-   */
-  private RefdataValue getMasterScope() {
-    // The Scope.
-    RefdataCategory.lookup("Package.Scope", "GOKb Master")
-  }
-
-  /**
-   * Lookup or create a package based on the supplied package name.
-   * Incremental will edit an existing package. If it's false the package and it's
-   * TIPPs will have their status set to retired as well and a new package returned.
-   */
-
-  @Transactional
-  def findCorrectPackage(Map<String, Boolean> retired_packages, String package_name, boolean incremental) {
-
-    log.debug("Trying to find a package for ${!incremental ? 'none-incremental' : 'incremental'} update using ${package_name}.")
-
-    // Package.
-    Package pkg = componentLookupService.lookupComponent(package_name)
-
-    // If we don't have a package then we need to create one and the incremental flag
-    // becomes irrelevant.
-    if (!pkg) {
-
-      log.error("No package found for package string supplied via refine. This should not happen as all packages should be looked up.")
-
-    }
-    else {
-
-      // If this is a new package then we should retire the current one.
-      if (!incremental) {
-
-        if (!retired_packages.get(package_name)) {
-
-          // Retire each TIPP
-          pkg.getTipps().each { def tipp ->
-
-            // Retire
-            tipp.retire()
-            log.debug("TIPP ${tipp.id} retired.")
-          }
-
-          // Then retire the package.
-          pkg.retire()
-
-          // Create a new package with the IDs
-          Set<Identifier> pkIds = pkg.ids.findAll { Identifier the_id ->
-            the_id?.getNamespace()?.getValue()?.equalsIgnoreCase('gokb-pkgid')
-          }
-
-          // Save the old one.
-          if (pkg.save(failOnError: true)) {
-            log.debug("Retired and saved package ${pkg.id}.")
-          }
-
-          // Get the original name of the package so we can preserve it when recreating.
-          String original_name = pkg.name
-
-          // New package.
-          pkg = new Package(
-              name: original_name
-          )
-
-          // Add all the ids.
-          pkg.ids.addAll(pkIds)
-
-          // Add to the map.
-          retired_packages.put(package_name, true)
-        }
-      }
-    }
-
-    // Save the Package.
-    pkg.save(failOnError: true)
-
-    pkg
-  }
-
-  /**
-   * Method to update all Master list type packages.
-   */
-  def synchronized updateAllMasters(delta = true) {
-
-    // Create the criteria.
-    getAllProviders().each { Org pr ->
-      Org.withNewSession({ long prov_id, Session sess ->
-        updateMasterFor(pr.id, delta)
-      }.curry(pr.id))
-    }
-    return new Date();
-  }
-
-  private def cleanUpGorm() {
-    def session = sessionFactory.currentSession
-    session.flush()
-    session.clear()
-  }
-
-  /**
-   * Method to create or update a Package containing a list of all titles
-   * provided by the supplied Org.
-   */
-  @Transactional
-  def updateMasterFor(long provider_id, delta = true) {
-
-    // Read in a provider.
-    Org provider = Org.get(provider_id)
-
-    if (provider) {
-      log.debug("Update or create master list for ${provider.name}")
-
-      // Get the current master Package for this provider.
-      ComboCriteria c = ComboCriteria.createFor(Package.createCriteria())
-      Package master = c.get {
-        and {
-          c.add(
-              "scope",
-              "eq",
-              getMasterScope())
-          c.add(
-              "provider",
-              "eq",
-              provider)
-        }
-      }
-
-      // Update or create?
-      if (master) {
-
-        // Update...
-        log.debug("Found package ${master.id} for ${provider.name}")
-
-        delta = delta ? master.lastUpdated : false
-      }
-      else {
-
-        // Set delta to false...
-        delta = false
-
-        master = new Package()
-
-        // Need to pass the system_save parameter to flag as systemComponent.
-        master.save(failOnError: true)
-
-        // Create new...
-        log.debug("Created Master Package ${master.id} for ${provider.name}.")
-      }
-
-      master.setName("${provider.name}: Master List")
-      master.setScope(getMasterScope())
-      master.setProvider(provider)
-      master.setSystemComponent(true)
-
-      // Save.
-      master.save(failOnError: true)
-      provider.save(failOnError: true, flush: true)
-
-      log.debug("Saved Master package ${master.id}")
-
-      // Now query for all packages for the modified since the delta.
-      c = ComboCriteria.createFor(Package.createCriteria())
-      Set<Package> pkgs = c.list {
-        c.and {
-          c.add(
-              "id",
-              "ne",
-              master.id)
-
-          c.add(
-              "provider.id",
-              "eq",
-              provider_id)
-
-          if (delta) {
-            c.add(
-                "lastUpdated",
-                "gt",
-                delta)
-          }
-        }
-      } as Set
-
-      log.debug("${pkgs.size() ?: 'No'} packages have been updated since the last time this master was updated.")
-
-
-      for (Package pkg in pkgs) {
-
-        // We should now have a definitive list of tipps that have been changed since the last update.
-
-        // Go through the tipps in chunks.
-        //def tipps = pkg.tipps.collect { it.id }
-
-        def tipps = TitleInstancePackagePlatform.executeQuery('select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp', [pkg]);
-
-        log.debug("Query returns ${tipps.size()} tipps");
-
-        TitleInstancePackagePlatform.withNewSession {
-
-          int counter = 1
-
-          for (def t in tipps) {
-
-            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
-
-            // Do we need to update this tipp.
-            if (!delta || (delta && tipp.lastUpdated > delta)) {
-              TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor(tipp.id, master.id)
-            }
-            else {
-              log.debug("TIPP ${tipp.id} has not been updated since last run. Skipping.")
-            }
-            log.debug("TIPP ${counter} of ${tipps.size()} examined.")
-            counter++
-            tipp.discard();
-          }
-        }
-      }
-      log.debug("Finished updating master package ${master.id}")
-    }
-  }
-
-  /**
-   * @param tipp the tipp to base the master tipp on.
-   * @param master the master package
-   * @return the master tipp
-   */
-
-  @Transactional
-  public TitleInstancePackagePlatform setOrUpdateMasterTippFor(long tipp_id, long master_id) {
-
-    Package master = Package.get(master_id)
-    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-
-    // Check the tipp isn't already a master.
-    Package pkg = tipp.pkg
-    if (pkg.status == getMasterScope()) {
-      // Throw an exception.
-      log.debug("getMasterTipp called for TIPP {tipp.id} that is already a master. Returning supplied tipp.")
-      return tipp
-    }
-
-    // Master TIPP
-    TitleInstancePackagePlatform master_tipp = tipp.masterTipp
-
-    if (!master_tipp) {
-
-      log.debug("No master TIPP associated with this TIPP directly. We should query for one.")
-
-      // Now let's try and read an existing tipp from the master package.
-      def mtp = master.getTipps().find {
-        (it.title == tipp.getTitle()) &&
-            (it.hostPlatform == tipp.getHostPlatform())
-      }
-      master_tipp = (mtp ? KBComponent.deproxy(mtp) : null)
-    }
-
-    if (!master_tipp) {
-      // Create a new master tipp.
-      master_tipp = tipp.clone().save(failOnError: true)
-      log.debug("Added master tipp ${master_tipp.id} to tipp ${tipp.id}")
-    }
-    else {
-
-      log.debug("Found master tipp ${master_tipp.id} to tipp ${tipp.id}")
-      master_tipp = tipp.sync(master_tipp)
-    }
-
-    // Ensure certain values are correct.
-    master_tipp.with {
-      setName(null)
-      setPkg(master)
-      setSystemComponent(true)
-    }
-
-
-    // Save the master tipp.
-    master_tipp.save(failOnError: true)
-    master.save(failOnError: true)
-    tipp.save(failOnError: true, flush: true)
-
-    // Set as master for faster lookup.
-    tipp.setMasterTipp(master_tipp)
-    tipp.save(failOnError: true, flush: true)
-
-    // Return the TIPP.
-    master_tipp
-  }
-
-  /**
-   * Get the Set of Orgs currently acting as a provider.
-   */
-  public Set<Org> getAllProviders() {
-
-    log.debug("Looking for all providers.")
-
-    // The results set.
-    LinkedHashSet results = []
-
-    // Create the criteria.
-    ComboCriteria c = ComboCriteria.createFor(Package.createCriteria())
-
-    // Query for a list of packages and return the providers.
-    def providers = c.list {
-      and {
-        c.add(
-            "status",
-            "eq",
-            RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
-      }
-    }.each {
-
-      // Add any provider that is set.
-      if (it?.provider) {
-        results << (it.provider)
-      }
-    }
-
-    log.debug("Found ${results.size()} providers.")
-    results
-  }
-
   public Map generatePackageTypes(Job j = null, def pkg_id = null) {
     log.debug("Generating missing package content types.")
     List result = [book: 0, db: 0, journal: 0, mixed: 0, errors: 0]
@@ -416,7 +93,8 @@ class PackageService {
 
     RefdataValue status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
     RefdataValue status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-    List tipp_status = [RefdataCategory.lookup('KBComponent.Status', 'Current')]
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    List tipp_status = [status_current]
     Date checkDate = date ?: new Date()
     Map tipp_params = [:]
     Map totals = [
@@ -464,23 +142,19 @@ class PackageService {
 
       if (pkg && !cancelled) {
         int total = TitleInstancePackagePlatform.executeQuery('''select count(*) from TitleInstancePackagePlatform as tipp
-                                                                where tipp.status in (:tippStatus)
-                                                                and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)''',
-                                                                [tippStatus: tipp_status, pkg: pkg])[0]
+                                                                  where tipp.status in (:tippStatus)
+                                                                  and tipp.pkg = :pkg''',
+                                                                  [tippStatus: tipp_status, pkg: pkg])[0]
         int currentOffset = 0
 
         while (currentOffset < total) {
           List tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
                                                                   where tipp.status in (:tippStatus)
-                                                                  and exists (
-                                                                    select c from Combo as c
-                                                                    where c.fromComponent = :pkg
-                                                                    and c.toComponent = tipp
-                                                                  )
+                                                                  and tipp.pkg = :pkg
                                                                   and (!tipp.accessEndDate or tipp.accessEndDate > :date)
                                                                   and (!tipp.accessStartDate or tipp.accessStartDate < :date)
                                                                   and (tipp.status != :sr or tipp.accessEndDate > :date)
-                                                                  order by id''',
+                                                                  order by tipp.id''',
                                                                 [tippStatus: tipp_status, pkg: pkg, date: checkDate, sr: status_retired],
                                                                 [max: batchSize, offset: currentOffset, readOnly: true])
 
@@ -525,21 +199,20 @@ class PackageService {
       currentPkgNum++
 
       if (pkg && !cancelled) {
-        int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
+        int total = TitleInstancePackagePlatform.executeQuery('''select count(*) from TitleInstancePackagePlatform as tipp
+                                                                  where tipp.status in (:tippStatus)
+                                                                  and tipp.pkg = :pkg''',
+                                                                  [tippStatus: tipp_status, pkg: pkg])[0]
         int currentOffset = 0
 
         while (currentOffset < total) {
           List tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
                                                                     where tipp.status in (:tippStatus)
-                                                                    and exists (
-                                                                      select c from Combo as c
-                                                                      where c.fromComponent = :pkg
-                                                                      and c.toComponent = tipp
-                                                                    )
+                                                                    and tipp.pkg = :pkg
                                                                     and (!tipp.accessEndDate or tipp.accessEndDate > :date)
                                                                     and (!tipp.accessStartDate or tipp.accessStartDate < :date)
                                                                     and (tipp.status != :sr or tipp.accessEndDate > :date)
-                                                                    order by id''',
+                                                                    order by tipp.id''',
                                                                     [tippStatus: tipp_status, pkg: pkg, date: checkDate, sr: status_retired],
                                                                     [max: 50, offset: currentOffset, readOnly: true])
 
@@ -622,11 +295,6 @@ class PackageService {
 
     log.debug("Added ${totals.two.titles} titles with ${totals.two.tipps} TIPPs!")
     result
-  }
-
-  @javax.annotation.PreDestroy
-  def destroy() {
-    log.debug("Destroy")
   }
 
   public Map restLookup(packageHeaderDTO, User user = null) {
@@ -739,25 +407,25 @@ class PackageService {
   @Transactional
   public Package upsertDTO(packageHeaderDTO, def user = null) {
     log.info("Upsert package with header ${packageHeaderDTO}");
-    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
+    RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    String pkg_normname = Package.generateNormname(packageHeaderDTO.name)
+    Package result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null
 
     log.debug("Checking by normname ${pkg_normname} ..")
-    def name_candidates = Package.executeQuery("from Package as p where p.normname = :nvn and p.status <> :sd", [nvn: pkg_normname, sd: status_deleted])
-    def full_matches = []
-    def created = false
-    def result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
-    boolean changed = false;
+    List name_candidates = Package.executeQuery("from Package as p where p.normname = :nvn and p.status <> :sd", [nvn: pkg_normname, sd: status_deleted])
+    List full_matches = []
+    boolean created = false
+    boolean changed = false
 
     if (!result && name_candidates.size() > 0 && packageHeaderDTO.identifiers?.size() > 0) {
       log.debug("Got ${name_candidates.size()} matches by name. Checking against identifiers!")
       name_candidates.each { mp ->
         if (mp.ids.size() > 0) {
-          def id_match = false;
+          boolean id_match = false
 
           packageHeaderDTO.identifiers.each { rid ->
 
-            Identifier the_id = componentLookupService.lookupOrCreateCanonicalIdentifier(rid.type, rid.value);
+            Identifier the_id = componentLookupService.lookupOrCreateCanonicalIdentifier(rid.type, rid.value)
 
             if (mp.ids.contains(the_id)) {
               id_match = true
@@ -788,7 +456,7 @@ class PackageService {
       result = name_candidates[0]
     }
     else if (result && result.name != packageHeaderDTO.name) {
-      def current_name = result.name
+      String current_name = result.name
 
       changed |= ClassUtils.setStringIfDifferent(result, 'name', packageHeaderDTO.name)
 
@@ -799,8 +467,8 @@ class PackageService {
 
     if (!result) {
       log.debug("Did not find a match via name, trying existing variantNames..")
-      def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
-      def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
+      String variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
+      List variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
       if (variant_candidates.size() == 1) {
         result = variant_candidates[0]
@@ -820,8 +488,8 @@ class PackageService {
           }
           else {
 
-            def variant_normname = GOKbTextUtils.normaliseString(it)
-            def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
+            String variant_normname = GOKbTextUtils.normaliseString(it)
+            List variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
             if (variant_candidates.size() == 1) {
               log.debug("Found existing package variant name for variantName ${it}")
@@ -846,7 +514,7 @@ class PackageService {
       result.save(flush: true, failOnError: true)
     }
     else if (user && !user.hasRole('ROLE_SUPERUSER') && result.curatoryGroups && result.curatoryGroups?.size() > 0) {
-      def cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)
+      List cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id) ?: []
 
       if (!cur) {
         log.debug("No curator!")
@@ -922,7 +590,7 @@ class PackageService {
           }
         }
         else {
-          log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
+          log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}")
         }
       }
       else {
@@ -934,7 +602,7 @@ class PackageService {
 
     if (packageHeaderDTO.nominalProvider) {
 
-      def providerDTO = [:]
+      Map providerDTO = [:]
 
       if (packageHeaderDTO.nominalProvider instanceof String && packageHeaderDTO.nominalProvider.trim()) {
         providerDTO['name'] = packageHeaderDTO.nominalProvider
@@ -944,38 +612,38 @@ class PackageService {
       }
 
       log.debug("Trying to set package provider.. ${providerDTO}")
-      def prov = null
+      Org prov
 
       if (providerDTO?.uuid) {
         prov = Org.findByUuid(providerDTO.uuid)
       }
 
       if (providerDTO && !prov) {
-        def norm_prov_name = KBComponent.generateNormname(providerDTO.name)
+        String norm_prov_name = KBComponent.generateNormname(providerDTO.name)
 
         prov = Org.findByNormname(norm_prov_name)
 
         if (!prov) {
           log.debug("None found by Normname ${norm_prov_name}, trying variants")
-          def variant_normname = GOKbTextUtils.normaliseString(providerDTO.name)
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = :nvn and o.status = :sd", [nvn: variant_normname, sd: status_deleted])
+          String variant_normname = GOKbTextUtils.normaliseString(providerDTO.name)
+          List candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = :nvn and o.status = :sd", [nvn: variant_normname, sd: status_deleted])
 
           if (candidate_orgs.size() == 1) {
             prov = candidate_orgs[0]
           }
           else if (candidate_orgs.size() == 0) {
             log.debug("No org match for provider ${packageHeaderDTO.nominalProvider}. Creating new org..")
-            prov = new Org(name: providerDTO.name, normname: norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush: true, failOnError: true);
+            prov = new Org(name: providerDTO.name, normname: norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush: true, failOnError: true)
           }
           else {
-            log.warn("Multiple org matches for provider ${packageHeaderDTO.nominalProvider}. Skipping..");
+            log.warn("Multiple org matches for provider ${packageHeaderDTO.nominalProvider}. Skipping..")
           }
         }
       }
 
       if (prov) {
         if (result.provider != prov) {
-          result.provider = prov;
+          result.provider = prov
 
           log.debug("Provider ${prov.name} set.")
           changed = true
@@ -1000,7 +668,7 @@ class PackageService {
         providerDTO = packageHeaderDTO.contentProvider
       }
 
-      log.debug("Trying to set package provider.. ${providerDTO}")
+      log.debug("Trying to set package content provider.. ${providerDTO}")
       Org prov
 
       if (providerDTO?.uuid) {
@@ -1022,10 +690,10 @@ class PackageService {
           }
           else if (candidate_orgs.size() == 0) {
             log.debug("No org match for provider ${packageHeaderDTO.contentProvider}. Creating new org..")
-            prov = new Org(name: providerDTO.name, normname: norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush: true, failOnError: true);
+            prov = new Org(name: providerDTO.name, normname: norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush: true, failOnError: true)
           }
           else {
-            log.warn("Multiple org matches for provider ${packageHeaderDTO.contentProvider}. Skipping..");
+            log.warn("Multiple org matches for content provider ${packageHeaderDTO.contentProvider}. Skipping..")
           }
         }
       }
@@ -1059,8 +727,8 @@ class PackageService {
     // CuratoryGroups
 
     packageHeaderDTO.curatoryGroups?.each {
-      def cg = null
-      def cgname = null
+      CuratoryGroup cg
+      String cgname
 
       if (it instanceof Integer) {
         cg = CuratoryGroup.get(it)
@@ -1083,15 +751,14 @@ class PackageService {
         if (result.curatoryGroups.find { it.name == cg.name }) {
         }
         else {
-
-          result.curatoryGroups.add(cg)
-          changed = true;
+          result.addToCuratoryGroups(cg)
+          changed = true
         }
       }
       else if (cgname) {
         try {
-          def new_cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
-          result.curatoryGroups.add(new_cg)
+          cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
+          result.addToCuratoryGroups(cg)
           changed = true
         }
         catch (grails.validation.ValidationException ve) {
@@ -1101,7 +768,7 @@ class PackageService {
     }
 
     if (packageHeaderDTO.source) {
-      def src = null
+      Source src = null
 
       if (packageHeaderDTO.source instanceof Integer) {
         src = Source.get(packageHeaderDTO.source)
@@ -1114,15 +781,15 @@ class PackageService {
         }
         else {
           if (!result.source || result.source.name != result.name) {
-            def source_config = [
-                name           : result.name,
-                url            : sourceMap.url,
-                frequency      : sourceMap.frequency,
-                ezbMatch       : (sourceMap.ezbMatch ?: false),
-                automaticUpdate: (sourceMap.automaticUpdate ?: false),
-                targetNamespace: sourceMap.targetNamespace instanceof Integer ? IdentifierNamespace.get(sourceMap.targetNamespace) : null,
-                titleIdSerial: sourceMap.titleIdSerial instanceof Integer ? IdentifierNamespace.get(sourceMap.titleIdSerial) : null,
-                titleIdMonograph: sourceMap.titleIdMonograph instanceof Integer ? IdentifierNamespace.get(sourceMap.titleIdMonograph) : null
+            Map source_config = [
+              name: result.name,
+              url: sourceMap.url,
+              frequency: sourceMap.frequency,
+              ezbMatch: (sourceMap.ezbMatch ?: false),
+              automaticUpdate: (sourceMap.automaticUpdate ?: false),
+              targetNamespace: sourceMap.targetNamespace instanceof Integer ? IdentifierNamespace.get(sourceMap.targetNamespace) : null,
+              titleIdSerial: sourceMap.titleIdSerial instanceof Integer ? IdentifierNamespace.get(sourceMap.titleIdSerial) : null,
+              titleIdMonograph: sourceMap.titleIdMonograph instanceof Integer ? IdentifierNamespace.get(sourceMap.titleIdMonograph) : null
             ]
 
             src = new Source(source_config).save(flush: true)
@@ -1174,8 +841,8 @@ class PackageService {
   /**
    * REST package header validation
    */
-  public Map restValidate(packageHeaderDTO, locale, remove) {
-    def result = [valid: true, errors: [:]]
+  public Map restValidate(JSONObject packageHeaderDTO, Locale locale, boolean remove) {
+    Map result = [valid: true, errors: [:]]
 
     if (!packageHeaderDTO.name || !packageHeaderDTO.name.trim()) {
       result.valid = false
@@ -1189,7 +856,7 @@ class PackageService {
     }
 
     String idJsonKey = 'ids'
-    def ids_list = packageHeaderDTO[idJsonKey]
+    List ids_list = packageHeaderDTO[idJsonKey]
 
     if (!ids_list) {
       idJsonKey = 'identifiers'
@@ -1197,15 +864,41 @@ class PackageService {
     }
 
     if (ids_list) {
-      def id_errors = Identifier.validateDTOs(ids_list, locale)
+      Map id_errors = Identifier.validateDTOs(ids_list, locale)
 
-      if (id_errors.size() > 0) {
+      if (id_errors) {
         result.errors.put(idJsonKey, id_errors)
       }
     }
 
     validateLinkedInfo(result, packageHeaderDTO, 'provider', Org, remove)
     validateLinkedInfo(result, packageHeaderDTO, 'nominalPlatform', Platform, remove)
+
+    result
+  }
+
+  /**
+   * REST package header validation for provided package object
+   */
+  public Map restValidate(Package obj, JSONObject packageHeaderDTO, Locale locale, boolean remove) {
+    Map result = restValidate(packageHeaderDTO, locale, remove)
+
+    Map lookup_result = restLookup(packageHeaderDTO)
+
+    lookup_result.matches?.each { id, errors ->
+      if (id != "${obj.id}") {
+        errors.each { er ->
+          if (!result.errors[er.field]) {
+            result.errors[er.field] = [er]
+          }
+          else {
+            result.errors[er.field] << er
+          }
+        }
+
+        result.valid = false
+      }
+    }
 
     result
   }
@@ -1229,6 +922,18 @@ class PackageService {
           plt = cls.get(packageHeaderDTO[linkType].id)
         }
       }
+
+      if (!obj) {
+        result.valid = false
+
+        result.errors[linkType] = [
+          [
+            message: 'Unable to reference mandatory linked component!',
+            code: 404,
+            baddata: packageHeaderDTO[linkType]
+          ]
+        ]
+      }
     }
     else if (packageHeaderDTO[linkType] == null && remove) {
       result.valid = false
@@ -1238,17 +943,6 @@ class PackageService {
           message: 'Mandatory link must not be empty!',
           code: 400,
           baddata: null
-        ]
-      ]
-    }
-    else if (!obj) {
-      result.valid = false
-
-      result.errors[linkType] = [
-        [
-          message: 'Unable to reference mandatory linked component!',
-          code: 404,
-          baddata: packageHeaderDTO[linkType]
         ]
       ]
     }

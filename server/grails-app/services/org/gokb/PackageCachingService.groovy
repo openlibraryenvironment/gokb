@@ -15,6 +15,7 @@ import java.time.ZoneId
 import org.apache.commons.io.FileUtils
 import org.gokb.DomainClassExtender
 import org.gokb.cred.*
+import org.hibernate.Session
 import org.springframework.util.FileCopyUtils
 
 @Slf4j
@@ -89,7 +90,7 @@ class PackageCachingService {
     File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
     RefdataValue status_checked = RefdataCategory.lookup('Package.ListStatus', 'Checked')
     Package item = Package.get(id)
-    def session = sessionFactory.currentSession
+    Session session = sessionFactory.currentSession
 
     List activeComponentJobs = concurrencyManagerService.getComponentJobs(id)?.data ?: []
     boolean hasManualCachingJobs = (activeComponentJobs.find { cj -> cj.type.value == 'ForcePackageCaching'} != null)
@@ -107,16 +108,15 @@ class PackageCachingService {
           tempDir.mkdirs()
         }
 
-        def identifier_prefix = "uri://gokb/${grailsApplication.config.getProperty('sysid')}/title/"
-
-        def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
+        String identifier_prefix = "uri://gokb/${grailsApplication.config.getProperty('sysid')}/title/"
+        String fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
         File cachedRecord = new File("${dir}/${fileName}")
-        def currentCacheFile = null
+        File currentCacheFile = null
         Date currentCacheDate
 
         for (File file : dir.listFiles()) {
           if (file.name.contains(item.uuid)) {
-            def datepart = file.name.split('_')[1]
+            String datepart = file.name.split('_')[1]
             currentCacheFile = file
             currentCacheDate = dateFormatService.parseIsoMsTimestamp(datepart.substring(0, datepart.length() - 4))
           }
@@ -131,16 +131,11 @@ class PackageCachingService {
 
           BufferedWriter fileWriter = new BufferedWriter(new FileWriter(tmpFile, true))
 
-          RefdataValue refdata_package_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-          RefdataValue refdata_hosted_tipps = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
-          RefdataValue refdata_ti_tipps = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
-          RefdataValue refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
           RefdataValue refdata_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          RefdataValue status_active = DomainClassExtender.comboStatusActive
-          String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
-          def tipp_hql_params = [pkg: item, ctype: refdata_package_tipps]
+          String tipp_hql = "from TitleInstancePackagePlatform as tipp where tipp.pkg = :pkg"
+          Map tipp_hql_params = [pkg: item]
           Integer tipps_count = (item.status != refdata_deleted) ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
-          def pkg_ids = item.activeIdInfo
+          Collection pkg_ids = item.activeIdInfo
           String cName = item.class.name
 
           log.info("Starting package caching for ${item.name} with ${tipps_count} TIPPs..")
@@ -242,7 +237,7 @@ class PackageCachingService {
 
                   while (offset < tipps_count) {
                     log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
-                    def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
+                    Collection tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
                     log.debug("fetch complete ..")
 
                     offset += 50
@@ -269,11 +264,13 @@ class PackageCachingService {
                         'publicationType'(tipp.publicationType?.value)
 
                         if (tipp.title) {
-                          def ti_obj = KBComponent.deproxy(tipp.title)
+                          TitleInstance ti_obj = KBComponent.deproxy(tipp.title)
+
                           'title'('id': ti_obj.id, 'uuid': ti_obj.uuid) {
                             'name'(ti_obj.name?.trim())
                             'type'(getTitleClass(ti_obj.id))
                             'status'(ti_obj.status?.value)
+
                             if (getTitleClass(ti_obj.id) == 'BookInstance') {
                               'dateFirstInPrint'(ti_obj.dateFirstInPrint ? dateFormatService.formatDate(ti_obj.dateFirstInPrint) : null)
                               'dateFirstOnline'(ti_obj.dateFirstOnline ? dateFormatService.formatDate(ti_obj.dateFirstOnline) : null)
@@ -282,11 +279,13 @@ class PackageCachingService {
                               'firstAuthor'(ti_obj.firstAuthor)
                               'firstEditor'(ti_obj.firstEditor)
                             }
+
                             'identifiers' {
                               ti_obj.activeIdInfo.each { tid ->
                                 'identifier'(tid)
                               }
                             }
+
                             'subjects' {
                               ti_obj.activeSubjectsInfo.each { asi ->
                                 'subject'(asi)
@@ -310,7 +309,7 @@ class PackageCachingService {
                           start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null,
                           end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null
                         )
-                        def cov_statements = getCoverageStatements(tipp.id)
+                        List cov_statements = getCoverageStatements(tipp.id)
 
                         if (cov_statements?.size() > 0) {
                           cov_statements.each { tcs ->
@@ -406,15 +405,16 @@ class PackageCachingService {
     result
   }
 
-  private def getTitleClass(Long title_id) {
-    def result = KBComponent.get(title_id)?.class.getSimpleName()
+  private String getTitleClass(Long title_id) {
+    String result = TitleInstance.get(title_id)?.class.getSimpleName()
 
     result
   }
 
-  private def getCoverageStatements(Long tipp_id) {
-    def result = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement as tcs where tcs.owner.id = :tipp", ['tipp': tipp_id], [readOnly: true])
-    result
+  private List getCoverageStatements(Long tipp_id) {
+    List result = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement as tcs where tcs.owner.id = :tipp", ['tipp': tipp_id], [readOnly: true])
+
+    return result
   }
 
   private boolean removeCacheEntriesForItem(uuid) {

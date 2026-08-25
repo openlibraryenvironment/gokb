@@ -1058,6 +1058,11 @@ class BootStrap {
         RefdataCategory.lookupOrCreate(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_SUPERSEDED)
         RefdataCategory.lookupOrCreate(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_EXPIRED)
 
+        RefdataCategory.lookupOrCreate(ComponentAttachment.RD_STATUS, ComponentAttachment.STATUS_ACTIVE)
+        RefdataCategory.lookupOrCreate(ComponentAttachment.RD_STATUS, ComponentAttachment.STATUS_DELETED)
+        RefdataCategory.lookupOrCreate(ComponentAttachment.RD_STATUS, ComponentAttachment.STATUS_SUPERSEDED)
+        RefdataCategory.lookupOrCreate(ComponentAttachment.RD_STATUS, ComponentAttachment.STATUS_EXPIRED)
+
         RefdataCategory.lookupOrCreate(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_ACTIVE)
         RefdataCategory.lookupOrCreate(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_DELETED)
         RefdataCategory.lookupOrCreate(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_SUPERSEDED)

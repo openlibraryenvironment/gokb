@@ -18,7 +18,7 @@ class OrgService {
   def sessionFactory
   def validationService
 
-  def restLookup(orgDTO, def user = null) {
+  public Map restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}")
     Map result = [to_create: true]
     RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -38,8 +38,8 @@ class OrgService {
           the_id = Identifier.get(rid)
         }
         else {
-          def ns_field = rid.type ?: rid.namespace
-          def ns = null
+          String ns_field = rid.type ?: rid.namespace
+          IdentifierNamespace ns = null
 
           if (ns_field) {
             if (ns_field instanceof Integer) {
@@ -92,16 +92,16 @@ class OrgService {
   }
 
   @Transactional
-  def upsert(orgDTO, def user = null) {
+  public Org upsert(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}")
-    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    def org_normname = Org.generateNormname(orgDTO.name)
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    String org_normname = Org.generateNormname(orgDTO.name)
 
     log.debug("Checking by normname ${org_normname} ..")
-    def name_candidates = Org.executeQuery("from Org as p where p.normname = :nn and p.status <> :sd", [nn: org_normname, sd: status_deleted])
-    def full_matches = []
-    def created = false
-    def result = orgDTO.uuid ? Org.findByUuid(orgDTO.uuid) : null
+    List name_candidates = Org.executeQuery("from Org as p where p.normname = :nn and p.status <> :sd", [nn: org_normname, sd: status_deleted])
+    List full_matches = []
+    boolean created = false
+    Org result = orgDTO.uuid ? Org.findByUuid(orgDTO.uuid) : null
     boolean changed = false
 
     if (!result && name_candidates.size() == 1) {
@@ -109,18 +109,18 @@ class OrgService {
       result = name_candidates[0]
     }
     else if (result && result.name != orgDTO.name) {
-      def current_name = result.name
+      String current_name = result.name
       changed |= ClassUtils.setStringIfDifferent(result, 'name', orgDTO.name)
 
       if (!result.variantNames.find { it.variantName == current_name }) {
-        def new_variant = new KBComponentVariantName(owner: result, variantName: current_name).save(flush: true, failOnError: true)
+        new KBComponentVariantName(owner: result, variantName: current_name).save(flush: true, failOnError: true)
       }
     }
 
     if (!result) {
       log.debug("Did not find a match via name, trying existing variantNames..")
-      def variant_normname = GOKbTextUtils.normaliseString(orgDTO.name)
-      def variant_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
+      String variant_normname = GOKbTextUtils.normaliseString(orgDTO.name)
+      List variant_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
       if (variant_candidates.size() == 1) {
         result = variant_candidates[0]
@@ -140,8 +140,8 @@ class OrgService {
           }
           else {
 
-            def variant_normname = GOKbTextUtils.normaliseString(it)
-            def variant_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
+            String variant_normname = GOKbTextUtils.normaliseString(it)
+            List variant_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
             if (variant_candidates.size() == 1) {
               log.debug("Found existing Org variant name for variantName ${it}")
@@ -166,7 +166,7 @@ class OrgService {
       result.save(flush: true, failOnError: true)
     }
     else if (user && !user.hasRole('ROLE_SUPERUSER') && result.curatoryGroups && result.curatoryGroups?.size() > 0) {
-      def cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)
+      List cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)
 
       if (!cur) {
         log.debug("No curator!")
@@ -181,9 +181,9 @@ class OrgService {
   */
 
   @Transactional
-  def updateCombos(obj, reqBody, changed, boolean remove = true) {
+  public Map updateCombos(obj, reqBody, changed, boolean remove = true) {
     log.debug("Updating org combos ..")
-    def errors = [:]
+    Map errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
@@ -246,11 +246,11 @@ class OrgService {
   }
 
   @Transactional
-  def updatePlatforms(obj, plts, boolean remove = true) {
-    def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
-    def removed_plts = obj.providedPlatforms*.id
-    def new_plts = []
-    def result = [changed: false, errors: []]
+  public Map updatePlatforms(obj, plts, boolean remove = true) {
+    Map result = [changed: false, errors: []]
+    List removed_plts = obj.providedPlatforms*.id
+    List new_plts = []
+
     plts.each { plt ->
       Platform plt_obj = null
 
@@ -266,7 +266,8 @@ class OrgService {
           plt_obj = Platform.findById(plt.id)
         }
         else {
-          def lookup = platformService.restLookup(plt, null)
+          Map lookup = platformService.restLookup(plt, null)
+
           log.debug("Result of platform lookup: ${lookup}")
 
           if (lookup.to_create) {
@@ -275,7 +276,7 @@ class OrgService {
           else if (lookup.matches.size() == 1) {
             lookup.matches?.each { mid, info ->
               log.debug("Handling platform with ID ${mid}..")
-              def plt_candidate = Platform.get(mid)
+              Platform plt_candidate = Platform.get(mid)
 
               if (!plt_candidate) {
                 result.errors << [message: "Unable to lookup platform!", code: 404, baddata: plt]
@@ -287,17 +288,23 @@ class OrgService {
                 plt_obj = plt_candidate
               }
               else {
-                def provider_map = [[id: plt_candidate.provider.id, uuid: plt_candidate.provider.uuid, name: plt_candidate.provider.name]]
-                result.errors << [message: "Matched Platform already has another Provider!", code: 409, baddata: plt, links: provider_map]
+                Map provider_links = [
+                  [
+                    id: plt_candidate.provider.id,
+                    uuid: plt_candidate.provider.uuid,
+                    name: plt_candidate.provider.name
+                  ]
+                ]
+                result.errors << [message: "Matched Platform already has another Provider!", code: 409, baddata: plt, links: provider_links]
               }
             }
           }
           else {
-            def other_providers = []
+            List other_providers = []
 
             lookup.matches?.each { mid, info ->
               log.debug("Handling platform with ID ${mid}..")
-              def plt_candidate = Platform.get(mid)
+              Platform plt_candidate = Platform.get(mid)
 
               if (plt_candidate && plt_candidate.provider && plt_candidate.provider != obj && !other_providers.contains(plt_candidate.provider)) {
                 other_providers << plt_candidate.provider
@@ -305,8 +312,8 @@ class OrgService {
             }
 
             if (other_providers.size() > 0) {
-              def provider_map = other_providers.collect { [id: it.id, uuid: it.uuid, name: it.name] }
-              result.errors << [message: "Matched Platforms that already have other providers!", code: 409, baddata: plt, links: provider_map]
+              List provider_links = other_providers.collect { [id: it.id, uuid: it.uuid, name: it.name] }
+              result.errors << [message: "Matched Platforms that already have other providers!", code: 409, baddata: plt, links: provider_links]
             }
           }
         }
@@ -339,6 +346,8 @@ class OrgService {
       if (remove) {
         removed_plts.each { pid ->
           Platform plt_obj = Platform.get(pid)
+          log.warn("Removing current provider of platform ${plt_obj}!")
+
           plt_obj.provider = null
           plt_obj.save(flush: true)
           FTUpdateService.updateSingleItem(plt_obj)
@@ -346,24 +355,25 @@ class OrgService {
         }
       }
     }
+
     log.debug("New platforms: ${obj.providedPlatforms}")
+
     result
   }
 
   @Transactional
-  public def updateOffices(Org org, offices, boolean remove = true) {
+  public Map updateOffices(Org org, offices, boolean remove = true) {
     log.debug("Update offices ${offices}")
-    RefdataValue type_office = RefdataCategory.lookup(Combo.RD_TYPE, 'Office.Org')
-    RefdataValue status_active = DomainClassExtender.comboStatusActive
-    def language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
-    def function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
-    def old_ids = org.offices.collect { it.id }
-    def new_offices = []
-    def result = [changed: false, errors: []]
-    boolean created = false
+    Map result = [changed: false, errors: []]
+
+    RefdataValue language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
+    RefdataValue function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
+    List old_ids = org.offices.collect { it.id }
+    List new_offices = []
 
     offices.each { office ->
-      def office_obj = null
+      boolean created = false
+      Office office_obj = null
 
       if (office instanceof Integer) {
         office_obj = Office.get(office)
@@ -373,49 +383,37 @@ class OrgService {
 
         if (!office_obj) {
           // create new office
-          def lang = office.language
 
-          if (lang instanceof String) {
+          if (office.language instanceof String) {
             office.language = RefdataCategory.lookup(KBComponent.RD_LANGUAGE, lang)
           }
-          else if (lang instanceof Integer) {
-            def lang_rdv = RefdataValue.get(lang)
+          else if (office.language instanceof Integer) {
+            RefdataValue lang_rdv = RefdataValue.get(lang)
 
             if (lang_rdv.owner == language_rdc) {
               office.language = lang_rdv
             }
           }
-          def function = office.function
 
-          if (function instanceof String) {
+          if (office.function instanceof String) {
             office.function = RefdataCategory.lookup(Office.RD_FUNCTION, function)
           }
-          else if (function instanceof Integer) {
-            def function_rdv = RefdataValue.get(function)
+          else if (office.function instanceof Integer) {
+            RefdataValue function_rdv = RefdataValue.get(function)
 
             if (function_rdv.owner == function_rdc) {
               office.function = function_rdv
             }
           }
 
-          office_obj = new Office(office).save(flush: true)
-          created = true
-        }
-      }
+          office_obj = new Office(office)
 
-      if (office_obj) {
-        // create combo to connect org & office
-
-        if (!old_ids.contains(office_obj.id)) {
-          org.offices.add(office_obj)
+          org.addToOffices(office_obj)
           org.save(flush: true)
 
+          new_offices << office_obj
           result.changed = true
         }
-        new_offices << office_obj
-      }
-      else {
-        result.errors << [message: "Unable to lookup or create office!", baddata: office]
       }
     }
 
@@ -423,7 +421,8 @@ class OrgService {
       old_ids.each { old_office_id ->
         if (!new_offices*.id.contains(old_office_id)) {
           log.debug("Removing stale office entry..")
-          componentUpdateService.expungeComponent(Office.get(old_office_id))
+          org.removeFromOffices(Office.get(old_office_id))
+          result.changed = true
         }
       }
     }
@@ -434,10 +433,10 @@ class OrgService {
   }
 
   @Transactional
-  public def updateRoles(Org org, roles, boolean remove = true) {
+  public Map updateRoles(Org org, roles, boolean remove = true) {
     RefdataCategory category = RefdataCategory.findByLabel('Org.Role')
-    def result = [changed: false, errors: []]
-    def old_roles = org.roles?.toArray() ?: []
+    Map result = [changed: false, errors: []]
+    List old_roles = org.roles?.toArray() ?: []
     List new_roles = []
 
     roles.each { nr ->
@@ -486,11 +485,10 @@ class OrgService {
   }
 
   @Transactional
-  def transferPackages(old_provider, new_provider, boolean createNewCombos = true) {
-    def result = [result: 'OK', transferred: 0]
+  public Map transferPackages(old_provider, new_provider) {
+    Map result = [result: 'OK', transferred: 0]
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    RefdataValue combo_type_pkg_provider = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
-    def session = sessionFactory.currentSession
+    Session session = sessionFactory.currentSession
 
     if (!old_provider || !new_provider) {
       log.error("transferPackages :: Missing value - Old:${old_provider}, New:${new_provider}")
@@ -498,78 +496,34 @@ class OrgService {
       return result
     }
 
-    if (createNewCombos) {
-      def affected_pkgs = Package.executeQuery('''select p.id from Package as p
-                                                  where exists (
-                                                    select 1 from Combo as c
-                                                    where fromComponent = p
-                                                    and fromComponent.status != :sd
-                                                    and toComponent = :op
-                                                  )''',
-                                                  [
-                                                    sd: status_deleted,
-                                                    op: old_provider
-                                                  ])
+    List affected_pkgs = Package.executeQuery('''select p.id from Package as p
+                                                  where p.status != :sd
+                                                  and p.provider = :op''',
+                                                [
+                                                  sd: status_deleted,
+                                                  op: old_provider
+                                                ])
 
-      affected_pkgs.each { pid ->
-        new_provider.refresh()
-        Package pobj = Package.findById(pid)
+    affected_pkgs.each { pid ->
+      new_provider.refresh()
 
-        if (pobj.provider == old_provider) {
-          pobj.provider = new_provider
-        }
+      Package pobj = Package.findById(pid)
 
-        if (pobj.broker == old_provider) {
-          pobj.broker = new_provider
-        }
-
-        if (pobj.licensor == old_provider) {
-          pobj.licensor = new_provider
-        }
-
-        if (pobj.vendor == old_provider) {
-          pobj.vendor = new_provider
-        }
-
-        result.transferred++
-
-        pobj.save(flush: true, failOnError: true)
+      if (pobj.provider == old_provider) {
+        pobj.provider = new_provider
       }
-    }
-    else {
-      def affected_pkg_combos = Combo.executeQuery('''select id from Combo as c
-                                                      where exists (
-                                                        select 1 from Package as p
-                                                        where p.id = c.fromComponent.id
-                                                        and p.status != :sd
-                                                      )
-                                                      and toComponent = :op''',
-                                                      [
-                                                        sd: status_deleted,
-                                                        op: old_provider
-                                                      ])
 
+      result.transferred++
 
-      affected_pkg_combos.each { cttid ->
-        Combo cobj = Combo.get(cttid)
-        def pkg_obj = cobj.fromComponent
-
-        cobj.toComponent = new_provider
-        cobj.save(flush: true, failOnError: true)
-
-        pkg_obj.lastUpdateComment = "Link Transfer for '${cobj.type.value}'"
-        pkg_obj.save(flush: true, failOnError: true)
-
-        result.transferred++
-      }
+      pobj.save(flush: true, failOnError: true)
     }
 
     result
   }
 
   @Transactional
-  def mergeDuplicate(old_org_id, new_org_id, Job j = null) {
-    def result = null
+  public Map mergeDuplicate(old_org_id, new_org_id, Job j = null) {
+    Map result = [:]
     boolean new_session = false
     Session session
 
@@ -590,8 +544,8 @@ class OrgService {
     }
   }
 
-  private def processMergeDuplicate(old_org_id, new_org_id, session, Job j = null) {
-    def result = [result: 'OK', ti: 0, pkgs: 0, plts: 0]
+  private Map processMergeDuplicate(old_org_id, new_org_id, session, Job j = null) {
+    Map result = [result: 'OK', ti: 0, pkgs: 0, plts: 0]
 
     Org old_org = Org.findById(old_org_id)
     Org new_org = Org.findById(new_org_id)
@@ -610,48 +564,43 @@ class OrgService {
 
     try {
       // transfer publishers & update TIPPs + Packages
-      def affected_ti_ids = TitleInstance.executeQuery('''select ti.id from TitleInstance as ti
+      List affected_ti_ids = TitleInstance.executeQuery('''select ti.id from TitleInstance as ti
                                                           where exists (
-                                                            select 1 from Combo
-                                                            where fromComponent = ti
-                                                            and toComponent = :op
-                                                            and type = :cttp
+                                                            select 1 from TitlePublisher
+                                                            where title = ti
+                                                            and publisher = :op
                                                           )
                                                           and status != :sd''',
                                                           [
                                                             op: old_org,
-                                                            cttp: combo_type_ti_org,
                                                             sd: status_deleted
                                                           ])
 
       j?.message("Processing ${affected_ti_ids.size()} published titles ..")
 
       for (tid in affected_ti_ids) {
-        def ti_obj = TitleInstance.get(tid)
+        TitleInstance ti_obj = TitleInstance.get(tid)
 
-        def dupes = Combo.executeQuery("select count(*) from Combo where fromComponent = :ti and toComponent = :np", [ti: ti_obj, np: new_org])[0]
+        List dupes = TitlePublisher.executeQuery("select id from TitlePublisher where title = :ti and publisher = :np", [ti: ti_obj, np: new_org])
 
-        if (dupes == 0) {
-          def combos_to_update = Combo.findAllByFromComponentAndToComponentAndType(ti_obj, old_org, combo_type_ti_org)
+        if (dupes.size() == 0) {
+          List links_to_update = TitlePublisher.findByTitleAndPublisher(ti_obj, old_org)
 
-          combos_to_update.each { ctu ->
-            ctu.toComponent = new_org
+          links_to_update.each { ctu ->
+            ctu.publisher = new_org
             ctu.save(flush: true, failOnError: true)
           }
         }
         else {
           log.debug("Found dupes, deleting old combos ..")
 
-          def combos_deleted = Combo.executeUpdate('''delete from Combo
-                                                      where fromComponent = :ti
-                                                      and toComponent = :op
-                                                      and type = :cttp
-                                                    ''',
-                                                    [
-                                                      ti: ti_obj,
-                                                      op: old_org,
-                                                      cttp: combo_type_ti_org
-                                                    ])
+          TitlePublisher.executeUpdate('''delete from TitlePublisher
+                                          where title = :ti
+                                          and publisher = :op''',
+                                          [
+                                            ti: ti_obj,
+                                            op: old_org
+                                          ])
         }
 
         result.ti++
@@ -683,22 +632,9 @@ class OrgService {
 
       // Transfer Platforms
 
-      def affected_platform_ids = Platform.executeQuery('''select p.id from Platform as p
-                                                            where exists (
-                                                              select 1 from Combo
-                                                              where fromComponent = p
-                                                              and toComponent = :op
-                                                              and type = :ctpp
-                                                            )
-                                                            and status != :sd''',
-                                                            [
-                                                              op: old_org,
-                                                              ctpp: combo_type_plt_org,
-                                                              sd: status_deleted
-                                                            ])
+      List affected_platforms = Platform.findAllByProviderAndStatus(op: old_org, ctpp: combo_type_plt_org, sd: status_deleted)
 
-      affected_platform_ids.each { plid ->
-        def plt = Platform.get(plid)
+      affected_platforms?.each { plt ->
         plt.provider = new_org
         plt.save(flush: true, failOnError: true)
 
@@ -707,7 +643,7 @@ class OrgService {
 
       // Moving variantNames
 
-      def old_variants = []
+      List old_variants = []
 
       old_org.refresh()
 
@@ -757,16 +693,14 @@ class OrgService {
   }
 
   @Transactional
-  public def adjustOrgRolesToExistingCombos(org) {
-    def result = [result: 'OK', changed: false]
+  public Map adjustOrgRolesToExistingLinks(org) {
+    Map result = [result: 'OK', changed: false]
     RefdataValue role_provider = RefdataCategory.lookup('Org.Role', 'Platform Provider')
     RefdataValue role_publisher = RefdataCategory.lookup('Org.Role', 'Publisher')
-    RefdataValue combo_type_publisher = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
-    def existing_roles = org.roles.toArray()
-    def new_roles = []
+    List new_roles = []
 
     Boolean is_provider = org.providedPlatforms?.size() > 0
-    Boolean is_publisher = Combo.executeQuery('select count(*) from Combo where type = :rpb and toComponent = :org')[0] > 0
+    Boolean is_publisher = TitlePublisher.executeQuery('select id from TitlePublisher where publisher = :org',[org: org], [max: 1]).size() > 0
 
     if (is_provider) {
       new_roles << role_provider
@@ -779,13 +713,13 @@ class OrgService {
     result.changed |= org.roles.addAll(new_roles)
 
     if (changed) {
-      org.save()
+      org.save(flush: true)
     }
 
     boolean removed = org.roles.retainAll(new_roles)
 
     if (removed) {
-      org.save()
+      org.save(flush: true)
       result.changed = true
     }
 

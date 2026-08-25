@@ -13,6 +13,7 @@ import io.micronaut.http.uri.UriBuilder
 
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.regex.Matcher
 
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
@@ -81,7 +82,7 @@ class ComponentLookupService {
     // The Component
     T comp = null
     if (comp_name_string) {
-      def component_match
+      Matcher component_match
 
       if ((component_match = comp_name_string =~ "${ID_REGEX_TEMPLATE[0]}([^\\:]+)${ID_REGEX_TEMPLATE[1]}\$") ||
         (component_match = comp_name_string =~ "${REGEX_TEMPLATE[0]}([^\\:]+)${REGEX_TEMPLATE[1]}\$")) {
@@ -131,15 +132,15 @@ class ComponentLookupService {
   }
 
   @Synchronized
-  static def lookupOrCreateCanonicalIdentifier(String ns, String value, boolean ns_create = false) {
+  static Identifier lookupOrCreateCanonicalIdentifier(String ns, String value, boolean ns_create = false) {
     return findOrCreateId(ns, value, ns_create)
   }
 
-  private static def findOrCreateId(String ns, String value, boolean ns_create = false) {
+  private static Identifier findOrCreateId(String ns, String value, boolean ns_create = false) {
     log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
-    def namespace = null
-    def identifier = null
-    def namespaces = IdentifierNamespace.findAllByValueIlike(ns)
+    IdentifierNamespace namespace = null
+    Identifier identifier = null
+    List namespaces = IdentifierNamespace.findAllByValueIlike(ns) ?: []
 
     switch ( namespaces.size() ) {
       case 0:
@@ -172,8 +173,7 @@ class ComponentLookupService {
         }
 
         String norm_id = Identifier.normalizeIdentifier(final_val)
-
-        def existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
+        List existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id) ?: []
         log.debug("Found ID: ${existing}")
 
         if ( existing?.size() == 1 ) {
@@ -194,7 +194,7 @@ class ComponentLookupService {
             }
             catch (org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException lfe) {
               log.error("Locking failure", lfe)
-              def ex = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
+              List ex = Identifier.findAllByNamespaceAndNormname(namespace, norm_id) ?: []
               log.debug("After LFE: ${ex}")
             }
             catch (ValidationException ve) {

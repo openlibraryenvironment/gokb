@@ -30,55 +30,54 @@ class TitleAugmentService {
   public Map augmentZdb(titleInstance) {
     log.debug("Augment ZDB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
     Map result = [result: 'OK']
-    RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-    RefdataValue status_active = DomainClassExtender.comboStatusActive
-    def group_name = grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')
+    RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
+    String group_name = grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')
     CuratoryGroup editorialGroup = group_name ? (CuratoryGroup.findByNameIlike(group_name) ?: new CuratoryGroup(name: group_name).save(flush: true)) : null
-    int num_existing_zdb_ids = Combo.executeQuery('''select count(*) from Combo
-                                                  where fromComponent = :ti
-                                                  and type = :tid
-                                                  and status = :ca
-                                                  and toComponent in (
-                                                    select ido from Identifier as ido
-                                                    where namespace.value = 'zdb'
-                                                  )''',
-                                                  [ti: titleInstance, tid: idComboType, ca: status_active])[0]
+    int num_existing_zdb_ids = Identifier.executeQuery('''select count(*) from Identifier as ido
+                                                          where namespace.value = 'zdb'
+                                                          and exists (
+                                                            select 1 from ComponentIdentifier
+                                                            where component = :ti
+                                                            and identifier = ido
+                                                            and status = :ca
+                                                          )'''
+                                                          [ti: titleInstance, ca: status_active])[0]
 
     if (titleInstance.niceName == 'Journal') {
       RefdataValue rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'ZDB Title Overlap')
       RefdataValue rr_status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
       RefdataValue rr_status_closed = RefdataCategory.lookup("ReviewRequest.Status", "Closed")
       RefdataValue rr_status_deleted = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
-      def existing_inuse = ReviewRequest.executeQuery('''from ReviewRequest as rr
-                                                      where rr.componentToReview = :ti
-                                                      and rr.stdDesc = :type
-                                                      and rr.status = :status''',
-                                                      [ti: titleInstance, type: rr_in_use, status: rr_status_open])
+      List existing_inuse = ReviewRequest.executeQuery('''from ReviewRequest as rr
+                                                          where rr.componentToReview = :ti
+                                                          and rr.stdDesc = :type
+                                                          and rr.status = :status''',
+                                                          [ti: titleInstance, type: rr_in_use, status: rr_status_open])
 
       if (existing_inuse.size() == 0 && num_existing_zdb_ids <= 1) {
         RefdataValue rr_no_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No ZDB Results')
         RefdataValue rr_multiple = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple ZDB Results')
         RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
 
-        def existing_noresults = ReviewRequest.executeQuery('''from ReviewRequest as rr
+        List existing_noresults = ReviewRequest.executeQuery('''from ReviewRequest as rr
                                                             where rr.componentToReview = :ti
                                                             and rr.stdDesc = :type
                                                             and rr.status != :sd ''',
                                                             [ti: titleInstance, type: rr_no_results, sd: rr_status_deleted])
-        def existing_multiple = ReviewRequest.executeQuery('''from ReviewRequest as rr
+        List existing_multiple = ReviewRequest.executeQuery('''from ReviewRequest as rr
                                                             where rr.componentToReview = :ti
                                                             and rr.stdDesc = :type''',
                                                             [ti: titleInstance, type: rr_multiple])
 
-        def ids = Identifier.executeQuery('''from Identifier as ido
-                                          where exists (
-                                            select 1 from Combo
-                                            where fromComponent = :ti
-                                            and toComponent = ido
-                                            and status = :sca
-                                          )''', [ti: titleInstance, sca: status_active])
+        List ids = Identifier.executeQuery('''from Identifier as ido
+                                              where exists (
+                                                select 1 from ComponentIdentifier
+                                                where component = :ti
+                                                and identifier = ido
+                                                and status = :sca
+                                              )''', [ti: titleInstance, sca: status_active])
 
-        def lookup_result = zdbAPIService.lookup(titleInstance.name, ids)
+        Map lookup_result = zdbAPIService.lookup(titleInstance.name, ids)
 
         if (lookup_result.result.startsWith('ERROR')) {
           result = lookup_result
@@ -86,32 +85,38 @@ class TitleAugmentService {
           return result
         }
 
-        def candidates = lookup_result.candidates
+        List candidates = lookup_result.candidates
 
         if (candidates.size() == 1) {
           if (num_existing_zdb_ids == 0) {
-            def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
-            def conflicts = Combo.executeQuery('''from Combo as c
-                                                where exists (
-                                                  select ti from JournalInstance as ti
-                                                  where ti.status != :deleted
-                                                  and ti.id = c.fromComponent.id
-                                                )
-                                                and c.fromComponent != :tic
-                                                and c.toComponent = :idc
-                                                and c.status = :cstatus
-                                                and c.type = :ctype''',
-                                                [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType, cstatus: status_active])
+            Identifier new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
+            List conflicts = Combo.executeQuery('''from ComponentIdentifier as c
+                                                    where exists (
+                                                      select ti from JournalInstance as ti
+                                                      where ti.status != :deleted
+                                                      and ti.id = c.component.id
+                                                    )
+                                                    and c.component != :tic
+                                                    and c.identifier = :idc
+                                                    and c.status = :cstatus''',
+                                                    [deleted: status_deleted, tic: titleInstance, idc: new_id, cstatus: status_active])
 
             if (conflicts.size() > 0) {
-              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${conflicts*.fromComponent}")
+              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${conflicts*.component}")
 
               if (conflicts.size() == 1) {
-                setNewTitleInfo(JournalInstance.get(conflicts[0].fromComponent.id), candidates[0])
+                setNewTitleInfo(JournalInstance.get(conflicts[0].component.id), candidates[0])
               }
 
-              def additionalInfo = [
-                otherComponents: conflicts.collect { [id: it.fromComponent.id, name: it.fromComponent.name, oid: it.fromComponent.logEntityId, uuid: it.fromComponent.uuid] }
+              Map additionalInfo = [
+                otherComponents: conflicts.collect {
+                  [
+                    id: it.component.id,
+                    name: it.component.name,
+                    oid: it.component.logEntityId,
+                    uuid: it.component.uuid
+                  ]
+                }
               ]
 
               reviewRequestService.raise(
@@ -130,7 +135,7 @@ class TitleAugmentService {
             }
             else if (new_id) {
               log.debug("Adding new ZDB-ID ${new_id}")
-              new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true)
+              new ComponentIdentifier(component: titleInstance, identifier: new_id).save(flush: true)
 
               touchTitleTipps(titleInstance)
 
@@ -180,7 +185,7 @@ class TitleAugmentService {
         else {
           log.debug("Multiple ZDB-ID candidates for title ${titleInstance}")
 
-          def name_candidates = []
+          List name_candidates = []
 
           candidates.each {
             if (KBComponent.generateNormname(it.title) == titleInstance.normname) {
@@ -190,26 +195,32 @@ class TitleAugmentService {
 
           if (name_candidates.size() == 1) {
             Identifier new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', name_candidates[0].id)
-            def conflicts = Combo.executeQuery('''from Combo as c
-                                                where exists (
-                                                  select ti from JournalInstance as ti
-                                                  where ti.status != :deleted
-                                                  and ti.id = c.fromComponent.id
-                                                )
-                                                and c.fromComponent != :tic
-                                                and c.toComponent = :idc
-                                                and c.type = :ctype''',
-                                                [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
+            List conflicts = ComponentIdentifier.executeQuery('''from ComponentIdentifier as c
+                                                    where exists (
+                                                      select ti from JournalInstance as ti
+                                                      where ti.status != :deleted
+                                                      and ti.id = c.component.id
+                                                    )
+                                                    and c.component != :tic
+                                                    and c.identifier = :idc''',
+                                                    [deleted: status_deleted, tic: titleInstance, idc: new_id])
 
             if (conflicts.size() > 0) {
-              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${conflicts*.fromComponent}")
+              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${conflicts*.component}")
 
               if (conflicts.size() == 1) {
-                setNewTitleInfo(JournalInstance.get(conflicts[0].fromComponent.id), name_candidates[0])
+                setNewTitleInfo(JournalInstance.get(conflicts[0].component.id), name_candidates[0])
               }
 
-              def additionalInfo = [
-                otherComponents: conflicts.collect { [id: it.fromComponent.id, name: it.fromComponent.name, oid: it.fromComponent.logEntityId, uuid: it.fromComponent.uuid] }
+              Map additionalInfo = [
+                otherComponents: conflicts.collect {
+                  [
+                    id: it.component.id,
+                    name: it.component.name,
+                    oid: it.component.logEntityId,
+                    uuid: it.component.uuid
+                  ]
+                }
               ]
 
               reviewRequestService.raise(
@@ -250,7 +261,7 @@ class TitleAugmentService {
           }
           else if (existing_multiple.size() == 0) {
             log.debug("Multiple ZDB-ID candidates, but no unique name match!")
-            def additionalInfo = [
+            Map additionalInfo = [
               candidates: candidates
             ]
 
@@ -276,11 +287,11 @@ class TitleAugmentService {
       else if (num_existing_zdb_ids > 1) {
         log.debug("Skipping title with multiple existing ZDB-IDs ..")
         RefdataValue rr_merged = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Merged ZDB titles')
-        def existing_review = ReviewRequest.executeQuery('''from ReviewRequest as rr
-                                                          where rr.componentToReview = :ti
-                                                          and rr.stdDesc = :type
-                                                          and rr.status != :sd ''',
-                                                          [ti: titleInstance, type: rr_merged, sd: rr_status_deleted])
+        List existing_review = ReviewRequest.executeQuery('''from ReviewRequest as rr
+                                                              where rr.componentToReview = :ti
+                                                              and rr.stdDesc = :type
+                                                              and rr.status != :sd ''',
+                                                              [ti: titleInstance, type: rr_merged, sd: rr_status_deleted])
 
         if (!existing_review) {
           reviewRequestService.raise(
@@ -321,15 +332,8 @@ class TitleAugmentService {
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
-    def qry_params = [now: current_ts, ct: combo_title, title: ti]
-    def qry_string = '''update TitleInstancePackagePlatform as tipp
-        set lastUpdated = :now
-        where exists (
-          select 1 from Combo
-          where type = :ct
-          and fromComponent = :title
-          and toComponent = tipp
-        )'''
+    Map qry_params = [now: current_ts, ct: combo_title, title: ti]
+    String qry_string = '''update TitleInstancePackagePlatform as tipp set lastUpdated = :now where tipp.title = :title'''
 
     if (onlyCurrent) {
       qry_string += ' and status = :sc'
@@ -342,77 +346,54 @@ class TitleAugmentService {
 
     TitleInstancePackagePlatform.executeUpdate(qry_string, qry_params)
 
-    qry_params.pt = combo_package
-
     if (!skipPackageUpdate) {
       if (onlyCurrent) {
-        def pkg_qry_string_current = '''update Package as pkg
-        set lastUpdated = :now
-        where exists (
-          select 1 from Combo
-          where type = :pt
-          and fromComponent = pkg
-          and toComponent.id IN (
-            select id from TitleInstancePackagePlatform as tipp
-            where exists (
-              select 1 from Combo
-              where type = :ct
-              and fromComponent = :title
-              and toComponent = tipp
-            )
-            and status = :sc
-          )
-        )'''
-        Package.executeUpdate(pkg_qry_string_current, qry_params)
+        Package.executeUpdate('''update Package as pkg
+                                  set lastUpdated = :now
+                                  where exists (
+                                    select 1 from TitleInstancePackagePlatform as tipp
+                                    where tipp.title = :title
+                                    and status = :sc
+                                  )''',
+                                  qry_params)
       }
       else {
-        def pkg_qry_string_all = '''update Package as pkg
-            set lastUpdated = :now
-            where exists (
-              select 1 from Combo
-              where type = :pt
-              and fromComponent = pkg
-              and toComponent.id IN (
-                select id from TitleInstancePackagePlatform as tipp
-                where exists (
-                  select 1 from Combo
-                  where type = :ct
-                  and fromComponent = :title
-                  and toComponent = tipp
-                )
-                and status != :sd
-              )
-            )'''
-        Package.executeUpdate(pkg_qry_string_all, qry_params)
+        Package.executeUpdate('''update Package as pkg
+                                  set lastUpdated = :now
+                                  where exists (
+                                    select 1 from TitleInstancePackagePlatform as tipp
+                                    where tipp.title = :title
+                                    and status != :sd
+                                  )''',
+                                  qry_params)
       }
     }
   }
 
-  def augmentEzb(titleInstance) {
+  public void augmentEzb(titleInstance) {
     log.debug("Augment EZB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
-    def group_name = grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')
+    String group_name = grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')
     CuratoryGroup editorialGroup = group_name ? (CuratoryGroup.findByNameIlike(group_name) ?: new CuratoryGroup(name: group_name).save(flush: true)) : null
 
     if ( titleInstance.niceName == 'Journal' ) {
-      def rr_multi_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple EZB Results')
-      def rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'EZB Title Overlap')
-      def rr_info = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No EZB Results')
-      def existing_rr = ReviewRequest.executeQuery('''select rr.id from ReviewRequest as rr
+      RefdataValue rr_multi_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple EZB Results')
+      RefdataValue rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'EZB Title Overlap')
+      RefdataValue rr_info = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No EZB Results')
+      List existing_rr = ReviewRequest.executeQuery('''select rr.id from ReviewRequest as rr
                                                     where rr.componentToReview = :ti
                                                     and rr.stdDesc IN (:types)''',
                                                     [ti: titleInstance, types: [rr_multi_results, rr_in_use]])
 
       if (existing_rr.size() == 0) {
-        def ezbCandidates = ezbAPIService.lookup(titleInstance.name, titleInstance.ids)
-        RefdataValue comboTypeId = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+        List ezbCandidates = ezbAPIService.lookup(titleInstance.name, titleInstance.ids)
         RefdataValue statusDeleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
         String ezbId
+
         if (ezbCandidates.size() == 1) {
-          // 1 EZB match ==> create Combo from ReviewRequest to EZB identifier
+          // 1 EZB match ==> create link from ReviewRequest to EZB identifier
           ezbId = EzbAPIService.getJourId(ezbCandidates[0])
-          def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
-          titleInstance.ids << new_id
-          titleInstance.save(flush: true)
+          Identifier new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
+          titleInstance.addIdentifier(new_id)
         }
         else if (ezbCandidates.size() == 0){
           // no EZB match ==> raise ReviewRequest with type Information
@@ -434,18 +415,19 @@ class TitleAugmentService {
         }
         else {
           log.debug("Multiple EZB-ID candidates for title ${titleInstance}")
-          def nameCandidates = []
+          List nameCandidates = []
+
           ezbCandidates.each {
             if (it.title == titleInstance.name) {
               nameCandidates.add (it)
             }
           }
+
           if (nameCandidates.size() == 1) {
             // found 1 EZB match by name matching
             ezbId = EzbAPIService.getJourId(nameCandidates[0])
-            def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
-            titleInstance.ids << new_id
-            titleInstance.save(flush: true)
+            Identifier new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
+            titleInstance.addIdentifier(new_id)
 
             touchTitleTipps(titleInstance)
             log.debug("Adding new EZB-ID ${new_id}")
@@ -488,8 +470,8 @@ class TitleAugmentService {
     }
   }
 
-  private void setNewTitleInfo(ti, info) {
-    def titleInstance = KBComponent.deproxy(ti)
+  private void setNewTitleInfo(TitleInstance ti, info) {
+    TitleInstance titleInstance = KBComponent.deproxy(ti)
 
     if (!titleInstance.publishedFrom && info.publishedFrom) {
       log.debug("Adding new start journal start date ..")
@@ -502,11 +484,11 @@ class TitleAugmentService {
 
     if (!titleInstance.currentPublisher && info.publisher) {
       RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
-      def pub_obj = Org.findByNameAndStatusNot(info.publisher, status_deleted)
+      Org pub_obj = Org.findByNameAndStatusNot(info.publisher, status_deleted)
 
       if (!pub_obj) {
-        def variant_normname = GOKbTextUtils.normaliseString(info.publisher)
-        def var_candidates = Org.executeQuery('''select distinct p from Org as p
+        String variant_normname = GOKbTextUtils.normaliseString(info.publisher)
+        List var_candidates = Org.executeQuery('''select distinct p from Org as p
                                               join p.variantNames as v
                                               where v.normVariantName = :nvn
                                               and p.status <> :sd''',
@@ -518,8 +500,10 @@ class TitleAugmentService {
       }
 
       if (pub_obj) {
-        def publisher_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
-        titleInstance.publisher << pub_obj
+        new TitlePublisher(title: ti, publisher: pub_obj).save(flush: true, failOnError: true)
+
+        ti.lastUpdateComment = "Added title publisher ${pub_obj}"
+        ti.save()
       }
     }
 
@@ -529,7 +513,7 @@ class TitleAugmentService {
           def candidates = Identifier.findByValueIlikeAndNamespace(he.zdbId, IdentifierNamespace.findByValue('zdb'))?.getActiveIdentifiedComponents('JournalInstance')
 
           if (candidates?.size() == 1 && candidates[0] != titleInstance) {
-            def parsedLocal = he.prev ? GOKbTextUtils.completeDateString(info.publishedFrom) : GOKbTextUtils.completeDateString(he.publishedFrom ?: info.publishedTo)
+            LocalDateTime parsedLocal = he.prev ? GOKbTextUtils.completeDateString(info.publishedFrom) : GOKbTextUtils.completeDateString(he.publishedFrom ?: info.publishedTo)
             Date event_date = null
 
             if (parsedLocal) {
@@ -633,13 +617,12 @@ class TitleAugmentService {
   }
 
 
-  def syncZdbInfo(Job j = null, boolean unlinkedOnly = false, LocalDateTime created_since = null) {
+  public Map syncZdbInfo(Job j = null, boolean unlinkedOnly = false, LocalDateTime created_since = null) {
     Map result = [result: 'OK', counts:[:]]
 
     JournalInstance.withNewSession { lsession ->
       RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-      RefdataValue combo_active = DomainClassExtender.comboStatusActive
-      RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+      RefdataValue ci_active = RefdataCategory.lookup("ComponentIdentifier.Status", "Active")
       IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
       Float reduced_rate = null
       int offset = 0
@@ -647,19 +630,18 @@ class TitleAugmentService {
       String queryString = "from JournalInstance as ti where ti.status = :current and "
       Date date_filter = created_since ? Date.from(created_since.atZone(ZoneOffset.UTC).toInstant()) : null
 
-      def params = [
+      Map params = [
         current: status_current,
-        active: combo_active,
-        ctype: idComboType,
+        active: ci_active,
         ns: zdbNs
       ]
 
       if (!unlinkedOnly) {
         queryString += '''exists (
-                          select ci from Combo as ci
+                          select ci from ComponentIdentifier as ci
                           where ci.type = :ctype
-                          and ci.fromComponent = ti
-                          and ci.toComponent.namespace = :ns
+                          and ci.component = ti
+                          and ci.identifier.namespace = :ns
                           and ci.status = :active
                         )'''
       }
@@ -667,18 +649,16 @@ class TitleAugmentService {
         params.issns = [IdentifierNamespace.findByValue('issn'), IdentifierNamespace.findByValue('eissn')]
 
         queryString += '''not exists (
-                          Select ci from Combo as ci
-                          where ci.type = :ctype
-                          and ci.status = :active
-                          and ci.fromComponent = ti
-                          and ci.toComponent.namespace = :ns
+                          Select ci from ComponentIdentifier as ci
+                          where ci.status = :active
+                          and ci.component = ti
+                          and ci.identifier.namespace = :ns
                         )
                         and exists (
-                          Select ci from Combo as ci
-                          where ci.type = :ctype
-                          and ci.status = :active
-                          and ci.fromComponent = ti
-                          and ci.toComponent.namespace IN (:issns)
+                          Select ci from ComponentIdentifier as ci
+                          where ci.status = :active
+                          and ci.component = ti
+                          and ci.identifier.namespace IN (:issns)
                         )'''
       }
 
@@ -698,7 +678,7 @@ class TitleAugmentService {
       // find the next 100 titles that do have a ZDB-ID
 
       for (ti_id in id_list) {
-        def ti = TitleInstance.get(ti_id)
+        TitleInstance ti = TitleInstance.get(ti_id)
         log.debug("Attempting augment on ${ti.id} ${ti.name}")
 
         Map augment_result = augmentZdb(ti)
@@ -796,7 +776,8 @@ class TitleAugmentService {
         result.medium = determineMediumRef(titleDTO)
       }
 
-      def ti_language = titleDTO.language ? RefdataCategory.lookup('KBComponent.Language', titleDTO.language) : null
+      RefdataValue ti_language = titleDTO.language ? RefdataCategory.lookup('KBComponent.Language', titleDTO.language) : null
+
       if (ti_language){
         result.language = ti_language
       }
@@ -808,22 +789,17 @@ class TitleAugmentService {
 
   public TitleInstance addPerson (person_name, role, ti, user = null, project = null) {
     if (person_name && person_name.trim()) {
-      def norm_person_name = KBComponent.generateNormname(person_name)
-      def person = org.gokb.cred.Person.findAllByNormname(norm_person_name)
+      String norm_person_name = KBComponent.generateNormname(person_name)
+      List person = org.gokb.cred.Person.findAllByNormname(norm_person_name)
       // log.debug("this was found for person: ${person}");
       switch (person.size()) {
         case 0:
           // log.debug("Person lookup yielded no matches.")
-          def the_person = new Person(name: person_name, normname: norm_person_name)
+          Person the_person = new Person(name: person_name, normname: norm_person_name)
 
           if (the_person.save(failOnError: true, flush: true)) {
             // log.debug("saved ${the_person.name}")
             person << the_person
-            ReviewRequest.raise(
-            ti,
-            "'${the_person}' added as ${role.value} of '${ti.name}'.",
-              "This person did not exist before, so has been newly created",
-            user, project)
           }
           else {
             the_person.errors.each { error ->
@@ -831,10 +807,11 @@ class TitleAugmentService {
             }
           }
         case 1:
-          def people = ti.getPeople() ?: []
+          List people = ti.getPeople() ?: []
           // log.debug("ti.getPeople ${people}")
           // Has the person ever existed in the list against this title.
           boolean done = false;
+
           for (cp in people) {
             if (!done && cp.person.id == person[0].id && cp.role.id == role.id) {
               done = true;
@@ -842,7 +819,7 @@ class TitleAugmentService {
           }
 
           if (!done) {
-            def componentPerson = new ComponentPerson(component: ti, person: person, role: role)
+            ComponentPerson componentPerson = new ComponentPerson(component: ti, person: person, role: role)
 
             // log.debug("people did not contain this person")
             // First person added?
@@ -856,13 +833,8 @@ class TitleAugmentService {
               }
             }
 
-            // Raise a review request, if needed.
             if (not_first && added) {
-              ReviewRequest.raise( ti,
-                      "Added '${person.name}' as ${role.value} on '${ti.name}'.",
-                      "Person supplied in ingested file is additional to any already present on BI.",
-                      user,
-                      project)
+              log.debug("Not adding duplicate person..")
             }
           }
           break
@@ -874,75 +846,31 @@ class TitleAugmentService {
     ti
   }
 
-  public TitleInstance addSubjects(the_subjects, the_title) {
-    if (the_subjects) {
-      for (the_subject in the_subjects) {
-        def norm_subj_name = KBComponent.generateNormname(the_subject)
-        def subject = Subject.findAllByNormname(norm_subj_name) //no alt names for subjects
-        // log.debug("this was found for subject: ${subject}")
-        if (!subject) {
-          // log.debug("subject not found, creating a new one")
-          subject = new Subject(name: the_subject, normname: norm_subj_name)
-          subject.save(failOnError: true, flush: true)
-        }
-        boolean done = false
-        def componentSubjects = the_title.subjects ?: []
-
-        for (cs in componentSubjects) {
-          if (!done && cs.subject.id == subject.id) {
-            done = true
-          }
-        }
-        if (!done) {
-          def cs = new ComponentSubject(component: the_title, subject: subject)
-          cs.save(failOnError: true, flush: true)
-        }
-      }
-    }
-    the_title.save(flush: true)
-    the_title
-  }
-
   /**
    * Close off any existing publisher relationships and add a new one for this publiser
    */
-  def changePublisher(ti, new_publisher, boolean null_start = false) {
+  public boolean changePublisher(ti, new_publisher, boolean null_start = false) {
 
     if (new_publisher != null) {
 
-      def current_publisher = ti.currentPublisher
-      def combo_active = DomainClassExtender.comboStatusActive
+      Org current_publisher = ti.currentPublisher
 
       if ((current_publisher != null) && (current_publisher.id == new_publisher.id)) {
         // no change... leave it be
         return false
       }
       else {
-        def publisher_combos = getCombosByPropertyName('publisher')
-        publisher_combos.each { pc ->
+        List publisher_links = ti.publisherLinks
+
+        publisher_links.each { pc ->
           if (pc.endDate == null) {
-            pc.endDate = new Date();
+            pc.endDate = new Date()
+            pc.save()
           }
         }
 
-        // Now create a new Combo
-        RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue('publisher'))
-        Combo combo = new Combo(
-          type: (type),
-          status: combo_active,
-          startDate: (null_start ? null : new Date())
-        )
-
-        // Depending on where the combo is defined we need to add a combo.
-        if (isComboReverse('publisher')) {
-          combo.fromComponent = new_publisher
-          addToIncomingCombos(combo)
-        }
-        else {
-          combo.toComponent = new_publisher
-          addToOutgoingCombos(combo)
-        }
-        combo.save(flush:true)
+        // Now create a new TitlePublisher
+        new TitlePublisher(title: ti, publisher: new_publisher, startDate: (null_start ? null : new Date())).save(flush:true)
         //this.publisher.add(new_publisher)
         ti.save(flush:true)
         return true
@@ -1020,22 +948,16 @@ class TitleAugmentService {
 
   public def addMissingDoiFromTipps(ti) {
     log.debug("addMissingDoiFromTipps for ${ti}")
-    def result = [result: 'OK', candidates: []]
+    Map result = [result: 'OK', candidates: []]
 
-    RefdataValue combo_title_tipp = RefdataCategory.lookup("Combo.Type", "TitleInstance.Tipps")
     RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
     IdentifierNamespace doi_ns = IdentifierNamespace.findByValue('doi')
 
-    def tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
+    List tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
                                                               where status = :sc
-                                                              and exists (
-                                                                select 1 from Combo
-                                                                where type = :ctt
-                                                                and fromComponent = :ti
-                                                                and toComponent = tipp)''',
+                                                              and title = :ti''',
                                                               [
                                                                 sc: status_current,
-                                                                ctt: combo_title_tipp,
                                                                 ti: ti
                                                               ])
 
@@ -1050,11 +972,14 @@ class TitleAugmentService {
     if (result.candidates.size() == 1) {
       log.debug("Found a single candidate DOI ..")
       Identifier new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('doi', result.candidates[0])
-      def linked_titles = new_id.getActiveIdentifiedComponents('TitleInstance')
+      List linked_titles = new_id.getActiveIdentifiedComponents('TitleInstance')
 
       if (linked_titles.size() == 0) {
-        ti.ids << new_id
+        new ComponentIdentifier(component: ti, identifier: new_id).save(flush: true)
+
+        ti.lastUpdateComment = "Added new identifier ${new_id}"
         ti.save(flush: true, failOnError: true)
+
         touchTitleTipps(ti)
 
         result.result = 'LINKED'
@@ -1087,9 +1012,7 @@ class TitleAugmentService {
   public Map mergeTitles(TitleInstance title_to_delete, TitleInstance merge_target_title, params) {
     log.debug("Starting title merge .. ${title_to_delete} -> ${merge_target_title}")
     Map errors = [:]
-    RefdataValue id_combo_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
-    RefdataValue combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
-    RefdataValue combo_deleted = RefdataCategory.lookup('Combo.Status', 'Active')
+    RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
 
     if (params.list('ids')?.size() > 0) {
       List unused_ids = title_to_delete.ids.collect { it.id }
@@ -1098,11 +1021,16 @@ class TitleAugmentService {
         Identifier idObj = Identifier.get(Long.valueOf(tid))
 
         if (idObj) {
-          boolean is_duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: idObj, nt: merge_target_title, ct: id_combo_type]).size() > 0
+          boolean is_duplicate = ComponentIdentifier.executeQuery('''Select c.id from ComponentIdentifier as c
+                                                        where c.identifier = :ido
+                                                        and c.component = :nt''',
+                                                        [
+                                                          ido: idObj,
+                                                          nt: merge_target_title
+                                                        ]).size() > 0
 
           if (!is_duplicate) {
-            merge_target_title.ids.add(idObj)
-            merge_target_title.save(flush: true)
+            merge_target_title(idObj)
           }
           else {
             log.warn("merge :: Not adding multiple links between title ${merge_target_title} and ID ${idObj}!")
@@ -1122,28 +1050,36 @@ class TitleAugmentService {
       // Transfer other ids and mark them as deleted
 
       // unused_ids.each { unused_id ->
-      //   boolean is_active = Combo.executeQuery("select id from Combo where toComponent.id = :unid and fromComponent = :ttd and c.type = :ct status = :sa", [unid: unused_id, ttd: title_to_delete, ct: id_combo_type, status: combo_active]).size() > 0
+      //   boolean is_active = ComponentIdentifier.executeQuery("select id from ComponentIdentifier where identifier.id = :unid and component = :ttd and status = :sa", [unid: unused_id, ttd: title_to_delete, status: status_active]).size() > 0
 
       //   if (is_active) {
-      //     boolean is_duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent.id = :ido and c.fromComponent = :nt and c.type = :ct", [ido: unused_id, nt: merge_target_title, ct: id_combo_type]).size() > 0
+      //     boolean is_duplicate = ComponentIdentifier.executeQuery("Select c.id from ComponentIdentifier as c where c.identifier.id = :ido and c.component = :nt and c.type = :ct", [ido: unused_id, nt: merge_target_title]).size() > 0
 
       //     if (!is_duplicate) {
       //       log.debug("Adding deselected Identifier ${unused_id} to ${merge_target_title} as deleted id.")
       //       Identifier inactive_id = Identifier.get(unused_id)
 
-      //       new Combo(fromComponent: merge_target_title, toComponent: inactive_id, type: id_combo_type, status: combo_deleted).save(flush: true, failOnError: true)
+      //       new ComponentIdentifier(component: merge_target_title, identifier: inactive_id, status: status_active).save(flush: true, failOnError: true)
       //     }
       //   }
       // }
     }
     else if (params.boolean('mergeIds')) {
       title_to_delete.ids.each { old_id ->
-        Combo old_combo = Combo.findByFromComponentAndToComponent(title_to_delete, old_id)
-        boolean is_duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: old_id, nt: merge_target_title, ct: id_combo_type]).size() > 0
+        ComponentIdentifier old_link = ComponentIdentifier.findByFromComponentAndToComponent(title_to_delete, old_id)
+        boolean is_duplicate = ComponentIdentifier.executeQuery('''Select c.id from ComponentIdentifier as c
+                                                                    where c.toComponent = :ido
+                                                                    and c.fromComponent = :nt
+                                                                    and c.type = :ct''',
+                                                                    [
+                                                                      ido: old_id,
+                                                                      nt: merge_target_title,
+                                                                      ct: id_combo_type
+                                                                    ]).size() > 0
 
         if (!is_duplicate){
           log.debug("Adding Identifier ${old_id} to ${merge_target_title}")
-          new Combo(toComponent: old_id, fromComponent: merge_target_title, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
+          new ComponentIdentifier(identifier: old_id, component: merge_target_title, status: old_link.status).save(flush: true, failOnError: true)
         }
         else{
           log.debug("Identifier ${old_id} is already connected to ${merge_target_title}..")
@@ -1157,10 +1093,11 @@ class TitleAugmentService {
 
     if (params.list('tipps')?.size() > 0) {
       params.list('tipps').each { tipp ->
-        Combo tipp_combo = Combo.executeQuery("from Combo where fromComponent = :title and toComponent.id = :tippId", [title: title_to_delete, tippId: Long.valueOf(tipp)])
+        TitleInstancePackagePlatform tippObj = TitleInstancePackagePlatform.get(Long.valueOf(tipp))
 
-        if (tipp_combo?.size() == 1) {
-          tipp_combo[0].fromComponent = merge_target_title
+        if (tippObj.title == title_to_delete) {
+          tippObj.title = merge_target_title
+          tippObj.save(flush: true)
         }
       }
     }

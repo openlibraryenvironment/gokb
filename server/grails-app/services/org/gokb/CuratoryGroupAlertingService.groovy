@@ -30,7 +30,7 @@ class CuratoryGroupAlertingService {
     ]
   ]
 
-  def sendJobFailureAlert(JobResult jr) {
+  public Map sendJobFailureAlert(JobResult jr) {
     log.debug("sendJobFailureAlert...");
     def result = [result: 'OK']
     def edit_link
@@ -98,14 +98,14 @@ class CuratoryGroupAlertingService {
     result
   }
 
-  def triggerDailyJobsAlert(groupId, jobs) {
-    def result = [result: 'OK']
-    def obj = CuratoryGroup.get(groupId)
+  public Map triggerDailyJobsAlert(groupId, jobs) {
+    Map result = [result: 'OK']
+    CuratoryGroup obj = CuratoryGroup.get(groupId)
 
     if (obj) {
       Locale locale = new Locale(obj.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
       String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'package/' : null
-      def jobs_table = jobs.collect { job -> [
+      List jobs_table = jobs.collect { job -> [
                                       packageName: job.linkedItemName,
                                       packageId: job.linkedItemId,
                                       editLink: edit_base ? edit_base + "${job.linkedItemId}" : null,
@@ -123,8 +123,8 @@ class CuratoryGroupAlertingService {
     result
   }
 
-  def triggerDailyReviewsAlerts() {
-    def result = [result: 'OK', report: [:]]
+  public Map triggerDailyReviewsAlerts() {
+    Map result = [result: 'OK', report: [:]]
     String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'package/' : null
     Date lastDayDate = Date.from(LocalDateTime.now().minusHours(24).atZone(ZoneId.systemDefault()).toInstant())
     RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
@@ -133,13 +133,13 @@ class CuratoryGroupAlertingService {
     CuratoryGroup ezb_admin = grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators")) : null
     def session = sessionFactory.currentSession
 
-    def completed_jobs = JobResult.executeQuery('''select groupId, linkedItemId from JobResult
+    List<JobResult> completed_jobs = JobResult.executeQuery('''select groupId, linkedItemId from JobResult
                                                     where linkedItemId is not null
                                                     and groupId is not null
                                                     and startTime > :lastDay''',
                                                 [lastDay: lastDayDate])
 
-    def groups_list = [:]
+    Map groups_list = [:]
 
     completed_jobs.each { jr ->
       if (!groups_list[jr[0]]) {
@@ -155,7 +155,7 @@ class CuratoryGroupAlertingService {
       if (cg) {
         log.debug("triggerDailyReviewsAlerts :: Processing group ${cg?.name} (ID ${groupId}) ..")
         Locale locale = new Locale(cg.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
-        def table_items = []
+        List table_items = []
 
         if (cg.newReviewsAlerts) {
           packageIdList.each { pid ->
@@ -163,18 +163,13 @@ class CuratoryGroupAlertingService {
 
             Package pkg = Package.get(pid)
 
-            def num_new_reviews = ReviewRequest.executeQuery('''select count(rr.id) from ReviewRequest as rr
+            int num_new_reviews = ReviewRequest.executeQuery('''select count(rr.id) from ReviewRequest as rr
                                                                 where status = :open
                                                                 and dateCreated > :lastDay
                                                                 and exists (
                                                                   select 1 from TitleInstancePackagePlatform as t
                                                                   where t.id = rr.componentToReview.id
-                                                                  and exists (
-                                                                    select 1 from Combo
-                                                                    where fromComponent = :pkg
-                                                                    and toComponent.id = t.id
-                                                                    and type = :ctype
-                                                                  )
+                                                                  t.pkg = :pkg
                                                                 )''',
                                                                 [lastDay: lastDayDate, open: rr_open, ctype: combo_tipp, pkg: pkg])[0]
 
@@ -214,8 +209,8 @@ class CuratoryGroupAlertingService {
     result
   }
 
-  def processExternalEditorialReviews(group) {
-    def result = [result: 'OK']
+  public Map processExternalEditorialReviews(group) {
+    Map result = [result: 'OK']
     RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
     Locale locale = new Locale(group.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))
     Date lastDayDate = Date.from(LocalDateTime.now().minusHours(24).atZone(ZoneId.systemDefault()).toInstant())
@@ -239,7 +234,7 @@ class CuratoryGroupAlertingService {
                                                      [lastDay: lastDayDate, open: rr_open, type: type_ext, grp: group])
 
     if (new_requests.size() > 0) {
-      def table_items = new_requests.collect { nr ->
+      List table_items = new_requests.collect { nr ->
         [
           editLink: edit_base ? edit_base + "${nr.id}" : null
         ]
@@ -254,12 +249,12 @@ class CuratoryGroupAlertingService {
     result
   }
 
-  def sendDailyAlertsForGroup(group, locale, type, items) {
-    def result = [result: 'OK']
-    def support_address = grailsApplication.config.getProperty('gokb.support.emailTo')
-    def alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
+  private Map sendDailyAlertsForGroup(group, locale, type, items) {
+    Map result = [result: 'OK']
+    String support_address = grailsApplication.config.getProperty('gokb.support.emailTo')
+    String alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
 
-    def template_params = [
+    Map template_params = [
       supportAddress: support_address,
       locale: locale,
       items: items,

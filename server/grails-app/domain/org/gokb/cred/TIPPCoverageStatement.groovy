@@ -28,8 +28,9 @@ class TIPPCoverageStatement {
     endVolume column:'tipp_end_volume'
     endIssue column:'tipp_end_issue'
     embargo column:'tipp_embargo'
-    coverageNote column:'tipp_coverage_note',type: 'text'
+    coverageNote column:'tipp_coverage_note', type: 'text'
     coverageDepth column:'tipp_coverage_depth'
+    owner column: 'owner_id', index: 'tcs_owner_idx'
   }
 
   static constraints = {

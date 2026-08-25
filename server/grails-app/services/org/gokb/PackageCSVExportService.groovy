@@ -27,6 +27,7 @@ import org.gokb.cred.*
 import org.hibernate.ScrollMode
 import org.hibernate.ScrollableResults
 import org.hibernate.Session
+import org.hibernate.Query
 import org.hibernate.type.StandardBasicTypes
 import org.springframework.util.FileCopyUtils
 
@@ -115,7 +116,7 @@ class PackageCSVExportService {
           boolean selectiveUpdate = false
           boolean cancelled = false
           String latestFileName = getLatestFile(pkg, path, oldExportFileName, exportType)
-          def existingFileMap = [:]
+          Map existingFileMap = [:]
           File out = new File("${path}${exportFileName}")
           File old_out = new File("${path}${oldExportFileName}")
           boolean existing_ms_accuracy = false
@@ -158,7 +159,7 @@ class PackageCSVExportService {
               CSVReader csv = initReader(path + latestFileName)
 
               String[] header = csv.readNext().collect { it.toLowerCase().trim() }
-              def col_positions = [:]
+              Map col_positions = [:]
               int col_ctr = 0
               boolean header_conflicts = false
 
@@ -216,30 +217,23 @@ class PackageCSVExportService {
                 writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
               }
 
-              def session = sessionFactory.getCurrentSession()
-              def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-              def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-              def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-              def qry_string_full = '''select tipp.id from TitleInstancePackagePlatform as tipp,
-                                                Combo as c
-                                                where c.fromComponent.id = :p
-                                                and c.toComponent = tipp
-                                                and tipp.status in (:status)
-                                                and c.type = :ct
-                                                order by tipp.id'''
-              def qry_string_selective = '''select tipp.id from TitleInstancePackagePlatform as tipp,
-                                                Combo as c
-                                                where c.fromComponent.id = :p
-                                                and c.toComponent = tipp
-                                                and c.type = :ct
+              Session session = sessionFactory.getCurrentSession()
+              RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+              RefdataValue status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+              String qry_string_full = '''select tipp.id from TitleInstancePackagePlatform as tipp
+                                          where tipp.pkg.id = :p
+                                          and tipp.status in (:status)
+                                          order by tipp.id'''
+
+              String qry_string_selective = '''select tipp.id from TitleInstancePackagePlatform as tipp
+                                                where tipp.pkg.id = :p
                                                 and tipp.lastUpdated > :ts
                                                 order by tipp.id'''
 
 
-              def query = session.createQuery(selectiveUpdate ? qry_string_selective : qry_string_full, Long)
+              Query query = session.createQuery(selectiveUpdate ? qry_string_selective : qry_string_full, Long)
               query.setReadOnly(true)
-              query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
-              query.setParameter('ct', combo_tipps)
+              query.setParameter('p', pkg)
 
               if (!selectiveUpdate) {
                 query.setParameterList('status', [status_current, status_expected])
@@ -252,8 +246,7 @@ class PackageCSVExportService {
               int ctr = 0
 
               while (tippIDs.next()) {
-                def tipp_id = tippIDs.get(0)
-                TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+                TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDs.get(0))
 
                 if (selectiveUpdate) {
                   if (tipp.status != status_expected && tipp.status != status_current && existingFileMap[tipp.uuid]) {
@@ -263,7 +256,7 @@ class PackageCSVExportService {
                     existingFileMap[tipp.uuid] = []
 
                     kbartRecordsFor(tipp, exportType).each { record ->
-                      def new_row_data = []
+                      List new_row_data = []
 
                       KBART_FIELDS.eachWithIndex { fieldName, i ->
                         new_row_data << sanitize(record[fieldName])
@@ -475,30 +468,24 @@ class PackageCSVExportService {
                 '[TI] pISBN' +
                 '\n');
 
-            def session = sessionFactory.getCurrentSession()
-            def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-            def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-            def qry_string_full = '''select tipp.id
-                                      from TitleInstancePackagePlatform as tipp,
-                                      Combo as c
-                                      where c.fromComponent.id=:p
-                                      and c.toComponent=tipp
-                                      and tipp.status <> :sd
-                                      and c.type = :ct
-                                      order by tipp.id'''
-            def qry_string_selective = '''select tipp.id
-                                      from TitleInstancePackagePlatform as tipp,
-                                      Combo as c
-                                      where c.fromComponent.id=:p
-                                      and c.toComponent=tipp
-                                      and c.type = :ct
-                                      and tipp.lastUpdated > :ts
-                                      order by tipp.id'''
-            def query = session.createQuery(selectiveUpdate ? qry_string_selective : qry_string_full, Long)
+            Session session = sessionFactory.getCurrentSession()
+            RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+            String qry_string_full = '''select tipp.id
+                                        from TitleInstancePackagePlatform as tipp
+                                        where tipp.pkg = :p
+                                        and tipp.status != :sd
+                                        order by tipp.id'''
+
+            String qry_string_selective = '''select tipp.id
+                                              from TitleInstancePackagePlatform as tipp
+                                              where tipp.pkg = :p
+                                              and tipp.lastUpdated > :ts
+                                              order by tipp.id'''
+
+            Query query = session.createQuery(selectiveUpdate ? qry_string_selective : qry_string_full, Long)
 
             query.setReadOnly(true)
-            query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
-            query.setParameter('ct', combo_tipps)
+            query.setParameter('p', pkg)
 
 
             if (!selectiveUpdate) {
@@ -513,9 +500,7 @@ class PackageCSVExportService {
 
             TitleInstancePackagePlatform.withNewSession { tsession ->
               while (tipps.next()) {
-                def tipp_id = tipps.get(0)
-                TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-
+                TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipps.get(0))
                 List ordered_rows = tsvRecordsFor(tipp)
 
                 if (selectiveUpdate) {
@@ -615,7 +600,7 @@ class PackageCSVExportService {
   }
 
   public void sendFile(Package pkg, ExportType type, def response) {
-    def path = exportFilePath()
+    String path = exportFilePath()
     String oldCachedName = generateExportFileName(pkg, type, false)
     String newCacheName = generateExportFileName(pkg, type)
     String exportName = generateExportFileName(pkg, type, false, false, true, true)
@@ -675,7 +660,7 @@ class PackageCSVExportService {
   }
 
   public void sendZip(Collection packs, ExportType type, def response) {
-    def pathPrefix = UUID.randomUUID().toString()
+    String pathPrefix = UUID.randomUUID().toString()
     String path = exportFilePath()
     File tempDir = new File(path + pathPrefix)
     boolean hasErrors = false
@@ -918,12 +903,12 @@ class PackageCSVExportService {
   }
 
   private List tsvRecordsFor (TitleInstancePackagePlatform tipp) {
-    def recordList = []
-    def ti = ClassUtils.deproxy(tipp.title)
+    List recordList = []
+    TitleInstance ti = ClassUtils.deproxy(tipp.title)
 
     if (tipp.coverageStatements?.size() > 0) {
       tipp.coverageStatements.each { tcs ->
-        def record = [
+        List record = [
           tipp.getId(),
           sanitize(tipp.url),
           sanitize(ti?.getId()),

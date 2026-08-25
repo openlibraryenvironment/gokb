@@ -35,9 +35,9 @@ class EzbCollectionService {
 
   static String ARCHIVED_TYPE = 'collections_no_longer_available'
 
-  def startUpdate(User user = null) {
-    def result = [result: 'OK']
-    def running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest'))
+  public Map startUpdate(User user = null) {
+    Map result = [result: 'OK']
+    List running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest'))
 
     if (running_jobs.size() == 0) {
         log.debug("Creating new job..")
@@ -65,9 +65,9 @@ class EzbCollectionService {
     result
   }
 
-  private def fetchUpdatedLists (job) {
-    def result = [result: 'OK', report: [:]]
-    def baseUrl = grailsApplication.config.getProperty('gokb.ezbOpenCollections.url')
+  private Map fetchUpdatedLists (job) {
+    Map result = [result: 'OK', report: [:]]
+    String baseUrl = grailsApplication.config.getProperty('gokb.ezbOpenCollections.url')
 
     if (baseUrl) {
       def allCollections = [:]
@@ -76,13 +76,13 @@ class EzbCollectionService {
       job.startTime = new Date()
 
       try {
-        def request = HttpRequest.GET("/collections/v1/")
+        HttpRequest request = HttpRequest.GET("/collections/v1/")
           .header('User-Agent', "GOKb KBART bulk import")
           .header('Accept', 'application/json')
 
         log.debug("Headers: ${request.remoteAddress}")
 
-        def resp = HttpClient.create(new URL(baseUrl)).toBlocking().retrieve(request, Map.class)
+        Map resp = HttpClient.create(new URL(baseUrl)).toBlocking().retrieve(request, Map.class)
 
         resp.collections.each { type, items ->
           log.debug("Mapping ${type} with ${items.size()} items")
@@ -125,7 +125,7 @@ class EzbCollectionService {
 
       allCollections.each { type, items ->
         log.debug("Starting with type ${type} ..")
-        def type_results = [
+        Map type_results = [
           total: 0,
           skipped: 0,
           noProvider: 0,
@@ -168,19 +168,24 @@ class EzbCollectionService {
       }
 
       // Cleaning up newly archived collections
-      result.report[ARCHIVED_TYPE] = [matchedOtherCg: [], skipped: 0, retired: 0, total: 0]
+      result.report[ARCHIVED_TYPE] = [
+        matchedOtherCg: [],
+        skipped: 0,
+        retired: 0,
+        total: 0
+      ]
       log.debug("Looking for archived packages to retire ..")
 
       Package.withNewSession {
         archivedCollections.each { item ->
           result.report[ARCHIVED_TYPE].total++
-          def pkgName = buildPackageName(item)
+          String pkgName = buildPackageName(item)
           RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-          def obj = Package.findByNameAndStatus(pkgName, status_current)
+          Package obj = Package.findByNameAndStatus(pkgName, status_current)
           CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators'))
 
           if (item.ezb_collection_curatory_group) {
-            def local_cg = CuratoryGroup.findByUuid(item.ezb_collection_curatory_group)
+            CuratoryGroup local_cg = CuratoryGroup.findByUuid(item.ezb_collection_curatory_group)
 
             if (local_cg) {
               curator = local_cg
@@ -189,10 +194,10 @@ class EzbCollectionService {
 
           if (!obj) {
             Identifier collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb-collection-id', item.ezb_collection_id)
-            def candidates = findIdCandidates(collection_id, curator.id)
+            List candidates = findIdCandidates(collection_id, curator.id)
 
             if (candidates.size() == 0) {
-              def other_cg_candidates = findIdCandidates(collection_id, null)
+              List other_cg_candidates = findIdCandidates(collection_id, null)
 
               if (other_cg_candidates.size() > 0) {
                 result.report[ARCHIVED_TYPE].skipped++
@@ -235,7 +240,7 @@ class EzbCollectionService {
     }
 
     JobResult.withNewTransaction {
-      def job_map = [
+      Map job_map = [
           uuid        : (job.uuid),
           description : (job.description),
           resultObject: (result as JSON).toString(),
@@ -247,14 +252,14 @@ class EzbCollectionService {
           endTime     : (job.endTime)
       ]
 
-      def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+      new JobResult(job_map).save(flush: true, failOnError: true)
     }
 
     result
   }
 
   private void handleEzbCollectionItem(item, type_results) {
-    def collection_result = processPackageInfo(item, type_results)
+    Map collection_result = processPackageInfo(item, type_results)
 
     if (!collection_result.skipped &&
         collection_result.pkgInfo.id &&
@@ -264,6 +269,7 @@ class EzbCollectionService {
     ) {
       if (hasChangedFile(collection_result.pkgInfo.id, item)) {
         log.debug("Creating new import job ..")
+
         try {
           Job pkg_job = concurrencyManagerService.createJob { pjob ->
             packageSourceUpdateService.updateFromSource(collection_result.pkgInfo.id, null, pjob, collection_result.curator_id)
@@ -278,7 +284,7 @@ class EzbCollectionService {
             pkg_job.startOrQueue()
           }
 
-          def job_result = pkg_job.get()
+          Map job_result = pkg_job.get() ?: [:]
 
           log.debug("Finished job with result: ${job_result}")
 
@@ -324,8 +330,8 @@ class EzbCollectionService {
     }
   }
 
-  private def processPackageInfo(item, type_results) {
-    def result = [
+  private Map processPackageInfo(item, type_results) {
+    Map result = [
       skipped: false,
       sourceResult: false,
       pkgInfo: [:],
@@ -335,7 +341,8 @@ class EzbCollectionService {
 
     Package.withNewSession { session ->
       type_results.total++
-      def pkgName = buildPackageName(item)
+
+      String pkgName = buildPackageName(item)
       log.debug("Processing ${item.ezb_package_type_name} ${item.ezb_collection_name}")
       String ezbCuratorName = grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')
       RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
@@ -410,7 +417,8 @@ class EzbCollectionService {
           try {
             obj = new Package(name: pkgName).save(flush: true, failOnError: true)
 
-            obj.curatoryGroups << ezb_curator
+            obj.addToCuratoryGroups(ezb_curator)
+            obj.save()
 
             type_results.created++
           }
@@ -489,12 +497,7 @@ class EzbCollectionService {
           def open_reviews_count = ReviewRequest.executeQuery('''select count(*) from ReviewRequest as rr
               where exists (
                 select 1 from TitleInstancePackagePlatform as tipp
-                where exists (
-                  select 1 from Combo
-                  where toComponent = tipp
-                  and fromComponent = :pkg
-                  and type = :cpt
-                )
+                where tipp.pkg = :pkg
                 and rr.componentToReview.id = tipp.id
               )
               and status = :so
@@ -560,18 +563,16 @@ class EzbCollectionService {
   private boolean hasChangedFile(pid, item) {
     Package.withNewSession {
       boolean result = false
-      def deposit_token = java.util.UUID.randomUUID().toString()
+      String deposit_token = java.util.UUID.randomUUID().toString()
       File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
-      def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.ezb_collection_titlelist))
+      Map file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.ezb_collection_titlelist))
 
-      RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+      List ordered_attachments = ComponentAttachment.executeQuery('''select c.file from ComponentAttachment as c
+                                                                      where c.component.id = :pkg
+                                                                      order by c.dateCreated desc''',
+                                                                      [ct: type_fa, pkg: pid])
 
-      def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
-                                                where c.type = :ct
-                                                and c.fromComponent.id = :pkg
-                                                order by c.dateCreated desc''', [ct: type_fa, pkg: pid])
-
-      def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
+      String last_df_md5 = ordered_attachments.size() > 0 ? ordered_attachments[0].md5 : null
 
       if (tmp_file.isFile() && (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex)) {
         result = true
@@ -586,23 +587,18 @@ class EzbCollectionService {
     boolean result = true
     Source source = pkg.source
     IdentifierNamespace ezb_ns = IdentifierNamespace.findByValue('ezb')
+    boolean source_changed = false
 
     if (!source) {
       log.debug("Setting new package source..")
 
       try {
-        def dupe = Source.findByName(pkg.name)
+        source = new Source(name: pkg.name, url: item.ezb_collection_titlelist, targetNamespace: ezb_ns).save(flush:true, failOnError: true)
 
-        if (!dupe) {
-          source = new Source(name: pkg.name, url: item.ezb_collection_titlelist, targetNamespace: ezb_ns).save(flush:true, failOnError: true)
+        if (curator) {
+          source.addToCuratoryGroups(curator)
+          source.save(flush: true)
 
-          if (curator) {
-            source.curatoryGroups << curator
-          }
-        }
-        else {
-          log.warn("Found existing source with package name ${pkg.name}!")
-          source = dupe
         }
       }
       catch (Exception e) {
@@ -618,17 +614,21 @@ class EzbCollectionService {
 
     if (source && source.automaticUpdates) {
       source.automaticUpdates = false
-      source.save()
+      source_changed = true
     }
 
     if (source && !source.importConfig) {
       source.importConfig = RefdataCategory.lookup('Source.ImportConfig', 'EZB')
-      source.save()
+      source_changed = true
     }
 
     if (source && source.url != item.ezb_collection_titlelist) {
       source.url = item.ezb_collection_titlelist
-      source.save()
+      source_changed = true
+    }
+
+    if (source_changed == true) {
+      source.save(flush: true, failOnError: true)
     }
 
     result
@@ -650,30 +650,32 @@ class EzbCollectionService {
     result
   }
 
-  private def findIdCandidates(collection_id, curator_id) {
+  private List findIdCandidates(collection_id, curator_id) {
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-    RefdataValue combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
+    RefdataValue link_active = RefdataCategory.lookup('ComponentIdentifier.Status', 'Active')
     RefdataValue local_status = RefdataCategory.lookup('Package.Global', 'Local')
-    def qry_pars = [clId: collection_id, sc: status_current, ca: combo_active, local: local_status]
-    def qry = '''from Package as p
-        where
+    Map qry_pars = [
+      clId: collection_id,
+      sc: status_current,
+      ca: link_active,
+      local: local_status
+    ]
+    def qry = '''FROM Package AS p
+        WHERE
         status = :sc
-        and global != :local
-        and exists (
-          select 1 from Combo
-          where fromComponent = p
-          and status = :ca
-          and toComponent = :clId)'''
+        AND global != :local
+        AND exists (
+          SELECT 1 FROM ComponentIdentifier
+          WHERE component = p
+          AND status = :ca
+          AND toComponent = :clId)'''
 
     if (curator_id) {
       qry_pars.curator = curator_id
-      qry += ''' and exists (
-              select 1 from Combo
-              where fromComponent = p
-              and toComponent.id = :curator)'''
+      qry += ''' AND :curator MEMBER OF p.curatoryGroups'''
     }
 
-    def result = Package.executeQuery(qry, qry_pars)
+    List result = Package.executeQuery(qry, qry_pars)
 
     result
   }

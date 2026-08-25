@@ -17,14 +17,14 @@ class PackageUpdateService {
   def tippUpsertService
 
   @Transactional
-  def updateCombos(obj, reqBody, changed, boolean remove = true, user) {
+  public Map updateCombos(obj, reqBody, changed, boolean remove = true, user) {
     log.debug("Updating package combos ..")
-    def errors = [:]
+    Map errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
-      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
+      Collection id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
+      Map id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
       changed |= id_result.changed
 
@@ -34,7 +34,7 @@ class PackageUpdateService {
     }
 
     if (reqBody.curatoryGroups instanceof Collection) {
-      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      Map cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
       changed |= cg_result.changed
 
@@ -44,13 +44,13 @@ class PackageUpdateService {
     }
 
     if (reqBody.listStatus) {
-      def new_val = null
+      RefdataValue new_val = null
 
       if (reqBody.listStatus instanceof String) {
         new_val = RefdataCategory.lookup('Package.ListStatus', reqBody.listStatus)
       }
       else if (reqBody.listStatus instanceof Integer) {
-        def rdv = RefdataValue.get(reqBody.listStatus)
+        RefdataValue rdv = RefdataValue.get(reqBody.listStatus)
 
         if (rdv.owner?.id == RefdataCategory.findByLabel('Package.ListStatus').id) {
           new_val = rdv
@@ -60,25 +60,19 @@ class PackageUpdateService {
         }
 
         RefdataValue review_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-        RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
 
-        def review_qry = '''from ReviewRequest as r
+        String review_qry = '''from ReviewRequest as r
                             where status = :so
                             and (
                               componentToReview.id = :pkg
                               or exists (
                                 select t from TitleInstancePackagePlatform as t
                                 where t.id = r.componentToReview.id
-                                and exists (
-                                  select 1 from Combo
-                                  where fromComponent.id = :pkg
-                                  and type = :ct
-                                  and toComponent = t
-                                )
+                                and t.pkg = :pkg
                               )
                             )'''
 
-        def open_reviews = ReviewRequest.executeQuery(review_qry, [pkg: obj.id, so: review_open, ct: combo_tipps],[max: 1])
+        List open_reviews = ReviewRequest.executeQuery(review_qry, [pkg: obj.id, so: review_open, ct: combo_tipps],[max: 1])
 
 
         if (new_val && new_val != obj.listStatus) {
@@ -179,12 +173,12 @@ class PackageUpdateService {
     if (reqBody.tipps) {
       reqBody.tipps.each { tipp_dto ->
         tipp_dto.pkg = obj.id
-        def ti_errors = []
+        List ti_errors = []
 
         if (tipp_dto.title && tipp_dto.title instanceof Map) {
           if (!tipp_dto.title.id) {
             try {
-              def ti = titleAugmentService.upsertDTO(titleLookupService, tipp_dto.title, user)
+              TitleInstance ti = titleAugmentService.upsertDTO(titleLookupService, tipp_dto.title, user)
 
               if (ti) {
                 tipp_dto.title = ti.id
@@ -193,22 +187,28 @@ class PackageUpdateService {
             catch (grails.validation.ValidationException ve) {
               log.error("ValidationException attempting to cross reference title", ve);
               valid_ti = false
-              def validation_errors = [
-                  message: "Title ${tipp_dto.title?.name} failed validation!",
-                  baddata: tipp_dto.title,
-                  errors : messageService.processValidationErrors(ve.errors)
+              Map validation_errors = [
+                message: "Title ${tipp_dto.title?.name} failed validation!",
+                baddata: tipp_dto.title,
+                errors : messageService.processValidationErrors(ve.errors)
               ]
+
               ti_errors.add(validation_errors)
             }
             catch (org.gokb.exceptions.MultipleComponentsMatchedException mcme) {
               log.debug("Handling MultipleComponentsMatchedException")
               valid_ti = false
-              ti_errors.add([baddata: tipp_dto.title, 'message': "Unable to uniquely match title ${tipp_dto.title?.name}, check duplicates for titles ${mcme.matched_ids}!", conflicts: mcme.matched_ids])
+
+              ti_errors.add([
+                baddata: tipp_dto.title,
+                message: "Unable to uniquely match title ${tipp_dto.title?.name}, check duplicates for titles ${mcme.matched_ids}!",
+                conflicts: mcme.matched_ids
+              ])
             }
           }
         }
 
-        def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp_dto, java.util.Locale.ENGLISH)
+        Map tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp_dto, java.util.Locale.ENGLISH)
 
         if (ti_errors?.size() > 0 || !tipp_validation.valid) {
           if (!errors.tipps) {
@@ -224,7 +224,7 @@ class PackageUpdateService {
           }
         }
         else {
-          def upserted_tipp = tippUpsertService.upsertDTO(tipp_dto, user)
+          TitleInstancePackagePlatform upserted_tipp = tippUpsertService.upsertDTO(tipp_dto, user)
 
           if (upserted_tipp) {
             if (errors.size() == 0) {
@@ -237,11 +237,11 @@ class PackageUpdateService {
                 tipp_status = RefdataCategory.lookup('KBComponent.Status', tipp_dto.status)
               }
               else if (tipp_dto.status instanceof Integer) {
-                def id_rdv = RefdataValue.get(tipp_dto.status)
+                RefdataValue id_rdv = RefdataValue.get(tipp_dto.status)
                 tipp_status = id_rdv.owner.label == 'KBComponent.Status' ? id_rdv : null
               }
               else if (tipp_dto.status instanceof Map) {
-                def id_rdv = RefdataValue.get(tipp_dto.status.id)
+                RefdataValue id_rdv = RefdataValue.get(tipp_dto.status.id)
                 tipp_status = id_rdv.owner.label == 'KBComponent.Status' ? id_rdv : null
               }
 

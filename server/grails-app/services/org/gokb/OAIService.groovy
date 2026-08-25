@@ -163,7 +163,7 @@ class OAIService {
   }
 
   private void handleCurators(result, setFilters, rdv, params) {
-    Boolean wClause = result.query.contains('where')
+    boolean wClause = result.query.contains('where')
     String query_additions = ""
     CuratoryGroup cg = null
 
@@ -190,9 +190,16 @@ class OAIService {
     }
 
     if (!result.errors && cg) {
-      query_additions += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = :cgo and cgCombo.type = :cgtype and cgCombo.fromComponent = o '
+      if (!wClause){
+        query_additions += 'where '
+      }
+      else{
+        query_additions += ' and '
+      }
+
+      query_additions += ':cgo member of o.curatoryGroups'
+
       result.query_params.put('cgo', cg)
-      result.query_params.put('cgtype', RefdataCategory.lookup('Combo.Type', rdv))
     }
 
     result.query = result.query + query_additions
@@ -217,10 +224,16 @@ class OAIService {
       }
 
       if (linked_pkg) {
-        query_additions += ', Combo as pkgCombo, Package as pkg where pkgCombo.fromComponent = :lpkg and pkgCombo.type = :cpkgt and pkgCombo.toComponent = o '
+        if (!wClause){
+          query_additions += 'where '
+        }
+        else{
+          query_additions += ' and '
+        }
+
+        query_additions += 'o.pkg = :lpkg'
         wClause = true
         result.query_params.put('lpkg', linked_pkg)
-        result.query_params.put('cpkgt', RefdataCategory.lookup('Combo.Type', rdv))
       }
       else {
         result.errors.add([code:'badArgument', name: 'pkg', expl: 'Unable to lookup Package.'])
@@ -228,17 +241,8 @@ class OAIService {
       }
     }
 
-    if (!wClause){
-      query_additions += 'where '
-    }
-    else{
-      query_additions += ' and '
-    }
-
-    // Filter out TIPPs without linked TitleInstance
-    query_additions += 'exists (select 1 from Combo as cti where cti.toComponent = o and cti.type = :ctipp)'
-    RefdataValue qry_cti = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-    result.query_params.put('ctipp', qry_cti)
+    // Filter out TIPPs without linked TitleInstance (?)
+    // query_additions += 'and o.title is not null'
 
     result.query = result.query + query_additions
   }

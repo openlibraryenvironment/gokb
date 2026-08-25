@@ -27,7 +27,7 @@ class DataFile extends KBComponent {
   }
 
   static mapping = {
-    includes TitleInstance.mapping
+    includes KBComponent.mapping
     guid column:'df_guid'
     md5 column:'df_md5'
     uploadName column:'df_upload_name'
@@ -39,12 +39,12 @@ class DataFile extends KBComponent {
     canEdit column:'df_canEdit'
   }
 
-  static manyByCombo = [
-    attachedToComponents : KBComponent
+  static hasMany = [
+    attachedToComponents : ComponentAttachment
   ]
 
-  static mappedByCombo = [
-    attachedToComponents : 'fileAttachments'
+  static mappedBy = [
+    attachedToComponents : 'file'
   ]
 
   /**

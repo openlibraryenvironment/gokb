@@ -17,7 +17,6 @@ import java.time.ZoneId
 class TippService {
   def componentUpdateService
   def componentLookupService
-  def grailsApplication
   def titleLookupService
   def titleAugmentService
   def sessionFactory
@@ -25,7 +24,6 @@ class TippService {
   def autoTimestampEventListener
   def validationService
   def restMappingService
-  def FTUpdateService
   def dateFormatService
 
   public Map validateDTO(tipp_dto) {
@@ -128,7 +126,7 @@ class TippService {
         def ns_val = idobj.type ?: idobj.namespace
 
         if (ns_val) {
-          def namespace = null
+          IdentifierNamespace namespace = null
 
           if (ns_val instanceof String) {
             namespace = IdentifierNamespace.findByValueIlike(ns_val)
@@ -438,6 +436,7 @@ class TippService {
     if (errors.size() > 0) {
       result.errors = errors
     }
+
     return result
   }
 
@@ -445,21 +444,21 @@ class TippService {
     RefdataCategory rdc = RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)
 
     if (mediumType instanceof String) {
-      def rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
+      RefdataValue rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
 
       if (rdv) {
         return rdv
       }
     }
     else if (mediumType instanceof Integer) {
-      def rdv = RefdataValue.get(mediumType)
+      RefdataValue rdv = RefdataValue.get(mediumType)
 
       if (rdv && rdc) {
         return rdv
       }
     }
     else if (mediumType instanceof Map && mediumType.id) {
-      def rdv = RefdataValue.get(mediumType.id)
+      RefdataValue rdv = RefdataValue.get(mediumType.id)
 
       if (rdv && rdc) {
         return rdv
@@ -595,7 +594,7 @@ class TippService {
         }
       }
 
-      for (def cst : conflicting_statements) {
+      for (Long cst : conflicting_statements) {
         tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(cst))
         changed = true
       }
@@ -622,7 +621,7 @@ class TippService {
           cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
         }
 
-        def coverage_item = [
+        Map coverage_item = [
           'startVolume': c.startVolume,
           'startIssue': c.startIssue,
           'endVolume': c.endVolume,
@@ -687,7 +686,7 @@ class TippService {
 
             result[match_result.status]++
 
-            if(match_result.reviewCreated) {
+            if (match_result.reviewCreated) {
               result.reviews++
             }
           }
@@ -1206,8 +1205,8 @@ class TippService {
   }
 
   @Transactional
-  def copyTitleData(Job job = null) {
-    def result = [status:'OK', total: 0]
+  public Map copyTitleData(Job job = null) {
+    Map result = [status:'OK', total: 0]
 
     TitleInstancePackagePlatform.withNewSession { session ->
       RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
@@ -1219,18 +1218,18 @@ class TippService {
         List tippIDs = TitleInstancePackagePlatform.executeQuery(tipp_crit, [status: status_deleted])
         log.debug("found ${tippIDs.size()} TIPPs")
         result.total = tippIDs.size()
-        def tippIDit = tippIDs.iterator()
+        Iterator tippIDit = tippIDs.iterator()
 
         while (tippIDit.hasNext() && !cancelled) {
           TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
           index++
 
           if (tipp.title) {
-            tipp.title.ids.each { data ->
+            tipp.title.activeIds.each { data ->
               Identifier idobj = Identifier.get(data.id)
 
               if (['isbn', 'pisbn', 'issn', 'eissn'].contains(idobj.namespace.value)) {
-                if (!tipp.ids*.namespace.contains(idobj.namespace)) {
+                if (!tipp.activeIds*.namespace.contains(idobj.namespace)) {
                   new ComponentIdentifier(component: tipp, identifier: idobj).save(flush: true, failOnError: true)
                   log.debug("added ID $data in TIPP $tipp")
                 }
@@ -1974,7 +1973,7 @@ class TippService {
     hasChanged
   }
 
-  public Map updateCombos(TitleInstancePackagePlatform obj, reqBody, boolean changed, boolean remove = true) {
+  public Map updateLinks(TitleInstancePackagePlatform obj, reqBody, boolean changed, boolean remove = true) {
     log.debug("Updating TIPP combos ..")
     Map errors = [:]
     Boolean needsSave = false
@@ -1994,42 +1993,6 @@ class TippService {
       }
     }
 
-    if (reqBody.title) {
-      TitleInstance ti = null
-
-      if (reqBody.title instanceof Integer || reqBody.title instanceof Long) {
-        ti = TitleInstance.get(reqBody.title)
-      }
-      else if (reqBody.title instanceof Map && reqBody.title.id) {
-        ti = TitleInstance.get(reqBody.title.id)
-      }
-      else {
-        log.debug("Unknown title format ${reqBody.title?.class.name}")
-      }
-
-      log.debug("TI: ${ti}")
-
-      if (ti != obj.title) {
-        if (ti) {
-          obj.title = ti
-          changed = true
-          needsSave = true
-        }
-        else {
-          errors.title = [
-            [
-              message: "Unable to reference provided reference title!",
-              baddata: reqBody.title,
-              code: 'notFound'
-              ]
-            ]
-        }
-      }
-    }
-    else {
-      log.debug("No title info given!")
-    }
-
     if (needsSave) {
       obj.lastSeen = System.currentTimeMillis()
       obj.save(flush: true)
@@ -2038,33 +2001,21 @@ class TippService {
     errors
   }
 
-  public def reactivateOldestTitleTipp(TitleInstancePackagePlatform obj, User user = null, CuratoryGroup activeGroup = null) {
-    def result = [result: 'OK', additionalDeletes: 0]
-    RefdataValue combo_title = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
-    RefdataValue combo_pkg = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+  public Map reactivateOldestTitleTipp(TitleInstancePackagePlatform obj, User user = null, CuratoryGroup activeGroup = null) {
+    Map result = [result: 'OK', additionalDeletes: 0]
     RefdataValue status_retired = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
     RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
     RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
-    def qry_str = '''from TitleInstancePackagePlatform as t
-                      where exists (
-                        select 1 from Combo
-                        where toComponent = t
-                        and fromComponent = :ti
-                        and type = :ct
-                      )
-                      and exists (
-                        select 1 from Combo
-                        where toComponent = t
-                        and fromComponent = :pkg
-                        and type = :cp
-                      )
-                      order by id'''
-    def ti = obj.title ? TitleInstance.get(obj.title.id) : null
+    String qry_str = '''from TitleInstancePackagePlatform as t
+                        where t.title = :ti
+                        and t.pkg = :pkg
+                        order by id'''
+    TitleInstance ti = obj.title ? TitleInstance.get(obj.title.id) : null
 
     if (ti) {
-      def current_tipps = []
-      def retired_tipps = []
-      def ti_pkg_tipps = TitleInstancePackagePlatform.executeQuery(qry_str, [cp: combo_pkg, ct: combo_title, pkg: obj.pkg, ti: ti])
+      List current_tipps = []
+      List retired_tipps = []
+      List ti_pkg_tipps = TitleInstancePackagePlatform.executeQuery(qry_str, [cp: combo_pkg, ct: combo_title, pkg: obj.pkg, ti: ti])
 
       ti_pkg_tipps.each { tipp ->
         if (tipp.status == status_current) {
@@ -2077,8 +2028,8 @@ class TippService {
 
       if (current_tipps.size() == 1 && retired_tipps.size() > 0) {
         if (current_tipps[0].dateCreated > retired_tipps[0].dateCreated) {
-          def duplicate = current_tipps[0]
-          def to_reactivate = retired_tipps[0]
+          TitleInstancePackagePlatform duplicate = current_tipps[0]
+          TitleInstancePackagePlatform to_reactivate = retired_tipps[0]
           retired_tipps.drop(1)
 
           if (retired_tipps.size() > 0) {
@@ -2120,11 +2071,11 @@ class TippService {
       log.debug("Transfering info to reactivated TIPP ..")
 
       RefdataValue id_combo_type = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
-      def new_target_ids = duplicate.activeIdInfo
+      List new_target_ids = duplicate.activeIdInfo
 
       componentUpdateService.updateIdentifiers(target, new_target_ids, user, activeGroup, true)
 
-      def coverage_match = [add: [], delete: []]
+      Map coverage_match = [add: [], delete: []]
 
       duplicate.coverageStatements.each { c ->
         if (!existsCoverage(target, c)) {
@@ -2149,7 +2100,7 @@ class TippService {
       }
 
       coverage_match.delete.each { cid ->
-        def tcs_obj = TIPPCoverageStatement.get(cid)
+        TIPPCoverageStatement tcs_obj = TIPPCoverageStatement.get(cid)
         target.removeFromCoverageStatements(tcs_obj)
       }
 
@@ -2178,37 +2129,26 @@ class TippService {
     touchPackage(target)
   }
 
-  def ensureTipl(title, platform, url) {
+  public TitleInstancePlatform ensureTipl(title, platform, url) {
     if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
-      def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-      def r = TitleInstancePlatform.executeQuery('''select tipl
-              from TitleInstancePlatform as tipl,
-              Combo as titleCombo,
-              Combo as platformCombo
-              where titleCombo.toComponent = tipl
-              and titleCombo.fromComponent = :ti
-              and platformCombo.toComponent = tipl
-              and platformCombo.fromComponent = :plt
-              and tipl.status = :sc
-              ''',[ti: title, plt: platform, sc: status_current])
+      RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      List r = TitleInstancePlatform.executeQuery('''from TitleInstancePlatform as tipl
+                                                    where tipl.title = :ti
+                                                    and tipl.hostPlatform = :plt
+                                                    and tipl.status = :sc
+                                                    ''',
+                                                    [ti: title, plt: platform, sc: status_current])
 
       if ( r.size() == 0 ) {
-        def tipl = new TitleInstancePlatform(url:url).save(flush:true, failOnError:true)
-
-        def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTitles')
-        def plt_combo = new Combo(toComponent:tipl, fromComponent:platform, type:plt_combo_type).save(flush:true, failOnError:true);
-
-        def ti_combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipls')
-        def ti_combo = new Combo(toComponent:tipl, fromComponent:title, type:ti_combo_type).save(flush:true, failOnError:true);
-
-        return tipl
-
+        return new TitleInstancePlatform(url: url, hostPlatform: platform, title: title).save(flush:true, failOnError:true)
       } else if ( r.size() == 1 ) {
-        def matched_tipl = r[0]
+        TitleInstancePlatform matched_tipl = r[0]
 
         if (url && matched_tipl.url != url) {
           matched_tipl.url = url
+          matched_tipl.save(flush: true)
         }
+
         return matched_tipl
 
       } else {
