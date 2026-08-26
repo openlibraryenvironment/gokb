@@ -31,7 +31,6 @@ class AdminController {
   def packageSourceUpdateService
   def springSecurityService
   def titleAugmentService
-  def uploadAnalysisService
   def jobManagerService
   def curatoryGroupAlertingService
   def orgRolesService

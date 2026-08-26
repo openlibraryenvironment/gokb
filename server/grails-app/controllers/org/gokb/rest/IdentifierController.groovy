@@ -20,18 +20,18 @@ class IdentifierController {
   def messageService
   def restMappingService
   def componentLookupService
-  def targetTypeMap = [:]
+  def identifierService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def result = [:]
-    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
+    Map result = [:]
+    String base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
-    def start_db = LocalDateTime.now()
+    LocalDateTime start_db = LocalDateTime.now()
 
 
     params['_embed'] = params['_embed'] ?: 'identifiedComponents'
@@ -44,10 +44,10 @@ class IdentifierController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
-    def result = [:]
-    def obj = null
-    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
-    def is_curator = true
+    Map result = [:]
+    Identifier obj = null
+    String base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
+    boolean is_curator = true
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -88,14 +88,14 @@ class IdentifierController {
   @Transactional
   @Secured(value = ["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def save() {
-    def result = [:]
+    Map result = [:]
+    Map errors = [:]
+    User user = User.get(springSecurityService.principal.id)
     def reqBody = request.JSON
-    def errors = [:]
-    def user = User.get(springSecurityService.principal.id)
     log.debug("Save new Identifier: ${reqBody}")
 
     if ( reqBody?.value && reqBody?.namespace ) {
-      def ns = null
+      IdentifierNamespace ns = null
 
       if (reqBody.namespace instanceof Integer) {
         ns = IdentifierNamespace.get(reqBody.namespace)
@@ -125,7 +125,15 @@ class IdentifierController {
         if (!obj) {
           log.debug("Could not create identifier!")
           result.message = "Unable to create identifier ${reqBody}"
-          errors = [value: [[message: messageService.resolveCode('identifier.validation.generic', null, request.locale), baddata: reqBody.value, messageCode: 'identifier.validation.generic']]]
+          errors = [
+            value: [
+              [
+                message: messageService.resolveCode('identifier.validation.generic', null, request.locale),
+                baddata: reqBody.value,
+                messageCode: 'identifier.validation.generic'
+              ]
+            ]
+          ]
           response.status = 400
         }
         else if ( obj.hasErrors() ) {
@@ -197,86 +205,10 @@ class IdentifierController {
     render result as JSON
   }
 
-  @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
-  @Transactional
-  def delete() {
-    def result = ['result': 'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
-    def obj = Identifier.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
-
-    if (obj && obj.isDeletable()) {
-      if (curator || user.isAdmin()) {
-        obj.deleteSoft()
-      } else {
-        result.result = 'ERROR'
-        response.status = 403
-        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
-      }
-    } else if (!obj) {
-      result.result = 'ERROR'
-      response.status = 400
-      result.message = "Package not found or empty request body!"
-    } else {
-      result.result = 'ERROR'
-      response.status = 403
-      result.message = "User is not allowed to delete this component!"
-    }
-    render result as JSON
-  }
-
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def namespace() {
-    if (targetTypeMap.size() == 0) {
-      fillTargetMap()
-    }
-    def result = [_links: [:]]
-    boolean no_isxn = params.boolean('no_isxn') ?: false
-    def data = []
-    params << [_exclude:"_links"]
-    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
-    List<IdentifierNamespace> nss = []
-    if (params.targetType != null) {
-      nss = IdentifierNamespace.findAllByTargetType(targetTypeMap[params.targetType])
-      if (params.targetType in ['Book', 'Journal', 'Database', 'Other']) {
-        IdentifierNamespace.findAllByTargetType(targetTypeMap['Title'])
-          .each { ns -> nss << ns }
-      } else if (params.targetType == 'Title') {
-        IdentifierNamespace.findAllByTargetTypeInList([targetTypeMap['Book'], targetTypeMap['Journal'], targetTypeMap['Database'], targetTypeMap['Other']])
-          .each { ns -> nss << ns }
-      }
-    } else {
-      nss = IdentifierNamespace.all
-    }
+    Map result = identifierService.fetchNamespaces(params)
 
-    if (params.q?.trim()) {
-      nss = nss.findAll { it.name.startsWith(params.q.trim()) }
-    }
-
-    if (no_isxn) {
-      nss = nss.findAll { it.family != 'isxn' }
-    }
-
-    nss.each { ns ->
-      data << [
-        name:ns.name,
-        value:ns.value,
-        targetType: ns.targetType?.value ?: null,
-        id: ns.id,
-        pattern: ns.pattern,
-        family: ns.family,
-        baseUrl: ns.baseUrl
-      ]
-    }
-    result.data=data
-    result['_links']['self'] = ['href': base + "/identifier-namespaces"]
     render result as JSON
-  }
-
-  private void fillTargetMap() {
-    RefdataValue.findAllByOwner(RefdataCategory.findByLabel('IdentifierNamespace.TargetType'))
-      .each { refVal ->
-        targetTypeMap.put((refVal.value), refVal)
-      }
   }
 }

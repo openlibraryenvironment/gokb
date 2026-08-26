@@ -36,12 +36,16 @@ class ZdbAPIService {
     http = HttpClient.create(new URL(CONFIG.baseUrl)).toBlocking()
   }
 
-  def lookup(String name, def ids) {
-    def result = [
+  public Map lookup(String name, def ids) {
+    Map result = [
       result: 'OK',
       candidates: []
     ]
-    def candidate_ids = [direct: [], parallel: [], matched: []]
+    Map candidate_ids = [
+      direct: [],
+      parallel: [],
+      matched: []
+    ]
 
     for (id in ids) {
       if (id.namespace.value == 'eissn' || id.namespace.value == 'issn' || id.namespace.value == 'zdb') {
@@ -65,7 +69,7 @@ class ZdbAPIService {
 
             if (data.records?.record?.size() > 0) {
               data.records.record.each { rec ->
-                def zdb_info = getZdbInfo(rec)
+                Map zdb_info = getZdbInfo(rec)
 
                 if (zdb_info) {
                   log.debug("Found ID candidate ${zdb_info.id}")
@@ -138,8 +142,8 @@ class ZdbAPIService {
     result
   }
 
-  def getZdbInfo(record) {
-    def result = [:]
+  public Map getZdbInfo(record) {
+    Map result = [:]
     def rec = record.recordData.record
 
     result.id = rec.global.'*'.find { it.@id == '006Z' }[0].text()
@@ -149,7 +153,7 @@ class ZdbAPIService {
     if (!result.subtitle) {
       result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'l'}.text()?.trim() ?: null
 
-      def subtitleText = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
+      String subtitleText = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
 
       if (subtitleText) {
         if (result.subtitle) {
@@ -173,8 +177,8 @@ class ZdbAPIService {
       result.title = GOKbTextUtils.cleanTitleString(result.displayTitle)
     }
 
-    def fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}
-    def toDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'b'}
+    String fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}
+    String toDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'b'}
 
     if (fromDate)
       result.publishedFrom = fromDate.text()
@@ -182,13 +186,13 @@ class ZdbAPIService {
     if (toDate)
       result.publishedTo = toDate.text()
 
-    def pubName = rec.global.'*'.find { it.@id == '033A' }.'*'.find {it.@id == 'n'}
+    String pubName = rec.global.'*'.find { it.@id == '033A' }.'*'.find {it.@id == 'n'}
 
     if (pubName) {
       result.publisher = pubName.text()
     }
 
-    def otherPubs = []
+    List otherPubs = []
 
     rec.global.'*'.findAll { it.@id == '033B'}.each { otherpub ->
       otherpub.'*'.each { subfield ->
@@ -215,8 +219,8 @@ class ZdbAPIService {
     }
 
     rec.global.'*'.findAll { it.@id == '039D' }.each { lf ->
-      def validLink = false
-      def idVal = null
+      boolean validLink = false
+      String idVal = null
 
       lf.'*'.each { subfield ->
         if (subfield.@id == 'g') {
@@ -239,11 +243,11 @@ class ZdbAPIService {
     result
   }
 
-  private def extractHistory(fields) {
+  private List extractHistory(fields) {
     def history = []
 
     fields.each { lf ->
-      def item = [:]
+      Map item = [:]
 
       lf.'*'.each { subfield ->
         if (subfield.@id == 'b') {
@@ -259,12 +263,13 @@ class ZdbAPIService {
           item.name = subfield.text()
         }
         if (subfield.@id == 'H') {
-          def val = subfield.text()
+          String val = subfield.text()
+
           if (val && !val.contains('[')) {
             item.publishedFrom = val.contains('-') ? val.split('-')[0].trim() : val
 
             if (val.contains('-')) {
-              def pubToDate = val.split('-').size() == 2 ? val.split('-')[1].trim() : null
+              String pubToDate = val.split('-').size() == 2 ? val.split('-')[1].trim() : null
 
               if (pubToDate) {
                 item.publishedTo = val.split('-')[1]
@@ -282,11 +287,11 @@ class ZdbAPIService {
     history
   }
 
-  private def extractDDC(field) {
-    def result = []
+  private List extractDDC(field) {
+    List result = []
 
     field.'*'.findAll {it.@id == 'e'}.each { sf ->
-      def notation = sf.text()?.trim()
+      String notation = sf.text()?.trim()
 
       if (notation) {
         result.add(notation)
@@ -294,10 +299,5 @@ class ZdbAPIService {
     }
 
     result
-  }
-
-  @javax.annotation.PreDestroy
-  def destroy() {
-    log.debug("Destroy");
   }
 }

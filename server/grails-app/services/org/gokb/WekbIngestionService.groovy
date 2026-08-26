@@ -4,20 +4,7 @@ import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
-import org.gokb.cred.IdentifierNamespace
-import org.gokb.cred.JobResult
-import org.gokb.cred.KBComponent
-import org.gokb.cred.Org
-import org.gokb.cred.Package
-import org.gokb.cred.Platform
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.RefdataValue
-import org.gokb.cred.Source
-import org.gokb.cred.Combo
-import org.gokb.cred.TIPPCoverageStatement
-import org.gokb.cred.TitleInstance
-import org.gokb.cred.TitleInstancePackagePlatform
-import org.gokb.cred.User
+import org.gokb.cred.*
 import org.hibernate.Session
 import org.hibernate.SessionFactory
 
@@ -49,22 +36,21 @@ class WekbIngestionService {
   ConcurrencyManagerService concurrencyManagerService
   Map identifierTargetTypes = [:]
   final int SIZE_LIMIT = 30000
-  def rdv_liststatus_checked
-  def rdv_liststatus_progress
 
-  def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Package pkg, Job job, Boolean async, Boolean restrictSize) {
-    def result = [result: 'OK', dryRun: false]
+  public Map startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Package pkg, Job job, Boolean async, Boolean restrictSize) {
+    Map result = [result: 'OK', dryRun: false]
     result.messages = []
     long startTime = System.currentTimeMillis()
     ingest_systime = startTime
-    def ingestDate = LocalDate.now().toString()
+    String ingestDate = LocalDate.now().toString()
     int batchSize = 100
-    def missedBatches = []
+    List missedBatches = []
+    Session session = sessionFactory.currentSession
 
     String sourceUrl = pkg_source?.url
     String wekbUUID = extractUUIDFromUrlString(sourceUrl)
 
-    def packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
+    List packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
     int titleCount = packageInfo[0]?.titleCount
 
     if ( restrictSize && titleCount > SIZE_LIMIT ) {
@@ -84,17 +70,12 @@ class WekbIngestionService {
       rdv_expected = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED)
       rdv_retired = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
 
-      RefdataValue combo_pkg = RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps')
-
       isUpdate = false
       int old_tipp_count = TitleInstancePackagePlatform.executeQuery('''select count(*)
-              from TitleInstancePackagePlatform as tipp,
-              Combo as c
-              where c.fromComponent.id = :pkg
-              and c.toComponent = tipp
-              and c.type = :ct
+              from TitleInstancePackagePlatform as tipp
+              where tipp.pkg = :pkg
               and tipp.status != :sd''',
-              [pkg: pkg.id, ct: combo_pkg, sd: rdv_deleted])[0]
+              [pkg: pkg, sd: rdv_deleted])[0]
 
       result.report = [
         numRows : titleCount,
@@ -113,23 +94,25 @@ class WekbIngestionService {
         isUpdate = true
       }
 
-      def targetNamespaceTitleIdSerial = pkg_source.getTitleIdSerial()?.getValue()
-      def targetNamespaceTitleIdMonograph = pkg_source.getTitleIdMonograph()?.getValue()
+      String targetNamespaceTitleIdSerial = pkg_source.getTitleIdSerial()?.getValue()
+      String targetNamespaceTitleIdMonograph = pkg_source.getTitleIdMonograph()?.getValue()
 
 
       int tippNum = 0
-      def tippBatches = []
+      List tippBatches = []
       boolean cancelled = false
 
       try {
         for (int offset = 0; offset < titleCount; offset += batchSize) {
-          def tipps = null
+          List tipps = []
 
           //maximum 5 trials to reach WEKB endpoint
           int trials = 1
+
           do {
             tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
             trials++
+
             if (!tipps) {
               log.debug("TIPPS nicht vorhanden --> sleep... Request-Versuch: " + trials )
               sleep(1500)
@@ -144,26 +127,20 @@ class WekbIngestionService {
             missedBatches.add(offset)
           }
 
-          def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
+          Map expungeResult = expungeDeletedTippsIfNeeded(tipps, isUpdate)
           log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
 
           for (tipp in tipps) {
-            def targetNamespaceTitleId = null
+            String targetNamespaceTitleId = null
 
             if (tippNum == 0) {
               log.debug("Checking first TIPP for duplicates ..")
 
-              def dupes = TitleInstancePackagePlatform.executeQuery('''select uuid
-                      from TitleInstancePackagePlatform as tipp
-                      where uuid = :uuid
-                      and exists (
-                        select 1
-                        from Combo
-                        where type = :ct
-                        and toComponent = tipp
-                        and fromComponent.id != :pkg
-                      )
-                      ''', [pkg: pkg.id, ct: combo_pkg, uuid: tipp.uuid])
+              List dupes = TitleInstancePackagePlatform.executeQuery('''select uuid
+                                                                        from TitleInstancePackagePlatform as tipp
+                                                                        where tipp.uuid = :uuid
+                                                                        and tipp.pkg != :pkg''',
+                                                                        [pkg: pkg, uuid: tipp.uuid])
 
               if (dupes) {
                 cancelled = true
@@ -186,20 +163,20 @@ class WekbIngestionService {
             }
 
             Map ids = tipp.identifiers?.find { it.namespace == 'title_id' }
-            def title_id = null
+            String title_id = null
 
             if (ids) {
               title_id = ids.value
               log.debug('ids: ' + ids + ", title_id: " + title_id)
             }
 
-            def lang = null
+            String lang = null
 
             if (tipp.languages && tipp.languages.size() > 0) {
               lang = tipp.languages.get(0)?.value
             }
 
-            def pubtype = tipp.publicationType
+            String pubtype = tipp.publicationType
 
             if (pubtype == 'Serial') {
               targetNamespaceTitleId = targetNamespaceTitleIdSerial
@@ -207,7 +184,7 @@ class WekbIngestionService {
               targetNamespaceTitleId = targetNamespaceTitleIdMonograph
             }
 
-            def identifiers = []
+            List identifiers = []
             //def validIdentifiers = getValidIdentifiersForPublicationType(tipp.publicationType)
 
             if (tipp.identifiers && tipp.identifiers.size() > 0) {
@@ -257,74 +234,70 @@ class WekbIngestionService {
             }
 
 
-            def tipp_map = [
-              uuid                       : tipp.uuid?.trim(),
-              url                        : tipp.url?.trim(),
-              coverageStatements         : tipp.coverage ?: [
+            Map tipp_map = [
+              uuid: tipp.uuid?.trim(),
+              url: tipp.url?.trim(),
+              coverageStatements: tipp.coverage ?: [
                 [
-                  embargo      : null,
+                  embargo: null,
                   coverageDepth: 'Fulltext',
-                  coverageNote : null,
-                  startDate    : null,
-                  startVolume  : null,
-                  startIssue   : null,
-                  endDate      : null,
-                  endVolume    : null,
-                  endIssue     : null
+                  coverageNote: null,
+                  startDate: null,
+                  startVolume: null,
+                  startIssue: null,
+                  endDate: null,
+                  endVolume: null,
+                  endIssue: null
                 ]
               ],
-              importId                   : title_id?.trim(),
-              name                       : tipp.name?.trim(),
-              publicationType            : tipp.publicationType?.trim(),
-              parentPublicationTitleId   : tipp.parentPublicationTitleId?.trim(),
+              importId: title_id?.trim(),
+              name: tipp.name?.trim(),
+              publicationType: tipp.publicationType?.trim(),
+              parentPublicationTitleId: tipp.parentPublicationTitleId?.trim(),
               precedingPublicationTitleId: tipp.precedingPublicationTitleId?.trim(),
-              firstAuthor                : tipp.firstAuthor?.trim(),
-              publisherName              : tipp.publisherName?.trim(),
-              volumeNumber               : tipp.volumeNumber?.trim(),
-              editionStatement           : tipp.editionStatement?.trim(),
-              dateFirstInPrint           : tipp.dateFirstInPrint?.trim(),
-              dateFirstOnline            : tipp.dateFirstOnline?.trim(),
-              firstEditor                : tipp.firstEditor?.trim(),
-              subjectArea                : tipp.subjectArea?.trim(),
-              series                     : tipp.series?.trim(),
-              language                   : lang,
-              medium                     : tipp.medium?.trim(),
-              accessStartDate            : tipp.accessStartDate?.trim(),
-              accessEndDate              : tipp.accessEndDate?.trim(),
-              lastSeen                   : ingest_systime,
-              identifiers                : identifiers,
-              pkg                        : [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-              hostPlatform               : [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
-              paymentType                : tipp.accessType == "Free" ? "F" : "P"
+              firstAuthor: tipp.firstAuthor?.trim(),
+              publisherName: tipp.publisherName?.trim(),
+              volumeNumber: tipp.volumeNumber?.trim(),
+              editionStatement: tipp.editionStatement?.trim(),
+              dateFirstInPrint: tipp.dateFirstInPrint?.trim(),
+              dateFirstOnline: tipp.dateFirstOnline?.trim(),
+              firstEditor: tipp.firstEditor?.trim(),
+              subjectArea: tipp.subjectArea?.trim(),
+              series: tipp.series?.trim(),
+              language: lang,
+              medium: tipp.medium?.trim(),
+              accessStartDate: tipp.accessStartDate?.trim(),
+              accessEndDate: tipp.accessEndDate?.trim(),
+              lastSeen: ingest_systime,
+              identifiers: identifiers,
+              pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
+              hostPlatform: [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
+              paymentType: tipp.accessType == "Free" ? "F" : "P"
             ]
 
-            def line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
+            Map line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
 
             result.report[line_result.status]++
 
             if (tippNum % 50 == 0) {
-              def session = sessionFactory.getCurrentSession()
               session.flush()
               session.clear()
             }
-
           }
 
           if (cancelled) {
-             break
+            break
           }
 
           int progress = (int) ((offset / titleCount) * 100)
           log.debug("++++++++++ progress: " + progress)
           job?.setProgress(progress)
 
-          def session = sessionFactory.getCurrentSession()
           session.flush()
           session.clear()
 
         }
 
-        def session = sessionFactory.getCurrentSession()
         session.flush()
         session.clear()
 
@@ -335,18 +308,18 @@ class WekbIngestionService {
           tippNum = 0
 
           for (int i = 0; i < tippBatches.size(); i++) {
-            def tipps = tippBatches.get(i)
+            List tipps = tippBatches.get(i)
 
             for (tipp in tipps) {
               tippNum++
-              def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
+              TitleInstancePackagePlatform importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
 
               if (importedTipp == null) {
                 log.debug("Title was not imported --> Skip")
                 continue
               }
 
-              def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
+              RefdataValue actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
 
               if (actualTippStatus) {
                 importedTipp.setStatus(actualTippStatus)
@@ -359,22 +332,19 @@ class WekbIngestionService {
               }
 
               if (tippNum % 50 == 0) {
-                session = sessionFactory.getCurrentSession()
                 session.flush()
                 session.clear()
               }
             }
 
-            session = sessionFactory.getCurrentSession()
             session.flush()
             session.clear()
           }
 
           log.debug("start Title Matching... ")
 
-          def currentSession = sessionFactory.getCurrentSession()
-          currentSession.flush()
-          currentSession.clear()
+          session.flush()
+          session.clear()
 
           Job matching_job
 
@@ -383,7 +353,7 @@ class WekbIngestionService {
               tippService.matchPackage(pkgInfo.id, mjob)
             }
 
-            Package p = Package.get(pkg.getId())
+            Package p = Package.get(pkg.id)
             matching_job.description = "Package Title Matching".toString()
             matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
             matching_job.linkedItem = pkgInfo
@@ -400,7 +370,7 @@ class WekbIngestionService {
         }
       }
       catch (grails.validation.ValidationException ve) {
-        log.error('Validation error druing wekb package update', e)
+        log.error('Validation error during wekb package update', e)
         List field_errors = ve.errors.fieldErrors
         result.result = 'ERROR'
         result.exception = e.message
@@ -434,14 +404,14 @@ class WekbIngestionService {
         job.endTime = new Date()
 
         JobResult.withNewTransaction {
-          def result_object = JobResult.findByUuid(job.uuid)
+          JobResult result_object = JobResult.findByUuid(job.uuid)
 
           /*if (result.titleMatch) {
               result.titleMatch.rowConflicts = titleMatchConflicts
           } */
 
           if (!result_object) {
-            def job_map = [
+            Map job_map = [
               uuid        : (job.uuid),
               description : "External Source Import".toString(),
               resultObject: (result as JSON).toString(),
@@ -454,7 +424,7 @@ class WekbIngestionService {
               linkedItemId: (job.linkedItem?.id)
             ]
 
-            def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+            new JobResult(job_map).save(flush: true, failOnError: true)
           }
         }
       }
@@ -463,7 +433,7 @@ class WekbIngestionService {
     return result
   }
 
-  String extractUUIDFromUrlString (String url) {
+  private String extractUUIDFromUrlString (String url) {
     String[] tokens = url.split("\\?")[1].split("&")
     Map<String, String> params = new HashMap<String, String>()
 
@@ -474,11 +444,11 @@ class WekbIngestionService {
     return params.get("uuid")
   }
 
-  def saveTippToDB (tipp, platform, pkg, ingestDate) {
-    def result = [status: null, reviewCreated: false]
+  private Map saveTippToDB (tipp, platform, pkg, ingestDate) {
+    Map result = [status: null, reviewCreated: false]
 
     if (platform != null) {
-      def titleClass = TitleInstance.determineTitleClass(tipp.publicationType)
+      String titleClass = TitleInstance.determineTitleClass(tipp.publicationType)
 
       if (titleClass) {
         result = upsertTipp(tipp, platform, pkg, ingestDate)
@@ -495,8 +465,8 @@ class WekbIngestionService {
   }
 
 
-  def upsertTipp (tipp_map, platform, pkg, ingestDate) {
-    def result = [status: null, reviewCreated: false]
+  private Map upsertTipp (tipp_map, platform, pkg, ingestDate) {
+    Map result = [status: null, reviewCreated: false]
     TitleInstancePackagePlatform tipp = null
     boolean new_coverage = true
     boolean hasChanged = false
@@ -519,7 +489,7 @@ class WekbIngestionService {
       } else {
         log.debug("Tipp wird neu angelegt...")
         // create new Tipp
-        def tipp_fields = [
+        Map tipp_fields = [
           uuid: tipp_map.uuid,
           pkg: pkg,
           hostPlatform: platform,
@@ -534,7 +504,7 @@ class WekbIngestionService {
       }
     } else {
       log.debug("Initialer Import: Tipp wird neu angelegt...")
-      def tipp_fields = [
+      Map tipp_fields = [
         uuid: tipp_map.uuid,
         pkg: pkg,
         hostPlatform: platform,
@@ -599,12 +569,12 @@ class WekbIngestionService {
   }
 
 
-  def deleteDeletedTippsIfNeeded ( newTipps, isUpdate ) {
-    def result = [status: null, expunged: 0]
+  private Map expungeDeletedTippsIfNeeded ( newTipps, isUpdate ) {
+    Map result = [status: null, expunged: 0]
     int expunged = 0
 
     for (newTipp in newTipps) {
-      def oldTipp = TitleInstancePackagePlatform.findByUuid(newTipp.uuid)
+      TitleInstancePackagePlatform oldTipp = TitleInstancePackagePlatform.findByUuid(newTipp.uuid)
 
       if (oldTipp && oldTipp.getStatus() == rdv_deleted) {
         log.debug(" +++ TIPP mit UUID " + newTipp.uuid + " existiert bereits und ist gelöscht ")
@@ -624,7 +594,7 @@ class WekbIngestionService {
       }
     }
     result.expunged = expunged
-    def session = sessionFactory.getCurrentSession()
+    Session session = sessionFactory.getCurrentSession()
     session.flush()
     session.clear()
 
@@ -632,7 +602,7 @@ class WekbIngestionService {
   }
 
 
-  Map loadIdentifierTargetTypes () {
+  private Map loadIdentifierTargetTypes () {
     Map targetTypes = [:]
     RefdataValue.findAllByOwner(RefdataCategory.findByLabel('IdentifierNamespace.TargetType'))
       .each { refVal ->
@@ -642,7 +612,7 @@ class WekbIngestionService {
     return targetTypes
   }
 
-  List getValidIdentifiersForPublicationType (String publicationType) {
+  private List getValidIdentifiersForPublicationType (String publicationType) {
     List validIdentifiers = []
     Map mapping = ["Monograph":"Book", "Serial":"Journal", "Database":"Database", "Other":"Other"]
     IdentifierNamespace.findAllByTargetTypeInList([identifierTargetTypes["Title"], identifierTargetTypes[mapping.get(publicationType)]])

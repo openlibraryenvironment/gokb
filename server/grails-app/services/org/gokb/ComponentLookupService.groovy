@@ -140,7 +140,7 @@ class ComponentLookupService {
     log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     IdentifierNamespace namespace = null
     Identifier identifier = null
-    List namespaces = IdentifierNamespace.findAllByValueIlike(ns) ?: []
+    List namespaces = IdentifierNamespace.findAllByValueIlike(ns)
 
     switch ( namespaces.size() ) {
       case 0:
@@ -173,7 +173,7 @@ class ComponentLookupService {
         }
 
         String norm_id = Identifier.normalizeIdentifier(final_val)
-        List existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id) ?: []
+        List existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
         log.debug("Found ID: ${existing}")
 
         if ( existing?.size() == 1 ) {
@@ -194,7 +194,7 @@ class ComponentLookupService {
             }
             catch (org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException lfe) {
               log.error("Locking failure", lfe)
-              List ex = Identifier.findAllByNamespaceAndNormname(namespace, norm_id) ?: []
+              List ex = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
               log.debug("After LFE: ${ex}")
             }
             catch (ValidationException ve) {
@@ -829,19 +829,19 @@ class ComponentLookupService {
       }
     }
 
-    def hqlCount = "select count(p.id) ${hqlQry}".toString()
-    def hqlFinal = "select p ${sortField ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
+    String hqlCount = "select count(p.id) ${hqlQry}".toString()
+    String hqlFinal = "select p ${sortField ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
     log.debug("Final qry: ${hqlFinal}")
 
-    def hqlTotal = cls.executeQuery(hqlCount, qryParams,[:])[0]
-    def hqlResult = cls.executeQuery(hqlFinal, qryParams, [max: max, offset: offset, readOnly: true])
+    int hqlTotal = cls.executeQuery(hqlCount, qryParams,[:])[0]
+    List hqlResult = cls.executeQuery(hqlFinal, qryParams, [max: max, offset: offset, readOnly: true])
 
     result.data = []
 
     hqlResult.each { r ->
       log.debug("Handling ${r} (${r.class.name}) -- Total: ${hqlTotal}")
-      def obj = null
+      Object obj = null
 
       if (r instanceof Object[]) {
         obj = r[0]

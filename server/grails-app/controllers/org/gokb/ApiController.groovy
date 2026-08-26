@@ -22,7 +22,6 @@ import java.security.SecureRandom
 @Slf4j
 class ApiController {
   SecureRandom rand = new SecureRandom()
-  UploadAnalysisService uploadAnalysisService
   def ESWrapperService
   def ESSearchService
   def zdbAPIService

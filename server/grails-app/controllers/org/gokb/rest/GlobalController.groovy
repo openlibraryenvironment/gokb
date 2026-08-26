@@ -23,24 +23,25 @@ class GlobalController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def result = [:]
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def cobj = setType(params)
+    Map result = [:]
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    Class cobj = setType(params)
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
-    def es_search = params.es ? true : false
+
+    boolean es_search = params.boolean('es') ? true : false
 
     if (es_search) {
       params.remove('es')
-      def start_es = LocalDateTime.now()
+      LocalDateTime start_es = LocalDateTime.now()
       result = ESSearchService.find(params)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
-      def start_db = LocalDateTime.now()
+      LocalDateTime start_db = LocalDateTime.now()
       result = componentLookupService.restLookup(user, cobj, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }

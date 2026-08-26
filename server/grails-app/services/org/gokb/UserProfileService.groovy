@@ -22,8 +22,8 @@ class UserProfileService {
 	static final String EMAIL_LAYOUT = "/layouts/email"
   static final String ACTIVATION_NOTICE_TEMPLATE = "/register/_activationNoticeMail"
 
-  def restLookup(user, params) {
-    def result = [data: [], errors: [:]]
+  public Map restLookup(user, params) {
+    Map result = [data: [], errors: [:]]
     boolean first = true
     int offset = params.offset ? params.int('offset') : 0
     int limit = params.limit ? params.int('limit') : (user.defaultPageSize > 0 ? user.defaultPageSize : 10)
@@ -37,14 +37,14 @@ class UserProfileService {
       sortOrders = params['_order'].split(',')
     }
 
-    def qry_params = [:]
-    def qry_str = "from User as u "
+    Map qry_params = [:]
+    String qry_str = "from User as u "
 
     if (params.roleId) {
-      def roles = []
+      List roles = []
 
       params.roleId.split(',').each { rid ->
-        def role_obj = Role.get(rid as Long)
+        Role role_obj = Role.get(rid as Long)
 
         if (role_obj) {
           roles << role_obj
@@ -69,7 +69,7 @@ class UserProfileService {
     }
 
     if (params.curatoryGroupId) {
-      def groups = []
+      List groups = []
 
       if (!first) {
         qry_str += " and ("
@@ -139,7 +139,7 @@ class UserProfileService {
       first = false
     }
 
-    def qry_sort =  ""
+    String qry_sort =  ""
 
     if (sortOrders && sortFields) {
       for (int i = 0; i < sortFields.size(); i++) {
@@ -159,8 +159,8 @@ class UserProfileService {
       return result
     }
 
-    def count = User.executeQuery("select count(*) ${qry_str}".toString(), qry_params)[0]
-    def users = User.executeQuery("select u ${qry_str} ${qry_sort}".toString(), qry_params, [max: limit, offset: offset])
+    int count = User.executeQuery("select count(*) ${qry_str}".toString(), qry_params)[0]
+    List users = User.executeQuery("select u ${qry_str} ${qry_sort}".toString(), qry_params, [max: limit, offset: offset])
 
     users.each { ures ->
       result.data.add(collectUserProps(ures, params))
@@ -177,10 +177,10 @@ class UserProfileService {
     return result
   }
 
-  def delete(User user_to_delete) {
-    def result = [:]
+  public Map delete(User user_to_delete) {
+    Map result = [:]
     log.debug("Deleting user ${user_to_delete.id} ..")
-    def del_user = User.findByUsername('deleted')
+    User del_user = User.findByUsername('deleted')
 
     if (user_to_delete && del_user) {
       log.debug("Replacing links to user with placeholder ..")
@@ -220,12 +220,12 @@ class UserProfileService {
     return result
   }
 
-  def update(User user, def data, params = [:], User adminUser) {
-    def result = [:]
-    def errors = []
+  public Map update(User user, def data, params = [:], User adminUser) {
+    Map result = [:]
+    List errors = []
     log.debug("Updating user ${user.id} ..")
-    def immutables = ['id', 'username', 'last_alert_check']
-    def adminAttributes = [
+    List immutables = ['id', 'username', 'last_alert_check']
+    List adminAttributes = [
       'roleIds',
       'curatoryGroupIds',
       'enabled',
@@ -351,9 +351,9 @@ class UserProfileService {
     result
   }
 
-  def activate(userId, User adminUser, boolean alertUser = false) {
-    def result = [result: 'OK']
-    def errors = [:]
+  public Map activate(userId, User adminUser, boolean alertUser = false) {
+    Map result = [result: 'OK']
+    Map errors = [:]
     List default_roles = ['ROLE_USER', 'ROLE_CONTRIBUTOR', 'ROLE_EDITOR']
     User user = User.get(userId)
 
@@ -371,9 +371,9 @@ class UserProfileService {
 
       if (alertUser && user.email) {
         EmailValidator validator = EmailValidator.getInstance()
-        def edit_link = grailsApplication.config.getProperty('gokb.uiUrl') ?: grailsApplication.config.getProperty('grails.serverURL')
-        def support_address = grailsApplication.config.getProperty('gokb.support.emailTo')
-        def alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
+        String edit_link = grailsApplication.config.getProperty('gokb.uiUrl') ?: grailsApplication.config.getProperty('grails.serverURL')
+        String support_address = grailsApplication.config.getProperty('gokb.support.emailTo')
+        String alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
         Locale locale = new Locale(user.preferredLocaleString ?: grailsApplication.config.getProperty('gokb.support.locale', String, 'en'))
 
         if (edit_link && support_address && alerts_address && validator.isValid(user.email)) {
@@ -462,10 +462,10 @@ class UserProfileService {
     result
   }
 
-  def modifyUser(User user, Map data, User adminUser) {
+  public Map modifyUser(User user, Map data, User adminUser) {
     boolean isNewUser = user.username == null
-    def result = [:]
-    def errors = [:]
+    Map result = [:]
+    Map errors = [:]
     // apply changes
     data.each { field, value ->
       if (field != "roleIds" && field != "curatoryGroupIds" && !user.hasProperty(field)) {
@@ -616,11 +616,11 @@ class UserProfileService {
     }
   }
 
-  def collectUserProps(User user, params = [:]) {
-    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
-    def includes = []
-    def excludes = []
-    def newUserData = [
+  private Map collectUserProps(User user, params = [:]) {
+    String base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
+    List includes = []
+    List excludes = []
+    Map newUserData = [
       id                    : user.id,
       username              : user.username,
       displayName           : user.displayName,

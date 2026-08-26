@@ -31,22 +31,26 @@ class CuratoryGroupsController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    Map result = [data: []]
+    RefdataValue status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
     if (params.status) {
-      def status = RefdataCategory.lookup('KBComponent.Status', params.status)
+      RefdataValue status = RefdataCategory.lookup('KBComponent.Status', params.status)
 
       if (status) {
         status_filter = status
       }
     }
 
-    def curGroups = CuratoryGroup.findAllByStatus(status_filter)
+    List curGroups = CuratoryGroup.findAllByStatus(status_filter)
 
-    String sortField = null, sortOrder = null
+    String sortField = null
+    String sortOrder = null
+
     if (params._sort) {
       sortField = params._sort
     }
+
     if (params._order) {
       sortOrder = params._order.toLowerCase()
     }
@@ -61,7 +65,7 @@ class CuratoryGroupsController {
         }
       }
     }
-    def result = [data: []]
+
     curGroups.each { group ->
       result.data += restMappingService.mapObjectToJson(group, params, null)
     }
@@ -71,9 +75,9 @@ class CuratoryGroupsController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
-    def result = [:]
-    def curGroup = null
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    Map result = [:]
+    CuratoryGroup curGroup = null
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -111,18 +115,18 @@ class CuratoryGroupsController {
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def save() {
-    CuratoryGroup newGroup = null
-    def result = [:]
-    def errors = [:]
+    Map result = [:]
+    Map errors = [:]
     Boolean changed = true
     def reqBody = request.JSON
     User user = User.get(springSecurityService.principal.id)
+    CuratoryGroup newGroup = null
 
     if (reqBody?.name) {
       try {
         newGroup = new CuratoryGroup(name: reqBody.name)
 
-        def jsonMap = [:]
+        Map jsonMap = [:]
 
         changed = restMappingService.updateObject(newGroup, jsonMap, reqBody)
       }
@@ -163,12 +167,12 @@ class CuratoryGroupsController {
   @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    CuratoryGroup group = CuratoryGroup.get(genericOIDService.oidToId(params.id))
-    def result = [result: 'OK', params: params, changed: false]
-    def errors = [:]
+    Map result = [result: 'OK', params: params, changed: false]
+    Map errors = [:]
     def reqBody = request.JSON
-    def remove = (request.method == 'PUT')
+    boolean remove = (request.method == 'PUT')
     User user = User.get(springSecurityService.principal.id)
+    CuratoryGroup group = CuratoryGroup.get(genericOIDService.oidToId(params.id))
 
     if (group) {
       boolean editable = user.hasRole('ROLE_ADMIN') || group.owner?.id == user.id
@@ -209,29 +213,28 @@ class CuratoryGroupsController {
 
   @Secured("hasAnyRole('ROLE_CONTRIBUTOR', 'ROLE_EDITOR', 'ROLE_ADMIN') and isAuthenticated()")
   def getReviews() {
-    def result = [:]
-    def max = params.limit ? params.long('limit') : 10
-    def offset = params.offset ? params.long('offset') : 0
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def sort = params.sort ?: null
-    def order = params.order ?: null
-    def group = CuratoryGroup.get(params.id)
-    def inactive = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
+    Map result = [:]
+    int max = params.limit ? params.long('limit') : 10
+    int offset = params.offset ? params.long('offset') : 0
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    String sort = params.sort ?: null
+    String order = params.order ?: null
+    CuratoryGroup group = CuratoryGroup.get(params.id)
+    RefdataValue inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
     User user = User.get(springSecurityService.principal.id)
-    def errors = [:]
+    Map errors = [:]
 
     if (group) {
-      def qry = "where exists (select arg from AllocatedReviewGroup arg" +
-                              "where arg.group = :group and arg.review = rr and arc.status != :inactive)"
-      def qryParams = [group:group, inactive:inactive]
-      def sortQry = ""
+      String qry = "where exists (select arg from AllocatedReviewGroup arg where arg.group = :group and arg.review = rr and arc.status != :inactive)"
+      Map qryParams = [group: group, inactive: inactive]
+      String sortQry = ""
 
       if (params.status) {
-        def rdv = null
+        RefdataValue rdv = null
 
         if (params.status instanceof Integer) {
-          def cat = RefdataCategory.findByLabel('ReviewRequest.Status')
-          def val = RefdataValue.get(params.status)
+          RefdataCategory cat = RefdataCategory.findByLabel('ReviewRequest.Status')
+          RefdataValue val = RefdataValue.get(params.status)
 
           if (val && val in cat.values) {
             status = val
@@ -264,8 +267,8 @@ class CuratoryGroupsController {
       }
 
       if (errors.size() == 0) {
-        def hqlTotal = ReviewRequest.executeQuery("select count(rr.id) from ReviewRequest as rr ${qry}".toString(), qryParams)[0]
-        def rrResult = ReviewRequest.executeQuery("select rr from ReviewRequest as rr ${qry} ${sortQry}".toString(), qryParams, [max: max, offset: offset])
+        int hqlTotal = ReviewRequest.executeQuery("select count(rr.id) from ReviewRequest as rr ${qry}".toString(), qryParams)[0]
+        List rrResult = ReviewRequest.executeQuery("select rr from ReviewRequest as rr ${qry} ${sortQry}".toString(), qryParams, [max: max, offset: offset])
 
         result.data = []
         result['_pagination'] = [
@@ -277,11 +280,11 @@ class CuratoryGroupsController {
         result = componentLookupService.generateLinks(result, ReviewRequest, "/curatoryGroups/${params.id}/reviews", params, max, offset, hqlTotal)
 
         rrResult.each { rr ->
-          def rrObj = restMappingService.mapObjectToJson(rr, params, user)
+          Map rrObj = restMappingService.mapObjectToJson(rr, params, user)
           rrObj.allocatedGroups = []
 
           rr.allocatedGroups?.each {
-            def groupObj = [name: it.group.name, id: it.group.id]
+            Map groupObj = [name: it.group.name, id: it.group.id]
 
             if (it.status) {
               groupObj << [status: [name:it.status?.value, id:it.status.id]]
@@ -317,25 +320,26 @@ class CuratoryGroupsController {
 
   @Secured("hasAnyRole('ROLE_CONTRIBUTOR', 'ROLE_EDITOR', 'ROLE_ADMIN') and isAuthenticated()")
   def getJobs() {
-    def result = [:]
-    def max = params.limit ? params.int('limit') : 10
-    def offset = params.offset ? params.int('offset') : 0
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def sort = params._sort ?: null
-    def order = params._order ?: null
-    def group = CuratoryGroup.get(params.id)
+    Map result = [:]
+    int max = params.limit ? params.int('limit') : 10
+    int offset = params.offset ? params.int('offset') : 0
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    String sort = params._sort ?: null
+    String order = params._order ?: null
+    CuratoryGroup group = CuratoryGroup.get(params.id)
     User user = User.get(springSecurityService.principal.id)
-    def showFinished = params.boolean('showFinished') ?: false
-    def errors = [:]
+    boolean showFinished = params.boolean('showFinished') ?: false
+    Map errors = [:]
 
     if (group && (group.users.contains(user) || user.isAdmin())) {
       if (params.boolean('archived') == true || params.boolean('combined') == true) {
         result.data = []
-        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?0", [group.id])[0]
-        def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ?0 order by jr.startTime desc", [group.id], [max: max, offset: offset])
+
+        int hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?0", [group.id])[0]
+        List jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ?0 order by jr.startTime desc", [group.id], [max: max, offset: offset])
 
         if (params.boolean('combined') == true) {
-          def active_jobs = concurrencyManagerService.getGroupJobs(group.id, max, offset, false)
+          Map active_jobs = concurrencyManagerService.getGroupJobs(group.id, max, offset, false)
 
           hqlTotal += active_jobs._pagination.total
 
@@ -345,7 +349,7 @@ class CuratoryGroupsController {
         }
 
         jobs.each { j ->
-          def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+          KBComponent component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
           // No JsonObject for list view
 
           result.data << [
@@ -377,8 +381,8 @@ class CuratoryGroupsController {
   @Secured(value=["hasRole('ROLE_ADMIN')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def connectGroups() {
-    def result = ['result':'ERROR',
-                  'params': params]
+    Map result = ['result':'ERROR', 'params': params]
+
     if (!params.superordinateId || !params.subordinateId){
       response.status = 422
       result.message = "Missing params. Requested parameters are 'superordinateId' and 'subordinateId'"
@@ -429,14 +433,17 @@ class CuratoryGroupsController {
   @Secured("hasRole('ROLE_ADMIN') and isAuthenticated()")
   @Transactional
   def createGroupType() {
-    def result = [:]
+    Map result = [:]
     CuratoryGroupType.Level level
     String name
+
     try{
       level = params.level?.toUpperCase()
-      if (StringUtils.isEmpty(params.name)){
+
+      if (StringUtils.isEmpty(params.name)) {
         throw new Exception("Missing param name.")
       }
+
       name = params.name
     }
     catch (Exception e){
@@ -445,8 +452,7 @@ class CuratoryGroupsController {
       result.message = "No CuratoryGroupType found for these params. ".concat(e.getMessage())
     }
     if (level && name){
-      CuratoryGroupType cgt = new CuratoryGroupType(level:level, name:name)
-      cgt.dump()
+      CuratoryGroupType cgt = new CuratoryGroupType(level:level, name:name).save(flush: true, failOnError: true)
       result.result = 'OK'
       response.setStatus(200)
       result.message = "Created CuratoryGroupType ".concat(cgt.toString())

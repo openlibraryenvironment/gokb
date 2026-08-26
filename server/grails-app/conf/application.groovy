@@ -46,7 +46,6 @@ grails.plugin.springsecurity.filterChain.chainMap = [
 
 grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/admin/**',                      access: ["hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()"]],
-  [pattern: '/file/**',                       access: ["hasRole('ROLE_ADMIN') and isFullyAuthenticated()"]],
   [pattern: '/info',                          access: ["hasRole('ROLE_ADMIN') and isFullyAuthenticated()"]],
   [pattern: '/monitoring/**',                 access: ["hasRole('ROLE_SUPERUSER') and isFullyAuthenticated()"]],
   [pattern: '/login/auth',                    access: ['permitAll']],
@@ -113,9 +112,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/workflow/**',                   access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
   [pattern: '/savedItems/**',                 access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
   [pattern: '/group/**',                      access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
-  [pattern: '/folderUpload/**',               access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
   [pattern: '/create/**',                     access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
-  [pattern: '/decisionSupport/**',            access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
   [pattern: '/ajaxSupport/**',                access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
   [pattern: '/search/**',                     access: ["hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()"]],
   [pattern: '/security/**',                   access: ["hasRole('ROLE_ADMIN') and isFullyAuthenticated()"]],

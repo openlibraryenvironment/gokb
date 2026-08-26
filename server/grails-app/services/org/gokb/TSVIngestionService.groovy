@@ -14,7 +14,7 @@ class TSVIngestionService {
   def grailsApplication
   def sessionFactory
 
-  def updatePackage(def pkgId,
+  public Map updatePackage(def pkgId,
                     def dfId,
                     def title_id_ns,
                     boolean async,
@@ -53,8 +53,8 @@ class TSVIngestionService {
     }
   }
 
-  def analyseFile(temp_file) {
-    def result = [:]
+  public Map analyseFile(temp_file) {
+    Map result = [:]
     result.filesize = 0
 
     log.debug("analyze...")
@@ -91,14 +91,14 @@ class TSVIngestionService {
     result
   }
 
-  def handleTempFile(deposit_token, def inputfile = null) {
-    def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '/tmp/gokb/ingest'
+  public File handleTempFile(deposit_token, def inputfile = null) {
     log.debug("handleTempFile...")
-    def sub1 = deposit_token.substring(0,2)
-    def sub2 = deposit_token.substring(2,4)
+    String baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '/tmp/gokb/ingest'
+    String sub1 = deposit_token.substring(0,2)
+    String sub2 = deposit_token.substring(2,4)
     validateUploadDir("${baseUploadDir}/${sub1}/${sub2}")
-    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}"
-    def temp_file = new File(temp_file_name)
+    String temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}"
+    File temp_file = new File(temp_file_name)
 
     if (inputfile) {
       log.debug("Copying uploaded file ..")
@@ -109,8 +109,9 @@ class TSVIngestionService {
     temp_file
   }
 
-  private def validateUploadDir(path) {
+  private void validateUploadDir(path) {
     File f = new File(path)
+
     if ( ! f.exists() ) {
       log.debug("Creating upload directory path")
       f.mkdirs();

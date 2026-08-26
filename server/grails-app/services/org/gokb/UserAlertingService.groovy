@@ -9,56 +9,37 @@ import org.gokb.cred.User
 
 
 class UserAlertingService implements ApplicationContextAware {
-
-  static String USER_ALERT_QRY = '''
-select f, fi, work, title_in_group, ti, tipp
-from Folder as f,
-     KBComponentFolderEntry as fi,
-     TitleInstance as ti,
-     Work as work,
-     TitleInstance as title_in_group,
-     Combo as tipp_combo,
-     TitleInstancePackagePlatform as tipp
-where
-      ( ( tipp.accessStartDate between :startDate and :endDate ) OR ( tipp.accessEndDate between :startDate and :endDate ) ) AND
-      ( ( tipp_combo.fromComponent = title_in_group ) and ( tipp_combo.type.value = 'TitleInstance.Tipps' ) and ( tipp_combo.toComponent = tipp ) ) AND
-      ( title_in_group.work = work ) AND
-      ( work = ti.work ) AND
-      ( ti = fi.linkedComponent ) AND
-      ( fi.folder = f ) AND
-      ( ( f.owner = :user ) OR ( f.owner in ( select uom.memberOf from UserOrganisationMembership as uom where uom.party = :user ) ) )
-order by f.id, ti.id, title_in_group.id
-'''
-
-
   def mailService
   ApplicationContext applicationContext
 
   static transactional = false
 
+  def sessionFactory
   def grailsApplication
+  def dateFormatService
 
   @javax.annotation.PostConstruct
   def init() {
     log.debug("UserAlertingService::init");
   }
 
-  def sendAlertingEmail(user) {
+  public void sendAlertingEmail(user) {
     try {
       Date start_date = null
+
       if ( user.last_alert_check) {
         start_date = user.last_alert_check
       }
       else {
         // If the user never checked, give them 5 days worth
-        start_date = new Date(System.currentTimeMillis() - (5*24*60*60*1000) );
+        start_date = new Date(System.currentTimeMillis() - (5*24*60*60*1000) )
       }
-      Date end_date = new Date(System.currentTimeMillis());
-      sendEmail(user, start_date, end_date);
+      Date end_date = new Date(System.currentTimeMillis())
+      sendEmail(user, start_date, end_date)
       user.last_alert_check = end_date
 
       if (user.validate()) {
-        user.save(flush:true, failOnError:true);
+        user.save(flush:true, failOnError:true)
       }else{
         def errors = user.errors.allErrors
 
@@ -69,18 +50,19 @@ order by f.id, ti.id, title_in_group.id
       log.error("Error sending user email - ${user.email}",e)
     }
     finally {
-      log.debug("Send complete");
+      log.debug("Send complete")
     }
   }
 
-  def sendAllAlerts() {
+  public void sendAllAlerts() {
     if (grailsApplication.config.getProperty('gokb.alerts.emailFrom')) {
-      def rq = User.executeQuery('select u from User as u where u.send_alert_emails.value=:yes',[yes:'Yes']);
+      def rq = User.executeQuery('select u from User as u where u.send_alert_emails.value=:yes',[yes:'Yes'])
       Date start_date = new Date(System.currentTimeMillis() - (24*60*60*1000) )
       Date end_date = new Date(System.currentTimeMillis())
-      log.debug("User list: ${rq}");
+      log.debug("User list: ${rq}")
+
       rq.each {
-        sendEmail(it, start_date, end_date);
+        sendEmail(it, start_date, end_date)
       }
     }
     else {
@@ -88,26 +70,20 @@ order by f.id, ti.id, title_in_group.id
     }
   }
 
-  @javax.annotation.PreDestroy
-  def destroy() {
-    log.debug("Destroy");
-  }
-
-  private def sendEmail(User user, Date startDate, Date endDate) {
-
+  private Map sendEmail(User user, Date startDate, Date endDate) {
     log.debug("sendEmail....");
 
-    def result = [:]
+    Map result = [:]
     result.start_date = startDate;
     result.end_date = endDate;
     result.serverUrl = grailsApplication.config.getProperty('grails.serverURL') ?: 'http://localhost:8080/gokb'
-    result.updates = getTippsInUserWatchList(user, startDate, endDate)
+    result.updates = handleUserWatchList(user, startDate, endDate)
 
-    def emailTemplateFile = applicationContext.getResource("WEB-INF/mail-templates/gokbAlerts.gsp").file
-    def engine = new SimpleTemplateEngine()
+    File emailTemplateFile = applicationContext.getResource("WEB-INF/mail-templates/gokbAlerts.gsp").file
+    SimpleTemplateEngine engine = new SimpleTemplateEngine()
     def tmpl = engine.createTemplate(emailTemplateFile).make(result)
-    def alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
-    def content = tmpl.toString()
+    String alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
+    String content = tmpl.toString()
     EmailValidator validator = EmailValidator.getInstance()
     Locale locale = new Locale(user.preferredLocaleString ?: grailsApplication.config.getProperty('gokb.support.locale', String, 'en'))
 
@@ -127,26 +103,75 @@ order by f.id, ti.id, title_in_group.id
     }
   }
 
-  private getTippsInUserWatchList(User user, Date start_date, Date end_date) {
-    // Return a query - Watch List, Watch Title, Watch Work, Changed Title, Changed Tipp
-    // For any tipps that are on the users watch list
+  private Map handleUserWatchList(User user, Date startDate, Date endDate) {
+    Map result = [:]
 
-    def modified_tipps = Folder.executeQuery(USER_ALERT_QRY,[user:user, startDate:start_date, endDate:end_date]);
-    def result = []
-    def current_folder = null;
+    List changed_component_ids = ComponentWatch.executeQuery('''select cw.component.id from ComponentWatch as cw
+                                                              where cw.user = :user
+                                                              and cw.component.lastUpdated > :start
+                                                              and cw.component.lastUpdated <= :end
+                                                              order by cw.component.name''',
+                                                              [user: user, start: startDate, end: endDate])
 
-    log.debug("Processing ${modified_tipps.size} tipp hits for user watch lists between ${start_date} and ${end_date}");
-    modified_tipps.each { mt ->
-      if ( current_folder?.id != mt[0].id ) {
-        current_folder = [id:mt[0].id, name:mt[0].name, owner:mt[0].owner.displayName, titles:[]]
-        result.add(current_folder)
+    boolean more = true
+
+    while (more) {
+      List id_batch = changed_component_ids.take(50)
+      changed_component_ids = changed_component_ids.drop(id_batch.size())
+      String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') : null
+
+      List components = KBComponent.executeQuery('''from KBComponent where id in (:batch) order by name''', [batch: id_batch])
+
+      for (obj in components) {
+        String classKey = obj.niceName
+        Map cmp_info = [id: obj.id, name: obj.name, uuid: obj.uuid, lastUpdated: dateFormatService.formatTimestampOffset(obj.lastUpdated)]
+
+        if (classKey == 'Package') {
+          String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'package/' : null
+          cmp_info['changed_tipps_count'] = TitleInstancePackagePlatform.executeQuery('''select count(*) from TitleInstancePackagePlatform
+                                                                                          where pkg = :pkg
+                                                                                          and lastUpdated > :start
+                                                                                          and lastUpdated <= :end''',
+                                                                                          [pkg: obj, start: startDate, end: endDate])[0]
+
+          if (edit_base) {
+            cmp_info['editLink'] = edit_base + 'package/' + obj.uuid
+          }
+        }
+        else if (['Journal', 'Book', 'Database', 'OtherInstance'].contains(classKey)) {
+          cmp_info['changed_tipps_count'] = TitleInstancePackagePlatform.executeQuery('''select count(*) from TitleInstancePackagePlatform
+                                                                                          where title = :title
+                                                                                          and lastUpdated > :start
+                                                                                          and lastUpdated <= :end''',
+                                                                                          [title: obj, start: startDate, end: endDate])[0]
+
+          if (edit_base) {
+            cmp_info['editLink'] = edit_base + 'title/' + obj.uuid
+          }
+        }
+        else if (classKey == 'TIPP') {
+          cmp_info['title_changed'] = obj.title ? (obj.title.lastUpdated > startDate && obj.title.lastUpdated <= endDate) : false
+
+          if (edit_base) {
+            cmp_info['editLink'] = edit_base + 'package-title/' + obj.uuid
+          }
+        }
+
+        if (!result[classKey]) {
+          result[classKey] = []
+        }
+
+        result[classKey] << cmp_info
       }
 
-      current_folder.titles.add([watchlist_title:mt[4], watchlist_work:mt[2], matched_title:mt[3], tipp:mt[5]])
+      sessionFactory.currentSession.flush()
+      sessionFactory.currentSession.clear()
+
+      if (id_batch.size() < 50) {
+        more = false
+      }
     }
 
     result
   }
-
-
 }

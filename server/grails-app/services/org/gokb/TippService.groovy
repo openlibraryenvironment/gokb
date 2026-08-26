@@ -676,7 +676,7 @@ class TippService {
         if (tipp) {
           RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
           RefdataValue rr_type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
-          List rrList = ReviewRequest.findAllByComponentToReviewAndStatusAndStdDesc(tipp, status_open, rr_type_atm) ?: []
+          List rrList = ReviewRequest.findAllByComponentToReviewAndStatusAndStdDesc(tipp, status_open, rr_type_atm)
 
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
