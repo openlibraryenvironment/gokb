@@ -3,6 +3,7 @@ package org.gokb
 import com.k_int.ESSearchService
 import grails.core.GrailsApplication
 import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -34,8 +35,10 @@ class FTIndexCleanupService {
 
 
         TitleInstancePackagePlatform.withNewSession {
+            RefdataValue thisJobType = RefdataCategory.lookup("Job.Type", "FTIndexCleanupJob")
+            RefdataValue tippIndexingJobType = RefdataCategory.lookup("Job.Type", "ESTippUpdateJob")
 
-            ScheduledJobControl scheduledJobControl = ScheduledJobControl.findByJobType(RefdataCategory.lookup("Job.Type", "FTIndexCleanupJob"))
+            ScheduledJobControl scheduledJobControl = ScheduledJobControl.findByJobType(thisJobType)
             boolean completed = true
 
             if (scheduledJobControl) {
@@ -55,10 +58,11 @@ class FTIndexCleanupService {
 
             } else {
                 scheduledJobControl = new ScheduledJobControl()
+                scheduledJobControl.jobType = thisJobType
             }
 
             scheduledJobControl.lastStart = LocalDateTime.now()
-            scheduledJobControl.save(flush: true)
+            scheduledJobControl.save(flush: true, failOnError: true)
 
             if (!updatedSince) {
                 //default is last successful starttime of job, fallback minus 1 week start of day
@@ -99,6 +103,10 @@ class FTIndexCleanupService {
                         numberNotYetIndexedTipps++
                         tippsToReindex.add(tipp)
                         log.info("NOT YET INDEXED: " + tipp.getName() + ": " + tipp.getUuid())
+                    }
+                    else {
+                        log.info("xxxxx AMBIGUOUS xxxxxx: " + esRepresentation.records)
+                        log.info("xxxxx AMBIGUOUS xxxxxx: " + esRepresentation.records)
                     }
                 }
                 else {
@@ -161,9 +169,9 @@ class FTIndexCleanupService {
             scheduledJobControl.lastEnd = LocalDateTime.now()
             if (completed) {
                 scheduledJobControl.lastStartComplete = scheduledJobControl.lastStart
-                scheduledJobControl.lastEndComplete = LocalDateTime.now()
+                scheduledJobControl.lastEndComplete = scheduledJobControl.lastEnd
             }
-            scheduledJobControl.save(flush: true)
+            scheduledJobControl.save(flush: true, failOnError: true)
 
         }
         return result
