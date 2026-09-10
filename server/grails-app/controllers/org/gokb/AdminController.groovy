@@ -23,12 +23,10 @@ class AdminController {
   def componentStatisticService
   def ezbCollectionService
   def FTUpdateService
-  def gokbAclService
   def grailsCacheAdminService
   def packageService
   def packageCachingService
   def packageCleanupService
-  def packageSourceUpdateService
   def springSecurityService
   def titleAugmentService
   def jobManagerService
@@ -162,11 +160,14 @@ class AdminController {
 
   @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
   def jobs() {
-    log.debug("Jobs");
-    def result = [:]
-    log.debug("Sort");
+    log.debug("Jobs")
+
+    Map result = [:]
+    log.debug("Sort")
+
     result.jobs = concurrencyManagerService.jobs.sort { a, b -> b.value.startTime <=> a.value.startTime }
-    log.debug("concurrency manager service");
+
+    log.debug("concurrency manager service")
     result.cms = concurrencyManagerService
     result.scheduledJobs = jobManagerService.runningJobs
 
@@ -174,7 +175,7 @@ class AdminController {
       if (j && j.isDone() && !j.endTime) {
 
         try {
-          def job_res = j.get()
+          Object job_res = j.get()
 
           if (job_res && job_res instanceof Date) {
             j.endTime = job_res
@@ -185,9 +186,11 @@ class AdminController {
         }
         catch (Exception e) {
           log.error("Exception in Job ${j.uuid}!", e)
+
           if (!j.exception) {
             j.exception = e.toString()
           }
+
           if (j.messages?.size() == 0) {
             j.message("There has been an exception processing this job! Please check the logs!")
           }
@@ -199,7 +202,8 @@ class AdminController {
       }
     }
 
-    log.debug("Render");
+    log.debug("Render")
+
     if (request.format == 'JSON') {
       log.debug("JSON Render")
       render result as JSON
@@ -375,22 +379,15 @@ class AdminController {
   }
 
   def exportGroups() {
-    def result = [:]
-    CuratoryGroup.createCriteria().list({
-      createAlias('status', 'cstatus', CriteriaSpecification.LEFT_JOIN)
-      or {
-        isNull 'status'
-        and {
-          ne 'cstatus.value', KBComponent.STATUS_DELETED
-          ne 'cstatus.value', KBComponent.STATUS_RETIRED
-        }
-      }
-    })?.each { CuratoryGroup group ->
+    Map result = [:]
+    RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+
+    CuratoryGroup.findAllByStatus(status_current)?.each { CuratoryGroup group ->
       result["${group.name}"] = [
-              users     : group.users.collect { it.username },
-              owner     : group.owner?.username,
-              status    : group.status?.value,
-              editStatus: group.editStatus?.value
+        users     : group.users.collect { it.username },
+        owner     : group.owner?.username,
+        status    : group.status?.value,
+        editStatus: group.editStatus?.value
       ]
     }
 
@@ -437,7 +434,7 @@ class AdminController {
   }
 
   def cancelQuartzJob() {
-    def result = [result: 'OK', message: null]
+    Map result = [result: 'OK', message: null]
 
     try {
       result.result = jobManagerService.interruptJob('GRAILS_JOBS', params.id)
@@ -452,9 +449,9 @@ class AdminController {
 
   def cacheSinglePackage() {
     log.debug("Manual package caching for ID ${params.id}")
-    def result = [params: params, result: null]
+    Map result = [params: params, result: null]
 
-    def pkg = Package.findByUuid(params.id)
+    Package pkg = Package.findByUuid(params.id)
 
     if (!pkg && params.long('id')) {
       pkg = Package.get(params.long('id'))
@@ -478,8 +475,8 @@ class AdminController {
 
   def deduplicatePackageTipps() {
     log.debug("Manual TIPP deduplication for ID ${params.id}")
-    def result = [params: params, result: null]
-    def pkgId = params.int('id') ?: null
+    Map result = [params: params, result: null]
+    Long pkgId = params.long('id') ?: null
 
     if (pkgId) {
       Job j = concurrencyManagerService.createJob { job ->
@@ -504,7 +501,7 @@ class AdminController {
 
   def triggerDailyReviewsAlerts() {
     log.debug("Triggering curator review notifications")
-    def result = [result: 'OK']
+    Map result = [result: 'OK']
 
     result = curatoryGroupAlertingService.triggerDailyReviewsAlerts()
 
@@ -525,7 +522,7 @@ class AdminController {
   }
 
   def closeAllOrphanedReviews() {
-    def result = [result: 'OK']
+    Map result = [result: 'OK']
 
     result.total = cleanupService.closeOrphanedReviews()
 
@@ -534,7 +531,7 @@ class AdminController {
 
   def generateMissingDOIs() {
     log.debug("Generate missing DOI book ids from importIds")
-    def result = [params: params, result: null]
+    Map result = [params: params, result: null]
 
     Job j = concurrencyManagerService.createJob { job ->
       cleanupService.generateTitleDOIsFromTippInfo(job)
@@ -549,27 +546,25 @@ class AdminController {
 
   def addMissingOrgRoles() {
     log.debug("Adding missing Org roles based on existing component links")
-
-    def result = orgRolesService.addMissingRoles()
+    Map result = orgRolesService.addMissingRoles()
 
     render result as JSON
   }
 
   def generateMissingPackageYears() {
-
     Map result = packageCleanupService.generateYearInfoFromNames()
 
     render result as JSON
   }
 
   def getJobInfo() {
-    def result = ['result': 'OK', 'params': params]
+    Map result = ['result': 'OK', 'params': params]
     String uuid = params.id
     log.info("getJobInfo($uuid)")
 
     if (uuid == null) {
       result.result = "ERROR"
-      response.setStatus(400)
+      response.status = 400
       result.message = "Request has no id parameter."
     }
     else {
@@ -586,6 +581,7 @@ class AdminController {
         if (job.endTime || job.isCancelled()) {
           result.finished = true
           result.endTime = job.endTime
+
           try {
             result.job_result = job.get()
           }
@@ -599,13 +595,13 @@ class AdminController {
         }
       }
       else {
-        def persistedResult = JobResult.findByUuid(uuid)
+        JobResult persistedResult = JobResult.findByUuid(uuid)
 
         if (persistedResult) {
-          def linkedItemMap = null
+          Map linkedItemMap = [:]
 
           if (persistedResult.linkedItemId) {
-            def linkedItem = KBComponent.get(persistedResult.linkedItemId)
+            KBComponent linkedItem = KBComponent.get(persistedResult.linkedItemId)
 
             if (linkedItem) {
               linkedItemMap = [id: linkedItem.id, name: linkedItem.name, uuid: linkedItem.uuid, type: linkedItem.niceName]
@@ -635,14 +631,14 @@ class AdminController {
   }
 
   def setupAcl() {
+    log.info("Setting up default ACL config ..")
 
-    def default_dcs = [
+    Map default_dcs = [
       "BookInstance",
       "JournalInstance",
       "TitleInstancePackagePlatform",
       "DatabaseInstance",
       "Office",
-      "Imprint",
       "Package",
       "ReviewRequest",
       "Org",
@@ -654,8 +650,7 @@ class AdminController {
     ]
 
     default_dcs.each { dcd ->
-
-      def dc_org = KBDomainInfo.findByDcName("org.gokb.cred.${dcd}")
+      KBDomainInfo dc_org = KBDomainInfo.findByDcName("org.gokb.cred.${dcd}")
 
       aclUtilService.addPermission(dc_org, 'ROLE_USER', BasePermission.READ)
 
@@ -675,18 +670,7 @@ class AdminController {
       aclUtilService.addPermission(dc_org, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
     }
 
-    def dc_cmb = KBDomainInfo.findByDcName("org.gokb.cred.Combo")
-
-    aclUtilService.addPermission(dc_cmb, 'ROLE_CONTRIBUTOR', BasePermission.CREATE)
-    aclUtilService.addPermission(dc_cmb, 'ROLE_CONTRIBUTOR', BasePermission.DELETE)
-
-    aclUtilService.addPermission(dc_cmb, 'ROLE_EDITOR', BasePermission.CREATE)
-    aclUtilService.addPermission(dc_cmb, 'ROLE_EDITOR', BasePermission.DELETE)
-
-    aclUtilService.addPermission(dc_cmb, 'ROLE_ADMIN', BasePermission.CREATE)
-    aclUtilService.addPermission(dc_cmb, 'ROLE_ADMIN', BasePermission.DELETE)
-
-    def dc_tit = KBDomainInfo.findByDcName("org.gokb.cred.TitleInstance")
+    KBDomainInfo dc_tit = KBDomainInfo.findByDcName("org.gokb.cred.TitleInstance")
 
     aclUtilService.addPermission(dc_tit, 'ROLE_USER', BasePermission.READ)
 
@@ -702,7 +686,7 @@ class AdminController {
     aclUtilService.addPermission(dc_tit, 'ROLE_ADMIN', BasePermission.DELETE)
     aclUtilService.addPermission(dc_tit, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
 
-    def dc_id = KBDomainInfo.findByDcName('org.gokb.cred.Identifier')
+    KBDomainInfo dc_id = KBDomainInfo.findByDcName('org.gokb.cred.Identifier')
 
     aclUtilService.addPermission(dc_id, 'ROLE_USER', BasePermission.READ)
 
@@ -719,7 +703,7 @@ class AdminController {
     aclUtilService.addPermission(dc_id, 'ROLE_ADMIN', BasePermission.DELETE)
     aclUtilService.addPermission(dc_id, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
 
-    def dc_cg = KBDomainInfo.findByDcName('org.gokb.cred.CuratoryGroup')
+    KBDomainInfo dc_cg = KBDomainInfo.findByDcName('org.gokb.cred.CuratoryGroup')
 
     aclUtilService.addPermission(dc_cg, 'ROLE_CONTRIBUTOR', BasePermission.READ)
     aclUtilService.addPermission(dc_cg, 'ROLE_CONTRIBUTOR', BasePermission.WRITE)
@@ -735,23 +719,7 @@ class AdminController {
     aclUtilService.addPermission(dc_cg, 'ROLE_ADMIN', BasePermission.DELETE)
     aclUtilService.addPermission(dc_cg, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
 
-    def dc_uo = KBDomainInfo.findByDcName('org.gokb.cred.UserOrganisation')
-
-    aclUtilService.addPermission(dc_uo, 'ROLE_CONTRIBUTOR', BasePermission.READ)
-    aclUtilService.addPermission(dc_uo, 'ROLE_CONTRIBUTOR', BasePermission.WRITE)
-    aclUtilService.addPermission(dc_uo, 'ROLE_CONTRIBUTOR', BasePermission.CREATE)
-
-    aclUtilService.addPermission(dc_uo, 'ROLE_EDITOR', BasePermission.READ)
-    aclUtilService.addPermission(dc_uo, 'ROLE_EDITOR', BasePermission.WRITE)
-    aclUtilService.addPermission(dc_uo, 'ROLE_EDITOR', BasePermission.CREATE)
-
-    aclUtilService.addPermission(dc_uo, 'ROLE_ADMIN', BasePermission.READ)
-    aclUtilService.addPermission(dc_uo, 'ROLE_ADMIN', BasePermission.WRITE)
-    aclUtilService.addPermission(dc_uo, 'ROLE_ADMIN', BasePermission.CREATE)
-    aclUtilService.addPermission(dc_uo, 'ROLE_ADMIN', BasePermission.DELETE)
-    aclUtilService.addPermission(dc_uo, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
-
-    def dc_rdc = KBDomainInfo.findByDcName('org.gokb.cred.RefdataCategory')
+    KBDomainInfo dc_rdc = KBDomainInfo.findByDcName('org.gokb.cred.RefdataCategory')
 
     aclUtilService.addPermission(dc_rdc, 'ROLE_CONTRIBUTOR', BasePermission.READ)
 
@@ -763,7 +731,7 @@ class AdminController {
     aclUtilService.addPermission(dc_rdc, 'ROLE_ADMIN', BasePermission.DELETE)
     aclUtilService.addPermission(dc_rdc, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
 
-    def dc_rdv = KBDomainInfo.findByDcName('org.gokb.cred.RefdataValue')
+    KBDomainInfo dc_rdv = KBDomainInfo.findByDcName('org.gokb.cred.RefdataValue')
 
     aclUtilService.addPermission(dc_rdv, 'ROLE_USER', BasePermission.READ)
 
@@ -777,7 +745,7 @@ class AdminController {
     aclUtilService.addPermission(dc_rdv, 'ROLE_ADMIN', BasePermission.DELETE)
     aclUtilService.addPermission(dc_rdv, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
 
-    def dc_ns = KBDomainInfo.findByDcName('org.gokb.cred.IdentifierNamespace')
+    KBDomainInfo dc_ns = KBDomainInfo.findByDcName('org.gokb.cred.IdentifierNamespace')
 
     aclUtilService.addPermission(dc_ns, 'ROLE_USER', BasePermission.READ)
 
@@ -791,39 +759,17 @@ class AdminController {
     aclUtilService.addPermission(dc_ns, 'ROLE_ADMIN', BasePermission.DELETE)
     aclUtilService.addPermission(dc_ns, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
 
-    def dc_usr = KBDomainInfo.findByDcName('org.gokb.cred.User')
+    KBDomainInfo dc_usr = KBDomainInfo.findByDcName('org.gokb.cred.User')
 
     aclUtilService.addPermission(dc_usr, 'ROLE_ADMIN', BasePermission.READ)
     aclUtilService.addPermission(dc_usr, 'ROLE_ADMIN', BasePermission.WRITE)
     aclUtilService.addPermission(dc_usr, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
 
-    def dc_kbd = KBDomainInfo.findByDcName('org.gokb.cred.KBDomainInfo')
+    KBDomainInfo dc_kbd = KBDomainInfo.findByDcName('org.gokb.cred.KBDomainInfo')
 
     aclUtilService.addPermission(dc_kbd, 'ROLE_ADMIN', BasePermission.READ)
 
-    // DecisionSupport
-
-    def dc_dsc = KBDomainInfo.findByDcName('org.gokb.cred.DSCriterion')
-
-    aclUtilService.addPermission(dc_dsc, 'ROLE_EDITOR', BasePermission.READ)
-
-    aclUtilService.addPermission(dc_dsc, 'ROLE_ADMIN', BasePermission.READ)
-    aclUtilService.addPermission(dc_dsc, 'ROLE_ADMIN', BasePermission.WRITE)
-    aclUtilService.addPermission(dc_dsc, 'ROLE_ADMIN', BasePermission.CREATE)
-    aclUtilService.addPermission(dc_dsc, 'ROLE_ADMIN', BasePermission.DELETE)
-    aclUtilService.addPermission(dc_dsc, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
-
-    def dc_dscat = KBDomainInfo.findByDcName('org.gokb.cred.DSCategory')
-
-    aclUtilService.addPermission(dc_dscat, 'ROLE_EDITOR', BasePermission.READ)
-
-    aclUtilService.addPermission(dc_dscat, 'ROLE_ADMIN', BasePermission.READ)
-    aclUtilService.addPermission(dc_dscat, 'ROLE_ADMIN', BasePermission.WRITE)
-    aclUtilService.addPermission(dc_dscat, 'ROLE_ADMIN', BasePermission.CREATE)
-    aclUtilService.addPermission(dc_dscat, 'ROLE_ADMIN', BasePermission.DELETE)
-    aclUtilService.addPermission(dc_dscat, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
-
-    def dc_kbc = KBDomainInfo.findByDcName('org.gokb.cred.KBComponent')
+    KBDomainInfo dc_kbc = KBDomainInfo.findByDcName('org.gokb.cred.KBComponent')
 
     aclUtilService.addPermission(dc_kbc, 'ROLE_USER', BasePermission.READ)
 

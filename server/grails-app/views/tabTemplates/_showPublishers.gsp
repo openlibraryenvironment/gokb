@@ -14,20 +14,20 @@
       <thead>
         <tr>
           <th>Publisher Name</th>
-          <th>Combo Status</th>
+          <th>Link Status</th>
           <th>Publisher From</th>
           <th>Publisher To</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <g:each in="${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)}" var="p">
+        <g:each in="${d.publisherLinks}" var="p">
           <tr>
-            <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
-            <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>
+            <td><g:link controller="resource" action="show" id="${p.title.class.name}:${p.publisher.id}"> ${p.publisher.name} ${p.publisher.status.value == 'Deleted' ? '(Deleted)' : ''} </g:link></td>
+            <td><g:xEditableRefData owner="${p}" field="status" config='TitlePublisher.Status' /></td>
             <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
             <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
-            <td><g:if test="${d.isEditable()}"><g:link controller="ajaxSupport" action="deleteCombo" id="${p.id}"  onclick="return confirm('Are you sure you want to delete this link?')">Delete</g:link></g:if></td>
+            <td><g:if test="${d.isEditable()}"><g:link controller="ajaxSupport" action="deletePublisherLink" id="${p.id}"  onclick="return confirm('Are you sure you want to delete this link?')">Delete</g:link></g:if></td>
           </tr>
         </g:each>
       </tbody>
@@ -54,3 +54,13 @@
     </g:if>
   </dd>
 </dl>
+
+<asset:script type="text/javascript">
+
+  $("select[name='publisher_status']").on('change', function(event) {
+    var form =$(event.target).closest("form")
+    form.submit();
+  });
+
+
+</asset:script>

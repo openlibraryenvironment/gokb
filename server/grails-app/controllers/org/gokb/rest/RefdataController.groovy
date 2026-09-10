@@ -16,8 +16,8 @@ class RefdataController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def result = [:]
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    Map result = [:]
     boolean skip_deprecated = params.boolean('skipDeprecated')
 
     result['_links'] = ['self': ['href': base + "/refdata/"]]
@@ -64,9 +64,9 @@ class RefdataController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def showCategory() {
-    def result = [:]
-    def cat = null
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    Map result = [:]
+    RefdataCategory cat = null
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
 
     if (params.int('id')) {
       cat = RefdataCategory.get(params.int('id'))
@@ -105,9 +105,9 @@ class RefdataController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def showValue() {
-    def result = [:]
-    def val = null
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    Map result = [:]
+    RefdataValue val = null
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
 
     if (params.id.contains(':')) {
       val = genericOIDService.resolveOID(params.id)
@@ -156,12 +156,10 @@ class RefdataController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def packageScope() {
-    def result = [:]
-    def resultData = []
-    def cat = null
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-
-    cat = RefdataCategory.findByLabel("Package.Scope")
+    Map result = [:]
+    List resultData = []
+    RefdataCategory cat = RefdataCategory.findByLabel("Package.Scope")
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
 
     if (cat) {
       result['_links'] = ['self': ['href': base + "/package-scopes"]]
@@ -186,12 +184,10 @@ class RefdataController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def coverageDepth() {
-    def result = [:]
-    def resultData = []
-    def cat = null
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-
-    cat = RefdataCategory.findByLabel("TIPPCoverageStatement.CoverageDepth")
+    Map result = [:]
+    List resultData = []
+    RefdataCategory cat = RefdataCategory.findByLabel("TIPPCoverageStatement.CoverageDepth")
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
 
     if (cat) {
       result['_links'] = ['self': ['href': base + "/coverage-depth"]]
@@ -216,12 +212,10 @@ class RefdataController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def reviewType() {
-    def result = [:]
-    def resultData = []
-    def cat = null
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-
-    cat = RefdataCategory.findByLabel("ReviewRequest.StdDesc")
+    Map result = [:]
+    List resultData = []
+    RefdataCategory cat = RefdataCategory.findByLabel("ReviewRequest.StdDesc")
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
 
     if (cat) {
       result['_links'] = ['self': ['href': base + "/review-types"]]

@@ -18,16 +18,16 @@ class InplaceTagLib {
   private boolean checkEditable (attrs, body, out) {
 
     // See if there is an owner attribute on the request - owner will be the domain object asking to be edited.
-    def user = springSecurityService.currentUser
-    def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
-    def baseClass = attrs.baseClass ? grailsApplication.getArtefact("Domain", attrs.baseClass)?.clazz : null
+    User user = springSecurityService.currentUser
+    Object owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
+    Class baseClass = attrs.baseClass ? grailsApplication.getArtefact("Domain", attrs.baseClass)?.clazz : null
 
     boolean cur = request.curator != null ? request.curator.size() > 0 : true
 
     // Default editable value.
     boolean tl_editable = owner?.isEditable()
 
-    if (owner?.class?.name == 'org.gokb.cred.User') {
+    if (owner?.class == User) {
       tl_editable = user.equals(owner)
     }
 
@@ -39,8 +39,14 @@ class InplaceTagLib {
       tl_editable = true
     }
 
-    if ( !tl_editable && owner?.class?.name == 'org.gokb.cred.Combo' ) {
-      tl_editable = owner.fromComponent.isEditable()
+    if ( !tl_editable && owner?.class == TitlePublisher) {
+      tl_editable = owner.title.isEditable()
+    }
+    else if ( !tl_editable && owner?.class == ComponentIdentifier ) {
+      tl_editable = owner.component.isEditable()
+    }
+    else if ( !tl_editable && owner?.class == ComponentAttachment ) {
+      tl_editable = owner.component.isEditable()
     }
 
     // If not editable then we should output as value only and return the value.

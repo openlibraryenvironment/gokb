@@ -816,9 +816,6 @@ class BulkPackageImportService {
                       }
                     }
 
-
-                    RefdataValue type_pc = RefdataCategory.lookup("Combo.Type", "Package.CuratoryGroups")
-
                     if (!obj.curatoryGroups.contains(curator)) {
                       log.debug("Handling changed curator ..")
 

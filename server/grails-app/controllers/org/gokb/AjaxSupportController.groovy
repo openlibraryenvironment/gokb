@@ -27,38 +27,6 @@ class AjaxSupportController {
   def validationService
 
 
-  @Deprecated
-  def edit() {
-    // edit [name:name, value:project:12, pk:org.gokb.cred.Package:2950, action:edit, controller:ajaxSupport]
-    log.debug("edit ${params}");
-    def result = [:]
-
-    try {
-      if ( params.pk ) {
-        def target = genericOIDService.resolveOID(params.pk)
-        def user = springSecurityService.currentUser
-
-        if (target) {
-          def editable = checkEditable(target,user)
-
-          if (editable) {
-            target[params.name] = params.value
-            target.save(flush:true)
-          }
-        }
-
-        pk_components = pk.split(':')
-        if ( pk_components.length == 2 ) {
-        }
-      }
-    }
-    catch ( Exception e ) {
-      log.error(e)
-    }
-
-    render result as JSON
-  }
-
   def setRef() {
     def result = [:]
     render result as JSON
@@ -71,10 +39,8 @@ class AjaxSupportController {
 
   def getRefdata() {
     log.debug("AjaxController::getRefdata ${params}")
-
-    def result = []
-
-    def config = refdata_config[params.id]
+    List result = []
+    Map config = refdata_config[params.id]
 
     if (!config) {
       log.debug("Use generic config.")
@@ -94,10 +60,10 @@ class AjaxSupportController {
       result.add([text:'Yes', value: 1])
       result.add([text:'No', value: 0])
     } else {
-      def query_params = [config.rdvCat.toString()]
+      List query_params = [config.rdvCat.toString()]
 
       config.qryParams.each { qp ->
-        if ( qp.clos ) {
+        if (qp.clos) {
           query_params.add(qp.clos(params[qp.param]?:'').toString())
         }
         else {
@@ -113,17 +79,15 @@ class AjaxSupportController {
       GrailsClass dc = grailsApplication.getArtefact("Domain", 'org.gokb.cred.'+ config.domain)
 
       if (dc?.getClazz()?.isTypeReadable()) {
-        def cq = dc.getClazz().executeQuery(config.countQry,query_params);
-        def rq = dc.getClazz().executeQuery(config.rowQry,
-                                  query_params,
-                                  [max:params.iDisplayLength?:400,offset:params.iDisplayStart?:0])
+        int cq = dc.getClazz().executeQuery(config.countQry,query_params)[0]
+        List rq = dc.getClazz().executeQuery(config.rowQry, query_params, [max: params.iDisplayLength ?: 400, offset: params.iDisplayStart ?: 0])
 
         if (!config.required) {
           result.add([id:'', text:'', value:''])
         }
 
         rq.each { it ->
-          def o = ClassUtils.deproxy(it)
+          Object o = ClassUtils.deproxy(it)
           result.add([id: "${o.class.name}:${o.id}", text: o[config.cols[0]], value: "${o.class.name}:${o.id}"])
         }
       }
@@ -133,46 +97,7 @@ class AjaxSupportController {
   }
 
 
-  def refdata_config = [
-    'ContentProvider' : [
-        domain:'Org',
-        countQry:'select count(o) from Org as o where lower(o.name) like ?0',
-        rowQry:'select o from Org as o where lower(o.name) like ?0 order by o.name asc',
-        qryParams:[
-          [
-            param:'sSearch',
-            clos:{ value ->
-            def result = '%'
-            if ( value && ( value.length() > 0 ) )
-              result = "%${value.trim().toLowerCase()}%"
-              result
-            }
-          ]
-      ],
-      cols:['name'],
-      format:'map'
-    ],
-    'PackageType' : [
-      domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
-      qryParams:[['cat': "Package Type"]],
-      rdvCat: "Package.Scope",
-      cols:['value'],
-      format:'simple'
-    ],
-    'KBComponent.Status' : [
-      domain:'RefdataValue',
-      // countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
-      required:true,
-      qryParams:[],
-      rdvCat: "KBComponent.Status",
-      cols:['value'],
-      format:'simple'
-    ],
+  Map refdata_config = [
     'KBComponent.EditStatus' : [
       domain:'RefdataValue',
       countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc = ?0",
@@ -296,22 +221,21 @@ class AjaxSupportController {
   def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
     User user = springSecurityService.currentUser
-    def contextObj = resolveOID2(params.__context)
-    def new_obj = null
-    def errors = []
-    GrailsClass domain_class = grailsApplication.getArtefact('Domain',params.__newObjectClass)
+    Object contextObj = genericOIDService.resolveOID2(params.__context)
+    Object new_obj = null
+    List errors = []
+    GrailsClass domain_class = grailsApplication.getArtefact('Domain', params.__newObjectClass)
 
     if (domain_class && (domain_class.getClazz().isTypeCreatable() || domain_class.getClazz().isTypeAdministerable())) {
       if (contextObj) {
-        def editable = checkEditable(contextObj, user)
+        boolean editable = checkEditable(contextObj, user)
 
         if (editable || contextObj.id == user.id) {
           log.debug("Create a new instance of ${params.__newObjectClass}");
 
-          if (params.__newObjectClass == "org.gokb.cred.KBComponentVariantName"){
-
-            def norm_variant = GOKbTextUtils.normaliseString(params.variantName)
-            def existing_variants = KBComponentVariantName.findByNormVariantNameAndOwner(norm_variant, contextObj)
+          if (params.__newObjectClass == "org.gokb.cred.KBComponentVariantName") {
+            String norm_variant = GOKbTextUtils.normaliseString(params.variantName)
+            List existing_variants = KBComponentVariantName.findByNormVariantNameAndOwner(norm_variant, contextObj)
 
             if (existing_variants){
               log.debug("found dupes!")
@@ -323,6 +247,10 @@ class AjaxSupportController {
           }
 
           if (params.__newObjectClass == "org.gokb.cred.TitleInstancePackagePlatform") {
+            if (contextObj.class != Package) {
+              log.debug("TIPPs must be created in a package context!")
+              errors.add(message(code:'tipp.pkg.nullable', default:'TIPPs must be created in a package context!'))
+            }
 
             if (!params.title || params.title.size() == 0) {
               log.debug("missing title for TIPP creation")
@@ -341,7 +269,7 @@ class AjaxSupportController {
           }
 
           if (errors.size() == 0) {
-            new_obj = domain_class.getClazz().newInstance();
+            new_obj = domain_class.getClazz().newInstance()
             PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(domain_class.fullName)
 
             pent.getPersistentProperties().each { p -> // list of PersistentProperties
@@ -352,12 +280,12 @@ class AjaxSupportController {
                     // Set ref property
                     log.debug("set assoc ${p.name} to lookup of OID ${params[p.name]}");
                     // if ( key == __new__ then we need to create a new instance )
-                    new_obj[p.name] = resolveOID2(params[p.name])
+                    new_obj[p.name] = genericOIDService.resolveOID2(params[p.name])
                   }
                   else {
                     // Add to collection
                     log.debug("add to collection ${p.name} for OID ${params[p.name]}");
-                    new_obj[p.name].add(resolveOID2(params[p.name]))
+                    new_obj[p.name].add(genericOIDService.resolveOID2(params[p.name]))
                   }
                 }
                 else {
@@ -371,8 +299,18 @@ class AjaxSupportController {
                     case Date.class:
                       def dateObj = params.date(p.name, 'yyyy-MM-dd')
                       new_obj[p.name] = dateObj
-                      log.debug("Set simple prop ${p.name} = ${params[p.name]} (as date ${dateObj}))");
+                      log.debug("Set simple prop ${p.name} = ${params[p.name]} (as Date ${dateObj}))");
                       break;
+
+                    case LocalDate.class:
+                      try {
+                        LocalDate dateObj = LocalDate.parse(params[p.name])
+                        new_obj[p.name] = dateObj
+                        log.debug("Set simple prop ${p.name} = ${params[p.name]} (as LocalDate ${dateObj}))");
+                      }
+                      catch (Exception e) {
+                        log.debug("Unable to parse date value ${arams[p.name]} as LocalDate")
+                      }
 
                     case Float.class:
                       log.debug("Set simple prop ${p.name} = ${params[p.name]} (as float=${Float.valueOf(params[p.name])})");
@@ -391,35 +329,38 @@ class AjaxSupportController {
 
             if (params.__refdataName && params.__refdataValue) {
               log.debug("set refdata "+ params.__refdataName +" for component ${contextObj}")
-              def refdata = resolveOID2(params.__refdataValue)
+              RefdataValue refdata = genericOIDService.resolveOID2(params.__refdataValue)
               new_obj[params.__refdataName] = refdata
             }
 
             // Need to do the right thing depending on who owns the relationship. If new obj
             // BelongsTo other, should be added to recip collection.
             if ( params.__recip ) {
-              log.debug("Set reciprocal property ${params.__recip} to ${contextObj}");
+              log.debug("Set reciprocal property ${params.__recip} to ${contextObj}")
               new_obj[params.__recip] = contextObj
-              log.debug("Saving ${new_obj}");
+              log.debug("Saving ${new_obj}")
+
               if ( new_obj.validate() ) {
                 new_obj.save(flush:true)
-                log.debug("Saved OK");
+                log.debug("Saved OK")
+
                 if (contextObj.respondsTo("lastUpdateComment")){
                   contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName}(ID: ${new_obj.id})."
                 }
+
                 contextObj.save(flush: true)
               }
               else {
                 errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
               }
             }
-            else if ( params.__addToColl ) {
+            else if (params.__addToColl) {
               contextObj[params.__addToColl].add(new_obj)
-              log.debug("Saving ${new_obj}");
+              log.debug("Saving ${new_obj}")
 
               if ( new_obj.validate() ) {
                 new_obj.save(flush:true)
-                log.debug("New Object Saved OK");
+                log.debug("New Object Saved OK")
               }
               else {
                 errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
@@ -427,7 +368,7 @@ class AjaxSupportController {
 
               if ( contextObj.validate() ) {
                   contextObj.save(flush:true)
-                log.debug("Context Object Saved OK");
+                log.debug("Context Object Saved OK")
               }
               else {
                 errors.addAll(messageService.processValidationErrors(contextObj.errors, request.locale))
@@ -435,29 +376,11 @@ class AjaxSupportController {
             }
             else {
               // Stand alone object.. Save it!
-              log.debug("Saving stand alone reference object");
+              log.debug("Saving stand alone reference object")
+
               if ( new_obj.validate() ) {
                 new_obj.save(flush:true, failOnError:true)
-                log.debug("Saved OK (${new_obj.class.name} ${new_obj.id})");
-              }
-              else {
-                errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
-              }
-            }
-
-            // Special combo processing
-            if ( ( new_obj != null ) &&
-                ( new_obj.hasProperty('hasByCombo') ) && ( new_obj.hasByCombo != null ) ) {
-              log.debug("Processing hasByCombo properties...${new_obj.hasByCombo}");
-              new_obj.hasByCombo.keySet().each { hbc ->
-                log.debug("Testing ${hbc} -> ${params[hbc]}");
-                if ( params[hbc] ) {
-                  log.debug("Setting ${hbc} to ${params[hbc]}");
-                  new_obj[hbc] = resolveOID2(params[hbc])
-                }
-              }
-              if( new_obj.validate() ) {
-                new_obj.save(flush:true, failOnError:true)
+                log.debug("Saved OK (${new_obj.class.name} ${new_obj.id})")
               }
               else {
                 errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
@@ -476,10 +399,10 @@ class AjaxSupportController {
       }
     }
     else {
-      if(!domain_class) {
+      if (!domain_class) {
         log.error("Unable to lookup domain class ${params.__newObjectClass}");
         flash.error = message(code:'component.classNotFound.label', args:[params.__newObjectClass])
-      }else{
+      } else {
         flash.error = message(code:'component.create.denied.label', args:[params.__newObjectClass])
         log.error("No permission to create an object of domain class ${params.__newObjectClass}");
       }
@@ -491,7 +414,7 @@ class AjaxSupportController {
 
     withFormat {
       html {
-        if( new_obj && params.__showNew && errors.size() == 0) {
+        if ( new_obj && params.__showNew && errors.size() == 0) {
           redirect(controller:'resource', action:'show', id:"${new_obj.class.name}:${new_obj.id}");
         }
         else {
@@ -504,7 +427,7 @@ class AjaxSupportController {
         }
       }
       json {
-        def result = ['result': 'OK', 'params': params]
+        Map result = ['result': 'OK', 'params': params]
 
         if (flash.error) {
           result.result = 'ERROR'
@@ -531,12 +454,13 @@ class AjaxSupportController {
   def addToStdCollection() {
     log.debug("addToStdCollection(${params})");
     // Adds a link to a collection that is not mapped through a join object
-    def contextObj = resolveOID2(params.__context)
-    def user = springSecurityService.currentUser
-    def relatedObj = resolveOID2(params.__relatedObject)
-    def result = ['result': 'OK', 'params': params]
+    Object contextObj = genericOIDService.resolveOID2(params.__context)
+    User user = springSecurityService.currentUser
+    Object relatedObj = genericOIDService.resolveOID2(params.__relatedObject)
+    Map result = ['result': 'OK', 'params': params]
+
     if (relatedObj != null && contextObj != null) {
-      def editable = checkEditable(contextObj, user)
+      boolean editable = checkEditable(contextObj, user)
 
       if (editable || user.id == contextObj.id) {
         if (!contextObj["${params.__property}"].contains(relatedObj)) {
@@ -544,7 +468,8 @@ class AjaxSupportController {
           contextObj.save(flush:true, failOnError:true)
           log.debug("Saved: ${contextObj.id}");
           result.context = contextObj
-        }else{
+        }
+        else{
           flash.error = "Object is already present in this list!"
           log.debug("Tried to add the same object twice!")
           result.result = 'ERROR'
@@ -571,7 +496,7 @@ class AjaxSupportController {
 
     withFormat {
       html {
-        def redirect_to = request.getHeader('referer')
+        String redirect_to = request.getHeader('referer')
 
         if ( params.fragment && params.fragment.length() > 0 ) {
           redirect_to = "${redirect_to}#${params.fragment}"
@@ -595,30 +520,17 @@ class AjaxSupportController {
   @Transactional
   def unlinkManyToMany() {
     log.debug("unlinkManyToMany(${params})");
-    def contextObj = resolveOID2(params.__context)
-    def user = springSecurityService.currentUser
-    def result = ['result': 'OK', 'params': params]
+    Object contextObj = genericOIDService.resolveOID2(params.__context)
+    User user = springSecurityService.currentUser
+    Map result = ['result': 'OK', 'params': params]
+
     if (contextObj) {
-      def editable = checkEditable(contextObj, user)
+      boolean editable = checkEditable(contextObj, user)
 
       if (editable || contextObj.id == user.id) {
-        def item_to_remove = resolveOID2(params.__itemToRemove)
+        Object item_to_remove = genericOIDService.resolveOID2(params.__itemToRemove)
+
         if ( item_to_remove ) {
-          if ( ( item_to_remove != null ) && ( item_to_remove.hasProperty('hasByCombo') ) && ( item_to_remove.hasByCombo != null ) ) {
-            item_to_remove.hasByCombo.keySet().each { hbc ->
-              log.debug("Testing ${hbc}");
-              log.debug("here's the data: "+ item_to_remove[hbc])
-              if (item_to_remove[hbc]==contextObj) {
-                log.debug("context found");
-                //item_to_remove[hbc]=resolveOID2(null)
-                if(item_to_remove.respondsTo('deleteParent')) {
-                  log.debug("deleteParent()")
-                  item_to_remove.deleteParent();
-                }
-                log.debug("tried removal: ${item_to_remove[hbc]}");
-              }
-            }
-          }
           log.debug("${params}");
           log.debug("removing: ${item_to_remove} from ${params.__property} for ${contextObj}");
 
@@ -640,23 +552,17 @@ class AjaxSupportController {
             result.code = 400
           }
 
-          if (item_to_remove.hasProperty('fromComponent') && item_to_remove.fromComponent == contextObj) {
-            item_to_remove.delete(flush:true)
+          if (params.__otherEnd && item_to_remove[params.__otherEnd] != null) {
+            log.debug("remove parent: " + item_to_remove[params.__otherEnd])
+            item_to_remove[params.__otherEnd] = null
+            log.debug("parent removed: " + item_to_remove[params.__otherEnd])
+          }
+
+          if (!item_to_remove.validate()) {
+            flash.error = messageService.processValidationErrors(item_to_remove.errors, request.locale)
           }
           else {
-
-            if (params.__otherEnd && item_to_remove[params.__otherEnd]!=null) {
-              log.debug("remove parent: "+item_to_remove[params.__otherEnd])
-              //item_to_remove.setParent(null);
-              item_to_remove[params.__otherEnd]=null; //this seems to fail
-              log.debug("parent removed: "+item_to_remove[params.__otherEnd]);
-            }
-            if (!item_to_remove.validate()) {
-              flash.error = messageService.processValidationErrors(item_to_remove.errors, request.locale)
-            }
-            else {
-              item_to_remove.save(flush:true)
-            }
+            item_to_remove.save(flush:true)
           }
         } else {
           log.error("Unable to resolve item to remove : ${params.__itemToRemove}");
@@ -705,15 +611,15 @@ class AjaxSupportController {
   def delete() {
     log.debug("delete(${params}), referer: ${request.getHeader('referer')}");
     // Adds a link to a collection that is not mapped through a join object
-    def contextObj = resolveOID2(params.__context)
-    def user = springSecurityService.currentUser
-    def result = ['result': 'OK', 'params': params]
+    Object contextObj = genericOIDService.resolveOID2(params.__context)
+    User user = springSecurityService.currentUser
+    Map result = ['result': 'OK', 'params': params]
 
     if ( contextObj ) {
-      def editable = checkEditable(contextObj, user)
+      boolean editable = checkEditable(contextObj, user)
 
       if (editable && contextObj.isDeletable()) {
-        if(contextObj.respondsTo('deleteSoft')) {
+        if (contextObj.respondsTo('deleteSoft')) {
           contextObj.deleteSoft()
         }
         else {
@@ -755,31 +661,6 @@ class AjaxSupportController {
     }
   }
 
-  private def resolveOID2(oid) {
-    def oid_components = oid.split(':');
-    def result = null;
-    def domain_class=null;
-    domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
-    if ( domain_class ) {
-      if (oid_components.size() == 2 ) {
-        if ( oid_components[1]=='__new__' ) {
-          result = domain_class.getClazz().refdataCreate(oid_components)
-          log.debug("Result of create ${oid} is ${result}");
-        }
-        else {
-          result = domain_class.getClazz().get(oid_components[1])
-        }
-      }
-      else {
-        log.debug("Could not retrieve object. No ID provided.")
-      }
-    }
-    else {
-      log.debug("resolve OID failed to identify a domain class. Input was ${oid_components}");
-    }
-    result
-  }
-
   /**
    *  lookup : Calls the refdataFind function of a specific class and returns a simple result list.
    * @param baseClass : The class name to
@@ -789,15 +670,16 @@ class AjaxSupportController {
    */
 
   def lookup() {
-    log.debug("AjaxController::lookup ${params}");
-    def result = [:]
-    params.max = params.max ?: 10;
-    def domain_class = grailsApplication.getArtefact('Domain',params.baseClass)
+    log.debug("AjaxController::lookup ${params}")
+    Map result = [:]
+    params.max = params.max ?: 10
+    GrailsClass domain_class = grailsApplication.getArtefact('Domain', params.baseClass)
+
     if ( domain_class && domain_class.getClazz().isTypeReadable() ) {
-      result.values = domain_class.getClazz().refdataFind(params);
+      result.values = domain_class.getClazz().refdataFind(params)
     }
     else {
-      log.debug("Unable to locate domain class ${params.baseClass} or not readable");
+      log.debug("Unable to locate domain class ${params.baseClass} or not readable")
       result.values = []
       result.error = "Unable to locate domain class ${params.baseClass}, or this user is not permitted to view it."
     }
@@ -825,17 +707,21 @@ class AjaxSupportController {
   @Transactional
   def editableSetValue() {
     log.debug("editableSetValue ${params}");
-    def user = springSecurityService.currentUser
-    def target_object = genericOIDService.resolveOID(params.pk)
+    User user = springSecurityService.currentUser
+    Object target_object = genericOIDService.resolveOID(params.pk)
 
-    def result = ['result': 'OK', 'params': params]
-    def errors = [:]
+    Map result = ['result': 'OK', 'params': params]
+    Map errors = [:]
+
     if (target_object) {
-      def editable = checkEditable(target_object, user)
+      boolean editable = checkEditable(target_object, user)
 
       if (editable || target_object == user) {
         if (params.type == 'date') {
-          target_object."${params.name}" = params.date('value',params.dateFormat ?: 'yyyy-MM-dd')
+          target_object."${params.name}" = params.date('value', params.dateFormat ?: 'yyyy-MM-dd')
+        }
+        else if (params.type == 'localdate') {
+          target_object."${params.name}" = params.value ? LocalDate.parse(params.value) : null
         }
         else if (params.type == 'boolean') {
           target_object."${params.name}" = params.boolean('value')
@@ -847,15 +733,15 @@ class AjaxSupportController {
           target_object."${params.name}" = params.int('value')
         }
         else {
-          def binding_properties = [:]
-          def new_val = params.value?.trim() ?: null
+          Map binding_properties = [:]
+          String new_val = params.value?.trim() ?: null
 
           binding_properties[ params.name ] = new_val
           bindData(target_object, binding_properties)
         }
 
         if (target_object.validate()) {
-          target_object.save(flush:true);
+          target_object.save(flush:true)
         }
         else {
           errors = messageService.processValidationErrors(target_object.errors, request.locale)
@@ -863,22 +749,23 @@ class AjaxSupportController {
       }
       else {
         errors['global'] = [[message:"Object ${target_object} is not editable.".toString()]]
-        log.debug("Object ${target_object} is not editable.");
+        log.debug("Object ${target_object} is not editable.")
       }
     }
     else {
       errors['global'] = [[message:"Not able to resolve object from ${params.pk}.".toString()]]
-      log.debug("Object ${target_object} could not be resolved.");
+      log.debug("Object ${target_object} could not be resolved.")
     }
 
     withFormat {
       html {
-        def resp = null
+        String resp = null
+
         if (errors.size() == 0) {
           resp = params.value
         }
         else {
-          def error_obj = errors[params.name] ? errors[params.name][0] : errors['global'][0]
+          Map error_obj = errors[params.name] ? errors[params.name][0] : errors['global'][0]
           log.debug("Error msg: ${error_obj} (${error_obj.message})")
 
           resp = error_obj.message
@@ -899,10 +786,10 @@ class AjaxSupportController {
   }
 
   private boolean checkEditable(obj, user) {
-    def editable = obj.isEditable()
+    boolean editable = obj.isEditable()
 
     if (editable) {
-      def curatedObj = obj.respondsTo("getCuratoryGroups") ? obj : ( KBComponent.has(obj, 'pkg') ? obj.pkg : null )
+      Object curatedObj = obj.respondsTo("getCuratoryGroups") ? obj : ( KBComponent.has(obj, 'pkg') ? obj.pkg : null )
 
       if (curatedObj && curatedObj.curatoryGroups?.size() > 0) {
 
@@ -925,7 +812,7 @@ class AjaxSupportController {
     // [id:1, value:JISC_Collections_NESLi2_Lic_IOP_Institute_of_Physics_NESLi2_2011-2012_01012011-31122012.., type:License, action:inPlaceSave, controller:ajax
     // def clazz=grailsApplication.domainClasses.findByFullName(params.type)
     log.debug("genericSetRel ${params}");
-    def user = springSecurityService.currentUser
+    User user = springSecurityService.currentUser
     def target = genericOIDService.resolveOID(params.pk)
     def value = null
 
@@ -936,10 +823,10 @@ class AjaxSupportController {
       value = genericOIDService.resolveOID(params.value)
     }
 
-    def result = ['result':'OK']
+    Map result = ['result':'OK']
 
     if ( target != null) {
-      def editable = checkEditable(target, user)
+      boolean editable = checkEditable(target, user)
 
       if (editable) {
         // def binding_properties = [ "${params.name}":value ]
@@ -1006,25 +893,26 @@ class AjaxSupportController {
     }
   }
 
-  def renderObjectValue(value) {
-    def result=''
+  private String renderObjectValue(value) {
+    String result = ''
+
     if ( value ) {
       switch ( value.class ) {
         case org.gokb.cred.RefdataValue.class:
           if ( value.icon != null ) {
-            result="<span class=\"select-icon ${value.icon}\"></span>${value.value}"
+            result = "<span class=\"select-icon ${value.icon}\"></span>${value.value}"
           }
           else {
-            result=value.value
+            result = value.value
           }
           break;
         case Boolean.class:
           result = value ? 'Yes' : 'No'
         default:
-          result=value.toString();
+          result = value.toString()
       }
     }
-    result;
+    result
   }
 
   /**
@@ -1037,17 +925,19 @@ class AjaxSupportController {
   @Transactional
   def addIdentifier() {
     log.debug("addIdentifier - ${params}")
-    def result = ['result': 'OK', 'params': params]
-    def user = springSecurityService.currentUser
-    def identifier_instance = null
+    Map result = ['result': 'OK', 'params': params]
+    User user = springSecurityService.currentUser
+    Identifier identifier_instance = null
     // Check identifier namespace present, and identifier value valid for that namespace
+
     if ( ( params.identifierNamespace?.trim() ) &&
          ( params.identifierValue?.trim() ) &&
          ( params.__context?.trim() ) ) {
-      def ns = genericOIDService.resolveOID(params.identifierNamespace)
-      def owner = genericOIDService.resolveOID(params.__context)
+      IdentifierNamespace ns = genericOIDService.resolveOID(params.identifierNamespace)
+      KBComponent owner = genericOIDService.resolveOID(params.__context)
+
       if ( ( ns != null ) && ( owner != null ) ) {
-        def editable = checkEditable(owner, user)
+        boolean editable = checkEditable(owner, user)
 
         if (editable) {
           // Lookup or create Identifier
@@ -1059,8 +949,8 @@ class AjaxSupportController {
                 log.debug("Got ID: ${identifier_instance}")
                 // Link if not existing
                 if (!owner.ids.contains(identifier_instance)) {
-                  owner.ids.add(identifier_instance)
-                  owner.save()
+                  owner.addIdentifier(identifier_instance)
+                  owner.save(flush: true)
                 }
                 else {
                   flash.error = message(code:'identifier.link.unique')
@@ -1076,7 +966,8 @@ class AjaxSupportController {
         else {
           flash.error = message(code:'component.addToList.denied.label')
         }
-      }else{
+      }
+      else {
         flash.error = message(code:'identifier.create.error')
         log.debug("could not create identifier!")
       }
@@ -1112,17 +1003,17 @@ class AjaxSupportController {
   @Transactional
   def addSubject() {
     log.debug("addSubject - ${params}")
-    def result = [result: 'OK', params: params]
-    def user = springSecurityService.currentUser
+    Map result = [result: 'OK', params: params]
+    User user = springSecurityService.currentUser
     ComponentSubject new_cs = null
 
     if (params.__context?.trim() && params.scheme?.trim() && params.val?.trim()) {
-      def owner = genericOIDService.resolveOID(params.__context)
-      def scheme = genericOIDService.resolveOID(params.scheme)
+      KBComponent owner = genericOIDService.resolveOID(params.__context)
+      RefdataValue scheme = genericOIDService.resolveOID(params.scheme)
       RefdataValue scheme_ddc = RefdataCategory.lookup('Subject.Scheme', 'DDC')
 
       if (owner && scheme) {
-        def editable = checkEditable(owner, user)
+        boolean editable = checkEditable(owner, user)
 
         if (editable) {
           Subject active_subject = Subject.findBySchemeAndHeading(scheme, params.val.trim())
@@ -1166,104 +1057,6 @@ class AjaxSupportController {
         render result as JSON
       }
     }
-  }
-
-  /**
-   *  appliedCriterion : Used to create an applied decision support criterion for the current user.
-   * @param comp : The id of the context object
-   * @param crit : The id of the used criterion
-   * @param val : The status value for the applied criterion ("r"|"a"|"g")
-   */
-
-  @Transactional
-  def appliedCriterion() {
-    log.debug("applied criterion AJAXSupportController - ${params} ");
-    def result = [status:'OK']
-
-    // val:r, comp:139862, crit:1
-    def component = KBComponent.get(params.comp);
-    def crit      = DSCriterion.get(params.crit);
-    def lookup    = [ 'r' : 'Red', 'a' : 'Amber', 'g' : 'Green' ]
-    def rdv       = RefdataCategory.lookupOrCreate('RAG', lookup[params.val]).save()
-    def user      = springSecurityService.currentUser
-
-    def current_applied = DSAppliedCriterion.findByUserAndAppliedToAndCriterion(user,component,crit);
-    if ( current_applied == null ) {
-      log.debug("Create new applied criterion");
-      result.changedFrom = null
-      current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(flush: true, failOnError:true)
-    }
-    else {
-      if ( rdv != current_applied.value ) {
-        log.debug("Update existing vote");
-        result.changedFrom = lookup.find { it.value == current_applied.value.value }?.key
-
-        current_applied.value=rdv
-        current_applied.save(flush: true, failOnError:true)
-      }
-      else {
-        result.changedFrom = params.val
-      }
-    }
-    result.username = user.username
-    render result as JSON
-  }
-
-  /**
-   *  criterionComment : Used to create a decision support note for an applied criterion of the current user.
-   * @param comp : A combination of the component and criterion with format [component_id]_[criterion_id]
-   * @param comment : The text of the new note
-   */
-
-  @Transactional
-  def criterionComment() {
-    log.debug("criterionComment: ${params}");
-    def result    = [:]
-    result.status = 'OK'
-    def idparts   = params.comp.split('_');
-    log.debug("${idparts}")
-    if ( idparts.length == 2 ) {
-      def component = KBComponent.get(idparts[0]);
-      def crit      = DSCriterion.get(idparts[1]);
-
-      def user = springSecurityService.currentUser
-      def current_applied = DSAppliedCriterion.findByUserAndAppliedToAndCriterion(user,component,crit);
-
-      if ( current_applied == null ) {
-        // Create a new applied criterion to comment on
-        def rdv  = RefdataCategory.lookupOrCreate('RAG', 'Unknown');
-        current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
-      }
-
-      def note = new DSNote(criterion:current_applied, note:params.comment, isDeleted:false).save(failOnError:true);
-      result.newNote  = note.id
-      result.created  = note.dateCreated
-      log.debug("Found applied criterion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
-    }
-    render result as JSON
-  }
-
-  /**
-   *  criterionCommentDelete : Used to delete a decision support note for an applied criterion of the current user.
-   * @param note : The id of the note to delete
-   */
-
-  @Transactional
-  def criterionCommentDelete() {
-    log.debug('criterionCommentDelete:'+params);
-    def result       = [:]
-    result.status    = 'OK'
-    def user         = springSecurityService.currentUser
-    def note         = DSNote.get(params.note)
-    if (note)
-    {
-        if (note.criterion.user?.id == user?.id)
-            note.isDeleted       = true
-        else
-            result.status = '401'
-    }
-
-    render result as JSON
   }
 
   /**
@@ -1317,45 +1110,51 @@ class AjaxSupportController {
   @Transactional
   def authorizeVariant() {
     log.debug("${params}");
-    def result = ['result':'OK', 'params':params]
-    def variant = KBComponentVariantName.get(params.id)
-    def user = springSecurityService.currentUser
+    Map result = ['result':'OK', 'params':params]
+    KBComponentVariantName variant = KBComponentVariantName.get(params.id)
+    User user = springSecurityService.currentUser
 
     if ( variant != null) {
-      def owner = variant.owner
-      def editable = checkEditable(owner, user)
+      KBComponent owner = variant.owner
+      boolean editable = checkEditable(owner, user)
 
       if (editable) {
         // Does the current owner.name exist in a variant? If not, we should create one so we don't loose the info
-        def current_name_as_variant = owner.variantNames.find { it.variantName == owner.name }
+        KBComponentVariantName current_name_as_variant = owner.variantNames.find { it.variantName == owner.name }
 
         result.owner = "${owner.class.name}:${owner.id}"
 
         if ( current_name_as_variant == null ) {
           log.debug("No variant name found for current name: ${owner.name} ")
-          def variant_name = owner.getId();
+          String variant_name
 
-          if(variant.owner.name){
+          if (variant.owner.name) {
             variant_name = owner.name
           }
-          else if (owner?.respondsTo('getDisplayName') && owner.getDisplayName()){
+          else if (owner?.respondsTo('getDisplayName') && owner.getDisplayName()) {
             variant_name = owner.getDisplayName()?.trim()
           }
           else if(owner?.respondsTo('getName') ) {
             variant_name = owner?.getName()?.trim()
           }
 
-          def new_variant = new KBComponentVariantName(owner:owner,variantName:variant_name).save(flush:true);
+          if (variant_name) {
+            new KBComponentVariantName(owner: owner, variantName: variant_name).save(flush: true)
+          }
+          else {
+            log.warn("authorizeVariant :: Unable to save existing name for component ${owner} as new variant!")
+          }
 
-        }else{
+        }
+        else{
             log.debug("Found existing variant name: ${current_name_as_variant}")
         }
 
-        variant.variantType = RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Authorized')
+        variant.variantType = RefdataCategory.lookup('KBComponentVariantName.VariantType', 'Authorized')
         owner.name = variant.variantName
 
         if (owner.validate()) {
-          owner.save(flush:true);
+          owner.save(flush: true)
           result.new_name = variant.owner.name
         }
         else {
@@ -1407,19 +1206,19 @@ class AjaxSupportController {
   @Transactional
   def deleteVariant() {
     log.debug("${params}");
-    def result = ['result':'OK', 'params': params]
-    def variant = KBComponentVariantName.get(params.id)
-    def user = springSecurityService.currentUser
-    def variantOwner = variant?.owner ?: null
+    Map result = ['result':'OK', 'params': params]
+    KBComponentVariantName variant = KBComponentVariantName.get(params.id)
+    User user = springSecurityService.currentUser
+    KBComponent variantOwner = variant?.owner ?: null
 
     if ( variant != null ) {
-      def editable = checkEditable(variantOwner, user)
+      boolean editable = checkEditable(variantOwner, user)
 
       if (editable) {
-        def variantName = variant.variantName
+        String variantName = variant.variantName
 
         variant.delete()
-        variantOwner.lastUpdateComment = "Deleted Alternate Name ${variantName}."
+        variantOwner.lastUpdateComment = "Deleted Alternate Name '${variantName}'."
         variantOwner.save(flush: true)
 
         result.owner_oid = "${variantOwner.class.name}:${variantOwner.id}"
@@ -1451,7 +1250,7 @@ class AjaxSupportController {
           redirect_to = "${redirect_to}#${params.fragment}"
         }
 
-        redirect(url: redirect_to);
+        redirect(url: redirect_to)
       }
       json {
         render result as JSON
@@ -1468,13 +1267,13 @@ class AjaxSupportController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteComment() {
     log.debug("${params}");
-    def result = ['result':'OK', 'params': params]
-    def comment = KBComponentComment.get(params.id)
-    def user = springSecurityService.currentUser
-    def commentOwner = comment?.owner ?: null
+    Map result = ['result':'OK', 'params': params]
+    KBComponentComment comment = KBComponentComment.get(params.id)
+    User user = springSecurityService.currentUser
+    KBComponent commentOwner = comment?.owner ?: null
 
     if ( comment != null ) {
-      def editable = checkEditable(commentOwner, user)
+      boolean editable = checkEditable(commentOwner, user)
 
       if (editable) {
         result.deleted_comment = "${comment.language.value}"
@@ -1510,7 +1309,7 @@ class AjaxSupportController {
           redirect_to = "${redirect_to}#${params.fragment}"
         }
 
-        redirect(url: redirect_to);
+        redirect(url: redirect_to)
       }
       json {
         render result as JSON
@@ -1526,13 +1325,13 @@ class AjaxSupportController {
   @Transactional
   def deleteCoverageStatement() {
     log.debug("${params}");
-    def result = ['result':'OK', 'params': params]
-    def user = springSecurityService.currentUser
-    def tcs = TIPPCoverageStatement.get(params.id)
-    def tipp = tcs.owner
+    Map result = ['result':'OK', 'params': params]
+    User user = springSecurityService.currentUser
+    TIPPCoverageStatement tcs = TIPPCoverageStatement.get(params.id)
+    TitleInstancePackagePlatform tipp = tcs.owner
 
     if ( tcs != null) {
-      def editable = checkEditable(tipp, user)
+      boolean editable = checkEditable(tipp, user)
 
       if (editable) {
         tcs.delete()
@@ -1549,14 +1348,14 @@ class AjaxSupportController {
     else if (!tcs) {
       result.result = 'ERROR'
       result.code = 404
-      def vname = message(code:'TIPPCoverageStatement.label')
+      String vname = message(code:'TIPPCoverageStatement.label')
       result.message = "TIPPCoverageStatement with id ${params.id} not found!".toString()
       flash.error = message(code:'default.not.found.message', args:[vname, params.id])
     }
 
     withFormat {
       html {
-        def redirect_to = request.getHeader('referer')
+        String redirect_to = request.getHeader('referer')
 
         if ( params.redirect ) {
           redirect_to = params.redirect
@@ -1565,7 +1364,7 @@ class AjaxSupportController {
           redirect_to = "${redirect_to}#${params.fragment}"
         }
 
-        redirect(url: redirect_to);
+        redirect(url: redirect_to)
       }
       json {
         render result as JSON
@@ -1574,53 +1373,54 @@ class AjaxSupportController {
   }
 
   /**
-   *  deleteCombo : Used to delete a combo object.
-   * @param id : The id of the combo object
+   *  deleteIdLink : Used to delete an object of a linked ids join table.
+   * @param id : The id of the link object
+   * @param propagate : 'true' if the component should be marked as updated
+   * @param keepLink : 'true' if the link status should be set to deleted
    */
 
   @Transactional
-  def deleteCombo() {
-    def result = ['result': "OK", 'params': params]
-    Combo c = Combo.get(params.id);
-    def user = springSecurityService.currentUser
+  def deleteIdLink() {
+    Map result = ['result': "OK", 'params': params]
+    ComponentIdentifier obj = ComponentIdentifier.get(params.id)
+    User user = springSecurityService.currentUser
 
-    if (c && c.fromComponent) {
-      def owner = c.fromComponent
-      def editable = checkEditable(owner, user)
+    if (obj) {
+      KBComponent comp = obj.component
+      boolean editable = checkEditable(comp, user)
 
       if (editable) {
-        log.debug("Delete combo..")
+        log.debug("Delete ID link..")
 
-        if ( params.propagate == "true") {
-          c.fromComponent.lastSeen = new Date().getTime()
+        if (params.propagate == "true") {
+          comp.lastSeen = new Date().getTime()
+          comp.save(flush: true)
         }
 
         if (params.keepLink) {
-          c.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+          obj.status = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_DELETED)
         }
         else{
-          c.delete(flush:true);
+          obj.delete(flush:true)
         }
       }
       else {
-        def fcomp = (c.fromComponent?.logEntityId ?: "Combo ${params.id}")
         result.code = 403
-        result.message = "Not deleting combo.. no edit permissions on ${fcomp}!".toString()
+        result.message = "Not deleting link.. no edit permissions on ${comp}!".toString()
         result.result = 'ERROR'
-        flash.error = message(code:'combo.fromComponent.denied.label', args:[fcomp])
-        log.debug("Not deleting combo.. no edit permissions on fromComponent!")
+        flash.error = message(code:'combo.fromComponent.denied.label', args:["${comp}"])
+        log.debug("Not deleting link.. no edit permissions on component!")
       }
     }
     else {
       result.code = 404
-      result.message = "Unable to reference Combo!"
-      def vname = message(code:'combo.label')
-      flash.error = message(code:'default.not.found.message', args:[vname, params.id])
+      result.message = "Unable to reference ComponentIdentifier!"
+      flash.error = message(code:'default.not.found.message', args:["TitlePublisher", params.id])
     }
 
     withFormat {
       html {
-        def redirect_to = request.getHeader('referer')
+        String redirect_to = request.getHeader('referer')
 
         if ( params.redirect ) {
           redirect_to = params.redirect
@@ -1629,7 +1429,72 @@ class AjaxSupportController {
           redirect_to = "${redirect_to}#${params.fragment}"
         }
 
-        redirect(url: redirect_to);
+        redirect(url: redirect_to)
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deletePublisherLink : Used to delete an object of the publisher join table.
+   * @param id : The id of the link object
+   * @param propagate : 'true' if the title should be marked as updated
+   * @param keepLink : 'true' if the link status should be set to deleted
+   */
+
+  @Transactional
+  def deletePublisherLink() {
+    Map result = ['result': "OK", 'params': params]
+    TitlePublisher obj = TitlePublisher.get(params.id)
+    User user = springSecurityService.currentUser
+
+    if (obj) {
+      TitleInstance title = obj.title
+      boolean editable = checkEditable(title, user)
+
+      if (editable) {
+        log.debug("Delete publisher link..")
+
+        if ( params.propagate == "true") {
+          title.lastSeen = new Date().getTime()
+          title.save(flush: true)
+        }
+
+        if (params.keepLink) {
+          obj.status = RefdataCategory.lookup(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_DELETED)
+        }
+        else {
+          obj.delete(flush: true)
+        }
+      }
+      else {
+        result.code = 403
+        result.message = "Not deleting link.. no edit permissions on ${title}!".toString()
+        result.result = 'ERROR'
+        flash.error = message(code:'combo.fromComponent.denied.label', args:["${title}"])
+        log.debug("Not deleting link.. no edit permissions on title!")
+      }
+    }
+    else {
+      result.code = 404
+      result.message = "Unable to reference TitlePublisher!"
+      flash.error = message(code:'default.not.found.message', args:["TitlePublisher", params.id])
+    }
+
+    withFormat {
+      html {
+        String redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+
+        redirect(url: redirect_to)
       }
       json {
         render result as JSON
@@ -1644,22 +1509,22 @@ class AjaxSupportController {
 
   @Transactional
   def deletePrice() {
-    def result = ['result': "OK", 'params': params]
+    Map result = ['result': "OK", 'params': params]
     ComponentPrice c = ComponentPrice.get(params.id);
-    def user = springSecurityService.currentUser
+    User user = springSecurityService.currentUser
 
     if (c) {
-      def editable = checkEditable(c.owner, user)
+      boolean editable = checkEditable(c.owner, user)
 
       if (editable) {
         log.debug("Delete Price..")
-        c.delete(flush: true);
+        c.delete(flush: true)
       }
     }
 
     withFormat {
       html {
-        def redirect_to = request.getHeader('referer')
+        String redirect_to = request.getHeader('referer')
 
         if ( params.redirect ) {
           redirect_to = params.redirect
@@ -1668,39 +1533,11 @@ class AjaxSupportController {
           redirect_to = "${redirect_to}#${params.fragment}"
         }
 
-        redirect(url: redirect_to);
+        redirect(url: redirect_to)
       }
       json {
         render result as JSON
       }
     }
-  }
-
-  @Transactional
-  def applyForUserorg() {
-    def result = ['result': 'OK', 'params': params]
-    def user_org = UserOrganisation.get(params.id ?: params.userOrg)
-    def user = springSecurityService.currentUser
-    def pending_status = RefdataCategory.lookup('MembershipStatus', 'Pending')
-    def role_type = RefdataCategory.lookup('MembershipRole', 'Member')
-
-    if ( user_org && !user_org.members?.party?.contains(user) ) {
-      new UserOrganisationMembership(memberOf: user_org, party: user, role: role_type, status: pending_status).save(flush:true, failOnError:true)
-
-      result.item = [user:user.username, status: pending_status.value, role: role_type.value]
-    }
-    else {
-      result.result = 'ERROR'
-
-      if ( !user_org ) {
-        result.message = 'Could not find User Organisation with id ${params.userOrg}!'
-        result.code = 404
-      }
-      else {
-        result.message = 'This user is already a member of this group'
-      }
-    }
-
-    render result as JSON
   }
 }

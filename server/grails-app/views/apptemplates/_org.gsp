@@ -77,22 +77,22 @@
           </a>
         </li>
         <li>
-          <a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a>
+          <a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.activeIds?.size() ?: '0'} </span></a>
         </li>
         <li><a href="#relationships" data-toggle="tab">Relations</a></li>
         <li>
           <a href="#packages" data-toggle="tab">Packages
-            <span class="badge badge-warning"> ${d.getCombosByPropertyNameAndStatus('providedPackages','Active')?.size() ?: '0'}</span>
+            <span class="badge badge-warning"> ${d.providedPackagesCount}</span>
           </a>
         </li>
         <li>
           <a href="#titles" data-toggle="tab">Published Titles
-            <span class="badge badge-warning"> ${d.getCombosByPropertyNameAndStatus('publishedTitles','Active')?.size() ?: '0'}</span>
+            <span class="badge badge-warning"> ${d.publishedTitlesCount}</span>
           </a>
         </li>
         <li>
           <a href="#platforms" data-toggle="tab">Platforms
-            <span class="badge badge-warning"> ${d.getCombosByPropertyNameAndStatus('providedPlatforms','Active')?.size() ?: '0'}</span>
+            <span class="badge badge-warning"> ${d.providedPlatforms?.size() ?: '0'}</span>
           </a>
         </li>
         <li>
@@ -185,24 +185,9 @@
 
         <g:render template="/tabTemplates/showComments" model="${[d:d, showActions:true]}" />
 
+
         <div class="tab-pane" id="identifiers">
-          <dl>
-            <dt>
-              <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
-            </dt>
-            <dd>
-              <g:render template="/apptemplates/combosByType"
-                model="${[d:d, property:'ids', fragment:'identifiers', cols:[
-                          [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                          [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-              <g:if test="${editable}">
-                <h4>
-                  <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
-                </h4>
-                <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
-              </g:if>
-            </dd>
-          </dl>
+          <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: editable]}" />
         </div>
 
         <div class="tab-pane" id="relationships">
@@ -286,8 +271,8 @@
                     <g:annotatedLabel owner="${d}" property="offices">Offices</g:annotatedLabel>
             </dt>
             <dd>
-              <g:render template="/apptemplates/comboList"
-                      model="${[d:d, property:'offices', noadd:true, cols:[[expr:'name',colhead:'Office Name', action:'link'],[ expr:'function', colhead:'Function']],targetClass:'org.gokb.cred.Office',direction:'in',propagateDelete: 'true']}" />
+              <g:render template="/apptemplates/hasManyList"
+                      model="${[d:d, property:'offices', noadd:true, cols:[[expr:'name',colhead:'Office Name', action:'link'],[ expr:'function', colhead:'Function']],targetClass:'org.gokb.cred.Office',propagateDelete: 'true']}" />
                 <g:if test="${d.isEditable()}">
                 <g:if test="${d.id}">
                   <button
@@ -354,26 +339,14 @@
           </dl>
         </div>
 
-        <div class="tab-pane" id="licenses">
-          <dl>
-            <dt>
-              <g:annotatedLabel owner="${d}" property="licenses">Licenses</g:annotatedLabel>
-            </dt>
-            <dd>
-              <g:render template="/apptemplates/comboList"
-                        model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']],targetClass:'org.gokb.cred.License']}" />
-            </dd>
-          </dl>
-        </div>
-
         <div class="tab-pane" id="platforms">
           <dl>
             <dt>
               <g:annotatedLabel owner="${d}" property="platforms">Platforms</g:annotatedLabel>
             </dt>
             <dd>
-              <g:render template="/apptemplates/comboList"
-                        model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform', action:'link'],[expr:'primaryUrl',colhead:'Primary URL',targetClass:'org.gokb.cred.Platform']]]}" />
+              <g:render template="/apptemplates/hasManyList"
+                        model="${[d:d, noadd: true, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform', action:'link'],[expr:'primaryUrl',colhead:'Primary URL',targetClass:'org.gokb.cred.Platform']]]}" />
             </dd>
           </dl>
         </div>
@@ -392,8 +365,8 @@
               <g:annotatedLabel owner="${d}" property="packages">Packages</g:annotatedLabel>
             </dt>
             <dd>
-              <g:render template="/apptemplates/comboList"
-                        model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name', action:'link']],targetClass:'org.gokb.cred.Package']}" />
+              <g:render template="/apptemplates/hasManyList"
+                        model="${[d:d, noadd: true, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name', action:'link']],targetClass:'org.gokb.cred.Package']}" />
             </dd>
           </dl>
         </div>

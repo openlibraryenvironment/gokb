@@ -102,11 +102,11 @@
         <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
       </g:if>
       <li><a href="#identifiers" data-toggle="tab">Identifiers <span
-          class="badge badge-warning">${d?.getCombosByPropertyNameAndStatus('ids', 'Active')?.size() ?: '0'}</span></a>
+          class="badge badge-warning">${d?.activeIds.size() ?: '0'}</span></a>
       </li>
       <li><a href="#publishers" data-toggle="tab">Publishers <span
           class="badge badge-warning">
-        ${d.getCombosByPropertyNameAndStatus('publisher', params.publisher_status)?.size() ?: '0'}
+        ${d.getPublisherLinksForStatus(params.publisher_status)?.size() ?: '0'}
       </span></a></li>
       <li><a href="#subjects" data-toggle="tab">Subjects <span
           class="badge badge-warning">${d.subjects?.size() ?: '0'}</span></a></li>
@@ -313,25 +313,9 @@
                 model="${[d: displayobj]}"/>
     </div>
 
-    <div class="tab-pane" id="identifiers">
-      <dl>
-        <dt>
-          <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:render template="/apptemplates/combosByType"
-                    model="${[d: d, property: 'ids', fragment: 'identifiers', combo_status: 'Active', cols: [
-                        [expr: 'toComponent.namespace.value', colhead: 'Namespace'],
-                        [expr: 'toComponent.value', colhead: 'ID', action: 'link']]]}"/>
-          <g:if test="${d.isEditable()}">
-            <h4>
-              <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
-            </h4>
-            <g:render template="/apptemplates/addIdentifier" model="${[d: d, hash: '#identifiers']}"/>
-          </g:if>
-        </dd>
-      </dl>
 
+    <div class="tab-pane" id="identifiers">
+      <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: true]}" />
     </div>
 
     <div class="tab-pane" id="addprops">
@@ -360,13 +344,6 @@
 
 
 <asset:script type="text/javascript">
-
-  $("select[name='publisher_status']").change(function(event) {
-  console.log("In here")
-    var form =$(event.target).closest("form")
-    form.submit();
-  });
-
   function SelectMoveRows(SS1,SS2) {
     var SelID='';
     var SelText='';

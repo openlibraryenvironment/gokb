@@ -207,12 +207,6 @@ class BootStrap {
                 log.info("${id_ctr} identifiers updated")
             }
 
-            log.info("Fix missing Combo status")
-
-            def status_active = RefdataCategory.lookupOrCreate('Combo.Status', 'Active')
-            int num_c = Combo.executeUpdate("update Combo set status = :sa where status is null", [sa: status_active])
-            log.debug("${num_c} combos updated")
-
             log.info("GOKB defaultSortKeys()")
             defaultSortKeys()
 
@@ -375,20 +369,20 @@ class BootStrap {
 
             log.info("Looking for ISBN-10 normnames")
 
-            def isbns = [IdentifierNamespace.findByValue('isbn'), IdentifierNamespace.findByValue('pisbn')]
-            def candidates = Identifier.executeQuery("from Identifier where namespace IN (:isbns) and length(normname) < 13", [isbns: isbns])
+            List isbns = [IdentifierNamespace.findByValue('isbn'), IdentifierNamespace.findByValue('pisbn')]
+            List candidates = Identifier.executeQuery("from Identifier where namespace IN (:isbns) and length(normname) < 13", [isbns: isbns])
 
             log.info("Found ${candidates.size()} ..")
 
             candidates.each { idc ->
-                def correct_norm = Identifier.normalizeIdentifier(idc.value)
+                String correct_norm = Identifier.normalizeIdentifier(idc.value)
 
                 if (correct_norm != idc.normname) {
-                    def existing = Identifier.findAllByNamespaceAndNormname(idc.namespace, correct_norm)
+                    List existing = Identifier.findAllByNamespaceAndNormname(idc.namespace, correct_norm)
 
                     if (existing?.size() == 1) {
-                        log.debug("Moving combos of ${idc} to ${existing[0]} ..")
-                        Combo.executeUpdate("update Combo set toComponent = :ex where toComponent = :old", [ex: existing[0], old: idc])
+                        log.debug("Moving link of ${idc} to ${existing[0]} ..")
+                        ComponentIdentifier.executeUpdate("update ComponentIdentifier set identifier = :ex where identifier = :old", [ex: existing[0], old: idc])
                     }
                     else if (existing?.size() > 1) {
                         log.error("Found duplicate ID records: ${existing}")
@@ -1198,46 +1192,6 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Platform.Authentication', 'Unknown').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('Platform.Roles', 'Host').save(flush: true, failOnError: true)
-
-        RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.FileAttachments').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipls').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Publisher').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Issuer').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Imprint').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.TranslatedFrom').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.AbsorbedBy').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.MergedWith').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.RenamedTo').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.SplitFrom').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstancePackagePlatform.DerivedFrom').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstancePackagePlatform.MasterTipp').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.CuratoryGroups').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTitles').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.Provider').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Office.Org').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Office.CuratoryGroups').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Org.Imprint').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Org.Previous').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Org.Parent').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Org.OwnedImprints').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Org.CuratoryGroups').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Org.Imprint').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Provider').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.ContentProvider').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.CuratoryGroups').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.NominalPlatform').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Previous').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Parent').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Vendor').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Broker').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Licensor').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'License.Licensee').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.Type', 'IngestionProfile.Source').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Combo.type', 'Source.CuratoryGroups').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('MembershipRole', 'Administrator').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('MembershipRole', 'Member').save(flush: true, failOnError: true)

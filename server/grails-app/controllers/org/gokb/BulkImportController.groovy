@@ -20,7 +20,7 @@ class BulkImportController {
     JSONObject rjson = request.JSON
 
     if (rjson && BulkImportListConfig.isTypeEditable()) {
-      def upsertResult = bulkPackageImportService.upsertConfig(rjson, springSecurityService.currentUser)
+      Map upsertResult = bulkPackageImportService.upsertConfig(rjson, springSecurityService.currentUser)
 
       if (upsertResult.result == 'ERROR') {
         result.result = 'ERROR'
@@ -67,6 +67,40 @@ class BulkImportController {
       result.result = 'ERROR'
       response.status = 403
       result.message = "No permission to edit this config!"
+    }
+
+    render result as JSON
+  }
+
+  def show() {
+    Map result = [:]
+    User user = springSecurityService.currentUser
+    BulkImportListConfig config = BulkImportListConfig.findByCode(params.code)
+
+    if (config && (user.superUserStatus || user == config.owner)) {
+      result = [
+        code: config.code,
+        url: config.url,
+        automatedUpdate: config.automatedUpdate,
+        frequency: config.frequency?.value ?: null,
+        curatorPolicy: config.curatorPolicy?.value ?: null,
+        lastRun: config.lastRun,
+        owner: config.owner?.username ?: null,
+        updateOnly: config.updateOnly,
+        cfg: config.cfg ? JSON.parse(config.cfg) : null
+      ]
+    }
+    else if (!config) {
+      log.debug("Unable to reference config with code '${params.code}'!")
+      result.result = 'ERROR'
+      response.status = 404
+      result.message = "Unable to reference config with code '${params.code}'!"
+    }
+    else {
+      log.debug("No permission to view this config!")
+      result.result = 'ERROR'
+      response.status = 403
+      result.message = "No permission to view this config!"
     }
 
     render result as JSON

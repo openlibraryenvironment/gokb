@@ -20,10 +20,6 @@ class IngestionProfile extends KBComponent {
     ingestions:'profile'
   ]
 
-  static hasByCombo = [
-    source: Source,
-  ]
-
   static constraints = {
     packageName (nullable:false, blank:false)
     packageType (nullable:false, blank:false)

@@ -8,6 +8,7 @@ import org.gokb.cred.Role
 import org.gokb.cred.Source
 import org.gokb.cred.User
 import org.gokb.cred.UserRole
+import org.grails.web.json.JSONObject
 
 import java.time.Duration
 import java.time.LocalDateTime
@@ -27,14 +28,13 @@ class SourcesController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     Map result = [:]
-    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
 
-    def start_db = LocalDateTime.now()
+    LocalDateTime start_db = LocalDateTime.now()
     result = componentLookupService.restLookup(user, Source, params)
     log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
 
@@ -141,23 +141,14 @@ class SourcesController {
   @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = [result: 'OK', params: params, changed: false]
+    Map result = [result: 'OK', params: params, changed: false]
     Source obj = Source.get(genericOIDService.oidToId(params.id))
-    def errors = [:]
-    def reqBody = request.JSON
+    Map errors = [:]
+    JSONObject reqBody = request.JSON
     boolean remove = (request.method == 'PUT')
     User user = User.get(springSecurityService.principal.id)
-    boolean editable = true
 
-    if ( !user.hasRole('ROLE_ADMIN') && obj.curatoryGroups && obj.curatoryGroups.size() > 0 ) {
-      def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-
-      if (!cur) {
-        editable = false
-      }
-    }
-
-    if (editable) {
+    if (componentUpdateService.isUserCurator(obj, user)) {
       if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
         response.status = 409
         result.message = message(code: "default.update.errors.message")
@@ -198,7 +189,7 @@ class SourcesController {
     render result as JSON
   }
 
-  private def updateCombos(obj, reqBody, changed, boolean remove = true) {
+  private Map updateCombos(obj, reqBody, changed, boolean remove = true) {
     log.debug("Updating package combos ..")
     Map errors = [:]
 

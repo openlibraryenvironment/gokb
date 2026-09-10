@@ -36,26 +36,17 @@
 <g:if test="${targetClass && d.isEditable() && !noadd}">
 
   <g:if test="${params.controller != 'create'}">
-    <g:if test="${direction=='in'}">
-      <g:set var="recip" value="toComponent"/>
-      <g:set var="comboprop" value="fromComponent"/>
-    </g:if>
-    <g:else>
-      <g:set var="recip" value="fromComponent"/>
-      <g:set var="comboprop" value="toComponent"/>
-    </g:else>
     <h4>
       <g:annotatedLabel owner="${d}" property="${property}">Add new Entry</g:annotatedLabel>
     </h4>
     <dl class="dl-horizontal">
-      <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
+      <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
         <input type="hidden" name="__context" value="${ctxoid}"/>
-        <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Combo"/>
-        <input type="hidden" name="__recip" value="${recip}"/>
-        <input type="hidden" name="type" value="${org.gokb.cred.RefdataCategory.getOID('Combo.Type',d.getComboTypeValue(property))}"/>
+        <input type="hidden" name="__property" value="${property}"/>
+
         <dt class="dt-label">Add To List: </dt>
         <dd>
-          <g:simpleReferenceTypedown class="form-inline select-ml" style="display:inline-block;" name="${comboprop}" baseClass="${targetClass}"/>
+          <g:simpleReferenceTypedown class="form-inline select-ml" style="display:inline-block;" name="__relatedObject" baseClass="${targetClass}"/>
           <button type="submit" class="btn btn-default btn-primary">Add</button>
         </dd>
       </g:form>

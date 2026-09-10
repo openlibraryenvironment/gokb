@@ -103,10 +103,7 @@ class TitleInstance extends KBComponent {
     [[code: 'method::deleteSoft', label: 'Delete', perm: 'delete'],
      [code: 'setStatus::Current', label: 'Set Current', perm: 'admin'],
      [code: 'setStatus::Expected', label: 'Mark Expected'],
-     [code: 'title::transfer', label: 'Title Transfer'],
-     [code: 'title::change', label: 'Title Change'],
      [code: 'title::merge', label: 'Title Merge']
-//       [code:'title::reconcile', label:'Title Reconcile']
     ]
   }
 
@@ -191,6 +188,18 @@ class TitleInstance extends KBComponent {
     return result
   }
 
+  public List getPublisherLinksForStatus(String status) {
+    List result = []
+    RefdataValue pub_status = RefdataCategory.lookup(TitlePublisher.RD_STATUS, status)
+
+    publisherLinks.each { TitlePublisher pc ->
+      if (pc.status == pub_status) {
+        result << pc
+      }
+    }
+
+    return result
+  }
 
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.

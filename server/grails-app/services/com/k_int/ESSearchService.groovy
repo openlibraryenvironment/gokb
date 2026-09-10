@@ -1010,7 +1010,9 @@ class ESSearchService{
         result.lastPage = 0
       }
       catch (Exception e) {
-        log.error("Error processing initial scroll query!", e)
+        String ticket_id = UUID.randomUUID().toString()
+        log.error("Error processing initial scroll query ($ticket_id)!", e)
+        result.errorRef = ticket_id
         result.result = 'ERROR'
         return result
       }
@@ -1023,7 +1025,9 @@ class ESSearchService{
         searchResponse = esClient.scroll(scrollRequest, RequestOptions.DEFAULT)
       }
       catch (Exception e) {
-        log.error("Error processing scroll query!", e)
+        String ticket_id = UUID.randomUUID().toString()
+        log.error("Error processing scroll query ($ticket_id)!", e)
+        result.errorRef = ticket_id
         result.result = 'ERROR'
         return result
       }
@@ -1032,6 +1036,7 @@ class ESSearchService{
         result.lastPage = params.int('lastPage') + 1
       }
     }
+
     result.scrollId = searchResponse.getScrollId()
     SearchHits searchHits = searchResponse.getHits()
     result.hasMoreRecords = searchHits.totalHits.value > scrollSize
@@ -1207,11 +1212,14 @@ class ESSearchService{
       }
     }
     catch (Exception se) {
-      log.error("Error processing search request", se)
+      String ticket_id = UUID.randomUUID().toString()
+
+      log.error("Error processing search request (${ticket_id})", se)
       result = [:]
       result.result = "ERROR"
       result.status = 500
       result.messageCode = 'error.search.unknown'
+      result.errorRef = ticket_id
       result.errors = ['unknown': "There has been an unknown error processing the search request!"]
     }
     finally {
@@ -1223,6 +1231,7 @@ class ESSearchService{
         result.errors = errors
       }
     }
+
     result
   }
 

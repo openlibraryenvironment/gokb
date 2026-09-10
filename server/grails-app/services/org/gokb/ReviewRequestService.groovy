@@ -5,13 +5,14 @@ import grails.gorm.transactions.*
 import groovy.json.JsonOutput
 
 import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 
 @Transactional
 class ReviewRequestService {
 
   def grailsApplication
 
-  def raise(KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
+  public ReviewRequest raise(KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, String additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
     // Create a request.
     ReviewRequest req = new ReviewRequest(
       status: RefdataCategory.lookup('ReviewRequest.Status', 'Open'),
@@ -67,16 +68,152 @@ class ReviewRequestService {
     req
   }
 
-  def restUpdate(obj, reqBody) {
+  public Map restCreate(User user, JSONObject reqBody) {
+    Map result = [result: 'OK']
+    Map errors = [:]
+    RefdataValue type_ext = RefdataCategory.lookup('ReviewRequest.StdDesc', 'External Editorial Request')
+    User user = User.get(springSecurityService.principal.id)
+    CuratoryGroup editorialTargetGroup
+    Map pars = [:]
+
+    if (reqBody.reviewRequest) {
+      pars.reviewRequest = reqBody.reviewRequest.trim()
+    }
+
+    if (reqBody.descriptionOfCause) {
+      pars.descriptionOfCause = reqBody.descriptionOfCause.trim()
+    }
+
+    if (reqBody.editingNotes) {
+      pars.editingNotes = reqBody.editingNotes.trim()
+    }
+
+    if (reqBody.componentToReview instanceof Integer) {
+      KBComponent comp = KBComponent.get(reqBody.componentToReview)
+
+      if (comp) {
+        pars.componentToReview = comp
+      }
+      else {
+        errors.componentToReview = [[message: "Unable to lookup component to be reviewed!", baddata: reqBody.componentToReview]]
+      }
+    }
+    else {
+      errors.componentToReview = [[message: "Missing component to be reviewed!"]]
+      result.message = "Request payload must contain the component to be reviewed"
+    }
+
+    if (reqBody.additionalInfo) {
+      try {
+        pars.additionalInfo = JsonOutput.toJson(reqBody.additionalInfo)
+      }
+      catch (Exception e) {
+        errors.additionalInfo = [[message: "Unable to save additional Info", baddata: reqBody.additionalInfo]]
+      }
+    }
+
+    if (reqBody.stdDesc || reqBody.type) {
+      RefdataValue desc = null
+      Object reqDesc = reqBody?.stdDesc ?: reqBody.type
+      RefdataCategory cat = RefdataCategory.findByLabel('ReviewRequest.StdDesc')
+
+      if (reqDesc instanceof Integer) {
+        RefdataValue rdv = RefdataValue.get(reqBody.stdDesc)
+
+        if (rdv && rdv in cat.values) {
+          desc = rdv
+        }
+      }
+      else {
+        desc = RefdataCategory.lookup('ReviewRequest.StdDesc', reqDesc)
+      }
+
+      if (desc) {
+        pars.stdDesc = desc
+      }
+      else {
+        errors.stdDesc = [[message: "Illegal value for standard description provided!", baddata: reqDesc]]
+      }
+    }
+
+    if (reqBody.targetGroup) {
+      if (pars.stdDesc == type_ext) {
+        editorialTargetGroup = CuratoryGroup.findById(reqBody.targetGroup)
+        List external_groups = []
+
+        CuratoryGroup zdb_admin = grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators")) : null
+        CuratoryGroup ezb_admin = grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators")) : null
+
+        if (zdb_admin) {
+          external_groups << zdb_admin
+        }
+        if (ezb_admin) {
+          external_groups << ezb_admin
+        }
+
+        if (!editorialTargetGroup) {
+          errors.targetGroup = [
+            [
+              message: 'Unable to reference target group!',
+              baddata: reqBody.targetGroup
+            ]
+          ]
+        }
+        else if (!external_groups.contains(editorialTargetGroup)) {
+          errors.targetGroup = [
+            [
+              message: 'Provided targetGroup is not configured as augment editorial group!',
+              baddata: reqBody.targetGroup
+            ]
+          ]
+        }
+      }
+      else {
+        log.debug("Ignoring manual target group for review of type ${pars.stdDesc}..")
+      }
+    }
+
+    if (errors.size() == 0) {
+      try {
+        result.object = raise(
+            pars.componentToReview,
+            pars.reviewRequest,
+            pars.descriptionOfCause,
+            user,
+            null,
+            pars.additionalInfo,
+            pars.stdDesc,
+            editorialTargetGroup ?: componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user, reqBody.activeGroup)
+        )
+
+        if (!result.object) {
+          result.result = 'ERROR'
+          result.message = "Unable to create request for review!"
+        }
+      }
+      catch (Exception e) {
+        log.error("Error creating Review", e)
+        result.result = 'ERROR'
+        result.message = "There was an error creating the request for review."
+      }
+    }
+    else {
+      result.errors = errors
+    }
+
+    result
+  }
+
+  public Map restUpdate(obj, reqBody) {
     Map result = [result: 'OK']
     Map errors = [:]
 
     if (reqBody.status) {
-      def new_status = null
+      RefdataValue new_status = null
 
       if (reqBody.status instanceof Integer) {
-        def rdc = RefdataCategory.findByDesc("ReviewRequest.Status")
-        def rdv = RefdataValue.get(reqBody.status)
+        RefdataCategory rdc = RefdataCategory.findByDesc("ReviewRequest.Status")
+        RefdataValue rdv = RefdataValue.get(reqBody.status)
 
         if (rdv?.owner == rdc) {
           new_status = rdv
@@ -89,7 +226,7 @@ class ReviewRequestService {
         obj.status = new_status
       }
       else {
-        errors.status = [[message: "Illegal status value provided.", code: 404, baddata:reqBody.status]]
+        errors.status = [[message: "Illegal status value provided.", code: 404, baddata: reqBody.status]]
       }
     }
 

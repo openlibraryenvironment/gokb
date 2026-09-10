@@ -5,6 +5,7 @@ import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
 
 import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 
 @Slf4j
 class PackageUpdateService {
@@ -17,8 +18,8 @@ class PackageUpdateService {
   def tippUpsertService
 
   @Transactional
-  public Map updateCombos(obj, reqBody, changed, boolean remove = true, user) {
-    log.debug("Updating package combos ..")
+  public Map updateLinks(Package obj, JSONObject reqBody, boolean changed, boolean remove = true, User user) {
+    log.debug("Updating package links ..")
     Map errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
@@ -72,7 +73,7 @@ class PackageUpdateService {
                               )
                             )'''
 
-        List open_reviews = ReviewRequest.executeQuery(review_qry, [pkg: obj.id, so: review_open, ct: combo_tipps],[max: 1])
+        List open_reviews = ReviewRequest.executeQuery(review_qry, [pkg: obj.id, so: review_open],[max: 1])
 
 
         if (new_val && new_val != obj.listStatus) {
@@ -103,71 +104,6 @@ class PackageUpdateService {
           }
         }
       }
-    }
-
-    if (reqBody.provider instanceof Integer) {
-      Org prov
-
-      try {
-        prov = Org.get(reqBody.provider)
-      }
-      catch (Exception e) {
-      }
-
-      if (prov && prov != obj.provider) {
-        obj.provider = prov
-        changed = true
-      }
-      else if (!prov) {
-        errors.provider = [[message: "Could not find provider Org with id ${reqBody.provider}!", baddata: reqBody.provider]]
-      }
-    }
-    else if (remove && reqBody.provider == null) {
-      errors.provider = [[message: "Package must have a provider!", baddata: reqBody.provider]]
-    }
-
-    if (reqBody.contentProvider instanceof Integer) {
-      Org prov
-
-      try {
-        prov = Org.get(reqBody.contentProvider)
-      }
-      catch (Exception e) {
-      }
-
-      if (prov && prov != obj.contentProvider) {
-        obj.contentProvider = prov
-        changed = true
-      }
-      else if (!prov) {
-        errors.contentProvider = [[message: "Could not find content provider Org with id ${reqBody.contentProvider}!", baddata: reqBody.contentProvider]]
-      }
-    }
-    else if (remove && reqBody.contentProvider == null) {
-      obj.contentProvider = null
-      changed = true
-    }
-
-    if (reqBody.nominalPlatform != null || reqBody.platform != null) {
-      def plt_id = reqBody.nominalPlatform ?: reqBody.platform
-      Platform plt
-
-      try {
-        plt = Platform.get(plt_id)
-      }
-      catch (Exception e) {
-      }
-
-      if (plt && plt != obj.nominalPlatform) {
-        obj.nominalPlatform = plt
-        changed = true
-      }
-      else if (!plt) {
-        errors.nominalPlatform = [[message: "Could not find platform with id ${reqBody.nominalPlatform}!", baddata: plt_id]]
-      }
-    }
-    else if (remove && reqBody.nominalPlatform == null && reqBody.platform == null) {
-      errors.nominalPlatform = [[message: "Package must have a nominal platform!", baddata: null]]
     }
 
     if (reqBody.tipps) {

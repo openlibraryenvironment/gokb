@@ -68,7 +68,7 @@
     <g:if test="${d.id}">
       <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
 
-      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size() ?: '0'} </span></a></li>
+      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.activeIds?.size() ?: '0'} </span></a></li>
 
       <li><a href="#publishers" data-toggle="tab">Publishers <span
           class="badge badge-warning">
@@ -89,9 +89,6 @@
           class="badge badge-warning">
             ${d.reviewRequests?.size() ?: '0'}
         </span></a></li>
-      <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}">
-        <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
-      </g:if>
 
       <li><a href="#people" data-toggle="tab">People <span class="badge badge-warning"> ${d.people?.size() ?: '0'} </span></a></li>
 
@@ -104,9 +101,6 @@
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Availability </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Custom Fields </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Tasks </span></li>
-      <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}">
-        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
-      </g:if>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">People </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Subjects </span></li>
     </g:else>
@@ -228,23 +222,7 @@
     </div>
 
     <div class="tab-pane" id="identifiers">
-      <dl>
-        <dt>
-          <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:render template="/apptemplates/combosByType"
-            model="${[d:d, property:'ids', fragment:'identifiers', cols:[
-                      [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                      [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-          <g:if test="${d.isEditable()}">
-            <h4>
-              <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
-            </h4>
-            <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
-          </g:if>
-        </dd>
-      </dl>
+      <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: true]}" />
     </div>
 
     <div class="tab-pane" id="addprops">
@@ -255,10 +233,6 @@
     <div class="tab-pane" id="review">
       <g:render template="/apptemplates/revreqtab"
         model="${[d:d]}" />
-    </div>
-
-    <div class="tab-pane" id="ds">
-      <g:render template="/apptemplates/dstab" model="${[d:d]}" />
     </div>
 
     <div class="tab-pane" id="people">
@@ -297,13 +271,6 @@
 
 
 <asset:script type="text/javascript">
-
-  $("select[name='publisher_status']").change(function(event) {
-  console.log("In here")
-    var form =$(event.target).closest("form")
-    form.submit();
-  });
-
   function SelectMoveRows(SS1,SS2) {
     var SelID='';
     var SelText='';

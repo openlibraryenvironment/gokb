@@ -270,24 +270,9 @@
       model="${[d:displayobj]}" />
     </div>
 
+
     <div class="tab-pane" id="identifiers">
-      <dl>
-        <dt>
-          <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:render template="/apptemplates/combosByType"
-            model="${[d:d, property:'ids', fragment:'identifiers', cols:[
-                      [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                      [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-          <g:if test="${d.isEditable()}">
-            <h4>
-              <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
-            </h4>
-            <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
-          </g:if>
-        </dd>
-      </dl>
+      <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: true]}" />
     </div>
 
     <div class="tab-pane" id="addprops">
@@ -307,13 +292,6 @@
 
 
 <asset:script type="text/javascript">
-
-  $("select[name='publisher_status']").change(function(event) {
-  console.log("In here")
-    var form =$(event.target).closest("form")
-    form.submit();
-  });
-
   function SelectMoveRows(SS1,SS2) {
     var SelID='';
     var SelText='';

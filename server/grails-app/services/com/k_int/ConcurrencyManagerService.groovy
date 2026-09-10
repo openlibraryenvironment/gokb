@@ -236,9 +236,9 @@ class ConcurrencyManagerService {
     return result
   }
 
-  public def getActiveJobsForType(def type) {
-    def result = []
-    def allJobs = getJobs()
+  public List getActiveJobsForType(String type) {
+    List result = []
+    Map allJobs = getJobs()
 
     if (type instanceof String) {
       type = RefdataCategory.lookup("Job.Type", type)
@@ -251,6 +251,7 @@ class ConcurrencyManagerService {
         }
       }
     }
+
     return result
   }
 
@@ -362,10 +363,9 @@ class ConcurrencyManagerService {
  * @return List of Jobs
  */
   public Map getFilteredJobs(String propertyName, id, max, offset, showFinished) {
-    def allJobs = getJobs()
-    def selected = []
-    def result = [:]
-    def total = null
+    Map result = [:]
+    Map allJobs = getJobs()
+    List selected = []
 
     if (id && !propertyName) {
       result.result = 'ERROR'
@@ -416,8 +416,6 @@ class ConcurrencyManagerService {
       }
     }
 
-    total = selected.size()
-
     if (offset > 0) {
       selected = selected.drop(offset)
     }
@@ -425,7 +423,7 @@ class ConcurrencyManagerService {
     result.data = selected.take(max)
 
     result._pagination = [
-        total : total,
+        total : selected.size(),
         limit : max,
         offset: offset
     ]

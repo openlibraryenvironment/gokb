@@ -73,8 +73,7 @@
 		<g:annotatedLabel owner="${d}" property="owner">Owner Org</g:annotatedLabel>
 	</dt>
 	<dd>
-		<g:manyToOneReferenceTypedown owner="${d}" field="org"
-			name="${comboprop}" baseClass="org.gokb.cred.Org">
+		<g:manyToOneReferenceTypedown owner="${d}" field="org" baseClass="org.gokb.cred.Org">
 			${d.org?.name?:''}
 		</g:manyToOneReferenceTypedown>
 	</dd>

@@ -735,7 +735,7 @@ class TippService {
           rr_atm.status = rr_status_closed
           rr_atm.save(flush: true)
 
-          if (!new_combo && current_matches.size() == 1) {
+          if (current_matches.size() == 1) {
             tipp.title = current_matches[0]
             tipp.save(flush: true)
             touchPackage(tipp)
@@ -793,10 +793,7 @@ class TippService {
     try {
       tippIDs = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
                                                               where tipp.pkg.id = :pkg and tipp.title = null)''',
-                                                              [
-                                                                pkg : pkgId,
-                                                                ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-                                                              ])
+                                                              [pkg : pkgId])
 
       total = tippIDs.size()
 
@@ -876,7 +873,7 @@ class TippService {
                     ))
                     and rr.status = :so'''
 
-      total = ReviewRequest.executeQuery(qry, [pid: pid, mr: manual_review_type, ct: combo_tipps, so: status_open])[0]
+      total = ReviewRequest.executeQuery(qry, [pid: pid, mr: manual_review_type, so: status_open])[0]
     }
 
     return total > 0
@@ -1974,7 +1971,7 @@ class TippService {
   }
 
   public Map updateLinks(TitleInstancePackagePlatform obj, reqBody, boolean changed, boolean remove = true) {
-    log.debug("Updating TIPP combos ..")
+    log.debug("Updating TIPP links ..")
     Map errors = [:]
     Boolean needsSave = false
 
@@ -2015,7 +2012,7 @@ class TippService {
     if (ti) {
       List current_tipps = []
       List retired_tipps = []
-      List ti_pkg_tipps = TitleInstancePackagePlatform.executeQuery(qry_str, [cp: combo_pkg, ct: combo_title, pkg: obj.pkg, ti: ti])
+      List ti_pkg_tipps = TitleInstancePackagePlatform.executeQuery(qry_str, [pkg: obj.pkg, ti: ti])
 
       ti_pkg_tipps.each { tipp ->
         if (tipp.status == status_current) {
@@ -2069,8 +2066,6 @@ class TippService {
     }
     else {
       log.debug("Transfering info to reactivated TIPP ..")
-
-      RefdataValue id_combo_type = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
       List new_target_ids = duplicate.activeIdInfo
 
       componentUpdateService.updateIdentifiers(target, new_target_ids, user, activeGroup, true)
@@ -2133,11 +2128,11 @@ class TippService {
     if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
       RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       List r = TitleInstancePlatform.executeQuery('''from TitleInstancePlatform as tipl
-                                                    where tipl.title = :ti
-                                                    and tipl.hostPlatform = :plt
-                                                    and tipl.status = :sc
-                                                    ''',
-                                                    [ti: title, plt: platform, sc: status_current])
+                                                      where tipl.title = :ti
+                                                      and tipl.hostPlatform = :plt
+                                                      and tipl.status = :sc
+                                                      ''',
+                                                      [ti: title, plt: platform, sc: status_current])
 
       if ( r.size() == 0 ) {
         return new TitleInstancePlatform(url: url, hostPlatform: platform, title: title).save(flush:true, failOnError:true)

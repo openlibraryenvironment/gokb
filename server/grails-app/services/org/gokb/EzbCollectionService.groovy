@@ -503,8 +503,7 @@ class EzbCollectionService {
               and status = :so
             ''', [
               pkg: obj,
-              so: RefdataCategory.lookup('ReviewRequest.Status', 'Open'),
-              cpt: RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+              so: RefdataCategory.lookup('ReviewRequest.Status', 'Open')
             ])[0]
 
           if (obj.listStatus != ls_checked && obj.currentTippCount > 0 && open_reviews_count == 0) {

@@ -8,6 +8,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 
 import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 
 @Transactional(readOnly = true)
 class PlatformController {
@@ -24,25 +25,25 @@ class PlatformController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def result = [:]
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    Map result = [:]
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
-    def es_search = params.es ? true : false
+    boolean es_search = params.boolean('es') ? true : false
 
     params.componentType = "Platform" // Tells ESSearchService what to look for
 
     if (es_search) {
       params.remove('es')
-      def start_es = LocalDateTime.now()
+      LocalDateTime start_es = LocalDateTime.now()
       result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
-      def start_db = LocalDateTime.now()
+      LocalDateTime start_db = LocalDateTime.now()
       result = componentLookupService.restLookup(user, Platform, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
@@ -56,10 +57,9 @@ class PlatformController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
-    def result = [:]
-    def obj = null
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def is_curator = true
+    Map result = [:]
+    Platform obj = null
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -95,8 +95,9 @@ class PlatformController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def match() {
-    def result = platformService.restLookup(params)
-    def conflicts = [:]
+    Map result = platformService.restLookup(params)
+    Map conflicts = [:]
+
     result.matches.each { id, errs ->
       errs.each { e ->
         if (!conflicts[e.field])
@@ -112,18 +113,18 @@ class PlatformController {
   @Transactional
   @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def save() {
-    def result = ['result':'OK', 'params': params, changed: true]
-    def reqBody = request.JSON
-    def errors = [:]
-    def user = User.get(springSecurityService.principal.id)
+    Map result = ['result':'OK', 'params': params, changed: true]
+    JSONObject reqBody = request.JSON
+    Map errors = [:]
+    User user = User.get(springSecurityService.principal.id)
 
     if (reqBody) {
-
       Platform obj
-      def lookup_result = platformService.restLookup(reqBody)
+      Map lookup_result = platformService.restLookup(reqBody)
 
       if (lookup_result.to_create) {
-        def normname = Platform.generateNormname(reqBody.name)
+        String normname = Platform.generateNormname(reqBody.name)
+
         try {
           obj = new Platform(name: reqBody.name, normname: normname)
         }
@@ -155,7 +156,7 @@ class PlatformController {
       else if (obj) {
         obj.save(flush:true)
         response.status = 201
-        def jsonMap = obj.jsonMapping
+        Map jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
         result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
@@ -163,7 +164,7 @@ class PlatformController {
         if (obj.validate()) {
           log.debug("No errors.. saving")
 
-          def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+          Map variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
           result.changed |= variant_result.changed
 
@@ -171,7 +172,7 @@ class PlatformController {
             errors.variantNames = variant_result.errors
           }
 
-          errors << updateCombos(obj, reqBody, result.changed)
+          errors << platformService.updateLinks(obj, reqBody, result.changed)
 
           obj.save(flush:true, failOnError: true)
 
@@ -199,40 +200,30 @@ class PlatformController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = [result:'OK', params: params, changed: false]
-    def reqBody = request.JSON
-    def errors = [:]
-    def remove = (request.method == 'PUT')
-    def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id)
+    Map result = [result:'OK', params: params, changed: false]
+    JSONObject reqBody = request.JSON
+    Map errors = [:]
+    boolean remove = (request.method == 'PUT')
+    User user = User.get(springSecurityService.principal.id)
+    Platform obj = Platform.findByUuid(params.id)
 
     if (!obj) {
       obj = Platform.get(genericOIDService.oidToId(params.id))
     }
 
     if (obj && reqBody) {
-      def editable = obj.isEditable()
-
-      if (editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
-        def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-
-        if (!cur) {
-          editable = false
-        }
-      }
-
-      if (editable) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
           response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
         }
 
-        def jsonMap = obj.jsonMapping
+        Map jsonMap = obj.jsonMapping
 
         result.changed = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+        Map variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
         result.changed |= variant_result.changed
 
@@ -240,7 +231,7 @@ class PlatformController {
           errors.variantNames = variant_result.errors
         }
 
-        errors << updateCombos(obj, reqBody, result.changed, remove)
+        errors << platformService.updateLinks(obj, reqBody, result.changed, remove)
 
         if (obj.validate()) {
           if (errors.size() == 0) {
@@ -278,62 +269,19 @@ class PlatformController {
     render result as JSON
   }
 
-  private def updateCombos(obj, reqBody, changed, boolean remove = true) {
-    def errors = [:]
-    log.debug("Updating platform combos ..")
-
-    if (reqBody.ids || reqBody.identifiers) {
-      def idmap = reqBody.ids ?: reqBody.identifiers
-      changed |= restMappingService.updateIdentifiers(obj, idmap, remove)
-    }
-
-    if (reqBody.curatoryGroups) {
-      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
-
-      changed |= cg_result.changed
-
-      if (cg_result.errors.size() > 0) {
-        errors['curatoryGroups'] = cg_errors
-      }
-    }
-
-    if (reqBody.provider) {
-      def prov = null
-
-      try {
-        prov = Org.get(reqBody.provider)
-      }
-      catch (Exception e) {
-      }
-
-      if (prov) {
-        if (prov != obj.provider) {
-          obj.provider = prov
-          changed = true
-        }
-      }
-      else {
-        errors.provider = [[message: "Unable to lookup provider with id ${reqBody.provider}", baddata: reqBody.provider, code: 404]]
-      }
-    }
-    errors
-  }
-
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def delete() {
-    def result = ['result':'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id)
+    Map result = ['result':'OK', 'params': params]
+    User user = User.get(springSecurityService.principal.id)
+    Platform obj = Platform.findByUuid(params.id)
 
     if (!obj) {
       obj = Platform.get(genericOIDService.oidToId(params.id))
     }
 
-    if ( obj && obj.isDeletable() ) {
-      def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id) : true
-
-      if ( curator || user.isAdmin() ) {
+    if (obj) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         obj.deleteSoft()
       }
       else {
@@ -358,13 +306,12 @@ class PlatformController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def retire() {
-    def result = ['result':'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id) : true
+    Map result = ['result':'OK', 'params': params]
+    User user = User.get(springSecurityService.principal.id)
+    Platform obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
 
-    if ( obj && obj.isEditable() ) {
-      if ( curator || user.isAdmin() ) {
+    if (obj) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         obj.retire()
       }
       else {

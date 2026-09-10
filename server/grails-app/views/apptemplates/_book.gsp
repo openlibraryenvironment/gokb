@@ -117,7 +117,7 @@
 
     <g:if test="${d.id}">
       <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
-      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a></li>
+      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.activeIds.size() ?: '0'} </span></a></li>
       <li><a href="#publishers" data-toggle="tab">Publishers <span
           class="badge badge-warning">
             ${d.publisher?.size() ?: '0'}
@@ -140,9 +140,6 @@
           ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()}
         </span>
       </a></li>
-      <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}" >
-        <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
-      </g:if>
     </g:if>
     <g:else>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
@@ -152,9 +149,6 @@
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Platforms </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Custom Fields </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Tasks </span></li>
-      <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}" >
-        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
-      </g:if>
       <g:if test="${grailsApplication.config.getProperty('gokb.handleSubjects', Boolean, false)}" >
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Subjects </span></li>
       </g:if>
@@ -254,8 +248,8 @@
           <tbody>
             <g:each in="${d.tipls}" var="tipl">
               <tr>
-                <td><g:link controller="resource" action="show" id="${tipl.tiplHostPlatform.class.name}:${tipl.tiplHostPlatform.id}"> ${tipl.tiplHostPlatform.name} </g:link></td>
-                <td>${tipl['url']}</td>
+                <td><g:link controller="resource" action="show" id="${tipl.hostPlatform.class.name}:${tipl.hostPlatform.id}"> ${tipl.hostPlatform.name} </g:link></td>
+                <td>${tipl.url}</td>
                 <td><g:xEditableRefData owner="${tipl}" field="status" config='KBComponent.Status' /></td>
               </tr>
             </g:each>
@@ -271,23 +265,7 @@
     </div>
 
     <div class="tab-pane" id="identifiers">
-      <dl>
-        <dt>
-          <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:render template="/apptemplates/combosByType"
-            model="${[d:d, property:'ids', fragment:'identifiers', cols:[
-                      [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                      [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-          <g:if test="${d.isEditable()}">
-            <h4>
-              <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
-            </h4>
-            <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers', targetType:'book']}"/>
-          </g:if>
-        </dd>
-      </dl>
+      <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: true]}" />
     </div>
 
     <div class="tab-pane" id="addprops">
@@ -309,14 +287,3 @@
       model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
   </g:if>
 </div>
-
-
-<asset:script type="text/javascript">
-
-  $("select[name='publisher_status']").on('change', function(event) {
-    var form =$(event.target).closest("form")
-    form.submit();
-  });
-
-
-</asset:script>

@@ -7,10 +7,23 @@
 
   <dt> <g:annotatedLabel owner="${d}" property="identifiedComponents">Identified Components</g:annotatedLabel> </dt>
   <dd>
-    <g:render template="/apptemplates/combosByType"
-      model="${[d:d, property:'identifiedComponents', combo_status: null, cols:[
-                [expr:'fromComponent.niceName', colhead:'Type'],
-                [expr:'fromComponent.name', colhead:'Name', action:'link'],
-                [expr:'fromComponent.status.value', colhead: 'Status']]]}" />
+    <table class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <g:each in="${d.componentLinks}" var="p">
+          <tr>
+            <td><g:link controller="resource" action="show" id="${p.component.class.name}:${p.component.id}"> ${p.component.name} </g:link></td>
+            <td>${p.component.class.simpleName}</td>
+            <td>${p.status.value}</td>
+          </tr>
+        </g:each>
+      </tbody>
+    </table>
   </dd>
 </dl>

@@ -30,14 +30,14 @@ class PublicController {
   def dateFormatService
   def sessionFactory
 
-  public static String TIPPS_QRY = 'from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id = :pkg and c.toComponent = tipp and c.type = :ct and tipp.status = :cs'
+  public static String TIPPS_QRY = 'from TitleInstancePackagePlatform as tipp where tipp.pkg.id = :pkg and tipp.status = :cs'
 
   def packageContent() {
     log.debug("packageContent::${params}")
-    def result = [:]
+    Map result = [:]
 
     if ( params.id ) {
-      def pkg_id_components = params.id.split(':')
+      List pkg_id_components = params.id.split(':')
 
       if ( pkg_id_components?.size() == 2 ) {
         try {
@@ -53,35 +53,29 @@ class PublicController {
       }
 
       if (result.pkg) {
-        def tipp_combo_rdv = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps')
-        def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+        RefdataValue status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
 
         result.pkgId = result.pkg.id
         result.pkgName = result.pkg.name
         log.debug("Tipp qry name: ${result.pkgName}")
-        def offset = params.offset ? params.int('offset') : 0
+        int offset = params.offset ? params.int('offset') : 0
 
-        result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY, [pkg: result.pkgId, ct: tipp_combo_rdv, cs: status_current])[0]
+        result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) ' + TIPPS_QRY, [pkg: result.pkgId, cs: status_current])[0]
         result.tipps = []
 
-        def tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id', [pkg: result.pkgId, ct: tipp_combo_rdv, cs: status_current], [offset: offset, max:10, readOnly: true])
+        def tipps = TitleInstancePackagePlatform.executeQuery('select tipp ' + TIPPS_QRY + ' order by tipp.id', [pkg: result.pkgId, cs: status_current], [offset: offset, max:10, readOnly: true])
 
         tipps.each { t ->
           Map tobj = [
             name: t.name,
-            coverageDepth: t.coverageDepth?.value ?: null,
             ids: []
           ]
 
-          Identifier.withNewSession {
-            t.ids.each { i ->
-              def ido = Identifier.get(i.id)
-
-              tobj.ids << [value: ido.value, namespace: IdentifierNamespace.get(ido.namespace.id).value]
-            }
-
-            result.tipps << tobj
+          t.ids.each { i ->
+            tobj.ids << [value: ido.value, namespace: ido.namespace.value]
           }
+
+          result.tipps << tobj
         }
 
         log.debug("Tipp qry done ${result.tipps?.size()}")

@@ -19,14 +19,16 @@ class CreateController {
   def messageSource
 
   def index() {
-    log.debug("CreateControler::index... ${params}");
-    def result=[:]
+    log.debug("CreateController::index... ${params}");
+    Map result = [:]
     User user = springSecurityService.currentUser
 
     // Create a new empty instance of the object to create
-    result.newclassname=params.tmpl
+    result.newclassname = params.tmpl
+
     if ( params.tmpl ) {
-      def newclass = grailsApplication.getArtefact("Domain",result.newclassname);
+      GrailsClass newclass = grailsApplication.getArtefact("Domain",result.newclassname)
+
       if ( newclass ) {
         log.debug("Got new class");
         try {
@@ -43,7 +45,7 @@ class CreateController {
           }
         }
         catch ( Exception e ) {
-          log.error("Problem",e);
+          log.error("Problem", e);
         }
       }
     }
@@ -55,7 +57,7 @@ class CreateController {
   def process() {
     log.debug("CreateController::process... ${params}");
 
-    def result=['responseText':'OK']
+    Map result = ['responseText':'OK']
 
 
     // II: Defaulting this to true - don't like it much, but we need to be able to create a title without any
@@ -197,27 +199,6 @@ class CreateController {
 
               if (newobj.hasProperty('uuid')) {
                 result.newobj.uuid = newobj.uuid
-              }
-
-              log.debug("Setting combos..");
-
-              if (newobj instanceof KBComponent) {
-                // The save completed OK.. if we want to be really cool, we can now loop through the properties
-                // and set any combos on the object
-                boolean changed=false
-                params.each { p ->
-                  def combo_properties = newobj.getComboTypeValue(p.key)
-
-                  if ( combo_properties != null ) {
-                    log.debug("Deal with a combo doodah ${p.key}:${p.value}");
-                    if ( ( p.value != "") && ( p.value != null ) ) {
-                      def related_item = genericOIDService.resolveOID(p.value);
-                      newobj[p.key] = related_item
-                      changed = true
-                    }
-                  }
-                  newobj.save(flush:true)
-                }
               }
 
               result.uri = createLink([controller: 'resource', action:'show', id:"${params.cls}:${newobj.id}"])

@@ -56,7 +56,7 @@
                 <label class="col-sm-3 control-label" for="${fld.qparam}">${fld.prompt}</label>
                 <div class="col-sm-9">
                   <g:if test="${fld.type=='lookup'}">
-                    <g:simpleReferenceTypedown id="refdata_combo_${params.inline ? 'inline_': ''}${fld.qparam}"
+                    <g:simpleReferenceTypedown id="refdata_${params.inline ? 'inline_': ''}${fld.qparam}"
                                               class="form-control"
                                               name="${fld.qparam}"
                                               baseClass="${fld.baseClass}"

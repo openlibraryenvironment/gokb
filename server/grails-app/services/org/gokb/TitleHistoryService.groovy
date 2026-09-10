@@ -9,7 +9,7 @@ import java.util.GregorianCalendar
 import org.gokb.cred.ComponentHistoryEventParticipant
 import org.gokb.cred.ComponentHistoryEvent
 import org.gokb.cred.TitleInstance
-
+import org.grails.web.json.JSONObject
 
 @Transactional
 class TitleHistoryService {
@@ -18,178 +18,347 @@ class TitleHistoryService {
   def titleLookupService
   def componentUpdateService
   def messageService
+  def restMappingService
+  def dateFormatService
 
-  public Map processHistoryEvents(TitleInstance ti, titleObj, title_class_name, user, fullsync, locale) {
-    Map result = [result:'OK']
-    Map errors = [:]
+  public List getDirectHistory(TitleInstance obj, boolean embed_titles, User user = null) {
+    List result = []
 
-    titleObj.historyEvents.each { jhe ->
-        // 1971-01-01 00:00:00.0
-      log.debug("Handling title history");
-      try {
-        List inlist = []
-        List outlist = []
-        boolean cont = true
+    if (obj) {
+      List history = obj.titleHistory
 
-        jhe.from.each { fhe ->
-          TitleInstance p = null
-          boolean setCore = true
+      if (history) {
+        history.each { he ->
+          Map mapped_event = [id: he.id, date: he.date ? dateFormatService.formatDate(he.date) : null, from: [], to: []]
 
-          if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
-            log.debug("Setting main title ${ti} as participant")
-            setCore = false
-            p = ti
-          }
-          else {
-            log.debug("Looking up connected title ${fhe} as participant")
-            p = titleLookupService.findOrCreate(
-              fhe.title,
-              null,
-              fhe.identifiers,
-              user,
-              null,
-              title_class_name,
-              fhe.uuid
-            )
-          }
-
-          if ( p && !p.hasErrors() ) {
-            if ( setCore ) {
-              componentUpdateService.ensureCoreData(p, fhe, fullsync, user)
+          he.from.each { f ->
+            if (embed_titles) {
+              mapped_event.from << restMappingService.mapObjectToJson(f, [:], user)
             }
-            inlist.add(p)
-          }
-          else {
-            cont = false
-          }
-        }
-
-        jhe.to.each { fhe ->
-
-          TitleInstance p = null
-          boolean setCore = true
-
-          if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
-            log.debug("Setting main title ${ti} as participant")
-            setCore = false
-            p = ti
-          }
-          else {
-            log.debug("Looking up connected title ${fhe} as participant")
-            p = titleLookupService.findOrCreate(
-              fhe.title,
-              null,
-              fhe.identifiers,
-              user,
-              null,
-              title_class_name,
-              fhe.uuid
-            )
-          }
-
-          if ( p && !p.hasErrors() && !inlist.contains(p) ) {
-            if ( setCore ) {
-              componentUpdateService.ensureCoreData(p, fhe, fullsync, user)
+            else {
+              mapped_event.from << [name: f.name, id: f.id, uuid: f.uuid]
             }
-            outlist.add(p)
+          }
+
+          he.to.each { t ->
+            if (embed_titles) {
+              mapped_event.to << restMappingService.mapObjectToJson(t, [:], user)
+            }
+            else {
+              mapped_event.to << [name: t.name, id: t.id, uuid: t.uuid]
+            }
+          }
+
+          result << mapped_event
+        }
+      }
+    }
+    result
+  }
+
+  public Map restUpdate(ti, JSONObject reqBody) {
+    Map result = [result: 'OK']
+    List current_history = ti.titleHistory
+    List events = []
+
+    log.debug("Current history: ${current_history}")
+
+    if (reqBody instanceof List) {
+      log.debug("Got list of events")
+
+      reqBody.each { event ->
+        log.debug("Event ${event}")
+        Map parts = [from: [], to: []]
+
+        if (event.id) {
+          Map matched_event = current_history.find { it.id == event.id }
+
+          if (event.date && matched_event && event.date != dateFormatService.formatDate(matched_event.date)) {
+            ComponentHistoryEvent he_obj = ComponentHistoryEvent.get(matched_event.id)
+
+            if (he_obj) {
+              Date parsed_date = null
+
+              try {
+                parsed_date = dateFormatService.parseDate(event.date)
+              }
+              catch (Exception e){
+                log.debug("Illegal date value ${event.date}!")
+
+                if (!errors.date)
+                  errors.date = []
+
+                errors.date << [message: "Unable to parse event date!", baddate: event]
+              }
+
+              if (errors.size() == 0 && parsed_date) {
+                he_obj.eventDate = parsed_date
+                log.debug("Updated date of existing event!")
+              }
+
+              events.add(he_obj.id)
+            }
+            else {
+              log.debug("Unable to lookup event by id!")
+              if (!errors.id)
+                errors.id = []
+
+              errors.id << [message: "Unable to lookup event for ID ${event.id}", baddata: event]
+            }
+          }
+          else if (!matched_event) {
+            log.debug("Matched event is not connected to this title!")
+            if (!errors.id)
+              errors.id = []
+
+            errors.id << [message: "Existing event with ID ${event.id} is not connected to this title!", baddata: event]
           }
           else {
-            cont = false
-          }
-        }
-
-        boolean first = true
-        // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
-        StringWriter che_check_qry_sw  = new StringWriter()
-        List qparams = []
-        int pn = 0
-
-        che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
-
-        inlist.each { fhe ->
-          if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-
-          che_check_qry_sw.write(" exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?$pn) ".toString())
-          qparams.add(fhe)
-          pn++
-        }
-
-        outlist.each { fhe ->
-          if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-
-          che_check_qry_sw.write(" exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?$pn) ".toString())
-          qparams.add(fhe)
-          pn++
-        }
-
-        String che_check_qry = che_check_qry_sw.toString()
-
-        log.debug("Search for existing history event:: ${che_check_qry} ${qparams}")
-
-        List qr = []
-
-        if (qparams.size() > 0) {
-          qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams)
-        }
-
-        if ( qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0 )
-          cont = false
-
-        if ( cont ) {
-
-          ComponentHistoryEvent he = new ComponentHistoryEvent()
-
-          if ( jhe.date ) {
-            ClassUtils.setDateIfPresent(jhe.date, he, 'eventDate')
-          }
-
-          he.save(flush:true, failOnError:true)
-
-          inlist.each {
-            new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in').save(flush:true, failOnError:true)
-          }
-
-          outlist.each {
-            new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out').save(flush:true, failOnError:true)
+            events.add(matched_event.id)
           }
         }
         else {
-          // Matched an existing TH event, not creating a duplicate
+          List lookedUpIds = []
+
+          if (event.from instanceof List) {
+            event.from.each { entry ->
+              TitleInstance cti = null
+
+              if (entry instanceof Integer) {
+                if (entry == ti.id) {
+                  cti = ti
+                }
+                else {
+                  cti = TitleInstance.get(entry)
+                }
+              }
+              else if (entry instanceof Map) {
+                if (entry.id == ti.id) {
+                  cti = ti
+                }
+                else {
+                  cti = TitleInstance.get(entry.id)
+                }
+              }
+
+              if (cti) {
+                if (!lookedUpIds.contains(cti.id)) {
+                  lookedUpIds.add(cti.id)
+                }
+                else {
+                  if (!errors.from)
+                    errors.from = []
+
+                  errors.from << [message: "Multiple instances of title ${cti.id} in event participants!", baddata: entry, code: 404]
+                }
+
+                if (cti.id != ti.id) {
+                  Map addResult = ensureSingleParticipant(ti, 'from', cti, event.date)
+
+                  if (addResult.errors) {
+                    errors << addResult.errors
+                  }
+                  else {
+                    log.debug("New event ${addResult}")
+                    events.add(addResult.id)
+                  }
+                }
+              }
+              else {
+                if (!errors.from)
+                  errors.from = []
+
+                errors.from << [message: "Unable to lookup title for ${entry}", baddata: entry, code: 404]
+              }
+            }
+          }
+
+          if (event.to instanceof List) {
+            event.to.each { entry ->
+              TitleInstance cti = null
+
+              if (entry instanceof Integer) {
+                if (entry == ti.id) {
+                  cti = ti
+                }
+                else {
+                  cti = TitleInstance.get(entry)
+                }
+              }
+              else if (entry instanceof Map) {
+                if (entry.id == ti.id) {
+                  cti = ti
+                }
+                else {
+                  cti = TitleInstance.get(entry.id)
+                }
+              }
+
+              if (cti) {
+                if (!lookedUpIds.contains(cti.id)) {
+                  lookedUpIds.add(cti.id)
+                }
+                else {
+                  if (!errors.to)
+                    errors.to = []
+
+                  errors.to << [message: "Multiple instances of title ${cti.id} in event participants!", baddata: entry, code: 404]
+                }
+
+                if (cti.id != ti.id) {
+                  Map addResult = ensureSingleParticipant(ti, 'to', cti, event.date)
+
+                  if (addResult.errors) {
+                    errors << addResult.errors
+                  }
+                  else {
+                    log.debug("New event ${addResult}")
+                    events.add(addResult.id)
+                  }
+                }
+              }
+              else {
+                if (!errors.to)
+                  errors.to = []
+
+                errors.to << [message: "Unable to lookup title for ${entry}", baddata: entry, code: 404]
+              }
+            }
+          }
+
+          if (event.from instanceof Integer && event.from != ti.id) {
+            TitleInstance cti = TitleInstance.get(event.from)
+
+            if (cti) {
+              if (cti.id != ti.id) {
+                Map addResult = ensureSingleParticipant(ti, 'from', cti, event.date)
+
+                if (addResult.errors) {
+                  errors << addResult.errors
+                }
+                else {
+                  log.debug("New event ${addResult}")
+                  events.add(addResult.id)
+                }
+              }
+            }
+            else {
+              if (!errors.id)
+                errors.from = []
+
+              errors.id << [message: "Unable to lookup title for ID ${from_entry.id}", baddata: entry, code: 404]
+            }
+          } else if (event.to instanceof Integer && event.to != ti.id) {
+            TitleInstance cti = TitleInstance.get(event.from)
+
+            if (cti) {
+              if (cti.id != ti.id) {
+                Map addResult = ensureSingleParticipant(ti, 'from', cti, event.date)
+
+                if (addResult.errors) {
+                  errors << addResult.errors
+                }
+                else {
+                  log.debug("New event ${addResult}")
+                  events.add(addResult.id)
+                }
+              }
+            }
+            else {
+              if (!errors.id)
+                errors.from = []
+
+              errors.id << [message: "Unable to lookup title for ID ${from_entry.id}", baddata: entry, code: 404]
+            }
+          }
         }
       }
-      catch ( grails.validation.ValidationException veh ) {
-        if (!errors.historyEvents) {
-          errors.historyEvents = []
-        }
 
-        log.error("Problem processing title history", veh)
-        result.result = "ERROR"
-        errors.historyEvents << messageService.processValidationErrors(veh.errors)
+      if (errors.size() > 0) {
+        result.result = 'ERROR'
+        result.message = "There were errors updating the title history!"
+        result.errors = errors
       }
-      catch ( Exception eh ) {
-        log.error("Problem processing title history", eh)
-
-        if (!errors.historyEvents) {
-          errors.historyEvents = []
+      else if (remove) {
+        current_history.each { ce ->
+          if (!events.find { it == ce.id }) {
+            def event = ComponentHistoryEvent.get(ce.id)
+            event.delete(flush:true, failOnError:true)
+          }
         }
-
-        result.result = "ERROR"
-        errors.historyEvents << [
-          message: messageService.resolveCode('crossRef.title.error.historyEvent', null, locale),
-          baddata: jhe
-        ]
       }
     }
-
-    if (errors.size() > 0) {
-      result.errors = errors
+    else {
+      log.debug("Found illegal payload format!")
+      result.result = 'ERROR'
+      result.message = "Unexpected payload format, expected array of events!"
     }
 
     result
   }
 
+  public Map ensureSingleParticipant(ti, type, participant, date) {
+    Map result = [:]
+    String dupe_hql = '''select che from ComponentHistoryEvent as che
+                          where exists (
+                            select pf.id from ComponentHistoryEventParticipant as pf
+                            where pf.participant = :from
+                            and pf.participantRole = 'in'
+                            and pf.event = che
+                          )
+                          AND exists (
+                            select pt.id from ComponentHistoryEventParticipant as pt
+                            where pt.participant = :to
+                            and pt.participantRole = 'out'
+                            and pt.event = che
+                          )'''
 
-  public Map addNewEvent(ti, reqBody) {
+    Map pars = [:]
+
+    if (type == 'from') {
+      pars = [from: participant, to: ti]
+    } else {
+      pars = [from: ti, to: participant]
+    }
+
+    List dupe = ComponentHistoryEvent.executeQuery(dupe_hql, pars)
+
+    if (!dupe) {
+      Map req = [date: date]
+
+      if (type == 'from') {
+        req.from = [participant.id]
+      } else {
+        req.to = [participant.id]
+      }
+
+      Map add_result = addNewEvent(ti, req)
+
+      if (add_result.errors) {
+        result.errors = add_result.errors
+      }
+      else {
+        result.id = add_result.new_events[0]
+      }
+    }
+    else {
+      if (dupe.size() == 1) {
+        ComponentHistoryEvent existingEvent = dupe[0]
+        result.id = existingEvent.id
+
+        if (date && (!existingEvent.eventDate || dateFormatService.formatDate(existingEvent.eventDate) != date)) {
+          existingEvent.eventDate = dateFormatService.parseDate(date)
+        }
+      }
+      else {
+        log.error("Got multiple history events between two titles ${dupe}!")
+      }
+    }
+
+    result
+  }
+
+  public Map addNewEvent(TitleInstance ti, reqBody) {
     Map result = [result:'OK', new_events: []]
     Set inlist = []
     Set outlist = []

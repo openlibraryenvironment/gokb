@@ -98,11 +98,11 @@
       <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
     </g:if>
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span
-        class="badge badge-warning">${d?.getCombosByPropertyNameAndStatus('ids', 'Active')?.size() ?: '0'}</span></a>
+        class="badge badge-warning">${d.activeIdInfo.size()}</span></a>
     </li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span
         class="badge badge-warning">
-      ${d.getCombosByPropertyNameAndStatus('publisher', params.publisher_status)?.size() ?: '0'}
+      ${d.publisherLinks?.size() ?: '0'}
     </span></a></li>
     <li><a href="#availability" data-toggle="tab">Package Availability <span
         class="badge badge-warning">
@@ -297,26 +297,27 @@
           </tr>
           </thead>
           <tbody>
-          <g:each in="${d.getCombosByPropertyNameAndStatus('publisher', params.publisher_status)}" var="p">
+          <g:each in="${d.linkedPublishers} var="p">
             <tr>
               <td><g:link controller="resource" action="show"
-                          id="${p.toComponent.class.name}:${p.toComponent.id}">${p.toComponent.name}</g:link></td>
-              <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status'/></td>
+                          id="${p.publisher.class.name}:${p.publisher.id}">${p.publisher.name}</g:link></td>
+              <td><g:xEditableRefData owner="${p}" field="status" config='TitlePublisher.Status'/></td>
               <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date"/></td>
               <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date"/></td>
-              <td><g:link controller="ajaxSupport" action="deleteCombo" id="${p.id}">Delete</g:link></td>
+              <td><g:link controller="ajaxSupport" action="deletePublisherLink" id="${p.id}">Delete</g:link></td>
             </tr>
           </g:each>
           </tbody>
         </table>
       </dd>
 
-      <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
+      <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
         <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
-        <input type="hidden" name="__property" value="publisher"/>
+        <input type="hidden" name="title" value="${d.class.name}:${d.id}"/>
+        <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitlePublisher"/>
         <td>Add Publisher:</td>
         <dd>
-          <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject"
+          <g:simpleReferenceTypedown class="form-control input-xxlarge" name="publisher"
                                      baseClass="org.gokb.cred.Org"/><button type="submit"
                                                                             class="btn btn-default btn-primary btn-sm ">Add</button>
         </dd>
@@ -324,14 +325,9 @@
 
     </div>
 
+
     <div class="tab-pane" id="identifiers">
-      <g:render template="/apptemplates/combosByType"
-                model="${[d: d, property: 'ids', fragment: 'identifiers', cols: [
-                    [expr: 'toComponent.namespace.value', colhead: 'Namespace'],
-                    [expr: 'toComponent.value', colhead: 'ID', action: 'link']]]}"/>
-
-      <g:render template="/apptemplates/addIdentifier" model="${[d: d, hash: '#identifiers']}"/>
-
+      <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: true]}" />
     </div>
 
     <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />

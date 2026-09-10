@@ -17,9 +17,11 @@ class RolesController {
 
   @Secured(['IS_AUTHENTICATED_FULLY'])
   def index() {
+    Map result = [data: []]
     Role[] roles = Role.findAll()
     String sortField = params.hasProperty('_sort') ? params._sort : null
     String sortOrder = params.hasProperty('_order') ? params._order?.toLowerCase() : null
+
     if (sortField) {
       roles = roles.toSorted { a, b ->
         if (sortOrder?.toLowerCase() == "desc")
@@ -29,7 +31,6 @@ class RolesController {
       }
     }
 
-    def result = [data: []]
     roles.each { role ->
       result.data += restMappingService.mapObjectToJson(role, params, null)
     }

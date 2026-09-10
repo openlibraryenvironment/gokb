@@ -4,19 +4,8 @@ import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
 import groovy.json.JsonOutput
-import org.gokb.cred.AllocatedReviewGroup
-import org.gokb.cred.BookInstance
-import org.gokb.cred.CuratoryGroup
-import org.gokb.cred.DatabaseInstance
-import org.gokb.cred.JournalInstance
-import org.gokb.cred.OtherInstance
-import org.gokb.cred.KBComponent
-import org.gokb.cred.Package
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.RefdataValue
-import org.gokb.cred.ReviewRequest
-import org.gokb.cred.TitleInstancePackagePlatform
-import org.gokb.cred.User
+import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 
 @Transactional(readOnly = true)
 class ReviewsController {
@@ -34,10 +23,8 @@ class ReviewsController {
 
   @Secured(['ROLE_CONTRIBUTOR', 'IS_AUTHENTICATED_FULLY'])
   def index() {
-    def result = []
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = User.get(springSecurityService.principal.id)
-    result = componentLookupService.restLookup(user, ReviewRequest, params)
+    Map result = componentLookupService.restLookup(user, ReviewRequest, params)
 
     if (result.result == 'ERROR') {
       response.status = (result.status ?: 500)
@@ -48,11 +35,8 @@ class ReviewsController {
 
   @Secured(['ROLE_CONTRIBUTOR', 'IS_AUTHENTICATED_FULLY'])
   def show() {
-    def result = [:]
-    def obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def includes = params['_include'] ? params['_include'].split(',') : []
-    def embeds = params['_embed'] ? params['_embed'].split(',') : []
+    Map result = [:]
+    ReviewRequest obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
     User user = User.get(springSecurityService.principal.id)
 
     if (obj?.isReadable()) {
@@ -79,17 +63,15 @@ class ReviewsController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = ['result':'OK', 'params': params]
-    def reqBody = request.JSON
-    def errors = [:]
-    def immutable = ['raisedBy', 'componentToReview', 'dateCreated', 'lastUpdated', 'id']
-    def user = User.get(springSecurityService.principal.id)
-    def obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
+    Map result = ['result':'OK', 'params': params]
+    JSONObject reqBody = request.JSON
+    Map errors = [:]
+    List immutable = ['raisedBy', 'componentToReview', 'dateCreated', 'lastUpdated', 'id']
+    User user = User.get(springSecurityService.principal.id)
+    ReviewRequest obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
 
     if (obj && reqBody) {
-      def curator = componentUpdateService.isUserCurator(obj, user)
-
-      if (curator || user.isAdmin()) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
           response.status = 409
           result.message = message(code: "default.update.errors.message")
@@ -97,7 +79,7 @@ class ReviewsController {
           return
         }
 
-        def update_result = reviewRequestService.restUpdate(obj, reqBody)
+        Map update_result = reviewRequestService.restUpdate(obj, reqBody)
 
         if (update_result.result == 'OK') {
           result = restMappingService.mapObjectToJson(obj, params, user)
@@ -134,147 +116,22 @@ class ReviewsController {
   @Transactional
   def save() {
     Map result = [result:'OK', params: params]
-    def reqBody = request.JSON
-    Map errors = [:]
-    RefdataValue type_ext = RefdataCategory.lookup('ReviewRequest.StdDesc', 'External Editorial Request')
-    User user = User.get(springSecurityService.principal.id)
-    CuratoryGroup editorialTargetGroup
+    JSONObject reqBody = request.JSON
     ReviewRequest obj
-    Map pars = [:]
 
-    if (reqBody.reviewRequest) {
-      pars.reviewRequest = reqBody.reviewRequest.trim()
-    }
+    Map create_result = reviewRequestService.restCreate(user, reqBody)
 
-    if (reqBody.descriptionOfCause) {
-      pars.descriptionOfCause = reqBody.descriptionOfCause.trim()
-    }
+    if (create_result.result = 'OK') {
+      obj = create_result.object
+      result = restMappingService.mapObjectToJson(obj, params, user)
+      result.additionalInfo = obj.additional
 
-    if (reqBody.editingNotes) {
-      pars.editingNotes = reqBody.editingNotes.trim()
-    }
-
-    if (reqBody.componentToReview instanceof Integer) {
-      def comp = KBComponent.get(reqBody.componentToReview)
-      if (comp) {
-        pars.componentToReview = comp
-      }
-      else {
-        errors.componentToReview = [[message: "Unable to lookup component to be reviewed!", baddata: reqBody.componentToReview]]
-      }
-    }
-    else {
-      errors.componentToReview = [[message: "Missing component to be reviewed!"]]
-      result.message = "Request payload must contain the component to be reviewed"
-    }
-
-    if (reqBody.additionalInfo) {
-      try {
-        pars.additionalInfo = JsonOutput.toJson(reqBody.additionalInfo)
-      }
-      catch (Exception e) {
-        errors.additionalInfo = [[message: "Unable to save additional Info", baddata: reqBody.additionalInfo]]
-      }
-    }
-
-    if (reqBody.stdDesc || reqBody.type) {
-      def desc = null
-      def reqDesc = reqBody?.stdDesc ?: reqBody.type
-      def cat = RefdataCategory.findByLabel('ReviewRequest.StdDesc')
-
-      if (reqDesc instanceof Integer) {
-        def rdv = RefdataValue.get(reqBody.stdDesc)
-
-        if (rdv && rdv in cat.values) {
-          desc = rdv
-        }
-      }
-      else {
-        desc = RefdataCategory.lookup('ReviewRequest.StdDesc', reqDesc)
-      }
-
-      if (desc) {
-        pars.stdDesc = desc
-      }
-      else {
-        errors.stdDesc = [[message: "Illegal value for standard description provided!", baddata: reqDesc]]
-      }
-    }
-
-    if (reqBody.targetGroup) {
-      if (pars.stdDesc == type_ext) {
-        editorialTargetGroup = CuratoryGroup.findById(reqBody.targetGroup)
-        List external_groups = []
-
-        CuratoryGroup zdb_admin = grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators")) : null
-        CuratoryGroup ezb_admin = grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators")) : null
-
-        if (zdb_admin) {
-          external_groups << zdb_admin
-        }
-        if (ezb_admin) {
-          external_groups << ezb_admin
-        }
-
-        if (!editorialTargetGroup) {
-          errors.targetGroup = [
-            [
-              message: 'Unable to reference target group!',
-              baddata: reqBody.targetGroup
-            ]
-          ]
-        }
-        else if (!external_groups.contains(editorialTargetGroup)) {
-          errors.targetGroup = [
-            [
-              message: 'Provided targetGroup is not configured as augment editorial group!',
-              baddata: reqBody.targetGroup
-            ]
-          ]
-        }
-      }
-      else {
-        log.debug("Ignoring manual target group for review of type ${pars.stdDesc}..")
-      }
-    }
-
-    if (errors.size() == 0) {
-      try {
-        obj = reviewRequestService.raise(
-            pars.componentToReview,
-            pars.reviewRequest,
-            pars.descriptionOfCause,
-            user,
-            null,
-            pars.additionalInfo,
-            pars.stdDesc,
-            editorialTargetGroup ?: componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user, reqBody.activeGroup)
-        )
-
-        if (obj) {
-          result = restMappingService.mapObjectToJson(obj, params, user)
-          result.additionalInfo = obj.additional
-          response.status = 201
-
-          result._links = generateLinks(obj, user)
-        }
-        else {
-          response.status = 500
-          result.result = 'ERROR'
-          result.message = "Unable to create request for review!"
-        }
-      }
-      catch (Exception e) {
-        log.error("Error creating Review", e)
-        response.status = 500
-        result.result = 'ERROR'
-        result.message = "There was an error creating the request for review."
-      }
+      result._links = generateLinks(obj, user)
     }
     else {
       result.result = 'ERROR'
       response.status = 400
-      result.errors = errors
+      result.errors = create_result.errors
 
       if (!result.message) {
         result.message = 'There have been errors creating the request for review.'
@@ -288,7 +145,7 @@ class ReviewsController {
   @Transactional
   def transfer() {
     Map result = [result: 'OK', params: params]
-    def reqBody = request.JSON
+    JSONObject reqBody = request.JSON
 
     ReviewRequest obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
     CuratoryGroup target = CuratoryGroup.get(reqBody.target)
@@ -315,16 +172,14 @@ class ReviewsController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def delete() {
-    def result = ['result':'OK', 'params': params]
+    Map result = ['result':'OK', 'params': params]
     User user = User.get(springSecurityService.principal.id)
     ReviewRequest obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
 
-    if ( obj && obj.isDeletable() ) {
-      def curator = componentUpdateService.isUserCurator(obj, user)
-
-      if ( curator || user.isAdmin() ) {
+    if (obj && obj.isDeletable()) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         obj.status = RefdataCategory.lookup('ReviewRequest.Status','Deleted')
-        obj.save()
+        obj.save(flush: true)
       }
       else {
         result.result = 'ERROR'
@@ -351,8 +206,9 @@ class ReviewsController {
    */
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def isEscalatable() {
-    def result = [
+    Map result = [
       result: 'OK',
+      params: params,
       isEscalatable: true,
       escalationTargetGroup: null
     ]
@@ -411,8 +267,6 @@ class ReviewsController {
       result.isEscalatable = false
     }
 
-    result.params = params
-
     render result as JSON
   }
 
@@ -420,8 +274,8 @@ class ReviewsController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def escalate() {
-    def result = [result: 'OK']
-    def reqBody = request.JSON
+    Map result = [result: 'OK', params: params]
+    JSONObject reqBody = request.JSON
     ReviewRequest obj = ReviewRequest.findById(params.id)
     User user = User.get(springSecurityService.principal.id)
     CuratoryGroup escalatingGroup = CuratoryGroup.findById(reqBody?.activeGroup)
@@ -484,8 +338,6 @@ class ReviewsController {
       }
     }
 
-    result.params = params
-
     render result as JSON
   }
 
@@ -495,8 +347,9 @@ class ReviewsController {
    */
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def isDeescalatable() {
-    def result = [
+    Map result = [
       result: 'OK',
+      params: params,
       isDeescalatable: true
     ]
     Map errors = [:]
@@ -555,8 +408,6 @@ class ReviewsController {
       result.isDeescalatable = false
     }
 
-    result.params = params
-
     render result as JSON
   }
 
@@ -564,9 +415,9 @@ class ReviewsController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def deescalate(){
-    def result = [result: 'OK']
+    Map result = [result: 'OK', params: params]
     User user = User.get(springSecurityService.principal.id)
-    def reqBody = request.JSON
+    JSONObject reqBody = request.JSON
     ReviewRequest obj = ReviewRequest.findById(params.id)
     CuratoryGroup deescalatingGroup = CuratoryGroup.findById(reqBody?.activeGroup)
 
@@ -622,8 +473,6 @@ class ReviewsController {
       }
     }
 
-    result.params = params
-
     render result as JSON
   }
 
@@ -631,11 +480,11 @@ class ReviewsController {
   @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def bulk() {
-    def result = ['result':'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
+    Map result = [result:'OK', params: params]
+    User user = User.get(springSecurityService.principal.id)
 
     if (params['_field']?.trim() && params['_value']?.trim()) {
-      def report = componentUpdateService.bulkUpdateField(user, ReviewRequest, params)
+      Map report = componentUpdateService.bulkUpdateField(user, ReviewRequest, params)
 
       if (report.errors > 0) {
         result.result = 'ERROR'
@@ -656,21 +505,25 @@ class ReviewsController {
   }
 
 
-  private def generateLinks(obj,user) {
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest" + obj.restPath + "/${obj.id}"
-    def linksObj = [self:[href:base]]
-    def curator = componentUpdateService.isUserCurator(obj, user)
+  private Map generateLinks(ReviewRequest obj, User user) {
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest" + obj.restPath + "/${obj.id}"
+    Map linksObj = [
+      self: [
+        href: base
+      ]
+    ]
 
-    if (curator || user.isAdmin()) {
+    if (componentUpdateService.isUserCurator(obj, user)) {
       linksObj.update = [href:base]
       linksObj.delete = [href:base]
     }
+
     return linksObj
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def editorialGroups() {
-    def result = [
+    Map result = [
       external: [],
       typed: [:]
     ]
@@ -678,8 +531,11 @@ class ReviewsController {
     List errors = []
     List external_groups = []
 
-    CuratoryGroup zdb_admin = grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators")) : null
-    CuratoryGroup ezb_admin = grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators")) : null
+    String config_zdb = grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators")
+    String config_ezb = grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators")
+
+    CuratoryGroup zdb_admin =  config_zdb ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators")) : null
+    CuratoryGroup ezb_admin =  config_ezb ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators")) : null
 
     if (zdb_admin) {
       external_groups.add(zdb_admin)

@@ -186,10 +186,10 @@ class Package extends KBComponent {
     ]
   ]
 
-  static def refdataFind(params) {
-    def result = [];
-    def status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
-    def status_filter = null
+  static List refdataFind(params) {
+    List result = []
+    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    RefdataValue status_filter = null
 
     if (params.filter1) {
       status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
@@ -210,7 +210,7 @@ class Package extends KBComponent {
   }
 
 
-  public getTitles(Boolean onlyCurrent = true, Integer max = 10, Integer offset = 0) {
+  public List getTitles(Boolean onlyCurrent = true, Integer max = 10, Integer offset = 0) {
     List all_titles = []
     log.debug("getTitles :: current ${onlyCurrent} - max ${max} - offset ${offset}")
 
@@ -245,10 +245,10 @@ class Package extends KBComponent {
   }
 
 
-  public Integer getCurrentTitleCount() {
+  public int getCurrentTitleCount() {
     RefdataValue refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
-    Integer result = TitleInstance.executeQuery('''select count(title.id)
+    int result = TitleInstance.executeQuery('''select count(title.id)
                                                     from TitleInstance as title
                                                       where exists (
                                                         select 1 from TitleInstancePackagePlatform as tipp
@@ -263,20 +263,20 @@ class Package extends KBComponent {
   }
 
 
-  public Integer getCurrentTippCount() {
+  public int getCurrentTippCount() {
     RefdataValue refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
-    Integer result = TitleInstancePackagePlatform.executeQuery("select count(t.id) from TitleInstancePackagePlatform as t where t.pkg = :pkg and t.status = :sc"
+    int result = TitleInstancePackagePlatform.executeQuery("select count(t.id) from TitleInstancePackagePlatform as t where t.pkg = :pkg and t.status = :sc"
       , [pkg: this, sc: refdata_current])[0]
 
     result
   }
 
 
-  public Integer getTippCountForStatus(status) {
+  public int getTippCountForStatus(status) {
     RefdataValue refdata_status = RefdataCategory.lookup('KBComponent.Status', status)
 
-    Integer result = TitleInstancePackagePlatform.executeQuery("select count(t.id) from TitleInstancePackagePlatform as t where t.pkg = :pkg and t.status = :sc"
+    int result = TitleInstancePackagePlatform.executeQuery("select count(t.id) from TitleInstancePackagePlatform as t where t.pkg = :pkg and t.status = :sc"
             , [pkg: this, sc: refdata_status])[0]
 
     result

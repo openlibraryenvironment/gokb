@@ -491,8 +491,9 @@ where cp.owner = :c
 
   public ComponentIdentifier addIdentifier(Identifier ido, boolean update_comment = true) {
     ComponentIdentifier result
+    ComponentIdentifier dupe = ComponentIdentifier.findByComponentAndIdentifier(this, ido)
 
-    if (!this.linkedIds*.identifier.contains(ido)) {
+    if (!dupe) {
       result = new ComponentIdentifier(component: this, identifier: ido).save(flush: true, failOnError: true)
 
       if (update_comment) {
@@ -990,7 +991,7 @@ where cp.owner = :c
   }
 
   /**
-   * Similar to the respondsTo method but checks for methods properties and combos.
+   * Similar to the respondsTo method but checks for methods properties and links.
    */
   public static boolean has(Object ob, String op) {
 
@@ -1074,21 +1075,27 @@ where cp.owner = :c
       }
     }
     else {
-      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: this])
+      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview = :component)", [component: this])
 
-      ReviewRequest.executeQuery("select id from ReviewRequest where componentToReview=:component", [component: this]).each {
+      ReviewRequest.executeQuery("select id from ReviewRequest where componentToReview = :component", [component: this]).each {
         ReviewRequest.findById(it).expunge()
       }
     }
 
-    TitlePublisher.executeUpdate("delete from TitlePublisher where title = :component", [component: this])
-    ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component=:component", [component: this])
-    ComponentAttachment.executeUpdate("delete from ComponentAttachment as c where c.component=:component", [component: this])
-    ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component", [component: this])
-    ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: this])
-    ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: this])
-    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: this])
-    KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: this])
+    if (this.respondsTo('publisherLinks')) {
+      TitlePublisher.executeUpdate("delete from TitlePublisher where title = :component", [component: this])
+    }
+    else if (this.class == Org) {
+      TitlePublisher.executeUpdate("delete from TitlePublisher where publisher = :component", [component: this])
+    }
+
+    ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component = :component", [component: this])
+    ComponentAttachment.executeUpdate("delete from ComponentAttachment as c where c.component = :component", [component: this])
+    ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component = :component", [component: this])
+    ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component = :component", [component: this])
+    ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component = :component", [component: this])
+    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf = :component", [component: this])
+    KBComponent.executeUpdate("delete from ComponentPrice where owner = :component", [component: this])
     this.delete(failOnError: true)
 
     result
@@ -1116,6 +1123,15 @@ where cp.owner = :c
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
       }
 
+      if (this.respondsTo('publisherLinks')) {
+        TitlePublisher.executeUpdate("delete from TitlePublisher where title in (:component)", [component: batch])
+      }
+      else if (this.class == Org) {
+        TitlePublisher.executeUpdate("delete from TitlePublisher where publisher in (:component)", [component: batch])
+      }
+
+      ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component in (:component)", [component: batch])
+      ComponentAttachment.executeUpdate("delete from ComponentAttachment as c where c.component in (:component)", [component: batch])
       ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)", [component: batch])
       ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)", [component: batch])
       ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch])

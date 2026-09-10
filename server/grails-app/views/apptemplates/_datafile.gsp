@@ -40,13 +40,13 @@
               </tr>
             </thead>
             <tbody>
-              <g:each in="${d.incomingCombos}" var="r">
+              <g:each in="${d.attachedToComponents}" var="r">
                 <g:set var="linkedoid"
-                  value="${org.gokb.cred.KBComponent.deproxy(r.fromComponent).class.name}:${r.fromComponent.id}" />
+                  value="${org.gokb.cred.KBComponent.deproxy(r.component).class.name}:${r.component.id}" />
                 <tr>
                   <td><g:link controller="resource" action="show"
                       id="${linkedoid}">
-                      ${r.fromComponent.name}
+                      ${r.component.name}
                     </g:link></td>
                 </tr>
               </g:each>
@@ -68,5 +68,3 @@
   </div>
   <g:render template="/apptemplates/componentStatus" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
-
-

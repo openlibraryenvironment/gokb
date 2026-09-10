@@ -6,15 +6,8 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.apache.commons.lang.StringUtils
-import org.gokb.cred.CuratoryGroup
-import org.gokb.cred.CuratoryGroupType
-import org.gokb.cred.JobResult
-import org.gokb.cred.KBComponent
-import org.gokb.cred.ReviewRequest
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.Org
-import org.gokb.cred.Role
-import org.gokb.cred.User
+import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor
 
@@ -118,7 +111,7 @@ class CuratoryGroupsController {
     Map result = [:]
     Map errors = [:]
     Boolean changed = true
-    def reqBody = request.JSON
+    JSONObject reqBody = request.JSON
     User user = User.get(springSecurityService.principal.id)
     CuratoryGroup newGroup = null
 
@@ -169,7 +162,7 @@ class CuratoryGroupsController {
   def update() {
     Map result = [result: 'OK', params: params, changed: false]
     Map errors = [:]
-    def reqBody = request.JSON
+    JSONObject reqBody = request.JSON
     boolean remove = (request.method == 'PUT')
     User user = User.get(springSecurityService.principal.id)
     CuratoryGroup group = CuratoryGroup.get(genericOIDService.oidToId(params.id))

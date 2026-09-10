@@ -62,18 +62,12 @@ class ResourceController {
           def curatedObj = displayobj.respondsTo("getCuratoryGroups") ? displayobj : ( displayobj.hasProperty('pkg') ? displayobj.pkg : false )
 
           if (curatedObj && curatedObj.curatoryGroups && curatedObj.niceName != 'User') {
-
-            def cur = user.curatoryGroups?.id.intersect(curatedObj.curatoryGroups?.id) ?: []
-            request.curator = cur
+            request.curator = user.curatoryGroups*.id.intersect(curatedObj.curatoryGroups*.id) ?: []
           } else {
             request.curator = null
           }
 
-          def new_history_entry = new History(controller:params.controller,
-          action:params.action,
-          actionid:oid,
-          owner:user,
-          title:"View ${displayobj.toString()}").save()
+          new History(controller: params.controller, action: params.action, actionid: oid, owner: user, title: "View ${displayobj.toString()}").save()
 
           result.displayobjclassname = displayobj.class.name
           result.__oid = "${result.displayobjclassname}:${displayobj.id}"
@@ -127,16 +121,13 @@ class ResourceController {
         if (displayobj && read_perm) {
           if (result.isComponent) {
 
-            result.resource = displayobj.getAllPropertiesWithLinks(params.withCombos ? true : false)
-
-            result.resource.combo_props = displayobj.allComboPropertyNames
+            result.resource = displayobj.getAllPropertiesWithLinks()
 
             if (displayobj.class == Package) {
               result.resource.remove('updateToken')
             }
           }
           else if (displayobj.class.name == 'org.gokb.cred.User'){
-
             result.resource = ['id': displayobj.id, 'username': displayobj.username, 'displayName': displayobj.displayName, 'curatoryGroups': displayobj.curatoryGroups]
           }
           else {

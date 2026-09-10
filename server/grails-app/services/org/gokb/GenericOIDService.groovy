@@ -3,14 +3,12 @@ package org.gokb
 class GenericOIDService {
 
   def grailsApplication
-  def classCache = [:]
+  Map classCache = [:]
 
-  def resolveOID(oid, boolean lock=false) {
-    def oid_components = oid.split(':')
-    def result = null
-    def clazz = null
-
-    clazz = classCache[oid_components[0]]
+  public Object resolveOID(oid, boolean lock=false) {
+    List oid_components = oid.split(':')
+    Object result = null
+    Class clazz = classCache[oid_components[0]]
 
     if ( clazz == null ) {
       def domain_class = grailsApplication.getArtefact('Domain', oid_components[0])
@@ -38,15 +36,15 @@ class GenericOIDService {
     result
   }
 
-  def resolveOID2(oid) {
-    def oid_components = oid.split(':');
-    def result = null;
+  public Object resolveOID2(oid) {
+    List oid_components = oid.split(':')
+    Object result = null
 
-    def clazz = classCache[oid_components[0]]
+    Class clazz = classCache[oid_components[0]]
 
     if ( clazz == null ) {
-      def domain_class=null;
-      domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
+      def domain_class = grailsApplication.getArtefact('Domain', oid_components[0])
+
       if ( domain_class ) {
         clazz = domain_class.getClazz()
         classCache[oid_components[0]] = clazz
@@ -54,7 +52,7 @@ class GenericOIDService {
     }
 
     if ( clazz ) {
-      if ( oid_components[1]=='__new__' ) {
+      if ( oid_components[1] == '__new__' ) {
         result = clazz.refdataCreate(oid_components)
         log.debug("Result of create ${oid} is ${result}");
       }
@@ -68,12 +66,13 @@ class GenericOIDService {
     result
   }
 
-  def oidToId(oid) {
-    def result = null
+  public Long oidToId(oid) {
+    Long result = null
 
     if (oid) {
-      if(oid.contains(':')){
-        def oid_components = oid.split(':')
+      if (oid.contains(':')){
+        List oid_components = oid.split(':')
+
         try {
           result = Long.parseLong(oid_components[1])
         }

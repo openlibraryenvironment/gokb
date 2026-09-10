@@ -7,6 +7,7 @@ import grails.gorm.transactions.Transactional
 
 import org.gokb.GOKbTextUtils
 import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 import org.hibernate.Session
 
 class PlatformService {
@@ -14,8 +15,9 @@ class PlatformService {
   def sessionFactory
   def componentLookupService
   def reviewRequestService
+  def restMappingService
 
-  public Map restLookup(platformDTO, def user = null) {
+  public Map restLookup(JSONObject platformDTO, def user = null) {
     Map result = [to_create: true]
     RefdataValue status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
     RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -145,7 +147,7 @@ class PlatformService {
     result
   }
 
-  public Platform upsertDTO(platformDTO, def user = null) {
+  public Platform upsertDTO(JSONObject platformDTO, def user = null) {
     Platform result
     boolean skip = false
     RefdataValue status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
@@ -381,8 +383,6 @@ class PlatformService {
                                                             and hostPlatform = :op''',
                                                             [
                                                               op: old_platform,
-                                                              ctt: combo_type_pkg_tipp,
-                                                              ctp: combo_type_plt_tipp,
                                                               pid: pid,
                                                               sd: status_deleted
                                                             ],
@@ -458,7 +458,7 @@ class PlatformService {
           j?.setProgress(50 + Math.floor(50 * (result.tipls/count_tipls)).toInteger())
         }
 
-        List affected_tipls_batch = TitleInstancePlatform.executeQuery("from TitleInstancePlatform where hostPlatform = :op",[op: old_platform, ctp: combo_type_plt_tipl], [max: 50])
+        List affected_tipls_batch = TitleInstancePlatform.executeQuery("from TitleInstancePlatform where hostPlatform = :op",[op: old_platform], [max: 50])
 
         result.tipls += affected_tipls_batch.size()
 
@@ -512,5 +512,27 @@ class PlatformService {
     j?.endTime = new Date()
 
     result
+  }
+
+  private Map updateLinks(Platform obj, JSONObject reqBody, changed, boolean remove = true) {
+    Map errors = [:]
+    log.debug("Updating platform hasMany links ..")
+
+    if (reqBody.ids || reqBody.identifiers) {
+      List idmap = (reqBody.ids ?: reqBody.identifiers) as List
+      changed |= restMappingService.updateIdentifiers(obj, idmap, remove)
+    }
+
+    if (reqBody.curatoryGroups) {
+      Map cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+      changed |= cg_result.changed
+
+      if (cg_result.errors.size() > 0) {
+        errors['curatoryGroups'] = cg_errors
+      }
+    }
+
+    errors
   }
 }

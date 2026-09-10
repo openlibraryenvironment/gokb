@@ -52,7 +52,6 @@ class ComponentIdentifier {
 
     if (endDate == null) endDate = new Date ()
 
-    // Expire this combo...
     setStatus (RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, (replaced ? ComponentIdentifier.STATUS_SUPERSEDED : ComponentIdentifier.STATUS_EXPIRED)))
     setEndDate(endDate)
     save()

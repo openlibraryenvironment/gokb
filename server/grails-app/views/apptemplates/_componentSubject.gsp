@@ -25,8 +25,8 @@
         </g:each>
         <g:if test="${delete=='true'}">
 	  <td>
-            <g:link controller='ajaxSupport' 
-                    action='delete' 
+            <g:link controller='ajaxSupport'
+                    action='delete'
                     params="${[__context:rowoid]}">Delete</g:link>
 	  </td>
         </g:if>
@@ -39,23 +39,21 @@
 
 
   <g:if test="${direction=='in'}">
-    <g:set var="recip" value="component"/> 
-    <g:set var="comboprop" value="subject"/>
+    <g:set var="recip" value="component"/>
+    <g:set var="linkprop" value="subject"/>
   </g:if>
   <g:else>
     <g:set var="recip" value="subject"/>
-    <g:set var="comboprop" value="component"/>
+    <g:set var="linkprop" value="component"/>
   </g:else>
 
   <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
     <input type="hidden" name="__context" value="${ctxoid}"/>
     <input type="hidden" name="__newObjectClass" value="org.gokb.cred.ComponentSubject"/>
-														
+
     <input type="hidden" name="__recip" value="${recip}"/>
 
-    
-    <input type="hidden" name="type" value="${org.gokb.cred.RefdataCategory.getOID('Combo.Type',d.getComboTypeValue(property))}"/>
-    Add To List : <g:simpleReferenceTypedown class="form-control" name="${comboprop}" baseClass="${targetClass}"/> 
+    Add To List : <g:simpleReferenceTypedown class="form-control" name="${linkprop}" baseClass="${targetClass}"/>
     <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
   </g:form>
 

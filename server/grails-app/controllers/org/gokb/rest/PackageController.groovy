@@ -9,8 +9,8 @@ import grails.plugin.springsecurity.annotation.Secured
 import java.time.Duration
 import java.time.LocalDateTime
 
-import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 import org.springframework.web.servlet.support.RequestContextUtils
 
 @Transactional(readOnly = true)
@@ -32,28 +32,29 @@ class PackageController {
   def packageUpdateService
   def tippUpsertService
   def adminAlertingService
+  def jobResultService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def result = [:]
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    Map result = [:]
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
-    def es_search = params.es ? true : false
+    boolean es_search = params.boolean('es') ? true : false
 
     params.componentType = "Package" // Tells ESSearchService what to look for
 
     if (es_search) {
       params.remove('es')
-      def start_es = LocalDateTime.now()
+      LocalDateTime start_es = LocalDateTime.now()
       result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
-      def start_db = LocalDateTime.now()
+      LocalDateTime start_db = LocalDateTime.now()
       result = componentLookupService.restLookup(user, Package, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
@@ -64,12 +65,18 @@ class PackageController {
     else {
       result.data?.each { obj ->
         obj['_links'] << ['tipps': ['href': (base + "/packages/${obj.uuid}/tipps")]]
-        def countTippsParams = [:]
+        Map countTippsParams = [:]
         countTippsParams.componentType = "TIPP"
         countTippsParams.tippPackage = obj.uuid
         countTippsParams.status = "Current"
         countTippsParams.max = 0
-        obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
+
+        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
+          obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
+        }
+        else {
+          obj['_tippCount'] = obj.currentTippCount
+        }
       }
     }
 
@@ -78,10 +85,9 @@ class PackageController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
-    def result = [:]
-    def obj = null
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def is_curator = true
+    Map result = [:]
+    Package obj = null
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -98,7 +104,7 @@ class PackageController {
       if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
 
-        result['_tippCount'] = obj.getTippCountForStatus('Current')
+        result['_tippCount'] = obj.currentTippCount
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
       }
       else {
@@ -121,21 +127,21 @@ class PackageController {
   @Transactional
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def save() {
-    def result = [result: 'OK', params: params]
-    Boolean changed = true
-    def reqBody = request.JSON
-    def request_locale = RequestContextUtils.getLocale(request)
-    UpdateToken update_token = null
-    def errors = [:]
-    def user = User.get(springSecurityService.principal.id)
+    Map result = [result: 'OK', params: params]
+    JSONObject reqBody = request.JSON
+    Locale request_locale = RequestContextUtils.getLocale(request)
+    Map errors = [:]
+    User user = User.get(springSecurityService.principal.id)
     boolean editable = true
+    boolean changed = true
 
     if (reqBody) {
-      if (!user.hasRole('ROLE_ADMIN') && (reqBody.curatoryGroups || reqBody.activeGroup)) {
-        def cur = reqBody.curatoryGroups ? user.curatoryGroups*.id.intersect(reqBody.curatoryGroups*.id) : user.curatoryGroups*.id.contains(reqBody.activeGroup.id)
-
-        if (!cur) {
-          editable = false
+      if (!user.isAdmin()) {
+        if (reqBody.curatoryGroups) {
+          editable = user.curatoryGroups*.id.intersect(reqBody.curatoryGroups*.id).size() > 0
+        }
+        else if (reqBody.activeGroup) {
+          editable = user.curatoryGroups*.id.contains(reqBody.activeGroup.id)
         }
       }
 
@@ -179,7 +185,7 @@ class PackageController {
           }
           else if (obj) {
             obj.save(flush:true)
-            def jsonMap = obj.jsonMapping
+            Map jsonMap = obj.jsonMapping
 
             jsonMap.immutable = [
                 'userListVerifier',
@@ -195,37 +201,29 @@ class PackageController {
                 log.debug("No errors.. saving")
                 obj.save()
 
-                def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+                Map variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
                 if (variant_result.errors.size() > 0) {
                   errors.variantNames = variant_result.errors
                 }
 
-                def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+                Map subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
 
                 if (subject_result.errors.size() > 0) {
                   errors.subjects = subject_result.errors
                 }
 
-                String charset = (('a'..'z') + ('0'..'9')).join()
-                def updateToken = RandomStringUtils.random(255, charset.toCharArray())
-                update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
-
                 if ((!reqBody.curatoryGroups || reqBody.curatoryGroups?.size() == 0) && reqBody.activeGroup) {
                   reqBody.curatoryGroups = [reqBody.activeGroup]
                 }
 
-                errors << packageUpdateService.updateCombos(obj, reqBody, changed, false, user)
+                errors << packageUpdateService.updateLinks(obj, reqBody, changed, false, user)
 
                 if (errors.size() == 0) {
                   log.debug("No errors: ${errors}")
                   obj.save(flush: true)
                   response.status = 201
                   result = restMappingService.mapObjectToJson(obj, params, user)
-
-                  if (update_token) {
-                    result.updateToken = update_token.value
-                  }
                 }
                 else {
                   result.result = 'ERROR'
@@ -279,30 +277,20 @@ class PackageController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = ['result': 'OK', 'params': params, changed: false]
-    def reqBody = request.JSON
-    def errors = [:]
-    def remove = (request.method == 'PUT')
-    def generateToken = params.generateToken ? params.boolean('generateToken') : (reqBody.generateToken ? true : false)
-    UpdateToken update_token = null
-    def request_locale = RequestContextUtils.getLocale(request)
-    def user = User.get(springSecurityService.principal.id)
-    def editable = true
-    def obj = Package.findByUuid(params.id)
+    Map result = ['result': 'OK', 'params': params, changed: false]
+    JSONObject reqBody = request.JSON
+    Map errors = [:]
+    boolean remove = (request.method == 'PUT')
+    Locale request_locale = RequestContextUtils.getLocale(request)
+    User user = User.get(springSecurityService.principal.id)
+    Package obj = Package.findByUuid(params.id)
 
     if (!obj) {
       obj = Package.get(genericOIDService.oidToId(params.id))
     }
 
     if (obj && reqBody) {
-      if (!user.hasRole('ROLE_ADMIN') && obj.curatoryGroups && obj.curatoryGroups.size() > 0) {
-        def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-
-        if (!cur) {
-          editable = false
-        }
-      }
-      if (editable) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
           response.status = 409
           result.message = message(code: "default.update.errors.message")
@@ -310,7 +298,7 @@ class PackageController {
           return
         }
 
-        def jsonMap = obj.jsonMapping
+        Map jsonMap = obj.jsonMapping
 
         jsonMap.immutable = [
             'userListVerifier',
@@ -335,7 +323,7 @@ class PackageController {
           log.debug("No errors.. saving")
           obj = obj.merge(flush: true)
 
-          def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+          Map variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
           result.changed |= variant_result.changed
 
@@ -343,7 +331,7 @@ class PackageController {
             errors.variantNames = variant_result.errors
           }
 
-          def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+          Map subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
 
           result.changed |= subject_result.changed
 
@@ -351,29 +339,12 @@ class PackageController {
             errors.subjects = subject_result.errors
           }
 
-          errors << packageUpdateService.updateCombos(obj, reqBody, result.changed, remove, user)
-
-          if (generateToken) {
-            String charset = (('a'..'z') + ('0'..'9')).join()
-            def updateToken = RandomStringUtils.random(255, charset.toCharArray())
-
-            if (obj.updateToken) {
-              def currentToken = obj.updateToken
-              obj.updateToken = null
-              currentToken.delete(flush: true)
-            }
-
-            update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true, failOnError: true)
-          }
+          errors << packageUpdateService.updateLinks(obj, reqBody, result.changed, remove, user)
 
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true, failOnError: true)
             result = restMappingService.mapObjectToJson(obj, params, user)
-
-            if (update_token) {
-              result.updateToken = update_token.value
-            }
           }
           else {
             obj.discard()
@@ -409,18 +380,16 @@ class PackageController {
   @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def delete() {
-    def result = ['result': 'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
-    def obj = Package.findByUuid(params.id)
+    Map result = ['result': 'OK', 'params': params]
+    User user = User.get(springSecurityService.principal.id)
+    Package obj = Package.findByUuid(params.id)
 
     if (!obj) {
       obj = Package.get(genericOIDService.oidToId(params.id))
     }
 
     if (obj && obj.isDeletable()) {
-      def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-
-      if (curator || user.isAdmin()) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         obj.deleteSoft()
 
         componentUpdateService.closeConnectedReviews(obj)
@@ -447,18 +416,16 @@ class PackageController {
   @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def retire() {
-    def result = ['result': 'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
-    def obj = Package.findByUuid(params.id)
+    Map result = ['result': 'OK', 'params': params]
+    User user = User.get(springSecurityService.principal.id)
+    Package obj = Package.findByUuid(params.id)
 
     if (!obj) {
       obj = Package.get(genericOIDService.oidToId(params.id))
     }
 
-    if (obj && obj.isEditable()) {
-      def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-
-      if (curator || user.isAdmin()) {
+    if (obj) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         obj.retire()
       }
       else {
@@ -482,14 +449,15 @@ class PackageController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def tipps() {
-    def result = [:]
+    Map result = [:]
     User user = null
+    Package obj = Package.findByUuid(params.id)
 
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
+
     log.debug("tipps :: ${params}")
-    def obj = Package.findByUuid(params.id)
 
     if (!obj) {
       obj = Package.get(genericOIDService.oidToId(params.id))
@@ -498,31 +466,27 @@ class PackageController {
     log.debug("TIPPs for Package: ${obj}")
 
     if (obj) {
-      def context = "/packages/" + params.id + "/tipps"
-      def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
-      def es_search = params.es ? true : false
+      String context = "/packages/" + params.id + "/tipps"
+      String base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
+      boolean es_search = params.boolean('es') ?: false
 
       params.remove('id')
       params.remove('uuid')
       params.remove('es')
       params.pkg = obj.id
 
-      def esParams = new HashMap(params)
-      esParams.remove('componentType')
-      esParams.componentType = "TIPP" // Tells ESSearchService what to look for
-
-      log.debug("New ES params: ${esParams}")
-      log.debug("New DB params: ${params}")
-
       if (es_search) {
-        def start_es = LocalDateTime.now()
+        LocalDateTime start_es = LocalDateTime.now()
+        params.remove('componentType')
+        params.componentType = 'TIPP'
+
         result = ESSearchService.find(esParams, context)
-        log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+        log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis()}")
       }
       else {
-        def start_db = LocalDateTime.now()
+        LocalDateTime start_db = LocalDateTime.now()
         result = componentLookupService.restLookup(user, TitleInstancePackagePlatform, params, context)
-        log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+        log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis()}")
       }
     }
     else {
@@ -536,48 +500,43 @@ class PackageController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def jobs() {
-    def result = [:]
+    Map result = [:]
     int max = params.limit ? params.int('limit') : 10
     int offset = params.offset ? params.int('offset') : 0
 
     log.debug("jobs :: ${params}")
-    def obj = Package.findByUuid(params.id)?:Package.get(params.id)
+    Package obj = Package.findByUuid(params.id) ?: Package.get(params.id)
 
     log.debug("Jobs for Package: ${obj}")
 
     if (obj) {
       if (params.boolean('archived') == true || params.boolean('combined') == true) {
+        params.linkedItem = obj.id
         result.data = []
-        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.linkedItemId = ?0", [obj.id])[0]
-        def jobs = JobResult.executeQuery("from JobResult as jr where jr.linkedItemId = ?0 order by jr.startTime desc", [obj.id], [max: max, offset: offset])
+
+        Map finished_results = jobResultService.fetchJobs(params, max, offset)
 
         if (params.boolean('combined') == true) {
-          def active_jobs = concurrencyManagerService.getComponentJobs(obj.id, max, offset, false)
+          Map active_jobs = concurrencyManagerService.getComponentJobs(obj.id, max, offset, false)
 
-          hqlTotal += active_jobs._pagination.total
+          int combined_total += finished_results._pagination.total + active_jobs._pagination.total
 
           if (offset == 0) {
-            result.data = active_jobs.data
+            result.data = active_jobs.data + finished_results.data
           }
-        }
+          else {
+            result.data = finished_results.data
+          }
 
-        jobs.each { j ->
-          result.data << [
-            uuid: j.uuid,
-            description: j.description,
-            type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-            linkedItem: [id: obj.id, type: obj.niceName, uuid: obj.uuid, name: obj.name],
-            startTime: j.startTime,
-            endTime: j.endTime,
-            status: j.statusText
+          result['_pagination'] = [
+            offset: offset,
+            limit: max,
+            total: combined_total
           ]
         }
-
-        result['_pagination'] = [
-          offset: offset,
-          limit: max,
-          total: hqlTotal
-        ]
+        else {
+          result = finished_results
+        }
       }
       else {
         result = concurrencyManagerService.getComponentJobs(obj.id, max, offset, showFinished)
@@ -589,33 +548,29 @@ class PackageController {
   @Transactional
   @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def addTipps() {
-    def result = [:]
-    def errors = []
-    def user = User.get(springSecurityService.principal.id)
-    def context = "/packages/" + params.id + "/tipps"
     log.debug("addTipps :: ${params}")
-    def obj = Package.findByUuid(params.id)
-    def reqBody = request.JSON
+    Map result = [:]
+    List errors = []
+    User user = User.get(springSecurityService.principal.id)
+    String context = "/packages/" + params.id + "/tipps"
+    Package obj = Package.findByUuid(params.id)
+    JSONObject reqBody = request.JSON
 
     if (!obj) {
       obj = Package.get(genericOIDService.oidToId(params.id))
     }
 
     if (obj && reqBody) {
-
-      def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-
-      params.pkg = params.id
-
-      if (curator || user.isAdmin()) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         if (reqBody instanceof List) {
-          def idx = 0
+          params.pkg = params.id
+          int idx = 0
 
           reqBody.each { tipp ->
-            def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp, RequestContextUtils.getLocale(request))
+            Map tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp, RequestContextUtils.getLocale(request))
 
             if (tipp_validation.valid) {
-              def tipp_obj = tippUpsertService.upsertDTO(tipp, user)
+              TitleInstancePackagePlatform tipp_obj = tippUpsertService.upsertDTO(tipp, user)
 
               if (!tipp_obj) {
                 errors.add(['code': 400, 'message': "TIPP could not be created!", baddata: tipp, idx: idx])
@@ -665,8 +620,7 @@ class PackageController {
 
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def ingestKbart() {
-    log.debug("Form post")
-    def result = ['result': 'OK', errors: [:]]
+    Map result = ['result': 'OK', errors: [:]]
     Package pkg = Package.findByUuid(params.id)
 
     if (!pkg) {
@@ -682,19 +636,19 @@ class PackageController {
       return
     }
 
-    def pkgInfo = [:]
-    def user = User.get(springSecurityService.principal.id)
-    def active_group_id = null
-    def title_ns_id = null
-    def title_ns_serial_id = null
-    def title_ns_mono_id = null
+    Map pkgInfo = [:]
+    User user = User.get(springSecurityService.principal.id)
+    Long active_group_id = null
+    Long title_ns_id = null
+    Long title_ns_serial_id = null
+    Long title_ns_mono_id = null
     Source source = pkg.source
 
     if (params.activeGroup) {
       CuratoryGroup active_group
 
-      if (params.int('activeGroup')) {
-        active_group = CuratoryGroup.get(params.int('activeGroup'))
+      if (params.long('activeGroup')) {
+        active_group = CuratoryGroup.get(params.long('activeGroup'))
       }
 
       if (!active_group) {
@@ -709,8 +663,8 @@ class PackageController {
     if (params.titleIdNamespace) {
       IdentifierNamespace title_ns
 
-      if (params.int('titleIdNamespace')) {
-        title_ns = IdentifierNamespace.get(params.int('titleIdNamespace'))
+      if (params.long('titleIdNamespace')) {
+        title_ns = IdentifierNamespace.get(params.long('titleIdNamespace'))
       }
 
       if (!title_ns) {
@@ -725,8 +679,8 @@ class PackageController {
     if (params.titleIdSerial) {
       IdentifierNamespace title_ns
 
-      if (params.int('titleIdSerial')) {
-        title_ns = IdentifierNamespace.get(params.int('titleIdSerial'))
+      if (params.long('titleIdSerial')) {
+        title_ns = IdentifierNamespace.get(params.long('titleIdSerial'))
       }
 
       if (!title_ns) {
@@ -741,8 +695,8 @@ class PackageController {
     if (params.titleIdMonograph) {
       IdentifierNamespace title_ns
 
-      if (params.int('titleIdMonograph')) {
-        title_ns = IdentifierNamespace.get(params.int('titleIdMonograph'))
+      if (params.long('titleIdMonograph')) {
+        title_ns = IdentifierNamespace.get(params.long('titleIdMonograph'))
       }
 
       if (!title_ns) {
@@ -755,16 +709,21 @@ class PackageController {
     }
 
     if (result.result == 'ERROR') {
-        result.message = "Failed to reference objects for one or more parameters!"
-        response.status = 400
+      result.message = "Failed to reference objects for one or more parameters!"
+      response.status = 400
     }
     else if (componentUpdateService.isUserCurator(pkg, user)) {
-      pkgInfo = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+      pkgInfo = [
+        name: pkg.name,
+        type: "Package",
+        id: pkg.id,
+        uuid: pkg.uuid
+      ]
       DataFile datafile = null
-      def upload_mime_type = request.getFile("submissionFile")?.contentType
-      def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
-      def deposit_token = java.util.UUID.randomUUID().toString()
-      def temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("submissionFile"))
+      String upload_mime_type = request.getFile("submissionFile")?.contentType
+      String upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
+      String deposit_token = java.util.UUID.randomUUID().toString()
+      File temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("submissionFile"))
 
       Boolean add_only = params.boolean('addOnly') ?: false
       Boolean dry_run = params.boolean('dryRun') ?: false
@@ -773,7 +732,7 @@ class PackageController {
       Boolean async = params.async ? params.boolean('async') : true
       Long max_file_length = 20971520L
 
-      def info = TSVIngestionService.analyseFile(temp_file)
+      Map info = TSVIngestionService.analyseFile(temp_file)
 
       if (!source || source?.ignoreSizeLimit || user.isAdmin() || info.filesize <= max_file_length) {
         log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
@@ -867,12 +826,12 @@ class PackageController {
 
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   def triggerSourceUpdate() {
-    def result = ['result': 'OK']
+    Map result = ['result': 'OK']
     User user = User.get(springSecurityService.principal.id)
     CuratoryGroup active_group = params.long('activeGroup') ? CuratoryGroup.get(params.long('activeGroup')) : null
-    Boolean async = params.boolean('async') ?: true
-    Boolean dry_run = params.boolean('dryRun') ?: false
-    Boolean restrictSize = (params.boolean('ignoreFileSize') && user.isAdmin) ? false : true
+    boolean async = params.boolean('async') ?: true
+    boolean dry_run = params.boolean('dryRun') ?: false
+    boolean restrictSize = (params.boolean('ignoreFileSize') && user.isAdmin) ? false : true
     Package pkg = Package.get(params.id)
 
     if (pkg && componentUpdateService.isUserCurator(pkg, user)) {

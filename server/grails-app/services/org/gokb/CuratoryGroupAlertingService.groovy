@@ -6,6 +6,7 @@ import java.time.*
 
 import org.apache.commons.validator.routines.EmailValidator
 import org.gokb.cred.*
+import org.hibernate.Session
 import org.springframework.context.MessageSource
 
 class CuratoryGroupAlertingService {
@@ -128,16 +129,15 @@ class CuratoryGroupAlertingService {
     String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'package/' : null
     Date lastDayDate = Date.from(LocalDateTime.now().minusHours(24).atZone(ZoneId.systemDefault()).toInstant())
     RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
-    RefdataValue combo_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     CuratoryGroup zdb_admin = grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.zdbAugment.rrCurators")) : null
     CuratoryGroup ezb_admin = grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators")) : null
-    def session = sessionFactory.currentSession
+    Session session = sessionFactory.currentSession
 
     List<JobResult> completed_jobs = JobResult.executeQuery('''select groupId, linkedItemId from JobResult
-                                                    where linkedItemId is not null
-                                                    and groupId is not null
-                                                    and startTime > :lastDay''',
-                                                [lastDay: lastDayDate])
+                                                                where linkedItemId is not null
+                                                                and groupId is not null
+                                                                and startTime > :lastDay''',
+                                                                [lastDay: lastDayDate])
 
     Map groups_list = [:]
 
@@ -171,7 +171,7 @@ class CuratoryGroupAlertingService {
                                                                   where t.id = rr.componentToReview.id
                                                                   t.pkg = :pkg
                                                                 )''',
-                                                                [lastDay: lastDayDate, open: rr_open, ctype: combo_tipp, pkg: pkg])[0]
+                                                                [lastDay: lastDayDate, open: rr_open, pkg: pkg])[0]
 
             if (num_new_reviews > 0) {
               log.debug("Got ${num_new_reviews} new reviews!")

@@ -14,19 +14,19 @@ class TSVIngestionService {
   def grailsApplication
   def sessionFactory
 
-  public Map updatePackage(def pkgId,
-                    def dfId,
-                    def title_id_ns,
+  public Map updatePackage(Long pkgId,
+                    Long dfId,
+                    Long title_id_ns,
                     boolean async,
                     boolean incremental,
-                    def userId,
-                    def groupId,
+                    Long userId,
+                    Long groupId,
                     boolean dry_run,
                     boolean skip_invalid,
                     boolean cleanup,
                     Job job = null,
-                    def title_id_ns_serial,
-                    def title_id_ns_monograph) {
+                    Long title_id_ns_serial,
+                    Long title_id_ns_monograph) {
 
     Package.withNewSession { session ->
       Package pkg = Package.get(pkgId)

@@ -231,7 +231,7 @@ class ComponentLookupService {
    * @param context : Possible override of the self link path
    */
 
-  public Map restLookup (user, cls, params, def context = null, boolean idOnly = false) {
+  public Map restLookup (User user, cls, params, def context = null, boolean idOnly = false) {
     log.debug("restLookup: ${params}")
     Map result = [:]
     String hqlQry = "from ${cls.simpleName} as p".toString()
@@ -900,10 +900,13 @@ class ComponentLookupService {
    * @param total : Number of total results
    */
 
-  def generateLinks(result, cls, context, params, max, offset, total) {
-    def endpoint = ""
+  public void generateLinks(Map result, Class cls, String context, def params, int max, int offset, int total) {
+    String endpoint = ""
 
-    if (cls == KBComponent) {
+    if (context) {
+      endpoint = context
+    }
+    else if (cls == KBComponent) {
       endpoint = "/entities"
     }
     else if (cls.newInstance().hasProperty('restPath')) {
@@ -916,17 +919,15 @@ class ComponentLookupService {
     result['_links']['self'] = [href: restMappingService.buildUrlString(endpoint, null, offset, max, params)]
 
 
-    if (total > offset+max) {
+    if (total > offset + max) {
       result['_links']['next'] = [href: restMappingService.buildUrlString(endpoint, 'next', offset, max, params)]
     }
     if (offset > 0) {
       result['_links']['prev'] = [href: restMappingService.buildUrlString(endpoint, 'prev', offset, max, params)]
     }
-
-    return result
   }
 
-  CuratoryGroup findCuratoryGroupOfInterest(KBComponent component, User user = null, def activeGroup = null){
+  public CuratoryGroup findCuratoryGroupOfInterest(KBComponent component, User user = null, def activeGroup = null) {
     CuratoryGroup activeCuratoryGroup = null
 
     if (activeGroup instanceof CuratoryGroup) {
@@ -950,7 +951,7 @@ class ComponentLookupService {
       }
     }
 
-    def curated_component = KBComponent.has(component, 'curatoryGroups') ? component : (component.class == TitleInstancePackagePlatform ? component.pkg : null)
+    KBComponent curated_component = KBComponent.has(component, 'curatoryGroups') ? component : (component.class == TitleInstancePackagePlatform ? component.pkg : null)
 
     if (!curated_component) {
       String component_classname = component.class.getSimpleName()
@@ -1000,19 +1001,5 @@ class ComponentLookupService {
     }
 
     return null
-  }
-
-  public boolean isUserCurator(KBComponent obj, User user) {
-    boolean isCurator = true
-
-    if (KBComponent.has(obj, 'curatoryGroups')) {
-      if (obj.curatoryGroups.size() > 0) {
-        if (!user.curatoryGroups?.id.intersect(obj.curatoryGroups.id)) {
-          isCurator = false
-        }
-      }
-    }
-
-    return isCurator
   }
 }

@@ -8,6 +8,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 
 import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 
 @Transactional(readOnly = true)
 class TippController {
@@ -28,27 +29,26 @@ class TippController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def result = [:]
-    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
+    Map result = [:]
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
-    def es_search = params.es ? true : false
+    boolean es_search = params.boolean('es') ?: false
 
     params.componentType = "TIPP" // Tells ESSearchService what to look for
 
     if (es_search) {
       params.remove('es')
-      def start_es = LocalDateTime.now()
+      LocalDateTime start_es = LocalDateTime.now()
       result = ESSearchService.find(params, null, user)
-      log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+      log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis()}")
     }
     else {
-      def start_db = LocalDateTime.now()
+      LocalDateTime start_db = LocalDateTime.now()
       result = componentLookupService.restLookup(user, TitleInstancePackagePlatform, params)
-      log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+      log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis()}")
     }
     if (result.result == 'ERROR') {
       response.status = (result.status ?: 500)
@@ -59,9 +59,7 @@ class TippController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
-    def result = [:]
-    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
-    def is_curator = true
+    Map result = [:]
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -69,7 +67,7 @@ class TippController {
     }
 
     if (params.oid || params.id) {
-      def obj = TitleInstancePackagePlatform.findByUuid(params.id)
+      TitleInstancePackagePlatform obj = TitleInstancePackagePlatform.findByUuid(params.id)
 
       if (!obj) {
         obj = TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
@@ -98,43 +96,41 @@ class TippController {
   @Transactional
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def save() {
-    def result = ['result': 'OK', 'params': params]
-    def reqBody = request.JSON
+    Map result = ['result': 'OK', 'params': params]
+    JSONObject reqBody = request.JSON
     Boolean changed = true
-    def errors = [:]
-    def user = User.get(springSecurityService.principal.id)
-    def pkg = null
+    Map errors = [:]
+    User user = User.get(springSecurityService.principal.id)
+    Package pkg = null
 
     if (reqBody?.pkg) {
       pkg = Package.get(reqBody.pkg)
     }
 
     if (pkg) {
-      def curator = pkg?.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
-
-      if (curator) {
+      if (componentUpdateService.isUserCurator(pkg, user)) {
         log.debug("Incoming: ${reqBody}")
-        def tipp_validation = tippService.validateDTO(reqBody)
+        Map tipp_validation = tippService.validateDTO(reqBody)
 
         if (tipp_validation.valid) {
-          def obj = tippUpsertService.upsertDTO(reqBody, user)
+          TitleInstancePackagePlatform obj = tippUpsertService.upsertDTO(reqBody, user)
 
           if (obj?.validate()) {
             response.status = 201
 
-            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+            Map variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
             if (variant_result.errors.size() > 0) {
               errors.variantNames = variant_result.errors
             }
 
-            def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+            Map subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
 
             if (subject_result.errors.size() > 0) {
               errors.subjects = subject_result.errors
             }
 
-            errors << tippService.updateCombos(obj, reqBody, changed)
+            errors << tippService.updateLinks(obj, reqBody, changed)
 
             tippService.touchPackage(obj)
 
@@ -178,27 +174,26 @@ class TippController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    def result = [result: 'OK', params: params, changed: false]
-    def reqBody = request.JSON
-    def remove = (request.method == 'PUT')
-    def errors = [:]
+    Map result = [result: 'OK', params: params, changed: false]
+    JSONObject reqBody = request.JSON
+    boolean remove = (request.method == 'PUT')
+    Map errors = [:]
     boolean set_access_end = false
-    def user = User.get(springSecurityService.principal.id)
-    def obj = TitleInstancePackagePlatform.findByUuid(params.id)
+    User user = User.get(springSecurityService.principal.id)
+    TitleInstancePackagePlatform obj = TitleInstancePackagePlatform.findByUuid(params.id)
 
     if (!obj) {
       obj = TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
     }
 
     if (obj?.pkg && reqBody) {
-      def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
-
-      if (curator || user.isAdmin()) {
-        def active_pkg_jobs = concurrencyManagerService.getComponentJobs(obj.pkg.id)
+      if (componentUpdateService.isUserCurator(obj, user)) {
+        Map active_pkg_jobs = concurrencyManagerService.getComponentJobs(obj.pkg.id)
 
         if (active_pkg_jobs?.data?.size() == 0) {
           reqBody.id = reqBody.id ?: params.id // storing the TIPP ID in the JSON data for later use in upsertDTO
-          def tipp_validation = tippService.validateDTO(reqBody)
+
+          Map tipp_validation = tippService.validateDTO(reqBody)
 
           if (tipp_validation.valid) {
             if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
@@ -213,7 +208,7 @@ class TippController {
               set_access_end = true
             }
 
-            def jsonMap = obj.jsonMapping
+            Map jsonMap = obj.jsonMapping
 
             result.changed |= restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
@@ -222,7 +217,7 @@ class TippController {
               obj.accessEndDate = new Date()
             }
 
-            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+            Map variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
             result.changed |= variant_result.changed
 
@@ -230,7 +225,7 @@ class TippController {
               errors.variantNames = variant_result.errors
             }
 
-            def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+            Map subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
 
             result.changed |= subject_result.changed
 
@@ -240,7 +235,7 @@ class TippController {
 
             if (reqBody.prices != null) {
               log.debug("Updating prices ..")
-              def prices_result = restMappingService.updatePrices(obj, reqBody.prices, remove)
+              Map prices_result = restMappingService.updatePrices(obj, reqBody.prices, remove)
 
               result.changed |= prices_result.changed
 
@@ -249,7 +244,7 @@ class TippController {
               }
             }
 
-            errors << tippService.updateCombos(obj, reqBody, result.changed, remove)
+            errors << tippService.updateLinks(obj, reqBody, result.changed, remove)
 
             if (obj?.validate()) {
               if (reqBody.coverageStatements != null) {
@@ -305,14 +300,12 @@ class TippController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def delete() {
-    def result = ['result': 'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
-    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
+    Map result = ['result': 'OK', 'params': params]
+    User user = User.get(springSecurityService.principal.id)
+    TitleInstancePackagePlatform obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
 
     if (obj?.pkg && obj.isDeletable()) {
-      def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
-
-      if (curator || user.isAdmin()) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         obj.deleteSoft()
 
         componentUpdateService.closeConnectedReviews(obj)
@@ -339,14 +332,12 @@ class TippController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def retire() {
-    def result = ['result': 'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
-    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
+    Map result = ['result': 'OK', 'params': params]
+    User user = User.get(springSecurityService.principal.id)
+    TitleInstancePackagePlatform obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
 
     if (obj?.pkg && obj.isEditable()) {
-      def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
-
-      if (curator || user.isAdmin()) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         obj.retire()
       }
       else {
@@ -372,12 +363,12 @@ class TippController {
   @Transactional
   def bulk() {
     log.debug("Bulk update: ${params} - ${request.post}")
-    def result = ['result':'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
-    def reqBody = request.post ? request.JSON : null
+    Map result = ['result':'OK', 'params': params]
+    User user = User.get(springSecurityService.principal.id)
+    JSONObject reqBody = request.post ? request.JSON : null
 
     if (reqBody?.status) {
-      def status_rdv = null
+      RefdataValue status_rdv = null
 
       if (reqBody.status instanceof String) {
         status_rdv = RefdataCategory.lookup('KBComponent.Status', reqBody.status)
@@ -387,16 +378,16 @@ class TippController {
       }
 
       if (status_rdv) {
-        def accessible = []
-        def connected_pkg = []
-        def errors = []
+        List accessible = []
+        List connected_pkgs = []
+        List errors = []
 
         for (def tippId: reqBody.items) {
-          def tipp = TitleInstancePackagePlatform.findById(tippId)
+          TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findById(tippId)
 
           if (tipp && componentUpdateService.isUserCurator(tipp, user)) {
-            if (!connected_pkg.contains(tipp.pkg.id)) {
-              connected_pkg.add(tipp.pkg.id)
+            if (!connected_pkgs.contains(tipp.pkg.id)) {
+              connected_pkgs.add(tipp.pkg.id)
             }
             accessible.add(tipp.id)
           }
@@ -408,7 +399,7 @@ class TippController {
         TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set status = :status, lastUpdated = :date where id IN (:ids)", [status: status_rdv, ids: accessible, date: new Date()])
 
         connected_pkg.each {
-          def pkg = Package.get(it)
+          Package pkg = Package.get(it)
 
           pkg?.lastSeen = System.currentTimeMillis()
         }
@@ -426,7 +417,7 @@ class TippController {
       }
     }
     else if (params['_field']?.trim() && params['_value']?.trim()) {
-      def report = componentUpdateService.bulkUpdateField(user, TitleInstancePackagePlatform, params)
+      Map report = componentUpdateService.bulkUpdateField(user, TitleInstancePackagePlatform, params)
 
       if (report.errors > 0) {
         result.result = 'ERROR'
@@ -449,15 +440,13 @@ class TippController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
   @Transactional
   def setStatus() {
-    def result = ['result': 'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
-    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.findById(genericOIDService.oidToId(params.id))
+    Map result = ['result': 'OK', 'params': params]
+    User user = User.get(springSecurityService.principal.id)
+    TitleInstancePackagePlatform obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.findById(genericOIDService.oidToId(params.id))
 
     if (obj?.pkg && obj.isEditable()) {
-      def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
-
-      if (curator || user.isAdmin()) {
-        def status_rdv = null
+      if (componentUpdateService.isUserCurator(obj, user)) {
+        RefdataValue status_rdv = null
 
         if (params.int('status')) {
           status_rdv = RefdataValue.get(params.int('status'))
@@ -497,10 +486,10 @@ class TippController {
 
   @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
   def getCoverage() {
-    def result = [:]
-    def user = User.get(springSecurityService.principal.id)
-    def context = "/tipps/" + params.id + "/coverage"
-    def tipp = TitleInstancePackagePlatform.get(params.id)
+    Map result = [:]
+    User user = User.get(springSecurityService.principal.id)
+    String context = "/tipps/" + params.id + "/coverage"
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(params.id)
 
     if (tipp) {
       params.owner = tipp.id
@@ -521,19 +510,17 @@ class TippController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def merge() {
-    def result = ['result':'OK', 'params': params]
+    Map result = ['result':'OK', 'params': params]
     User user = User.get(springSecurityService.principal.id)
-    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
-    CuratoryGroup activeGroup = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
+    TitleInstancePackagePlatform obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
+    CuratoryGroup activeGroup = params.long('activeGroup') ? CuratoryGroup.get(params.long('activeGroup')) : null
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     Boolean keepOld = params.boolean('keepOld') ?: false
 
     if (obj && obj.isEditable()) {
-      def curator = componentUpdateService.isUserCurator(obj, user)
-
-      if (curator || user.isAdmin()) {
+      if (componentUpdateService.isUserCurator(obj, user)) {
         if (params.target) {
-          def target = obj.class.get(params.int('target'))
+          TitleInstancePackagePlatform target = TitleInstancePackagePlatform.get(params.long('target'))
 
           if (target) {
             tippService.mergeDuplicate(obj, target, user, activeGroup, keepOld)

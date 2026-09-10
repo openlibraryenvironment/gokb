@@ -120,9 +120,7 @@
           <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'}</span>
         </a></li>
         <li><a href="#relationships" data-toggle="tab">Relations</a></li>
-        <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}">
-          <li role="presentation"><a href="#ds" data-toggle="tab">Decision Support</a></li>
-        </g:if>
+        <li><a href="#files" data-toggle="tab">Files</a></li>
         <li role="presentation"><a href="#activity" data-toggle="tab">Activity</a></li>
         <li role="presentation"><a href="#review" data-toggle="tab">Review Requests</a></li>
         <g:if test="${grailsApplication.config.getProperty('gokb.costInfo', Boolean, false)}">
@@ -136,9 +134,7 @@
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Comments </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Relations </span></li>
-        <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}">
-          <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
-        </g:if>
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Import Files </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Activity </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Requests </span></li>
         <g:if test="${grailsApplication.config.getProperty('gokb.costInfo', Boolean, false)}">
@@ -163,8 +159,7 @@
             <g:annotatedLabel owner="${d}" property="nominalPlatform">Nominal Platform</g:annotatedLabel>
           </dt>
           <dd>
-            <g:manyToOneReferenceTypedown owner="${d}" field="nominalPlatform"
-              name="${comboprop}" baseClass="org.gokb.cred.Platform">
+            <g:manyToOneReferenceTypedown owner="${d}" field="nominalPlatform" baseClass="org.gokb.cred.Platform">
               ${d.nominalPlatform?.name ?: ''}
             </g:manyToOneReferenceTypedown>
           </dd>
@@ -217,31 +212,13 @@
         </g:if>
       </div>
 
-      <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+      <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:editable]}" />
 
-      <g:render template="/tabTemplates/showComments" model="${[d:displayobj, showActions:true]}" />
+      <g:render template="/tabTemplates/showComments" model="${[d:displayobj, showActions:editable]}" />
 
-      <div class="tab-pane" id="identifiers">
-        <dl>
-          <dt>
-            <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
-          </dt>
-          <dd>
-            <g:render template="/apptemplates/combosByType"
-              model="${[d:d, property:'ids', fragment:'identifiers', propagateDelete: "true", cols:[
-                        [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                        [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-            <g:if test="${editable}">
-              <h4>
-                <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
-              </h4>
-              <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
-            </g:if>
-          </dd>
-        </dl>
-      </div>
+      <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: editable]}" />
 
-      <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
+      <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:editable]}" />
 
       <div class="tab-pane" id="relationships">
         <g:if test="${d.id != null}">
@@ -293,8 +270,8 @@
         </g:if>
       </div>
 
-      <div class="tab-pane" id="ds">
-        <g:render template="/apptemplates/dstab" model="${[d:d]}" />
+      <div class="tab-pane" id="files">
+        <g:render template="/tabTemplates/showDataFiles" model="${[d:displayobj]}" />
       </div>
 
       <div class="tab-pane" id="activity">

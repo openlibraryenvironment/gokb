@@ -13,6 +13,7 @@ import java.time.LocalDateTime
 import org.gokb.DomainClassExtender
 import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
+import org.grails.web.json.JSONObject
 
 class TitleAugmentService {
 
@@ -25,6 +26,7 @@ class TitleAugmentService {
   def validationService
   def zdbAPIService
   def ezbAPIService
+  def restMappingService
 
 
   public Map augmentZdb(titleInstance) {
@@ -90,16 +92,16 @@ class TitleAugmentService {
         if (candidates.size() == 1) {
           if (num_existing_zdb_ids == 0) {
             Identifier new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
-            List conflicts = Combo.executeQuery('''from ComponentIdentifier as c
-                                                    where exists (
-                                                      select ti from JournalInstance as ti
-                                                      where ti.status != :deleted
-                                                      and ti.id = c.component.id
-                                                    )
-                                                    and c.component != :tic
-                                                    and c.identifier = :idc
-                                                    and c.status = :cstatus''',
-                                                    [deleted: status_deleted, tic: titleInstance, idc: new_id, cstatus: status_active])
+            List conflicts = ComponentIdentifier.executeQuery('''from ComponentIdentifier as c
+                                                                  where exists (
+                                                                    select ti from JournalInstance as ti
+                                                                    where ti.status != :deleted
+                                                                    and ti.id = c.component.id
+                                                                  )
+                                                                  and c.component != :tic
+                                                                  and c.identifier = :idc
+                                                                  and c.status = :cstatus''',
+                                                                  [deleted: status_deleted, tic: titleInstance, idc: new_id, cstatus: status_active])
 
             if (conflicts.size() > 0) {
               log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${conflicts*.component}")
@@ -327,12 +329,10 @@ class TitleAugmentService {
 
   public void touchTitleTipps (ti, boolean onlyCurrent = true, boolean skipPackageUpdate = false) {
     Date current_ts = new Date()
-    RefdataValue combo_title = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
-    RefdataValue combo_package = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
-    Map qry_params = [now: current_ts, ct: combo_title, title: ti]
+    Map qry_params = [now: current_ts, title: ti]
     String qry_string = '''update TitleInstancePackagePlatform as tipp set lastUpdated = :now where tipp.title = :title'''
 
     if (onlyCurrent) {
@@ -1066,15 +1066,13 @@ class TitleAugmentService {
     }
     else if (params.boolean('mergeIds')) {
       title_to_delete.ids.each { old_id ->
-        ComponentIdentifier old_link = ComponentIdentifier.findByFromComponentAndToComponent(title_to_delete, old_id)
+        ComponentIdentifier old_link = ComponentIdentifier.findByComponentAndIdentifier(title_to_delete, old_id)
         boolean is_duplicate = ComponentIdentifier.executeQuery('''Select c.id from ComponentIdentifier as c
-                                                                    where c.toComponent = :ido
-                                                                    and c.fromComponent = :nt
-                                                                    and c.type = :ct''',
+                                                                    where c.identifier = :ido
+                                                                    and c.component = :nt''',
                                                                     [
                                                                       ido: old_id,
-                                                                      nt: merge_target_title,
-                                                                      ct: id_combo_type
+                                                                      nt: merge_target_title
                                                                     ]).size() > 0
 
         if (!is_duplicate){
@@ -1132,6 +1130,40 @@ class TitleAugmentService {
     title_to_delete.save(flush: true)
 
     log.debug("Title is ${title_to_delete.status.value}!")
+
+    errors
+  }
+
+  public Map updateLinks(TitleInstance obj, JSONObject reqBody, Boolean changed, boolean remove = true) {
+    log.debug("Updating title links .. changed: ${changed}")
+    Map errors = [:]
+
+    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
+      List id_list = (reqBody.ids ?: reqBody.identifiers) as List
+
+      Map id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
+
+      changed |= id_result.changed
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
+      }
+    }
+
+    Map pub_result = restMappingService.updatePublisherList(obj, reqBody.publisher, remove)
+
+    changed |= pub_result.changed
+
+    if (pub_result.errors.size() > 0) {
+      errors.publisher = pub_result.errors
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
+      obj.save(flush: true)
+
+      touchTitleTipps(obj, false)
+    }
 
     errors
   }

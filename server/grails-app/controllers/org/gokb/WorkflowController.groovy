@@ -26,11 +26,11 @@ class WorkflowController{
   def titleAugmentService
   def platformService
   def orgService
+  def tippUpsertService
 
   def actionConfig = [
       'method::deleteSoft'     : [actionType: 'simple'],
       'title::transfer'        : [actionType: 'workflow', view: 'titleTransfer'],
-      'title::change'          : [actionType: 'workflow', view: 'titleChange'],
       'platform::replacewith'  : [actionType: 'workflow', view: 'platformReplacement'],
       'method::registerWebhook': [actionType: 'workflow', view: 'registerWebhook'],
       'method::RRTransfer'     : [actionType: 'workflow', view: 'revReqTransfer'],
@@ -171,26 +171,24 @@ class WorkflowController{
   }
 
   def startTitleChange(){
-
     log.debug("startTitleChange(${params})")
 
-    def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
-    def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleChange').save()
-    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    def combo_ti_tipps = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    RefdataValue active_status = RefdataCategory.lookup('Activity.Status', 'Active')
+    RefdataValue transfer_type = RefdataCategory.lookup('Activity.Type', 'TitleChange')
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
-    def titleChangeData = [:]
+    Map titleChangeData = [:]
     titleChangeData.title_ids = []
     titleChangeData.tipps = [:]
     titleChangeData.beforeTitles = params.list('beforeTitles')
     titleChangeData.afterTitles = params.list('afterTitles')
     titleChangeData.eventDate = params.list('eventDate')
-    def first_title = null
+    String first_title = null
 
-    def sw = new StringWriter()
+    StringWriter sw = new StringWriter()
 
     // Iterate through before titles.. For each one of these will will close out any existing tipps
-    params.list('beforeTitles').each{ title_oid ->
+    params.list('beforeTitles').each { title_oid ->
       log.debug("process ${title_oid}")
       if (first_title == null){
         first_title = title_oid
@@ -199,66 +197,64 @@ class WorkflowController{
         sw.write(', ')
       }
 
-      def title_obj = genericOIDService.resolveOID2(title_oid)
+      TitleInstance title_obj = genericOIDService.resolveOID2(title_oid)
       sw.write(title_obj.name)
 
       titleChangeData.title_ids.add(title_obj.id)
 
-      def tipps = TitleInstancePackagePlatform.executeQuery(
-          'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent = :ti and c.toComponent = tipp and tipp.status <> :sd and c.type = :ct',
-          [ti: title_obj, sd: status_deleted, ct: combo_ti_tipps])
+      List tipps = TitleInstancePackagePlatform.executeQuery(
+          'select tipp from TitleInstancePackagePlatform as tipp where tipp.title = :ti tipp.status <> :sd',
+          [ti: title_obj, sd: status_deleted])
+
       tipps.each{ tipp ->
-
-        if ((tipp.status != status_deleted) && (tipp.pkg.scope?.value != 'GOKb Master')){
-
+        if ((tipp.status != status_deleted) && (tipp.pkg.scope?.value != 'GOKb Master')) {
           log.debug("Add tipp to discontinue ${tipp}")
 
           titleChangeData.tipps[tipp.id] = [
               oldTippValue: [
-                  title_id   : tipp.title?.id,
-                  package_id : tipp.pkg.id,
-                  platform_id: tipp.hostPlatform.id,
-                  startDate  : tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
-                  startVolume: tipp.startVolume,
-                  startIssue : tipp.startIssue,
-                  endDate    : tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null,
-                  endVolume  : tipp.endVolume,
-                  endIssue   : tipp.endIssue,
-                  url        : tipp.url
+                title_id: tipp.title?.id,
+                package_id: tipp.pkg.id,
+                platform_id: tipp.hostPlatform.id,
+                startDate: tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
+                startVolume: tipp.startVolume,
+                startIssue: tipp.startIssue,
+                endDate: tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null,
+                endVolume: tipp.endVolume,
+                endIssue: tipp.endIssue,
+                url: tipp.url
               ],
-              newtipps    : []
+              newtipps: []
           ]
 
           params.list('afterTitles').each{ new_title_oid ->
-            def new_title_obj = genericOIDService.resolveOID2(new_title_oid)
-            def new_tipp_info = [
-                title_id   : new_title_obj.id,
-                package_id : tipp.pkg.id,
-                platform_id: tipp.hostPlatform.id,
-                startDate  : tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
-                startVolume: tipp.startVolume,
-                startIssue : tipp.startIssue,
-                endDate    : tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null,
-                endVolume  : tipp.endVolume,
-                url        : tipp.url,
-                endIssue   : tipp.endIssue]
+            TitleInstance new_title_obj = genericOIDService.resolveOID2(new_title_oid)
+            Map new_tipp_info = [
+              title_id: new_title_obj.id,
+              package_id: tipp.pkg.id,
+              platform_id: tipp.hostPlatform.id,
+              startDate: tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
+              startVolume: tipp.startVolume,
+              startIssue: tipp.startIssue,
+              endDate: tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null,
+              endVolume: tipp.endVolume,
+              url: tipp.url,
+              endIssue: tipp.endIssue
+            ]
+
             titleChangeData.tipps[tipp.id].newtipps.add(new_tipp_info)
           }
         }
       }
     }
 
-    def builder = new JsonBuilder()
-    builder(titleChangeData)
+    Activity new_activity = new Activity(
+      activityName: "Title Change ${sw.toString()}",
+      activityData: (titleChangeData as JSON).toString(),
+      owner: request.user,
+      status: active_status,
+      type: transfer_type).save(flush: true)
 
-    def new_activity = new Activity(
-        activityName: "Title Change ${sw.toString()}",
-        activityData: builder.toString(),
-        owner: request.user,
-        status: active_status,
-        type: transfer_type).save(flush: true)
-
-    log.debug("redirect to edit activity (Really title) ${builder.toString()}")
+    log.debug("redirect to edit activity (Really title) ${titleChangeData}")
 
     // if ( first_title )
     //   redirect(controller:'resource', action:'show', id:first_title)
@@ -268,30 +264,30 @@ class WorkflowController{
     redirect(action: 'editTitleChange', id: new_activity.id)
   }
 
-  def startTitleMerge(){
-
+  def startTitleMerge() {
     log.debug("startTitleMerge(${params})")
 
-    def user = springSecurityService.currentUser
-    def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
-    def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleMerge').save()
-    def first_title = null
+    User user = springSecurityService.currentUser
+    RefdataValue active_status = RefdataCategory.lookup('Activity.Status', 'Active')
+    RefdataValue transfer_type = RefdataCategory.lookup('Activity.Type', 'TitleMerge')
+    String first_title = null
 
-    def result = [:]
-    result.oldTitles = []
+    Map result = [
+      oldTitles: []
+    ]
 
-    def activity_data = [:]
+    Map activity_data = [:]
 
-    def oldIds = params.list('beforeTitles')
+    List oldIds = params.list('beforeTitles')
 
     activity_data.oldTitles = params.list('beforeTitles')
     activity_data.newTitle = params.newTitle
 
-    def sw = new StringWriter()
+    StringWriter sw = new StringWriter()
 
     log.debug("Titles to replace: ${oldIds}")
 
-    oldIds.each{ oid ->
+    oldIds.each { oid ->
       if (first_title == null){
         first_title = oid
       }
@@ -299,7 +295,7 @@ class WorkflowController{
         sw.write(', ')
       }
 
-      def title_obj = genericOIDService.resolveOID2(oid)
+      TitleInstance title_obj = genericOIDService.resolveOID2(oid)
 
       sw.write(title_obj.name)
 
@@ -308,17 +304,14 @@ class WorkflowController{
 
     result.newTitle = genericOIDService.resolveOID2(params.newTitle)
 
-    def builder = new JsonBuilder()
-    builder(activity_data)
+    Activity new_activity = new Activity(
+      activityName: "Title Merge ${sw.toString()}",
+      activityData: (titleChangeData as JSON).toString(),
+      owner: user,
+      status: active_status,
+      type: transfer_type).save(flush: true)
 
-    def new_activity = new Activity(
-        activityName: "Title Merge ${sw.toString()}",
-        activityData: builder.toString(),
-        owner: user,
-        status: active_status,
-        type: transfer_type).save(flush: true)
-
-    log.debug("redirect to edit activity (Really title) ${builder.toString()}")
+    log.debug("redirect to edit activity (Really title) ${titleChangeData}")
 
     // if ( first_title )
     //   redirect(controller:'resource', action:'show', id:first_title)
@@ -328,47 +321,45 @@ class WorkflowController{
     redirect(action: 'editTitleMerge', id: new_activity.id)
   }
 
-  def editTitleMerge(){
+  def editTitleMerge() {
     log.debug("editTitleMerge() - ${params}")
 
-    def activity_record = Activity.get(params.id)
-    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
-    def merge_params = [:]
+    Activity activity_record = Activity.get(params.id)
+    Map activity_data = new JsonSlurper().parseText(activity_record.activityData)
+    Map merge_params = [:]
 
-    request.getParameterNames().each{ pn ->
-      if (pn.startsWith("merge_")){
+    request.getParameterNames().each { pn ->
+      if (pn.startsWith("merge_")) {
         merge_params[pn] = request.getParameter(pn)
       }
     }
 
     if (params.update){
       log.debug("Update...")
-      def builder = new JsonBuilder()
-      builder(activity_data)
-      activity_record.activityData = builder.toString()
+      activity_record.activityData = (activity_data as JSON).toString()
       activity_record.save(flush: true)
     }
     else if (params.process){
       log.debug("Process...")
-
-      def builder = new JsonBuilder()
-      builder(activity_data)
-      activity_record.activityData = builder.toString()
+      activity_record.activityData = (activity_data as JSON).toString()
       activity_record.save(flush: true)
 
       processTitleMerge(activity_record, activity_data, merge_params)
-      if (activity_data.newTitle?.size() > 0){
+
+      if (activity_data.newTitle?.size() > 0) {
         redirect(controller: 'resource', action: 'show', id: activity_data.newTitle)
       }
-      else{
+      else {
         redirect(controller: 'home', action: 'index')
       }
     }
-    else if (params.abandon){
+    else if (params.abandon) {
       log.debug("**ABANDON**...")
-      activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
+
+      activity_record.status = RefdataCategory.lookup('Activity.Status', 'Abandoned')
       activity_record.save(flush: true)
-      if (activity_data.oldTitles?.size() > 0){
+
+      if (activity_data.oldTitles?.size() > 0) {
         redirect(controller: 'resource', action: 'show', id: activity_data.oldTitles[0])
       }
       else{
@@ -378,12 +369,12 @@ class WorkflowController{
 
     log.debug("Processing...")
 
-    def result = [:]
+    Map result = [:]
     result.oldTitles = []
     result.newTitle = genericOIDService.resolveOID2(activity_data.newTitle)
     result.d = activity_record
 
-    activity_data.oldTitles.each{ oid ->
+    activity_data.oldTitles.each { oid ->
       result.oldTitles.add(genericOIDService.resolveOID2(oid))
     }
 
@@ -392,803 +383,198 @@ class WorkflowController{
     result
   }
 
-  def startTitleTransfer(){
-    log.debug("startTitleTransfer")
-    def user = springSecurityService.currentUser
-    def result = [:]
-
-    result.titles = []
-    result.tipps = []
-    result.newtipps = [:]
-
-    def titleTransferData = [:]
-    titleTransferData.title_ids = []
-    titleTransferData.tipps = [:]
-
-    def sw = new StringWriter()
-
-    boolean first = true
-    params.each{ p ->
-      if ((p.key.startsWith('tt:')) && (p.value) && (p.value instanceof String)){
-        def tt = p.key.substring(3)
-        log.debug("Title to transfer: \"${tt}\"")
-        def title_instance = TitleInstance.get(tt)
-        // result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
-        // Find all tipps for the title and add to tipps
-        if (title_instance){
-          if (first == true){
-            first = false
-          }
-          else{
-            sw.write(", ")
-          }
-
-          sw.write(title_instance.name)
-
-          result.titles.add(title_instance)
-          titleTransferData.title_ids.add(title_instance.id)
-          title_instance.tipps.each{ tipp ->
-            if ((tipp.status?.value != 'Deleted') && (tipp.pkg.scope?.value != 'GOKb Master')){
-              result.tipps.add(tipp)
-              titleTransferData.tipps[tipp.id] = [
-                  oldTippValue: [
-                      title_id   : tipp.title?.id,
-                      package_id : tipp.pkg.id,
-                      platform_id: tipp.hostPlatform.id,
-                      startDate  : tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
-                      startVolume: tipp.startVolume,
-                      startIssue : tipp.startIssue,
-                      endDate    : tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null,
-                      endVolume  : tipp.endVolume,
-                      endIssue   : tipp.endIssue,
-                      url        : tipp.url
-                  ],
-                  newtipps    : []
-              ]
-            }
-          }
-        }
-        else{
-          log.error("Unable to locate title with that ID")
-        }
-      }
-    }
-
-    log.debug("loaded Title Data.. Looking up publisher")
-    result.newPublisher = genericOIDService.resolveOID2(params.title)
-
-    log.debug("Assigning new publisher")
-    titleTransferData.newPublisherId = result.newPublisher.id
-
-    log.debug("Build title transfer record")
-    def builder = new JsonBuilder()
-    builder(titleTransferData)
-
-    def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
-    def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleTransfer').save()
-
-
-    log.debug("Create activity")
-    def new_activity = new Activity(
-        activityName: "Title transfer ${sw.toString()} to ${result.newPublisher.name}",
-        activityData: builder.toString(),
-        owner: user,
-        status: active_status,
-        type: transfer_type).save(flush: true)
-
-    log.debug("Redirect to edit title transfer activity")
-    redirect(action: 'editTitleTransfer', id: new_activity.id)
-  }
-
-  def editTitleTransfer(){
-    log.debug("editTitleTransfer() - ${params}")
-
-    def activity_record = Activity.get(params.id)
-    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
-
-    // Pull in all updated tipp properties like start volumes, etc.
-    request.getParameterNames().each{ pn ->
-      def value = request.getParameter(pn)
-      log.debug("Checking ${pn} : ${value}")
-      if (pn.startsWith('_tippdata')){
-        def key_components = pn.split(':')
-        if (activity_data.tipps[key_components[1]] != null){
-          if ((value != null) && (value.length() > 0)){
-            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = value
-          }
-          else{
-            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = null
-          }
-        }
-        else{
-          log.error("Unable to locate data for tipp ${key_components[1]} in ${activity_data}")
-        }
-      }
-      else if (pn.startsWith('_oldtipp')){
-        def key_components = pn.split(':')
-
-        if (activity_data.tipps[key_components[1]].oldTippValue == null){
-          activity_data.tipps[key_components[1]].oldTippValue = [:]
-        }
-
-        if ((value != null) && (value.length() > 0)){
-          activity_data.tipps[key_components[1]].oldTippValue[key_components[2]] = value
-        }
-        else{
-          activity_data.tipps[key_components[1]].oldTippValue[key_components[2]] = null
-        }
-      }
-    }
-
-    if (params.addTransferTipps){
-      // Add Transfer tipps
-      log.debug("Add transfer tipps")
-      if ((params.Package != null) && (params.Platform != null)){
-        def new_tipp_package = genericOIDService.resolveOID2(params.Package)
-        def new_tipp_platform = genericOIDService.resolveOID2(params.Platform)
-        if ((new_tipp_package != null) && (new_tipp_platform != null)){
-          params.each{ p ->
-            if (p.key.startsWith('addto-')){
-              def tipp_id = p.key.substring(6)
-              log.debug("Add new tipp for ${new_tipp_package}, ${new_tipp_platform} to replace ${tipp_id}")
-              def old_tipp = KBComponent.get(tipp_id)
-              log.debug("Old Tipp: ${old_tipp}")
-              def tipp_info = activity_data.tipps[tipp_id]
-
-              if (tipp_info != null){
-
-                if (tipp_info.newtipps == null){
-                  tipp_info.newtipps = [:]
-                }
-
-                def new_tipp_info = [
-                    title_id   : old_tipp.title?.id,
-                    package_id : new_tipp_package.id,
-                    platform_id: new_tipp_platform.id,
-                    startDate  : old_tipp.startDate ? dateFormatService.formatDate(old_tipp.startDate) : null,
-                    startVolume: old_tipp.startVolume,
-                    startIssue : old_tipp.startIssue,
-                    endDate    : old_tipp.endDate ? dateFormatService.formatDate(old_tipp.endDate) : null,
-                    endVolume  : old_tipp.endVolume,
-                    endIssue   : old_tipp.endIssue,
-                    url        : old_tipp.url]
-                log.debug("new_tipp_info :: ${new_tipp_info}")
-                tipp_info.newtipps.add(new_tipp_info)
-              }
-              else{
-                log.error("Unable to find key (${tipp_id}) In map: ${activity_data.tipps}")
-              }
-            }
-          }
-
-          // Update the activity data in the database
-          def builder = new JsonBuilder()
-          builder(activity_data)
-          activity_record.activityData = builder.toString()
-          activity_record.save(flush: true)
-        }
-        else{
-          log.error("Add transfer tipps but failed to resolve package(${params.Package}) or platform(${params.Platform})")
-        }
-      }
-      else{
-        log.error("Add transfer tipps but package or platform not set")
-      }
-    }
-    else if (params.update){
-      log.debug("Update...")
-      def builder = new JsonBuilder()
-      builder(activity_data)
-      activity_record.activityData = builder.toString()
-      activity_record.save(flush: true)
-    }
-    else if (params.remove){
-      log.debug("remove... ${params.remove}")
-      def remove_components = params.remove.split(':')
-      activity_data.tipps[remove_components[0]].newtipps.remove(Integer.parseInt(remove_components[1]))
-      def builder = new JsonBuilder()
-      builder(activity_data)
-      activity_record.activityData = builder.toString()
-      activity_record.save(flush: true)
-    }
-    else if (params.process){
-      def builder = new JsonBuilder()
-      builder(activity_data)
-      activity_record.activityData = builder.toString()
-      activity_record.save(flush: true)
-
-      log.debug("Process...")
-
-      processTitleTransfer(activity_record, activity_data)
-
-      if (activity_data.title_ids?.size() > 0){
-        redirect(controller: 'resource', action: 'show', id: 'org.gokb.cred.TitleInstance:' + activity_data.title_ids[0])
-      }
-      else{
-        redirect(controller: 'home', action: 'index')
-      }
-    }
-    else if (params.abandon){
-      log.debug("**ABANDON**...")
-      activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
-      activity_record.save(flush: true)
-      if (activity_data.title_ids?.size() > 0){
-        redirect(controller: 'resource', action: 'show', id: 'org.gokb.cred.TitleInstance:' + activity_data.title_ids[0])
-      }
-      else{
-        redirect(controller: 'home', action: 'index')
-      }
-    }
-
-    log.debug("Processing...")
-
-    def result = [:]
-    result.titles = []
-    result.tipps = []
-    result.d = activity_record
-
-    activity_data.title_ids.each{ tid ->
-      result.titles.add(TitleInstance.get(tid))
-    }
-
-
-    activity_data.tipps.each{ tipp_info ->
-      def tipp_object = TitleInstancePackagePlatform.get(tipp_info.key)
-      result.tipps.add([
-          id          : tipp_object.id,
-          type        : 'CURRENT',
-          title       : tipp_object.title?:null,
-          pkg         : tipp_object.pkg,
-          hostPlatform: tipp_object.hostPlatform,
-          startDate   : tipp_info.value.oldTippValue?.startDate,
-          startVolume : tipp_info.value.oldTippValue?.startVolume,
-          startIssue  : tipp_info.value.oldTippValue?.startIssue,
-          endDate     : tipp_info.value.oldTippValue?.endDate,
-          endVolume   : tipp_info.value.oldTippValue?.endVolume,
-          endIssue    : tipp_info.value.oldTippValue?.endIssue,
-          url         : tipp_info.value.oldTippValue?.url
-      ])
-      int seq = 0
-      // .value because tipp_info is a map...
-      tipp_info.value.newtipps.each{ newtipp_info ->
-        result.tipps.add([
-            type        : 'NEW',
-            parent      : tipp_object.id,
-            seq         : seq++,
-            title       : KBComponent.get(newtipp_info.title_id),
-            pkg         : KBComponent.get(newtipp_info.package_id),
-            hostPlatform: KBComponent.get(newtipp_info.platform_id),
-            startDate   : newtipp_info.startDate,
-            startVolume : newtipp_info.startVolume,
-            startIssue  : newtipp_info.startIssue,
-            endDate     : newtipp_info.endDate,
-            endVolume   : newtipp_info.endVolume,
-            endIssue    : newtipp_info.endIssue,
-            review      : newtipp_info.review,
-            url         : newtipp_info.url
-        ])
-      }
-    }
-
-    result.newPublisher = Org.get(activity_data.newPublisherId)
-    result.id = params.id
-
-    result
-  }
-
-  def editTitleChange(){
-    log.debug("editTitleChange() - ${params}")
-
-    def activity_record = Activity.get(params.id)
-    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
-
-
-    // Pull in all updated tipp properties like start volumes, etc.
-    request.getParameterNames().each{ pn ->
-      def value = request.getParameter(pn)
-      if (pn.startsWith('_tippdata')){
-        def key_components = pn.split(':')
-
-        log.debug("Set ${key_components} = ${value}")
-
-        if (activity_data.tipps[key_components[1]] != null){
-          if ((value != null) && (value.length() > 0)){
-            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = value
-          }
-          else{
-            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = null
-          }
-        }
-        else{
-          log.error("Unable to locate data for tipp ${key_components[1]} in ${activity_data}")
-        }
-      }
-      else if (pn.startsWith('_oldtipp')){
-        def key_components = pn.split(':')
-        log.debug("Set ${key_components} = ${value}")
-        if (activity_data.tipps[key_components[1]].oldTippValue == null){
-          activity_data.tipps[key_components[1]].oldTippValue = [:]
-        }
-
-        if ((value != null) && (value.length() > 0)){
-          activity_data.tipps[key_components[1]].oldTippValue[key_components[2]] = value
-        }
-        else{
-          activity_data.tipps[key_components[1]].oldTippValue[key_components[2]] = null
-        }
-      }
-    }
-
-    if (params.update){
-      log.debug("Update...")
-      def builder = new JsonBuilder()
-      builder(activity_data)
-      activity_record.activityData = builder.toString()
-      activity_record.save(flush: true)
-    }
-    else if (params.remove){
-      log.debug("remove... ${params.remove}")
-      def remove_components = params.remove.split(':')
-      activity_data.tipps[remove_components[0]].newtipps.remove(Integer.parseInt(remove_components[1]))
-      def builder = new JsonBuilder()
-      builder(activity_data)
-      activity_record.activityData = builder.toString()
-      activity_record.save(flush: true)
-    }
-    else if (params.process){
-      log.debug("Process...")
-      def builder = new JsonBuilder()
-      builder(activity_data)
-      activity_record.activityData = builder.toString()
-      activity_record.save(flush: true)
-
-      processTitleChange(activity_record, activity_data)
-      if (activity_data.title_ids?.size() > 0){
-        redirect(controller: 'resource', action: 'show', id: 'org.gokb.cred.TitleInstance:' + activity_data.title_ids[0])
-      }
-      else{
-        redirect(controller: 'home', action: 'index')
-      }
-    }
-    else if (params.abandon){
-      log.debug("**ABANDON**...")
-      activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
-      activity_record.save(flush: true)
-      if (activity_data.title_ids?.size() > 0){
-        redirect(controller: 'resource', action: 'show', id: 'org.gokb.cred.TitleInstance:' + activity_data.title_ids[0])
-      }
-      else{
-        redirect(controller: 'home', action: 'index')
-      }
-    }
-
-    log.debug("Processing...")
-    def result = [:]
-    result.titles = []
-    result.tipps = []
-    result.d = activity_record
-
-    activity_data.title_ids.each{ tid ->
-      result.titles.add(TitleInstance.get(tid))
-    }
-
-
-    activity_data.tipps.each{ tipp_info ->
-      def tipp_object = TitleInstancePackagePlatform.get(tipp_info.key)
-      result.tipps.add([
-          id          : tipp_object.id,
-          type        : 'CURRENT',
-          title       : tipp_object.title?.null,
-          pkg         : tipp_object.pkg,
-          hostPlatform: tipp_object.hostPlatform,
-          startDate   : tipp_info.value.oldTippValue?.startDate,
-          startVolume : tipp_info.value.oldTippValue?.startVolume,
-          startIssue  : tipp_info.value.oldTippValue?.startIssue,
-          endDate     : tipp_info.value.oldTippValue?.endDate,
-          endVolume   : tipp_info.value.oldTippValue?.endVolume,
-          endIssue    : tipp_info.value.oldTippValue?.endIssue,
-          url         : tipp_info.value.oldTippValue?.url
-      ])
-      int seq = 0
-      tipp_info.value.newtipps.each{ newtipp_info ->
-        result.tipps.add([
-            type        : 'NEW',
-            parent      : tipp_object.id,
-            seq         : seq++,
-            title       : KBComponent.get(newtipp_info.title_id),
-            pkg         : KBComponent.get(newtipp_info.package_id),
-            hostPlatform: KBComponent.get(newtipp_info.platform_id),
-            startDate   : newtipp_info.startDate,
-            startVolume : newtipp_info.startVolume,
-            startIssue  : newtipp_info.startIssue,
-            endDate     : newtipp_info.endDate,
-            endVolume   : newtipp_info.endVolume,
-            endIssue    : newtipp_info.endIssue,
-            review      : newtipp_info.review,
-            url         : newtipp_info.url
-        ])
-      }
-    }
-
-    result.id = params.id
-
-    result
-  }
-
-  @Transactional
-  def processTitleChange(activity_record, activity_data){
-
-    activity_data.tipps.each{ tipp_map_entry ->
-
-      def current_tipp = TitleInstancePackagePlatform.get(tipp_map_entry.key)
-
-      tipp_map_entry.value.newtipps.each{ newtipp ->
-        log.debug("Process new tipp : ${newtipp}")
-        def new_package = Package.get(newtipp.package_id)
-        def new_platform = Platform.get(newtipp.platform_id)
-
-        def new_title = TitleInstance.get(newtipp.title_id)
-        // def new_tipp = new TitleInstancePackagePlatform(
-        def new_tipp = TitleInstancePackagePlatform.upsertDTO([
-            package    : ['internalId': new_package.id],
-            platform   : ['internalId': new_platform.id],
-            title      : ['internalId': current_tipp.title?.id],
-            startDate  : newtipp.startDate,
-            startVolume: newtipp.startVolume,
-            startIssue : newtipp.startIssue,
-            endDate    : newtipp.endDate,
-            endVolume  : newtipp.endVolume,
-            endIssue   : newtipp.endIssue,
-            url        : newtipp.url
-        ], user).save(flush: true, failOnError: true)
-
-        if (newtipp.review == 'on'){
-          reviewRequestService.raise(
-            new_tipp,
-            'New tipp - please review',
-            'A Title change cause this new tipp to be created',
-            request.user,
-            null,
-            null,
-            null,
-            componentLookupService.findCuratoryGroupOfInterest(new_tipp, request.user))
-        }
-      }
-
-
-      // Update old tipp
-      def parsed_start_date = null
-      def parsed_end_date = null
-      try{
-        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.startDate) : null
-        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.endDate) : null
-      }
-      catch (Exception e){
-      }
-
-      current_tipp.startDate = parsed_start_date
-      current_tipp.startVolume = tipp_map_entry.value.oldTippValue.startVolume
-      current_tipp.startIssue = tipp_map_entry.value.oldTippValue.startIssue
-      current_tipp.endDate = parsed_end_date
-      current_tipp.endVolume = tipp_map_entry.value.oldTippValue.endVolume
-      current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue
-      log.debug("Saving current tipp")
-      current_tipp.save()
-
-
-      // Retire the tipp if
-      if (params["oldtipp_close:${tipp_map_entry.key}"] == 'on'){
-        log.debug("Retiring old tipp")
-        current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
-        if (params["oldtipp_review:${tipp_map_entry.key}"] == 'on'){
-          reviewRequestService.raise(current_tipp, 'please review TIPP record', 'A Title change has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
-        }
-      }
-      else{
-        if (params["oldtipp_review:${tipp_map_entry.key}"] == 'on'){
-          reviewRequestService.raise(current_tipp, 'please review TIPP record', 'A Title change has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
-        }
-      }
-    }
-
-
-    // Default to today if not set
-    def event_date = activity_data.eventDate ?: dateFormatService.formatDate(new Date())
-// Create title history event
-    def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate: dateFormatService.parseDate(event_date)).save()
-
-    activity_data.afterTitles?.each{ at ->
-      def component = genericOIDService.resolveOID2(at)
-      def after_participant = new ComponentHistoryEventParticipant(event: newTitleHistoryEvent,
-          participant: component,
-          participantRole: 'out').save()
-    }
-
-    activity_data.beforeTitles?.each{ bt ->
-      def component = genericOIDService.resolveOID2(bt)
-      def after_participant = new ComponentHistoryEventParticipant(event: newTitleHistoryEvent,
-          participant: component,
-          participantRole: 'in').save()
-    }
-
-
-    activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
-    activity_record.save(flush: true)
-  }
-
   @Transactional
   def processTitleMerge(activity_record, activity_data, merge_params){
     log.debug("processTitleMerge ${params}\n\n ${activity_data}")
-    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
-    def rr_status_current = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open')
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue rr_status_current = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+    RefdataValue rr_status_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
 
-    def new_ti = genericOIDService.resolveOID2(activity_data.newTitle)
-    def new_he = new_ti.getTitleHistory()
+    TitleInstance new_ti = genericOIDService.resolveOID2(activity_data.newTitle)
+    List new_he = new_ti.getTitleHistory()
 
-    activity_data.oldTitles.each{ oid ->
-      def old_ti = genericOIDService.resolveOID2(oid)
+    activity_data.oldTitles.each { oid ->
+      TitleInstance old_ti = genericOIDService.resolveOID2(oid)
 
-      if (!old_ti.name.equals(new_ti.name)){
-        def added = new_ti.addVariantTitle(old_ti.name)
+      if (!old_ti.name.equals(new_ti.name)) {
+        new_ti.addVariantTitle(old_ti.name)
       }
 
-      if (merge_params['merge_ids']){
+      if (merge_params['merge_ids']) {
         log.debug("Looking for new IDs to add")
-        def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
 
-        old_ti.ids.each{ old_id ->
+        old_ti.ids.each { old_id ->
+          ComponentIdentifier old_ci = ComponentIdentifier.findByComponentAndIdentifier(old_ti, old_id)
+          List dupes = ComponentIdentifier.executeQuery("Select c from ComponentIdentifier as c where c.identifier.id = :ido and c.component.id = :ti", [ido: old_id.id, ti: new_ti.id])
 
-          def old_combo = Combo.findByFromComponentAndToComponent(old_ti, old_id)
-
-          def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = :ido and c.fromComponent.id = :ti and c.type.id = :ct", [ido: old_id.id, ti: new_ti.id, ct: id_combo_type.id])
-          if (!dupes || dupes.size() == 0){
+          if (!dupes || dupes.size() == 0) {
             log.debug("Adding Identifier ${old_id} to ${new_ti}")
-            Combo new_id = new Combo(toComponent: old_id, fromComponent: new_ti, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
+            ComponentIdentifier new_id = new ComponentIdentifier(identifier: old_id, component: new_ti, status: old_ci.status).save(flush: true, failOnError: true)
           }
-          else{
+          else {
             log.debug("Identifier ${old_id} is already connected to ${new_ti}..")
           }
         }
       }
-      if (merge_params['merge_vn']){
+
+      if (merge_params['merge_vn']) {
         old_ti.variantNames.each{ old_vn ->
           new_ti.addVariantTitle(old_vn.variantName)
         }
       }
-      if (merge_params['merge_pb']){
+
+      if (merge_params['merge_pb']) {
         old_ti.publisher.each{ old_pb ->
-          if (!new_ti.publisher.contains(old_pb)){
+          if (!new_ti.publisher.contains(old_pb)) {
             new_ti.publisher.add(old_pb)
           }
         }
       }
-      if (merge_params['merge_he']){
-        def ti_history = old_ti.getTitleHistory()
-        ti_history.each{ ohe ->
-          def new_from = []
-          def new_to = []
-          def dupe = false
-          if (ohe.to.contains(old_ti)){
-            ohe.to.removeIf{ it == old_ti }
+
+      if (merge_params['merge_he']) {
+        List ti_history = old_ti.getTitleHistory()
+
+        ti_history.each { ohe ->
+          List new_from = []
+          List new_to = []
+          boolean dupe = false
+
+          if (ohe.to.contains(old_ti)) {
+            ohe.to.removeIf { it == old_ti }
             ohe.to.add(new_ti)
             new_to = ohe.to
-            ohe.from.each{ hep ->
-              def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)", [fromPart: hep, toPart: new_ti])
-              if (he_match){
+
+            ohe.from.each { hep ->
+              List he_match = ComponentHistoryEvent.executeQuery('''select che from ComponentHistoryEvent as che
+                                                                    where exists (
+                                                                      select chep from ComponentHistoryEventParticipant as chep
+                                                                      where chep.event = che
+                                                                      and chep.participant = :fromPart
+                                                                    )
+                                                                    AND exists (
+                                                                      select chep from ComponentHistoryEventParticipant as chep
+                                                                      where chep.event = che
+                                                                      and chep.participant = :toPart
+                                                                    )''', [fromPart: hep, toPart: new_ti])
+              if (he_match) {
                 dupe = true
               }
             }
             new_from = ohe.from
           }
-          else if (ohe.from.contains(old_ti)){
-            ohe.from.removeIf{ it == old_ti }
+          else if (ohe.from.contains(old_ti)) {
+            ohe.from.removeIf { it == old_ti }
             ohe.from.add(new_ti)
             new_from = ohe.from
-            ohe.from.each{ hep ->
-              def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)", [fromPart: new_ti, toPart: hep])
-              if (he_match){
+
+            ohe.from.each { hep ->
+              def he_match = ComponentHistoryEvent.executeQuery('''select che from ComponentHistoryEvent as che
+                                                                    where exists (
+                                                                      select chep from ComponentHistoryEventParticipant as chep
+                                                                      where chep.event = che
+                                                                      and chep.participant = :fromPart
+                                                                    )
+                                                                    AND exists (
+                                                                      select chep from ComponentHistoryEventParticipant as chep
+                                                                      where chep.event = che
+                                                                      and chep.participant = :toPart
+                                                                    )''', [fromPart: new_ti, toPart: hep])
+              if (he_match) {
                 dupe = true
               }
             }
             new_to = ohe.to
           }
-          if (!dupe){
-            def he = new ComponentHistoryEvent()
-            if (ohe.date){
+          if (!dupe) {
+            ComponentHistoryEvent he = new ComponentHistoryEvent()
+
+            if (ohe.date) {
               he.eventDate = ohe.date
             }
+
             he.save(flush: true, failOnError: true)
-            new_from.each{
-              def hep = new ComponentHistoryEventParticipant(event: he, participant: it, participantRole: 'in')
-              hep.save(flush: true, failOnError: true)
+
+            new_from.each {
+              new ComponentHistoryEventParticipant(event: he, participant: it, participantRole: 'in').save(flush: true, failOnError: true)
             }
-            new_to.each{
-              def hep = new ComponentHistoryEventParticipant(event: he, participant: it, participantRole: 'out')
-              hep.save(flush: true, failOnError: true)
+
+            new_to.each {
+              new ComponentHistoryEventParticipant(event: he, participant: it, participantRole: 'out').save(flush: true, failOnError: true)
             }
           }
         }
       }
 
-      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: old_ti])
+      List events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: old_ti])
 
-      events_to_delete.each{
+      events_to_delete.each {
         it.delete(flush: true)
       }
-      old_ti.tipps.each{ old_tipp ->
-        if (merge_params['merge_tipps'] && old_tipp.status == status_current){
-          def tipp_dto = [:]
+
+      old_ti.tipps.each { old_tipp ->
+        if (merge_params['merge_tipps'] && old_tipp.status == status_current) {
+          Map tipp_dto = [:]
           tipp_dto.package = ['internalId': old_tipp.pkg.id]
           tipp_dto.platform = ['internalId': old_tipp.hostPlatform.id]
           tipp_dto.title = ['internalId': new_ti.id]
+
           if (old_tipp.paymentType?.value) tipp_dto.paymentType = old_tipp.paymentType?.value
           tipp_dto.url = old_tipp.url ?: ""
           tipp_dto.coverage = []
 
-          old_tipp.coverageStatements.each{ otcs ->
-            def cst = [
-                'startVolume'  : otcs.startVolume ?: "",
-                'startIssue'   : otcs.startIssue ?: "",
-                'endVolume'    : otcs.endVolume ?: "",
-                'endIssue'     : otcs.endIssue ?: "",
-                'embargo'      : otcs.embargo ?: "",
-                'coverageNote' : otcs.coverageNote ?: "",
-                'startDate'    : otcs.startDate ? dateFormatService.formatTimestampMs(otcs.startDate) : "",
-                'endDate'      : otcs.endDate ? dateFormatService.formatTimestampMs(otcs.endDate) : "",
-                'coverageDepth': old_tipp.coverageDepth?.value ?: ""
+          old_tipp.coverageStatements.each { otcs ->
+            Map cst = [
+              startVolume: otcs.startVolume ?: "",
+              startIssue: otcs.startIssue ?: "",
+              endVolume: otcs.endVolume ?: "",
+              endIssue: otcs.endIssue ?: "",
+              embargo: otcs.embargo ?: "",
+              coverageNote: otcs.coverageNote ?: "",
+              startDate: otcs.startDate ? dateFormatService.formatTimestampMs(otcs.startDate) : "",
+              endDate: otcs.endDate ? dateFormatService.formatTimestampMs(otcs.endDate) : "",
+              coverageDepth: old_tipp.coverageDepth?.value ?: ""
             ]
             tipp_dto.coverage.add(cst)
           }
-          def new_tipp = TitleInstancePackagePlatform.upsertDTO(tipp_dto, request.user)
+
+          TitleInstancePackagePlatform new_tipp = tippUpsertService.upsertDTO(tipp_dto, request.user)
           log.debug("Added new TIPP ${new_tipp} to TI ${new_ti}")
         }
         old_tipp.status = status_deleted
+        old_tipp.save(flush: true)
       }
-      old_ti.reviewRequests.each{ rr ->
-        def rr_context = [:]
+
+      old_ti.reviewRequests.each { rr ->
+        Map rr_context = [:]
         rr_context['user'] = request.user
 
-        if (rr.status == rr_status_current){
-          rr.RRClose(rr_context)
+        if (rr.status == rr_status_current) {
+          rr.status = rr_status_closed
+          rr.save(flush: true)
         }
       }
+
       old_ti.status = status_deleted
+      old_ti.save(flush: true)
     }
 
-    activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
-    activity_record.save(flush: true)
-  }
-
-  @Transactional
-  def processTitleTransfer(activity_record, activity_data){
-    log.debug("processTitleTransfer ${params}\n\n ${activity_data}")
-    def user = springSecurityService.currentUser
-
-    def publisher = Org.get(activity_data.newPublisherId)
-    // Step one : Close off existing title publisher links and create new publisher links
-    activity_data.title_ids.each{ title_id ->
-      log.debug("Process title_id ${title_id} and change publisher to ${publisher}")
-      def title = TitleInstance.get(title_id)
-      titleAugmentService.changePublisher(title, publisher)
-    }
-
-    // Step two : Process TIPP adjustments
-    activity_data.tipps.each{ tipp_map_entry ->
-      def current_tipp = TitleInstancePackagePlatform.get(tipp_map_entry.key)
-      log.debug("Processing current tipp : ${current_tipp.id}")
-      tipp_map_entry.value.newtipps.each{ newtipp ->
-        log.debug("Process new tipp : ${newtipp}")
-        if (tipp_map_entry.value.oldTippValue?.startDate){
-          try{
-            current_tipp.startDate = dateFormatService.parseDate(tipp_map_entry.value.oldTippValue?.startDate)
-          }
-          catch (Exception e){
-          }
-        }
-        if (tipp_map_entry.value.oldTippValue?.startVolume){
-          current_tipp.startVolume = tipp_map_entry.value.oldTippValue?.startVolume
-        }
-        if (tipp_map_entry.value.oldTippValue?.startIssue){
-          current_tipp.startIssue = tipp_map_entry.value.oldTippValue?.startIssue
-        }
-
-        if (tipp_map_entry.value.oldTippValue?.endDate){
-          try{
-            current_tipp.endDate = dateFormatService.parseDate(tipp_map_entry.value.oldTippValue?.endDate)
-          }
-          catch (Exception e){
-          }
-        }
-        if (tipp_map_entry.value.oldTippValue?.endVolume){
-          current_tipp.endVolume = tipp_map_entry.value.oldTippValue?.endVolume
-        }
-        if (tipp_map_entry.value.oldTippValue?.endIssue){
-          current_tipp.endIssue = tipp_map_entry.value.oldTippValue?.endIssue
-        }
-
-        def new_package = Package.get(newtipp.package_id)
-        def new_platform = Platform.get(newtipp.platform_id)
-
-        // def new_tipp = new TitleInstancePackagePlatform(
-        def new_tipp = TitleInstancePackagePlatform.upsertDTO([
-            package    : ['internalId': new_package.id],
-            platform   : ['internalId': new_platform.id],
-            title      : ['internalId': current_tipp.title.id],
-            startDate  : newtipp.startDate,
-            startVolume: newtipp.startVolume,
-            startIssue : newtipp.startIssue,
-            endDate    : newtipp.endDate,
-            endVolume  : newtipp.endVolume,
-            endIssue   : newtipp.endIssue,
-            url        : newtipp.url
-        ], user).save(flush: true, failOnError: true)
-
-        if (newtipp.review == 'on'){
-          log.debug("User requested a review request be generated for this new tipp")
-          reviewRequestService.raise(
-            new_tipp,
-            'New tipp - please review',
-            'A Title transfer cause this new tipp to be created',
-            request.user,
-            null,
-            null,
-            null,
-            componentLookupService.findCuratoryGroupOfInterest(new_tipp, request.user)
-          )
-        }
-      }
-
-      // Retire the tipp if
-      log.debug("Checking close flags..${params}")
-      if (params["oldtipp_close:${tipp_map_entry.key}"] == 'on'){
-        log.debug("Retiring old tipp")
-        current_tipp.status = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
-        if (params["oldtipp_review:${tipp_map_entry.key}"] == 'on'){
-          reviewRequestService.raise(current_tipp, 'please review TIPP record', 'A Title transfer has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
-        }
-      }
-      else{
-        if (params["oldtipp_review:${tipp_map_entry.key}"] == 'on'){
-          reviewRequestService.raise(current_tipp, 'please review TIPP record', 'A Title transfer has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
-        }
-      }
-
-      def parsed_start_date = null
-      def parsed_end_date = null
-      try{
-        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.startDate) : null
-        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.endDate) : null
-      }
-      catch (Exception e){
-      }
-
-      current_tipp.startDate = parsed_start_date
-      current_tipp.startVolume = tipp_map_entry.value.oldTippValue.startVolume
-      current_tipp.startIssue = tipp_map_entry.value.oldTippValue.startIssue
-      current_tipp.endDate = parsed_end_date
-      current_tipp.endVolume = tipp_map_entry.value.oldTippValue.endVolume
-      current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue
-      log.debug("Saving current tipp")
-      current_tipp.save(flush: true, failOnError: true)
-    }
-
-    activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
+    activity_record.status = RefdataCategory.lookup('Activity.Status', 'Complete')
     activity_record.save(flush: true)
   }
 
   def processPlatformReplacement() {
-    def result = [
+    Map result = [
       result: 'OK',
       old: []
     ]
-    def user = springSecurityService.currentUser
+    User user = springSecurityService.currentUser
 
-    def new_platform = genericOIDService.resolveOID2(params.newplatform)
+    Platform new_platform = genericOIDService.resolveOID2(params.newplatform)
     result.target = [name: new_platform.name, id: new_platform.id]
 
-    def active_platform_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
-    def active_org_jobs = concurrencyManagerService.getActiveJobsForType('Admin Org Merge')
+    List active_platform_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
+    List active_org_jobs = concurrencyManagerService.getActiveJobsForType('Admin Org Merge')
 
     if (active_platform_jobs || active_org_jobs) {
       result.result = 'ERROR'
@@ -1196,13 +582,13 @@ class WorkflowController{
       flash.error = "There is an existing merge job running."
     }
     else {
-      params.each{ p ->
+      params.each { p ->
         log.debug("Testing ${p.key}")
 
         if ((p.key.startsWith('tt')) && (p.value) && (p.value instanceof String)){
-          def tt = p.key.substring(3)
+          String tt = p.key.substring(3)
           log.debug("Platform to replace: '${tt}'")
-          def old_platform = Platform.get(tt)
+          Platform old_platform = Platform.get(tt)
 
           log.debug("old: ${old_platform} new: ${new_platform}")
           result.old << [name: old_platform.name, id: old_platform.id]
@@ -1237,41 +623,43 @@ class WorkflowController{
   @Transactional
   def processTippRetire(){
     log.debug("processTippRetire ${params}")
-    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
-    def result = [:]
+    RefdataValue retired_status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    Map result = [:]
 
-    params.list('beforeTipps').each{ title_oid ->
+    params.list('beforeTipps').each { title_oid ->
       log.debug("process ${title_oid}")
-      def tipp_obj = genericOIDService.resolveOID2(title_oid)
+      TitleInstancePackagePlatform tipp_obj = genericOIDService.resolveOID2(title_oid)
       tipp_obj.status = retired_status
-      if (params.endDateSelect == 'select' && params.selectedDate){
+
+      if (params.endDateSelect == 'select' && params.selectedDate) {
         tipp_obj.accessEndDate = params.date('selectedDate', 'yyyy-MM-dd')
       }
-      else if (params.endDateSelect == 'now'){
+      else if (params.endDateSelect == 'now') {
         tipp_obj.accessEndDate = new Date()
       }
+
       tipp_obj.save(flush: true, failOnError: true)
     }
+
     redirect(url: params.ref)
   }
 
   @Transactional
   def processTippMove(){
     log.debug("processTippMove ${params}")
-    def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    def user = springSecurityService.currentUser
-    def new_package = params.newpackage ? genericOIDService.resolveOID2(params.newpackage) : null
-    def new_platform = params.newplatform ? genericOIDService.resolveOID2(params.newplatform) : null
-    def tipps_to_action = params.list('beforeTipps')
-    def new_title = params.newtitle ? genericOIDService.resolveOID2(params.newtitle) : null
+    RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    User user = springSecurityService.currentUser
+    Package new_package = params.newpackage ? genericOIDService.resolveOID2(params.newpackage) : null
+    Platform new_platform = params.newplatform ? genericOIDService.resolveOID2(params.newplatform) : null
+    List tipps_to_action = params.list('beforeTipps')
+    TitleInstance new_title = params.newtitle ? genericOIDService.resolveOID2(params.newtitle) : null
 
-    params.list('beforeTipps').each{ tipp_oid ->
+    params.list('beforeTipps').each { tipp_oid ->
       log.debug("process ${tipp_oid}")
+      TitleInstancePackagePlatform tipp_obj = genericOIDService.resolveOID2(tipp_oid)
+      List coverage = []
 
-      def tipp_obj = genericOIDService.resolveOID2(tipp_oid)
-      def coverage = []
-
-      tipp_obj.coverageStatements.each{ cst ->
+      tipp_obj.coverageStatements.each { cst ->
         coverage.add(['startVolume'  : cst.startVolume ?: "",
                       'startIssue'   : cst.startIssue ?: "",
                       'endVolume'    : cst.endVolume ?: "",
@@ -1284,13 +672,13 @@ class WorkflowController{
         ])
       }
 
-      def new_tipp = TitleInstancePackagePlatform.upsertDTO([
+      TitleInstancePackagePlatform new_tipp = tippUpsertService.upsertDTO([
           package : ['internalId': (new_package ? new_package.id : tipp_obj.pkg.id)],
           platform: ['internalId': (new_platform ? new_platform.id : tipp_obj.hostPlatform.id)],
           title   : ['internalId': (new_title ? new_title.id : tipp_obj.title.id)],
           coverage: coverage,
           url     : tipp_obj.url
-      ], user).save(flush: true, failOnError: true)
+      ], user)
 
       log.debug("Created new TIPP ${new_tipp}")
       tipp_obj.status = deleted_status
@@ -1303,7 +691,8 @@ class WorkflowController{
   def download(){
     log.debug("Download ${params}")
     DataFile df = DataFile.findByGuid(params.id)
-    if (df != null){
+
+    if (df != null) {
       //HTML is causing problems, browser thinks it should render something, other way around this?
       response.setContentType("application/octet-stream")
       response.addHeader("Content-Disposition", "attachment; filename=\"${df.uploadName}\"")
@@ -1313,39 +702,37 @@ class WorkflowController{
 
   @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
   def processCreateWebHook(){
-
     log.debug("processCreateWebHook ${params}")
-    def result = [:]
+    Map result = [ref: params.from]
 
-    result.ref = params.from
+    try {
+      WebHookEndpoint webook_endpoint = null
 
-    try{
-
-      def webook_endpoint = null
-      if ((params.existingHook != null) && (params.existingHook.length() > 0)){
+      if ((params.existingHook != null) && (params.existingHook.length() > 0)) {
         log.debug("From existing hook")
         webook_endpoint = genericOIDService.resolveOID2(params.existingHook)
       }
-      else{
+      else {
         webook_endpoint = new WebHookEndpoint(name: params.newHookName,
             url: params.newHookUrl,
             authmethod: Long.parseLong(params.newHookAuth),
             principal: params.newHookPrin,
             credentials: params.newHookCred,
             owner: request.user)
-        if (webook_endpoint.save(flush: true)){
+        if (webook_endpoint.save(flush: true)) {
         }
-        else{
+        else {
           log.error("Problem saving new webhook endpoint : ${webook_endpoint.errors}")
         }
       }
 
 
-      params.each{ p ->
-        if ((p.key.startsWith('tt:')) && (p.value) && (p.value instanceof String)){
-          def tt = p.key.substring(3)
-          def wh = new WebHook(oid: tt, endpoint: webook_endpoint)
-          if (wh.save(flush: true)){
+      params.each { p ->
+        if ((p.key.startsWith('tt:')) && (p.value) && (p.value instanceof String)) {
+          String tt = p.key.substring(3)
+          WebHook wh = new WebHook(oid: tt, endpoint: webook_endpoint)
+
+          if (wh.save(flush: true)) {
           }
           else{
             log.error(wh.errors)
@@ -1362,37 +749,37 @@ class WorkflowController{
 
   @Transactional
   def processRRTransfer(){
-    def result = [:]
+    Map result = [ref: params.from]
     log.debug("processRRTransfer ${params}")
-    def new_user_alloc = genericOIDService.resolveOID2(params.allocToUser)
+    User new_user_alloc = genericOIDService.resolveOID2(params.allocToUser)
 
-    params.each{ p ->
-      if ((p.key.startsWith('tt:')) && (p.value) && (p.value instanceof String)){
-        def tt = p.key.substring(3)
-        def ReviewRequest rr = ReviewRequest.get(tt)
+    params.each { p ->
+      if ((p.key.startsWith('tt:')) && (p.value) && (p.value instanceof String)) {
+        String tt = p.key.substring(3)
+        ReviewRequest rr = ReviewRequest.get(tt)
         log.debug("Process ${tt} - ${rr}")
         rr.needsNotify = true
         rr.allocatedTo = new_user_alloc
         rr.save(flush: true)
-        def rra = new ReviewRequestAllocationLog(note: params.note, allocatedTo: new_user_alloc, rr: rr).save(flush: true)
+
+        new ReviewRequestAllocationLog(note: params.note, allocatedTo: new_user_alloc, rr: rr).save(flush: true)
       }
     }
 
-    result.ref = params.from
     redirect(url: result.ref)
   }
 
   @Transactional
-  def newRRLink(){
+  def newRRLink() {
     def new_rr = null
     log.debug("newRRLink ${params}")
     User user = springSecurityService.currentUser
-    def stdDesc = params.stdDesc ?: null
+    RefdataValue rr_manual = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Manual Request')
 
     if (params.id){
-      def component = KBComponent.findByUuid(params.id)
+      KBComponent component = KBComponent.findByUuid(params.id)
 
-      if (!component){
+      if (!component) {
         component = KBComponent.get(params.long('id'))
       }
 
@@ -1402,8 +789,7 @@ class WorkflowController{
         "Manual Request",
         user,
         null,
-        null,
-        stdDesc,
+        rr_manual,
         componentLookupService.findCuratoryGroupOfInterest(component, user)
       )
     }
@@ -1412,54 +798,53 @@ class WorkflowController{
   }
 
   @Transactional
-  def createTitleHistoryEvent(){
+  def createTitleHistoryEvent() {
     log.debug("createTitleHistoryEvent")
-    def result = [result: 'OK']
+    Map result = [result: 'OK']
 
-    try{
-      if ((params.afterTitles != null) && (params.beforeTitles != null)){
-        if (params.afterTitles instanceof java.lang.String){
+    try {
+      if ((params.afterTitles != null) && (params.beforeTitles != null)) {
+        if (params.afterTitles instanceof java.lang.String) {
           params.afterTitles = [params.afterTitles]
         }
-        if (params.beforeTitles instanceof java.lang.String){
+
+        if (params.beforeTitles instanceof java.lang.String) {
           params.beforeTitles = [params.beforeTitles]
         }
-        def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate: params.date('EventDate', 'yyyy-MM-dd')).save(flush: true)
 
-        params.afterTitles?.each{ at ->
-          def component = genericOIDService.resolveOID2(at)
-          def after_participant = new ComponentHistoryEventParticipant(event: newTitleHistoryEvent,
-              participant: component,
-              participantRole: 'out').save(flush: true)
+        ComponentHistoryEvent newTitleHistoryEvent = new ComponentHistoryEvent(eventDate: params.date('EventDate', 'yyyy-MM-dd')).save(flush: true)
+
+        params.afterTitles?.each { at ->
+          TitleInstance component = genericOIDService.resolveOID2(at)
+          new ComponentHistoryEventParticipant(event: newTitleHistoryEvent, participant: component, participantRole: 'out').save(flush: true)
         }
-        params.beforeTitles?.each{ bt ->
-          def component = genericOIDService.resolveOID2(bt)
-          def after_participant = new ComponentHistoryEventParticipant(event: newTitleHistoryEvent,
-              participant: component,
-              participantRole: 'in').save(flush: true)
+
+        params.beforeTitles?.each { bt ->
+          TitleInstance component = genericOIDService.resolveOID2(bt)
+          new ComponentHistoryEventParticipant(event: newTitleHistoryEvent, participant: component, participantRole: 'in').save(flush: true)
         }
       }
 
     }
-    catch (Exception e){
+    catch (Exception e) {
       log.error("problem creating title history event", e)
       result.result = "ERROR"
       flash.error = "History event could not be created!"
       result.message = "There was an error creating the event."
     }
-    finally{
+    finally {
       log.debug("Completed createTitleHistoryEvent")
     }
 
-    withFormat{
-      html{
+    withFormat {
+      html {
         result.ref = request.getHeader('referer')
         redirect(url: result.ref)
       }
-      json{
+      json {
         result.params = (params)
 
-        if (result.result != "ERROR"){
+        if (result.result != "ERROR") {
           result.message = "History event was sucessfully created."
         }
 
@@ -1469,12 +854,13 @@ class WorkflowController{
   }
 
   @Transactional
-  def deleteTitleHistoryEvent(){
+  def deleteTitleHistoryEvent() {
 
-    def result = [:]
+    Map result = [:]
     result.ref = request.getHeader('referer')
-    def he = ComponentHistoryEvent.get(params.id)
-    if (he != null){
+    ComponentHistoryEvent he = ComponentHistoryEvent.get(params.id)
+
+    if (he != null) {
       he.delete(flush: true)
     }
     redirect(url: result.ref)
@@ -1482,11 +868,9 @@ class WorkflowController{
 
 
   // @Transactional(readOnly = true)
-  private def packageKBartExport(id){
+  private def packageKBartExport(id) {
     def type = params.exportType == 'title' ? PackageCSVExportService.ExportType.KBART_TITLE : PackageCSVExportService.ExportType.KBART_TIPP
-    def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
-
-    def export_date = dateFormatService.formatDate(new Date())
+    Package pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
 
     if (pkg) {
       packageCSVExportService.sendFile(pkg, type, response)
@@ -1497,10 +881,8 @@ class WorkflowController{
     }
   }
 
-  private def packageTSVExport(id){
-    def export_date = dateFormatService.formatDate(new Date())
-
-    def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
+  private def packageTSVExport(id) {
+    Package pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
 
     if (pkg) {
       packageCSVExportService.sendFile(pkg, PackageCSVExportService.ExportType.TSV, response)
@@ -1511,56 +893,21 @@ class WorkflowController{
     }
   }
 
-  def addToRulebase(){
-    def result = [
-      ref: request.getHeader('referer')
-    ]
-
-    def source = Source.get(params.sourceId)
-
-    log.debug("Process existing rulebase:: ${source.ruleset}")
-
-    // See if the source rulebase has been initialised
-    def parsed_rulebase = source.ruleset ? JSON.parse(source.ruleset) : null
-    if (parsed_rulebase == null){
-      parsed_rulebase = [rules: [:]]
-    }
-
-    def num_probs = params.int('prob_seq_count')
-
-    for (int i = 0; i < num_probs; i++){
-      log.debug("addToRulebase ${params.pr['prob_res_' + i]}")
-      def resolution = params.pr['prob_res_' + i]
-
-      // If the user has specified what happens in this case, then store the rule in the source for subsequent use
-      if (resolution.ResolutionOption){
-        log.debug("When ${resolution.probfingerprint} Then ${resolution.ResolutionOption}")
-        def rule_resolution = [ruleResolution: "${resolution.ResolutionOption}"]
-        parsed_rulebase.rules[resolution.probfingerprint] = rule_resolution
-      }
-    }
-
-    source.ruleset = parsed_rulebase as JSON
-    source.save(flush: true, failOnError: true)
-
-    redirect(url: result.ref)
-  }
-
   @Transactional
   @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
-  def transferPackages(){
-    def result = [result: 'OK']
-    def errors = []
+  def transferPackages() {
+    Map result = [result: 'OK']
+    List errors = []
 
     if (params.orgsToDeprecate && params.neworg) {
-      def orgs = params.list('orgsToDeprecate')
-      def new_org = genericOIDService.resolveOID2(params.neworg)
+      List orgs = params.list('orgsToDeprecate')
+      Org new_org = genericOIDService.resolveOID2(params.neworg)
 
       orgs.each { org_id ->
-        def old_org = Org.get(org_id)
+        Org old_org = Org.get(org_id)
 
         if (old_org && new_org) {
-          def transfer_result = orgService.transferPackages(old_org, new_org)
+          Map transfer_result = orgService.transferPackages(old_org, new_org)
 
           if (transfer_result.result == 'ERROR') {
             result.result = 'ERROR'
@@ -1580,24 +927,23 @@ class WorkflowController{
         flash.errors = "Package Reallocation Failed for ${errors}!".toString()
       }
 
-
       redirect(controller: 'resource', action: 'show', id: "${new_org.class.name}:${new_org.id}")
     }
   }
 
   @Transactional
   @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
-  def deprecateOrg(){
-    def result = [result: 'OK']
-    def errors = []
-    def user = springSecurityService.currentUser
+  def deprecateOrg() {
+    Map result = [result: 'OK']
+    List errors = []
+    User user = springSecurityService.currentUser
 
     if (params.orgsToDeprecate && params.neworg) {
-      def orgs = params.list('orgsToDeprecate')
-      def new_org = genericOIDService.resolveOID2(params.neworg)
+      List orgs = params.list('orgsToDeprecate')
+      Org new_org = genericOIDService.resolveOID2(params.neworg)
 
-      def active_platform_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
-      def active_org_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
+      List active_platform_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
+      List active_org_jobs = concurrencyManagerService.getActiveJobsForType('Admin Platform Merge')
 
       if (active_platform_jobs || active_org_jobs) {
         result.result = 'ERROR'
@@ -1606,7 +952,7 @@ class WorkflowController{
       }
       else {
         orgs.each { org_id ->
-          def old_org = Org.get(org_id)
+          Org old_org = Org.get(org_id)
 
           if (old_org && new_org) {
             Job background_job = concurrencyManagerService.createJob { Job job ->
@@ -1646,15 +992,17 @@ class WorkflowController{
 
   @Transactional
   @Secured("hasRole('ROLE_ADMIN') and isFullyAuthenticated()")
-  def deprecateDeleteOrg(){
+  def deprecateDeleteOrg() {
     log.debug("deprecateDeleteOrg ${params}")
-    def result = [:]
-    if (params.orgsToDeprecate){
-      def orgs = params.list('orgsToDeprecate')
+    Map result = [:]
 
-      orgs.each{ org_id ->
-        def o = Org.get(org_id)
-        if (o){
+    if (params.orgsToDeprecate) {
+      List orgs = params.list('orgsToDeprecate')
+
+      orgs.each { org_id ->
+        Org o = Org.get(org_id)
+
+        if (o) {
           o.deprecateDelete()
         }
       }
@@ -1663,44 +1011,45 @@ class WorkflowController{
   }
 
   @Transactional
-  private def verifyTitleList(packages_to_verify){
-    def user = springSecurityService.currentUser
+  private def verifyTitleList(packages_to_verify) {
+    User user = springSecurityService.currentUser
 
-    packages_to_verify.each{ ptv ->
-      def pkgObj = Package.get(ptv.id)
+    packages_to_verify.each { ptv ->
+      Package pkgObj = Package.get(ptv.id)
       Boolean curated_pkg = false
-      def is_curator = null
+      boolean is_curator = null
 
       if (pkgObj.curatoryGroups && pkgObj.curatoryGroups?.size() > 0){
-        is_curator = user.curatoryGroups?.id.intersect(pkgObj.curatoryGroups?.id)
+        is_curator = user.curatoryGroups*.id.intersect(pkgObj.curatoryGroups*.id).size() > 0
         curated_pkg = true
       }
 
-      if (pkgObj?.isEditable() && (is_curator || !curated_pkg || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))){
-        pkgObj.listStatus = RefdataCategory.lookupOrCreate('Package.ListStatus', 'Checked')
+      if (pkgObj?.isEditable() && (is_curator || !curated_pkg || user.superUserStatus)) {
+        pkgObj.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
         pkgObj.userListVerifier = user
         pkgObj.listVerifiedDate = new Date()
         pkgObj.save(flush: true, failOnError: true)
       }
     }
+
     redirect(url: request.getHeader('referer'))
   }
 
-  private def triggerSourceUpdate(packages_to_update){
+  private def triggerSourceUpdate(packages_to_update) {
     log.info("triggerSourceUpdate for Packages ${packages_to_update}..")
-    def user = springSecurityService.currentUser
-    def pars = [:]
-    def denied = false
-    Boolean restrictSize = !user.isAdmin()
+    User user = springSecurityService.currentUser
+    Map pars = [:]
+    boolean denied = false
+    boolean restrictSize = !user.isAdmin()
 
-    if (packages_to_update.size() > 1){
+    if (packages_to_update.size() > 1) {
       flash.error = "Please select a single Package to update!"
     }
     else{
-      packages_to_update.each{ ptv ->
-        def pkgObj = Package.get(ptv.id)
-        Boolean curated_pkg = false
-        def is_curator = []
+      packages_to_update.each { ptv ->
+        Package pkgObj = Package.get(ptv.id)
+        boolean curated_pkg = false
+        List is_curator = []
 
         if (pkgObj && pkgObj.source?.url){
           if (pkgObj.curatoryGroups && pkgObj.curatoryGroups?.size() > 0){
@@ -1708,7 +1057,7 @@ class WorkflowController{
             curated_pkg = true
           }
 
-          if (pkgObj?.isEditable() && (is_curator || !curated_pkg || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))){
+          if (pkgObj?.isEditable() && (is_curator || !curated_pkg || user.superUserStatus)) {
             Job background_job = concurrencyManagerService.createJob { Job job ->
               packageSourceUpdateService.updateFromSource(pkgObj.id, user.id, job, null, false, restrictSize)
             }
@@ -1741,6 +1090,7 @@ class WorkflowController{
         }
       }
     }
+
     log.debug('triggerSourceUpdate() done - redirecting')
     redirect(url: request.getHeader('referer'))
   }

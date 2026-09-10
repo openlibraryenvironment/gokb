@@ -18,7 +18,7 @@ class PackagesController {
   def packageService
   def packageCSVExportService
 
-  public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id = :pkg and c.toComponent = tipp  and c.type.value = :ct order by tipp.id';
+  public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp where pkg.id = :pkg order by tipp.id';
 
   def packageContent() {
     log.debug("packageContent::${params}")

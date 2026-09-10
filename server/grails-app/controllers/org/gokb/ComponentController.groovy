@@ -1,6 +1,7 @@
 package org.gokb
 
 import org.gokb.cred.*
+import org.hibernate.Session
 import org.springframework.security.access.annotation.Secured;
 import grails.converters.JSON
 import groovy.util.logging.*
@@ -17,13 +18,13 @@ class ComponentController {
   def identifierConflicts() {
     log.debug("identifierConflicts :: ${params}")
 
-    def result = [result:'OK', dispersedIds: [], ambiguousComponents: []]
-    def session = sessionFactory.currentSession
+    Map result = [result:'OK', dispersedIds: [], ambiguousComponents: []]
+    Session session = sessionFactory.currentSession
     User user = springSecurityService.currentUser
-    def max = params.int('max') ?: user.defaultPageSize
-    def offset = params.int('offset') ?: 0
-    def components = []
-    def knownIdentifiedTypes = [
+    int max = params.int('max') ?: user.defaultPageSize
+    int offset = params.int('offset') ?: 0
+    List components = []
+    Map knownIdentifiedTypes = [
       title: [
         sql: 'title_instance',
         cls: 'TitleInstance'
@@ -57,8 +58,9 @@ class ComponentController {
         cls: 'Org'
       ]
     ]
-    def dupe_ids = []
-    def resolvedComponentType = params.componentType ? knownIdentifiedTypes[params.componentType] : null
+
+    List dupe_ids = []
+    Map resolvedComponentType = params.componentType ? knownIdentifiedTypes[params.componentType] : [:]
 
     result.max = max
     result.offset = offset
@@ -77,18 +79,16 @@ class ComponentController {
         log.debug("fetching results for ${ns} (${params.componentType})..")
 
         RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
-        RefdataValue combo_status = RefdataCategory.lookup('Combo.Status', 'Active')
+        RefdataValue ci_status = RefdataCategory.lookup('ComponentIdentifier.Status', 'Active')
 
         if (params.ctype == 'st') {
           String staticClause = ''' kbc.kbc_status_rv_fk <> :deleted
-            AND (SELECT count(c.combo_id) FROM combo AS c JOIN identifier AS id ON (c.combo_to_fk = id.kbc_id) WHERE
-              c.combo_from_fk = kbc.kbc_id AND c.combo_status_rv_fk = :comboStatus
-              AND c.combo_type_rv_fk = :comboType
+            AND (SELECT count(c.id) FROM component_identifier AS c JOIN identifier AS id ON (c.ci_ident_fk = id.kbc_id) WHERE
+              c.ci_comp_fk = kbc.kbc_id AND c.ci_status_rv_fk = :ciStatus
               AND id.id_namespace_fk = :namespace) > 1'''
 
-          def query = new StringWriter()
-          def cqry = new StringWriter()
+          StringWriter query = new StringWriter()
+          StringWriter cqry = new StringWriter()
 
           query.write('SELECT kbc.kbc_id FROM kbcomponent as kbc ')
           cqry.write('SELECT count(kbc.kbc_id) FROM kbcomponent as kbc ')
@@ -111,8 +111,7 @@ class ComponentController {
           final ambiguousComponentsCount = session.createSQLQuery(cqry.toString())
             .setParameter('deleted', status_deleted.id)
             .setParameter('namespace', ns.id)
-            .setParameter('comboType', combo_type.id)
-            .setParameter('comboStatus', combo_status.id)
+            .setParameter('ciStatus', ci_status.id)
             .list()
 
           result.titleCount = ambiguousComponentsCount[0]
@@ -120,8 +119,7 @@ class ComponentController {
           final ambiguousComponents = session.createSQLQuery(query.toString())
             .setParameter('deleted', status_deleted.id)
             .setParameter('namespace', ns.id)
-            .setParameter('comboType', combo_type.id)
-            .setParameter('comboStatus', combo_status.id)
+            .setParameter('ciStatus', ci_status.id)
             .setParameter('limit', max)
             .setParameter('offset', offset)
             .list()
@@ -131,15 +129,14 @@ class ComponentController {
 
         if (params.ctype == 'di') {
           String staticOuterClause = '''FROM identifier AS id WHERE id.id_namespace_fk = :namespace
-            AND (SELECT COUNT(c.combo_id) FROM combo AS c JOIN kbcomponent as kbc ON (c.combo_from_fk = kbc.kbc_id) '''
+            AND (SELECT COUNT(c.id) FROM component_identifier AS c JOIN kbcomponent as kbc ON (c.ci_comp_fk = kbc.kbc_id) '''
 
           String staticInnerClause = ''' kbc.kbc_status_rv_fk <> :deleted
-              AND c.combo_to_fk = id.kbc_id
-              AND c.combo_type_rv_fk = :comboType
-              AND c.combo_status_rv_fk = :comboStatus) > 1'''
+              AND c.ci_ident_fk = id.kbc_id
+              AND c.ci_status_rv_fk = :ciStatus) > 1'''
 
-          def query = new StringWriter()
-          def cqry = new StringWriter()
+          StringWriter query = new StringWriter()
+          StringWriter cqry = new StringWriter()
 
           query.write('''SELECT id.kbc_id ''')
           cqry.write('''SELECT count(id.kbc_id) ''')
@@ -165,8 +162,7 @@ class ComponentController {
           final dispersedIdsCount = session.createSQLQuery(cqry.toString())
             .setParameter('deleted', status_deleted.id)
             .setParameter('namespace', ns.id)
-            .setParameter('comboType', combo_type.id)
-            .setParameter('comboStatus', combo_status.id)
+            .setParameter('ciStatus', ci_status.id)
             .list()
 
           result.idsCount = dispersedIdsCount[0]
@@ -174,8 +170,7 @@ class ComponentController {
           final dispersedIds = session.createSQLQuery(query.toString())
             .setParameter('deleted', status_deleted.id)
             .setParameter('namespace', ns.id)
-            .setParameter('comboType', combo_type.id)
-            .setParameter('comboStatus', combo_status.id)
+            .setParameter('ciStatus', ci_status.id)
             .setParameter('limit', max)
             .setParameter('offset', offset)
             .list()
@@ -185,9 +180,9 @@ class ComponentController {
       }
 
       components.each { cpid ->
-        def item = KBComponent.get(cpid)
+        KBComponent item = KBComponent.get(cpid)
 
-        def info_map = [
+        Map info_map = [
           id: item.id,
           name: item.name,
           uuid: item.uuid,
@@ -224,9 +219,9 @@ class ComponentController {
       }
 
       dupe_ids.each { did ->
-        def item = Identifier.get(did)
+        Identifier item = Identifier.get(did)
 
-        def info_map = [
+        Map info_map = [
           id: item.id,
           uuid: item.uuid,
           value: item.value,

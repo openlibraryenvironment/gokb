@@ -233,13 +233,13 @@ class ComponentUpdateService {
 
             if (duplicate.size() == 0) {
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
-              new Combo(component: component, identifier: canonical_identifier).save(flush: true, failOnError: true)
+              new ComponentIdentifier(component: component, identifier: canonical_identifier).save(flush: true, failOnError: true)
               hasChanged = true
 
               // Add the value for comparison.
               existing_ids << [obj: canonical_identifier, testKey: ci.testKey]
             } else if (duplicate.size() == 1 && duplicate[0].status == cpid_deleted) {
-              log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
+              log.debug("Found a deleted identifier link for ${canonical_identifier.value} -> ${component}")
 
               // def additionalInfo = [:]
 
@@ -277,7 +277,7 @@ class ComponentUpdateService {
           log.debug("Removing stale ID ${eid} from ${component}")
           ComponentIdentifier ctr = ComponentIdentifier.findByComponentAndIdentifier(component, eid.obj)
 
-          if (ctr.status != combo_deleted) {
+          if (ctr.status != cpid_deleted) {
             ComponentIdentifier.executeUpdate("delete from ComponentIdentifier where id = :cid", [cid: ctr.id])
             // ctr.delete(flush: true)
             hasChanged = true
@@ -385,28 +385,31 @@ class ComponentUpdateService {
     result
   }
 
-  public boolean isUserCurator(obj, user) {
+  public boolean isUserCurator(Object obj, User user) {
     boolean curator = user.adminStatus
-    def curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj?.class == TitleInstancePackagePlatform ? obj.pkg : null)
 
-    if (curated_component) {
-      if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups*.id.intersect(user.curatoryGroups*.id)) {
+    if (!curator) {
+      Object curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj?.class == TitleInstancePackagePlatform ? obj.pkg : null)
+
+      if (curated_component) {
+        if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups*.id.intersect(user.curatoryGroups*.id).size() > 0) {
+          curator = true
+        }
+      }
+      else if (obj?.class == ReviewRequest) {
+        if (obj.allocatedTo == user) {
+          curator = true
+        }
+        else if (obj.activeAllocatedGroups*.group.id.intersect(user.curatoryGroups*.id).size() > 0) {
+          curator = true
+        }
+        else if (!obj.activeAllocatedGroups && user.contributorStatus) {
+          curator = true
+        }
+      }
+      else {
         curator = true
       }
-    }
-    else if (obj?.class == ReviewRequest) {
-      if (obj.allocatedTo == user) {
-        curator = true
-      }
-      else if (obj.activeAllocatedGroups*.group.id.intersect(user.curatoryGroups*.id)) {
-        curator = true
-      }
-      else if (!obj.activeAllocatedGroups && user.contributorStatus) {
-        curator = true
-      }
-    }
-    else {
-      curator = true
     }
 
     curator
@@ -459,9 +462,9 @@ class ComponentUpdateService {
     String oid = "${obj.class.name}:${obj.id}"
 
     obj.class.withTransaction {
-      Combo.executeUpdate("delete from Combo as c where c.fromComponent=:component or c.toComponent=:component", [component: obj])
-      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component", [component: obj])
-      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component", [component: obj])
+      ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component = :component", [component: obj])
+      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component = :component", [component: obj])
+      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner = :component", [component: obj])
 
       def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: obj])
 
@@ -470,12 +473,17 @@ class ComponentUpdateService {
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
       }
 
+      ComponentAttachment.removeAll(obj)
+
       if (obj.class == CuratoryGroup) {
         AllocatedReviewGroup.removeAll(obj)
 
         obj.users*.id.each { user_id ->
           User.get(user_id).removeFromCuratoryGroups(obj).save()
         }
+      }
+      else if (obj.respondsTo('publisherLinks')) {
+        TitlePublisher.executeUpdate("delete from TitlePublisher as c where c.title = :component", [component: obj])
       }
       else {
         ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: obj])

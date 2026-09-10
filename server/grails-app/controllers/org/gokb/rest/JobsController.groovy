@@ -118,7 +118,7 @@ class JobsController {
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def show() {
-    def result = [:]
+    Map result = [:]
     User user = User.get(springSecurityService.principal.id)
     boolean onlyArchived = params.boolean('archived') ?: false
     Job job = concurrencyManagerService?.getJob(params.id)
@@ -161,7 +161,7 @@ class JobsController {
     }
     else if (onlyArchived && jobResult) {
       if (user.isAdmin() || jobResult.linkedItemId) {
-        def linkedComponent = jobResult.linkedItemId ? KBComponent.get(jobResult.linkedItemId) : null
+        KBComponent linkedComponent = jobResult.linkedItemId ? KBComponent.get(jobResult.linkedItemId) : null
 
         result.uuid = jobResult.uuid
         result.description = jobResult.description
@@ -190,7 +190,7 @@ class JobsController {
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def cancel() {
-    def result = [result: 'OK']
+    Map result = [result: 'OK']
     Job job = concurrencyManagerService.getJob(params.id)
     User user = User.get(springSecurityService.principal.id)
 
@@ -220,14 +220,14 @@ class JobsController {
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def delete() {
-    def result = [result: 'OK']
+    Map result = [result: 'OK']
     Job job = concurrencyManagerService.getJob(params.id)
     User user = User.get(springSecurityService.principal.id)
 
     if (job) {
       if (user.superUserStatus || job.ownerId == user.id) {
         if (job.isDone()) {
-          def removed = concurrencyManagerService.getJob(params.id, true)
+          Map removed = concurrencyManagerService.getJob(params.id, true)
           log.debug("Removed job with id ${removed.uuid}")
         }
         else {

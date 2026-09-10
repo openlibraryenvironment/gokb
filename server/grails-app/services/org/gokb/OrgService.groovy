@@ -6,6 +6,7 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.gorm.transactions.Transactional
 
 import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 import org.hibernate.Session
 import org.hibernate.SessionFactory
 
@@ -18,7 +19,7 @@ class OrgService {
   def sessionFactory
   def validationService
 
-  public Map restLookup(orgDTO, def user = null) {
+  public Map restLookup(JSONObject orgDTO, User user = null) {
     log.info("Upsert org with header ${orgDTO}")
     Map result = [to_create: true]
     RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -92,7 +93,7 @@ class OrgService {
   }
 
   @Transactional
-  public Org upsert(orgDTO, def user = null) {
+  public Org upsert(JSONObject orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}")
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     String org_normname = Org.generateNormname(orgDTO.name)
@@ -177,18 +178,18 @@ class OrgService {
   }
 
   /*
-  * Trigger updates for all incoming combo infos
+  * Trigger updates for all linked hasMany lists
   */
 
   @Transactional
-  public Map updateCombos(obj, reqBody, changed, boolean remove = true) {
-    log.debug("Updating org combos ..")
+  public Map updateLinks(Org obj, JSONObject reqBody, boolean changed, boolean remove = true) {
+    log.debug("Updating org links ..")
     Map errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
-      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
+      List id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
+      Map id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
       changed |= id_result.changed
 
@@ -198,9 +199,9 @@ class OrgService {
     }
 
     if (reqBody.providedPlatforms instanceof Collection) {
-      def plts = reqBody.providedPlatforms
+      List plts = reqBody.providedPlatforms
 
-      def plts_result = updatePlatforms(obj, plts, remove)
+      Map plts_result = updatePlatforms(obj, plts, remove)
 
       changed |= plts_result.changed
 
@@ -210,7 +211,7 @@ class OrgService {
     }
 
     if (reqBody.curatoryGroups instanceof Collection) {
-      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      Map cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
       changed |= cg_result.changed
 
@@ -220,7 +221,7 @@ class OrgService {
     }
 
     if (reqBody.offices instanceof Collection) {
-      def office_result = updateOffices(obj, reqBody.offices, remove)
+      Map office_result = updateOffices(obj, reqBody.offices, remove)
       changed |= office_result.changed
 
       if (office_result.errors.size() > 0) {
@@ -229,7 +230,7 @@ class OrgService {
     }
 
     if (reqBody.roles instanceof Collection) {
-      def roles_result = updateRoles(obj, reqBody.roles, remove)
+      Map roles_result = updateRoles(obj, reqBody.roles, remove)
       changed |= roles_result.changed
 
       if (roles_result.errors.size() > 0) {
@@ -551,8 +552,6 @@ class OrgService {
     Org new_org = Org.findById(new_org_id)
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-    RefdataValue combo_type_ti_org = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
-    RefdataValue combo_type_plt_org = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
     boolean cancelled = false
 
     if (!old_org || !new_org) {
@@ -592,7 +591,7 @@ class OrgService {
           }
         }
         else {
-          log.debug("Found dupes, deleting old combos ..")
+          log.debug("Found dupes, deleting old links ..")
 
           TitlePublisher.executeUpdate('''delete from TitlePublisher
                                           where title = :ti
@@ -632,7 +631,7 @@ class OrgService {
 
       // Transfer Platforms
 
-      List affected_platforms = Platform.findAllByProviderAndStatus(op: old_org, ctpp: combo_type_plt_org, sd: status_deleted)
+      List affected_platforms = Platform.findAllByProviderAndStatus(old_org, status_deleted)
 
       affected_platforms?.each { plt ->
         plt.provider = new_org

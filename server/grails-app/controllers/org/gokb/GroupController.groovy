@@ -15,9 +15,18 @@ class GroupController {
   def springSecurityService
 
   def index() {
-    def result = [:]
+    Map result = [:]
+
     if ( params.id ) {
       User user = springSecurityService.currentUser
+      CuratoryGroup group = CuratoryGroup.get(params.id)
+
+      if (!group) {
+        result.result = 'ERROR'
+        result.status = 404
+        response.status = 404
+        return result
+      }
 
       log.debug("Entering GroupController:index ${params}");
 
@@ -37,15 +46,15 @@ class GroupController {
       params.rr_offset = result.rr_offset
       params.remove('rr_jumpToPage')
 
-      result.group = CuratoryGroup.get(params.id);
+      result.group = group
 
-      def rr_sort= params.rr_sort ?: 'dateCreated'
-      def rr_sort_order = params.rr_sort_order?:'asc'
+      String rr_sort = params.rr_sort ?: 'dateCreated'
+      String rr_sort_order = params.rr_sort_order ?: 'asc'
 
-      def closedStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed')
-      def delStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted')
-      def inactiveStat = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
-      def cg_components = KBComponent.executeQuery("select c.id from KBComponent as c where exists ( select oc from c.outgoingCombos as oc where oc.toComponent.id = :group )",[group:result.group.id])
+      RefdataValue closedStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed')
+      RefdataValue delStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted')
+      RefdataValue inactiveStat = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
+      List cg_components = Package.executeQuery("select p.id from Package as p where :group member of (p.curatoryGroups)",[group: group])
 
       log.debug("Got ${cg_components.size()} connected components")
 
@@ -58,23 +67,34 @@ class GroupController {
       '''
 
       result.rr_count = Package.executeQuery('select count(rr) ' + cg_review_tasks_hql,
-          [group:result.group,cgcomponents:cg_components,closed:closedStat,deleted:delStat,inactive:inactiveStat])[0]
+                                              [
+                                                group:result.group,
+                                                cgcomponents:cg_components,
+                                                closed:closedStat,
+                                                deleted:delStat,
+                                                inactive:inactiveStat
+                                              ])[0]
       result.rrs = Package.executeQuery('select rr ' + cg_review_tasks_hql + " order by ${rr_sort} ${rr_sort_order}",
-          [group:result.group,cgcomponents:cg_components,closed:closedStat,deleted:delStat,inactive:inactiveStat],
-          [max:result.max,offset:result.rr_offset])
+                                        [
+                                          group:result.group,
+                                          cgcomponents:cg_components,
+                                          closed:closedStat,
+                                          deleted:delStat,
+                                          inactive:inactiveStat],
+                                          [max:result.max,offset:result.rr_offset])
 
       result.rr_page_max = (result.rr_count / result.max).toInteger() + (result.rr_count % result.max > 0 ? 1 : 0)
       result.rr_page = (result.rr_offset / result.max) + 1
 
-      def pkg_sort= params.pkg_sort?:'name'
-      def pkg_sort_order = params.pkg_sort_order?:'asc'
-      def pkg_curgroup_rdv = RefdataCategory.lookup('Combo.Type', 'Package.CuratoryGroups')
+      String pkg_sort = params.pkg_sort ?: 'name'
+      String pkg_sort_order = params.pkg_sort_order ?: 'asc'
 
-      def cg_packages_hql = " from Package as p where exists ( select c from p.outgoingCombos as c where c.toComponent = :cg and c.type = :ct)"
+      String cg_packages_hql = " from Package as p where :cg member of (p.curatoryGroups)"
 
-      result.package_count = Package.executeQuery('select count(p) '+cg_packages_hql,[cg: result.group, ct: pkg_curgroup_rdv])[0];
-      result.packages = Package.executeQuery('select p '+cg_packages_hql + " order by ${pkg_sort} ${pkg_sort_order}",[cg: result.group, ct: pkg_curgroup_rdv],
-        [max:result.max,offset:result.pkg_offset]);
+      result.package_count = Package.executeQuery('select count(p) '+cg_packages_hql,[cg: result.group])[0];
+      result.packages = Package.executeQuery('select p ' + cg_packages_hql + " order by ${pkg_sort} ${pkg_sort_order}",
+                                              [cg: result.group],
+                                              [max: result.max, offset: result.pkg_offset]);
 
       result.pkg_page_max = (result.package_count / result.max).toInteger() + (result.package_count % result.max > 0 ? 1 : 0)
 
@@ -86,6 +106,7 @@ class GroupController {
       result.withoutJump.remove('pkg_jumpToPage');
       result.withoutJump.remove('rr_jumpToPage');
     }
+
     return result
   }
 }

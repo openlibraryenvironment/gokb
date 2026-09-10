@@ -24,8 +24,8 @@ class UsersController {
 
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
   def show() {
-    def result = [data: [:]]
-    def user = User.get(params.id as int)
+    Map result = [data: [:]]
+    User user = User.get(params.id as int)
 
     if (user) {
       result.data = userProfileService.collectUserProps(user, params)
@@ -43,7 +43,7 @@ class UsersController {
   @Transactional
   def index() {
     User user = springSecurityService.currentUser
-    def result = userProfileService.restLookup(user, params)
+    Map result = userProfileService.restLookup(user, params)
 
     render result as JSON
   }
@@ -52,19 +52,22 @@ class UsersController {
   @Transactional
   def save() {
     User adminUser = User.get(springSecurityService.principal.id)
-    def result = [:]
+    Map result = [:]
+
     if (request.JSON) {
       result = userProfileService.create(request.JSON, adminUser)
-      if (!result.errors)
+
+      if (!result.errors) {
         response.status = 201
-      else
+      }
+      else {
         response.status = 400
+      }
     } else {
       response.status = 400
-      def errors = []
-      errors << [message: "no data found in the request body", baddata: request.JSON]
-      result.errors = errors
+      result.errors = [[message: "no data found in the request body", baddata: request.JSON]]
     }
+
     render result as JSON
   }
 
@@ -73,14 +76,13 @@ class UsersController {
   def update() {
     User user = User.get(params.id)
     User adminUser = User.get(springSecurityService.principal.id)
-    def result = [:]
+    Map result = [:]
+
     if (user && request.JSON)
       result = userProfileService.update(user, request.JSON, params, adminUser)
     else {
       response.status = 400
-      def errors = []
-      errors << [message: "no data found in the request", baddata: request.JSON]
-      result.errors = errors
+      result.errors = [[message: "no data found in the request", baddata: request.JSON]]
     }
     if (result.errors?.size() >0){
       log.debug("${result.errors}")
@@ -92,7 +94,7 @@ class UsersController {
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
-    def result = [:]
+    Map result = [:]
     User adminUser = User.get(springSecurityService.principal.id)
     User delUser = User.get(params.id)
 
@@ -117,8 +119,8 @@ class UsersController {
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def activate() {
-    def result = [:]
-    Boolean alertUser = params.boolean('sendAlert') ?: false
+    Map result = [:]
+    boolean alertUser = params.boolean('sendAlert') ?: false
     User adminUser = User.get(springSecurityService.principal.id)
 
     if (params.id) {

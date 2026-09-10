@@ -58,18 +58,20 @@ class Org extends KBComponent {
 
 
   static hasMany = [
-      roles: RefdataValue,
-      children: Org,
-      'previous': Org,
-      curatoryGroups: CuratoryGroup,
-      offices: Office,
-      providedPlatforms: Platform
+    roles: RefdataValue,
+    children: Org,
+    'previous': Org,
+    curatoryGroups: CuratoryGroup,
+    offices: Office,
+    providedPlatforms: Platform,
+    providedPackages: Package
   ]
 
   static mappedBy = [
-      children: 'parent',
-      offices: 'org',
-      providedPlatforms: 'provider'
+    children: 'parent',
+    offices: 'org',
+    providedPlatforms: 'provider',
+    providedPackages: 'provider'
   ]
 
   static mapping = {
@@ -171,6 +173,34 @@ class Org extends KBComponent {
         break
     }
     located_org
+  }
+
+  public int getProvidedPackagesCount() {
+    RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+
+    int result = Package.executeQuery('''select count(*) from Package as p
+                                          where p.provider = :prov
+                                          and status = :current''',
+                                          [prov: this, current: status_current])[0]
+
+    return result
+  }
+
+  public int getPublishedTitlesCount() {
+    RefdataValue status_active = RefdataCategory.lookup(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_ACTIVE)
+    RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+
+    int result = TitleInstance.executeQuery('''select count(*) from TitleInstance as ti
+                                                where exists (
+                                                  select 1 from TitlePublisher
+                                                  where title = ti
+                                                  and publisher = :pub
+                                                  and status = :active
+                                                )
+                                                and status = :current''',
+                                                [pub: this, active: status_active, current: status_current])[0]
+
+    return result
   }
 
   @Override
@@ -288,11 +318,13 @@ class Org extends KBComponent {
     }
   }
 
-  def deprecateDelete(context) {
+  public Map deprecateDelete() {
     log.debug("deprecateDelete");
-    def result = [:]
-    Combo.executeUpdate("delete from Combo where toComponent.id = :oid", [oid: this.getId()]);
-    Combo.executeUpdate("delete from Combo where fromComponent.id = :oid", [oid: this.getId()]);
+    Map result = [result: 'OK']
+
+    result.removedPubs = TitlePublisher.executeUpdate("delete from TitlePublisher where publisher = :ctx", [ctx: this])
+    this.deleteSoft()
+
     result
   }
 }

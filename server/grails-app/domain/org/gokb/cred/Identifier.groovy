@@ -106,6 +106,12 @@ class Identifier {
     }
   }
 
+  public List getComponentLinks() {
+    List result = ComponentIdentifier.findAllByIdentifier(this)
+
+    result
+  }
+
   public List getIdentifiedComponents() {
     List result = []
 

@@ -1,15 +1,16 @@
 package org.gokb.rest
 
-import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import grails.plugin.springsecurity.annotation.Secured
+
 import org.gokb.cred.JobResult
 import org.gokb.cred.KBComponent
 import org.gokb.cred.Role
 import org.gokb.cred.User
-import grails.plugin.springsecurity.annotation.Secured
+import org.grails.web.json.JSONObject
 
 @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
 class ProfileController {
@@ -19,16 +20,17 @@ class ProfileController {
   def springSecurityService
   def userProfileService
   def passwordEncoder
-  ConcurrencyManagerService concurrencyManagerService
+  def concurrencyManagerService
+  def jobResultService
 
   def show() {
-    def user = User.get(springSecurityService.principal.id)
+    User user = User.get(springSecurityService.principal.id)
 
-    def cur_groups = []
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    List cur_groups = []
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
 
     user.curatoryGroups?.each { cg ->
-      def cg_info = [
+      Map cg_info = [
         name: cg.name,
         id: cg.id,
         uuid: cg.uuid,
@@ -66,20 +68,22 @@ class ProfileController {
       'delete': ['href': base + '/profile']
     ]
 
-    def result = ['data': [
-      'id'             : user.id,
-      'username'       : user.username,
-      'displayName'    : user.displayName,
-      'email'          : user.email,
-      'curatoryGroups' : cur_groups,
-      'enabled'        : user.enabled,
-      'accountExpired' : user.accountExpired,
-      'accountLocked'  : user.accountLocked,
-      'passwordExpired': user.accountExpired,
-      'defaultPageSize': user.defaultPageSize,
-      'roles'          : roles,
-      '_links'         : links
+    Map result = [
+      data: [
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        email: user.email,
+        curatoryGroups: cur_groups,
+        enabled: user.enabled,
+        accountExpired: user.accountExpired,
+        accountLocked: user.accountLocked,
+        passwordExpired: user.accountExpired,
+        defaultPageSize: user.defaultPageSize,
+        roles: roles,
+        _links: links
     ]]
+
     render result as JSON
   }
 
@@ -87,7 +91,7 @@ class ProfileController {
   def update() {
     Map result = [:]
     User user = User.get(springSecurityService.principal.id)
-    def reqData = request.JSON
+    JSONObject reqData = request.JSON
 
     result = userProfileService.update(user, reqData, params, user)
     render result as JSON
@@ -97,12 +101,13 @@ class ProfileController {
   @Transactional
   def patch() {
     Map result = [:]
-    Map reqData = request.JSON
+    JSONObject reqData = request.JSON
     User user = User.get(springSecurityService.principal.id)
+
     if (reqData.new_password && reqData.password) {
       if (passwordEncoder.matches(reqData.password, user.password)) {
         user.password = reqData.new_password
-        user.save(flush: true, failOnError: true);
+        user.save(flush: true, failOnError: true)
       } else {
         response.status = 400
         result.errors = [password: [message: "wrong password - profile unchanged", code: null]]
@@ -113,8 +118,11 @@ class ProfileController {
     reqData.remove('new_password')
     reqData.remove('password')
     result = userProfileService.update(user, reqData, params, user)
-    if (result.errors != null)
+
+    if (result.errors) {
       response.status = 400
+    }
+
     render result as JSON
   }
 
@@ -128,51 +136,40 @@ class ProfileController {
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def getJobs() {
-    def result = [:]
-    def max = params.limit ? params.int('limit') : 10
-    def offset = params.offset ? params.int('offset') : 0
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def sort = params._sort ?: null
-    def order = params._order ?: null
-    def showFinished = params.boolean('showFinished') ?: false
+    Map result = [:]
+    int max = params.limit ? params.int('limit') : 10
+    int offset = params.offset ? params.int('offset') : 0
+    boolean showFinished = params.boolean('showFinished') ?: false
     User user = User.get(springSecurityService.principal.id)
-    def errors = [:]
+    Map errors = [:]
 
     if (params.boolean('archived') == true || params.boolean('combined') == true) {
+      params.user = user.id
       result.data = []
-      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?0", [user.id])[0]
-      def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?0 order by jr.startTime desc", [user.id], [max: max, offset: offset])
+
+      Map finished_results = jobResultService.fetchJobs(params, max, offset)
 
       if (params.boolean('combined') == true) {
-        def active_jobs = concurrencyManagerService.getUserJobs(user.id, max, offset, false)
+        Map active_jobs = concurrencyManagerService.getUserJobs(user.id, max, offset, false)
 
-        hqlTotal += active_jobs._pagination.total
+        int combined_total += finished_results._pagination.total + active_jobs._pagination.total
 
         if (offset == 0) {
-          result.data = active_jobs.data
+          result.data = active_jobs.data + finished_results.data
         }
-      }
+        else {
+          result.data = finished_results.data
+        }
 
-      jobs.each { j ->
-        def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
-        // No JsonObject for list view
-
-        result.data << [
-          uuid: j.uuid,
-          description: j.description,
-          type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-          linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-          startTime: j.startTime,
-          endTime: j.endTime,
-          status: j.statusText
+        result['_pagination'] = [
+          offset: offset,
+          limit: max,
+          total: combined_total
         ]
       }
-
-      result['_pagination'] = [
-        offset: offset,
-        limit: max,
-        total: hqlTotal
-      ]
+      else {
+        result = finished_results
+      }
     }
     else {
       result = concurrencyManagerService.getUserJobs(user.id, max, offset, showFinished)
@@ -183,19 +180,16 @@ class ProfileController {
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def cleanupJobs() {
-    def result = [:]
-    def max = params.limit ? params.int('limit') : 10
-    def offset = params.offset ? params.int('offset') : 0
-    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
-    def sort = params._sort ?: null
-    def order = params._order ?: null
+    Map result = [:]
+    int max = params.limit ? params.int('limit') : 10
+    int offset = params.offset ? params.int('offset') : 0
+    String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = User.get(springSecurityService.principal.id)
-    def errors = [:]
-    def jobs = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+    List jobs = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
 
     jobs.each { k, v ->
       if (v.endTime || v.cancelled) {
-        def j = concurrencyManagerService.getJob(v.id, true)
+        Job j = concurrencyManagerService.getJob(v.id, true)
         log.debug("Removed job ${v.id}")
       }
     }

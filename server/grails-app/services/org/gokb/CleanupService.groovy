@@ -421,7 +421,6 @@ class CleanupService {
       boolean more = true
       int batch = 50
       RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
-      RefdataValue ci_status_deleted = RefdataCategory.lookup('Combo.Status', 'Deleted')
       RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       IdentifierNamespace ns_eissn = IdentifierNamespace.findByValue('eissn')
@@ -661,8 +660,6 @@ class CleanupService {
 
     TitleInstance.withNewSession {
       RefdataValue rejected_status = RefdataCategory.lookup('KBComponent.EditStatus', KBComponent.EDIT_STATUS_REJECTED)
-      def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
-      def ids_combo = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
       def res = TitleInstance.executeUpdate('''update TitleInstance as ttl
                                                 set title.editStatus = :ds
@@ -736,6 +733,7 @@ class CleanupService {
         ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch])
         KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
         ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
+        ComponentAttachment.executeUpdate("delete from ComponentAttachment as cp where cp.component.id IN (:component)", [component: batch])
 
         batch.each {
           KBComponent kbc = KBComponent.get(it)
