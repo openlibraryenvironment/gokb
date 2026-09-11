@@ -43,14 +43,13 @@ class TitleAugmentServiceSpec extends Specification {
     titleOne = JournalInstance.findByName("TitleAugmentTestTitleOne") ?: new JournalInstance(name: "TitleAugmentTestTitleOne").save(flush: true)
     Identifier eissn = Identifier.findByValueAndNamespace("2196-677X", eissn_ns) ?: new Identifier(value: '2196-677X', namespace: eissn_ns).save(flush: true)
     Identifier issn = Identifier.findByValueAndNamespace("0178-2312", issn_ns) ?: new Identifier(value: '0178-2312', namespace: issn_ns).save(flush: true)
-    titleOne.ids << eissn
-    titleOne.ids << issn
-    titleOne.publisher << publisher
+    titleOne.addIdentifiers([eissn, issn])
+    titleOne.addPublisher(publisher)
     titleOne.save(flush: true)
 
     titleTwo = JournalInstance.findByName("TitleAugmentTestTitleTwo") ?: new JournalInstance(name: "TitleAugmentTestTitleTwo").save(flush: true)
     Identifier zdb_id = Identifier.findByValueAndNamespace('2810346-4', zdb_ns) ?: new Identifier(value: '2810346-4', namespace: zdb_ns).save(flush: true)
-    titleTwo.ids << zdb_id
+    titleTwo.addIdentifier(zdb_id)
     titleTwo.save(flush: true)
   }
 

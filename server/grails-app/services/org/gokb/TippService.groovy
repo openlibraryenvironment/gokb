@@ -1222,14 +1222,9 @@ class TippService {
           index++
 
           if (tipp.title) {
-            tipp.title.activeIds.each { data ->
-              Identifier idobj = Identifier.get(data.id)
-
+            tipp.title.activeIds.each { Identifier idobj ->
               if (['isbn', 'pisbn', 'issn', 'eissn'].contains(idobj.namespace.value)) {
-                if (!tipp.activeIds*.namespace.contains(idobj.namespace)) {
-                  new ComponentIdentifier(component: tipp, identifier: idobj).save(flush: true, failOnError: true)
-                  log.debug("added ID $data in TIPP $tipp")
-                }
+                tipp.addIdentifier(idobj)
               }
             }
 

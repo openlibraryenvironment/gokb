@@ -201,6 +201,22 @@ class TitleInstance extends KBComponent {
     return result
   }
 
+  public TitlePublisher addPublisher(Org pub, boolean update_comment = false) {
+    TitlePublisher result
+    TitlePublisher dupe = TitlePublisher.findByTitleAndPublisher(this, pub)
+
+    if (!dupe) {
+      result = new TitlePublisher(title: this, publisher: pub).save(flush: true, failOnError: true)
+
+      if (update_comment) {
+        this.lastUpdateComment = "Added new Publisher: ${new_id}"
+        save(flush: true)
+      }
+    }
+
+    result
+  }
+
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
    *  objects implementing this method can be easily located and listed / selected

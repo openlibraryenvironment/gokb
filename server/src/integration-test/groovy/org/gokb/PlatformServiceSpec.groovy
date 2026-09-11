@@ -48,7 +48,8 @@ class PlatformServiceSpec extends Specification {
 
     if (!journal) {
       journal = new JournalInstance(name: "PlatformService Journal").save(flush:true)
-      journal.ids.addAll([issn, eissn])
+      journal.addIdentifier(issn)
+      journal.addIdentifier(eissn)
       journal.save(flush: true)
     }
 
@@ -69,7 +70,7 @@ class PlatformServiceSpec extends Specification {
 
       test_tipp = tippUpsertService.upsertDTO(tmap)
 
-      test_tipp.ids.addAll([issn, eissn])
+      test_tipp.addIdentifiers(issn, eissn)
       test_tipp.save(flush: true)
     }
   }
@@ -96,10 +97,10 @@ class PlatformServiceSpec extends Specification {
     result.tipls == 1
     result.pkgs == 1
     old_plt.status.value == 'Deleted'
-    def moved_tipp = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where exists (select 1 from Combo where fromComponent = :np and toComponent = t)", [np: new_plt])
+    List moved_tipp = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where hostPlatform = :np", [np: new_plt])
     moved_tipp.size() == 1
 
-    def moved_tipl = TitleInstancePlatform.executeQuery("from TitleInstancePlatform as t where exists (select 1 from Combo where fromComponent = :np and toComponent = t)", [np: new_plt])
+    List moved_tipl = TitleInstancePlatform.executeQuery("from TitleInstancePlatform as t where hostPlatform = :np)", [np: new_plt])
     moved_tipl.size() == 1
 
     def pkg = Package.findByName("PlatformService Test Package")

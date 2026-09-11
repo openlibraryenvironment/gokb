@@ -114,7 +114,7 @@ class SourcesController {
       if ( obj.validate() ) {
         obj.save(flush: true)
 
-        errors << updateCombos(obj, reqBody, changed, false)
+        errors << updateLinks(obj, reqBody, changed, false)
 
         if (!errors) {
           response.status = 201
@@ -164,7 +164,7 @@ class SourcesController {
 
       result.changed |= restMappingService.updateObject(obj, fieldConfig, reqBody)
 
-      errors << updateCombos(obj, reqBody, result.changed, remove)
+      errors << updateLinks(obj, reqBody, result.changed, remove)
 
       if (!errors) {
         if ( obj.validate() ) {
@@ -189,8 +189,8 @@ class SourcesController {
     render result as JSON
   }
 
-  private Map updateCombos(obj, reqBody, changed, boolean remove = true) {
-    log.debug("Updating package combos ..")
+  private Map updateLinks(obj, reqBody, changed, boolean remove = true) {
+    log.debug("Updating source links ..")
     Map errors = [:]
 
     if (reqBody.curatoryGroups) {

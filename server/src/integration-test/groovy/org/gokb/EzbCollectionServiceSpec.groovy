@@ -41,8 +41,8 @@ class EzbCollectionServiceSpec extends Specification {
       testPlatform = Platform.findByName("EzbTestPlatform") ?: new Platform(name: "EzbTestPlatform", provider: testProvider).save(flush: true)
       testId = Identifier.findByValue("EZB-TEST-12345") ?: new Identifier(value: 'EZB-TEST-12345', namespace: IdentifierNamespace.findByValue('ezb-collection-id')).save(flush: true)
       Source testSrc = Source.findByName("EZB-TEST-12345: EzbTestPkg") ?: new Source(name: "EZB-TEST-12345: EzbTestPkg", url: "https://ezb.uni-regensburg.de/services/titlelist.phtml?collection_id=EZB-NALFO-01634&title_split=1").save(flush:true)
-      testPackage = Package.findByName("EzbTestPkg") ?: new Package(name: "EzbTestPkg", source: testSrc).save(flush: true)
-      testPackage.ids << testId
+      testPackage = Package.findByName("EzbTestPkg") ?: new Package(name: "EzbTestPkg", source: testSrc, provider: testProvider, nominalPlatform: testPlatform).save(flush: true)
+      testPackage.addIdentifier (testId)
       testPackage.curatoryGroups << testCurator
       testPackage.save(flush: true)
     }
@@ -61,7 +61,7 @@ class EzbCollectionServiceSpec extends Specification {
   void "test create new package info"() {
     given:
 
-    def item = [
+    Map item = [
       ezb_collection_id: "EZB-NALIW-00492",
       ezb_collection_shortname: "Sage_Journals_HSS_NK",
       ezb_collection_name: "Sage Journals Online / Humanities and Social Sciences (HSS)",
@@ -84,7 +84,7 @@ class EzbCollectionServiceSpec extends Specification {
       ezb_collection_platform: testPlatform.uuid
     ]
 
-    def type_results = [
+    Map type_results = [
       total: 0,
       skipped: 0,
       noProvider: 0,
@@ -103,7 +103,7 @@ class EzbCollectionServiceSpec extends Specification {
     ]
 
     when:
-    def result = ezbCollectionService.processPackageInfo(item, type_results)
+    Map result = ezbCollectionService.processPackageInfo(item, type_results)
 
     then:
     result.skipped == false
@@ -123,10 +123,10 @@ class EzbCollectionServiceSpec extends Specification {
   void "test import ezb package content"() {
 
     given:
-    def provider_uuid = Org.findByName("EzbTestProvider").uuid
-    def platform_uuid = Platform.findByName("EzbTestPlatform").uuid
+    String provider_uuid = Org.findByName("EzbTestProvider").uuid
+    String platform_uuid = Platform.findByName("EzbTestPlatform").uuid
 
-    def item = [
+    Map item = [
       ezb_collection_id: "EZB-WISO-01791",
       ezb_collection_shortname: "WISO_Pflege_AP",
       ezb_collection_name: "WISO Pflege",
@@ -149,7 +149,7 @@ class EzbCollectionServiceSpec extends Specification {
       ezb_collection_platform: testPlatform.uuid
     ]
 
-    def type_results = [
+    Map type_results = [
       total: 0,
       skipped: 0,
       noProvider: 0,
@@ -184,7 +184,7 @@ class EzbCollectionServiceSpec extends Specification {
     Package testIdPkg = Package.findByName("EzbTestPkg")
 
     when:
-    def result = ezbCollectionService.hasEzbUrl(testIdPkg)
+    boolean result = ezbCollectionService.hasEzbUrl(testIdPkg)
 
     then:
     result == true
@@ -192,7 +192,7 @@ class EzbCollectionServiceSpec extends Specification {
 
   void "test match existing package by id with other curator"() {
     given:
-    def item = [
+    Map item = [
       ezb_collection_id: "EZB-TEST-12345",
       ezb_collection_shortname: "EzbTestPkg",
       ezb_collection_name: "EzbTestPkg",
@@ -215,7 +215,7 @@ class EzbCollectionServiceSpec extends Specification {
       ezb_collection_platform: testPlatform.uuid
     ]
 
-    def type_results = [
+    Map type_results = [
       total: 0,
       skipped: 0,
       noProvider: 0,
@@ -234,7 +234,7 @@ class EzbCollectionServiceSpec extends Specification {
     ]
 
     when:
-    def result = ezbCollectionService.processPackageInfo(item, type_results)
+    Map result = ezbCollectionService.processPackageInfo(item, type_results)
 
     then:
     type_results.skipped == 0

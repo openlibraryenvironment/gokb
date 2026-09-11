@@ -84,9 +84,9 @@ class PackageCSVExportServiceSpec extends Specification {
     testOrg = Org.findByName('PackageService Test Org') ?: new Org(name: 'PackageService Test Org').save(flush: true)
     testPlt = Platform.findByName('PackageService Test Platform') ?: new Platform(name: 'PackageService Test Platform', provider: testOrg).save(flush: true)
 
-    Package testPkg1 = Package.findByName('PackageService Test Package') ?: new Package(name: 'PackageService Test Package', provider: testOrg).save(flush: true)
-    Package testPkg2 = Package.findByName('PackageService Test AddJournal') ?: new Package(name: 'PackageService Test AddJournal', provider: testOrg).save(flush: true)
-    Package testPkg3 = Package.findByName('PackageService Test FirstLine') ?: new Package(name: 'PackageService Test FirstLine', provider: testOrg).save(flush: true)
+    Package testPkg1 = Package.findByName('PackageService Test Package') ?: new Package(name: 'PackageService Test Package', provider: testOrg, nominalPlatform: testPlt).save(flush: true)
+    Package testPkg2 = Package.findByName('PackageService Test AddJournal') ?: new Package(name: 'PackageService Test AddJournal', provider: testOrg, nominalPlatform: testPlt).save(flush: true)
+    Package testPkg3 = Package.findByName('PackageService Test FirstLine') ?: new Package(name: 'PackageService Test FirstLine', provider: testOrg, nominalPlatform: testPlt).save(flush: true)
 
 
     if (!issn_ns) {
@@ -105,19 +105,19 @@ class PackageCSVExportServiceSpec extends Specification {
     eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338')
     eissn2 = Identifier.findByNamespaceAndValue(eissn_ns, '1727-9445') ?: new Identifier(namespace: eissn_ns, value: '1727-9445')
 
-    def book = BookInstance.findByName('PackageService Book 1')
+    BookInstance book = BookInstance.findByName('PackageService Book 1')
 
     if (!book) {
       book = new BookInstance(name: 'PackageService Book 1').save(flush:true)
-      book.ids.add(isbn)
+      book.addIdentifier(isbn)
       book.save(flush: true)
     }
 
     if (!TitleInstancePackagePlatform.findByName('PackageService BookTipp 1')) {
-
-      def tipp_map = [
+      Map tipp_map = [
         pkg: testPkg1.id,
         hostPlatform: testPlt.id,
+        title: book.id,
         name: 'PackageService BookTipp 1',
         url: 'https://package-caching-test.test/book1',
         editStatus: 'Approved',
@@ -153,16 +153,14 @@ class PackageCSVExportServiceSpec extends Specification {
 
       TitleInstancePackagePlatform tipp = tippUpsertService.upsertDTO(tipp_map)
 
-
-      tipp.title = book
-      tipp.ids.add(isbn)
-      tipp.save(flush: true)
+      tipp.addIdentifiers(isbn)
     }
 
     if (!TitleInstancePackagePlatform.findByName('PackageService BookTipp 2')) {
-      def tipp_map = [
+      Map tipp_map = [
         pkg: testPkg2.id,
         hostPlatform: testPlt.id,
+        title: book.id
         name: 'PackageService BookTipp 2',
         url: 'https://package-caching-test.test/book1',
         editStatus: 'Approved',
@@ -198,17 +196,15 @@ class PackageCSVExportServiceSpec extends Specification {
 
       TitleInstancePackagePlatform tipp = tippUpsertService.upsertDTO(tipp_map)
 
-
-      tipp.title = book
-      tipp.ids.add(isbn)
-      tipp.save(flush: true)
+      tipp.addIdentifier(isbn)
     }
 
 
     if (!TitleInstancePackagePlatform.findByName('PackageService BookTipp 3')) {
-      def tipp_map = [
+      Map tipp_map = [
         pkg: testPkg3.id,
         hostPlatform: testPlt.id,
+        title: book.id,
         name: 'PackageService BookTipp 3',
         url: 'https://package-caching-test.test/book1',
         editStatus: 'Approved',
@@ -243,11 +239,7 @@ class PackageCSVExportServiceSpec extends Specification {
       ]
 
       TitleInstancePackagePlatform tipp = tippUpsertService.upsertDTO(tipp_map)
-
-
-      tipp.title = book
-      tipp.ids.add(isbn)
-      tipp.save(flush: true)
+      tipp.addIdentifier(isbn)
     }
   }
 
@@ -283,10 +275,10 @@ class PackageCSVExportServiceSpec extends Specification {
 
   void "Test caching new TIPP KBART - test new file with monograph"() {
     given:
-    def testPkg = Package.findByName('PackageService Test Package')
+    Package testPkg = Package.findByName('PackageService Test Package')
     String old_fn_pattern = packageCSVExportService.generateExportFileName(testPkg, PackageCSVExportService.ExportType.KBART_TIPP)
-    def old_filename = packageCSVExportService.getLatestFile(testPkg, filePath, old_fn_pattern, PackageCSVExportService.ExportType.KBART_TIPP)
-    def old_file = new File(filePath + old_filename)
+    String old_filename = packageCSVExportService.getLatestFile(testPkg, filePath, old_fn_pattern, PackageCSVExportService.ExportType.KBART_TIPP)
+    File old_file = new File(filePath + old_filename)
 
     if (old_file.isFile()) {
       assert old_file.delete()
@@ -307,9 +299,9 @@ class PackageCSVExportServiceSpec extends Specification {
 
     assert file.isFile()
 
-    def csv = packageCSVExportService.initReader(filePath + latest_filename)
+    CSVReader csv = packageCSVExportService.initReader(filePath + latest_filename)
     String[] header = csv.readNext().collect { it.toLowerCase().trim() }
-    def col_positions = [:]
+    Map col_positions = [:]
     int col_ctr = 0
 
     header.each { col ->
@@ -351,7 +343,7 @@ class PackageCSVExportServiceSpec extends Specification {
 
   void "Test caching updated TIPP KBART - new TIPP"() {
     given:
-    def testPkgAdd = Package.findByName('PackageService Test AddJournal')
+    Package testPkgAdd = Package.findByName('PackageService Test AddJournal')
     String old_fn_pattern = packageCSVExportService.generateExportFileName(testPkgAdd, PackageCSVExportService.ExportType.KBART_TIPP)
     String old_filename = packageCSVExportService.getLatestFile(testPkgAdd, filePath, old_fn_pattern, PackageCSVExportService.ExportType.KBART_TIPP)
     File old_file = new File(filePath + old_filename)
@@ -365,9 +357,10 @@ class PackageCSVExportServiceSpec extends Specification {
     packageCSVExportService.createKbartExport(testPkgAdd, PackageCSVExportService.ExportType.KBART_TIPP, true)
     sleep(5000)
 
-    def tipp1_map = [
+    Map tipp1_map = [
       pkg: testPkgAdd.id,
       hostPlatform: testPlt.id,
+      title: journal1,
       name: 'PackageService Journal 1',
       url: 'https://package-caching-test.test/journal1',
       editStatus: 'Approved',
@@ -395,10 +388,7 @@ class PackageCSVExportServiceSpec extends Specification {
     ]
 
     TitleInstancePackagePlatform tipp1 = tippUpsertService.upsertDTO(tipp1_map)
-
-    tipp1.title = journal1
-    tipp1.ids.addAll([issn, eissn])
-    tipp1.save(flush: true)
+    tipp1.addIdentifiers([issn, eissn])
 
     sleep(1000)
 
@@ -407,7 +397,7 @@ class PackageCSVExportServiceSpec extends Specification {
 
     sleep(5000)
     packageCSVExportService.createKbartExport(tipp1.pkg, PackageCSVExportService.ExportType.KBART_TIPP, true)
-    sleep (2000)
+    sleep(2000)
 
     then:
     String latest_fn_pattern = packageCSVExportService.generateExportFileName(testPkgAdd, PackageCSVExportService.ExportType.KBART_TIPP)
@@ -419,9 +409,9 @@ class PackageCSVExportServiceSpec extends Specification {
 
     assert file.isFile()
 
-    def csv = packageCSVExportService.initReader(filePath + latest_filename)
+    CSVReader csv = packageCSVExportService.initReader(filePath + latest_filename)
     String[] header = csv.readNext().collect { it.toLowerCase().trim() }
-    def col_positions = [:]
+    Map col_positions = [:]
     int col_ctr = 0
 
     header.each { col ->
@@ -488,7 +478,7 @@ class PackageCSVExportServiceSpec extends Specification {
 
   void "Test caching updated TIPP KBART - updated TIPP fields"() {
     given:
-    def testPkgUpdate = Package.findByName('PackageService Test FirstLine')
+    Package testPkgUpdate = Package.findByName('PackageService Test FirstLine')
     String old_fn_pattern = packageCSVExportService.generateExportFileName(testPkgUpdate, PackageCSVExportService.ExportType.KBART_TIPP)
     String old_filename = packageCSVExportService.getLatestFile(testPkgUpdate, filePath, old_fn_pattern, PackageCSVExportService.ExportType.KBART_TIPP)
     File old_file = new File(filePath + old_filename)
@@ -501,7 +491,7 @@ class PackageCSVExportServiceSpec extends Specification {
     packageCSVExportService.createKbartExport(testPkgUpdate, PackageCSVExportService.ExportType.KBART_TIPP, true)
     sleep(500)
 
-    def tipp1 = TitleInstancePackagePlatform.findByName('PackageService BookTipp 3')
+    TitleInstancePackagePlatform tipp1 = TitleInstancePackagePlatform.findByName('PackageService BookTipp 3')
     tipp1.name = 'PackageService Update Book'
     tipp1.url = 'https://package-caching-test.test/book1update'
     tipp1.accessEndDate = null
@@ -525,9 +515,9 @@ class PackageCSVExportServiceSpec extends Specification {
 
     assert file.isFile()
 
-    def csv = packageCSVExportService.initReader(filePath + latest_filename)
+    CSVReader csv = packageCSVExportService.initReader(filePath + latest_filename)
     String[] header = csv.readNext().collect { it.toLowerCase().trim() }
-    def col_positions = [:]
+    Map col_positions = [:]
     int col_ctr = 0
 
     header.each { col ->

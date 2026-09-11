@@ -497,12 +497,32 @@ where cp.owner = :c
       result = new ComponentIdentifier(component: this, identifier: ido).save(flush: true, failOnError: true)
 
       if (update_comment) {
-        this.lastUpdateComment = "Added new ID: ${new_id}"
+        this.lastUpdateComment = "Added new ID: ${ido}"
         save(flush: true)
       }
     }
 
     result
+  }
+
+  public int addIdentifiers(List<Identifier> idos, boolean update_comment = true) {
+    int added = 0
+
+    idos.each { Identifier ido ->
+      ComponentIdentifier dupe = ComponentIdentifier.findByComponentAndIdentifier(this, ido)
+
+      if (!dupe) {
+        new ComponentIdentifier(component: this, identifier: ido).save(flush: true, failOnError: true)
+        added++
+      }
+    }
+
+    if (added > 0 && update_comment) {
+      this.lastUpdateComment = "Added new IDs: ${idos}"
+      save(flush: true)
+    }
+
+    return added
   }
 
   static KBComponent lookupByIO(String idtype, String idvalue) {

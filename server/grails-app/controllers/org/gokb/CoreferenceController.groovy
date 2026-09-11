@@ -37,10 +37,8 @@ class CoreferenceController {
 
       if ( matched_ids ) {
         matched_ids.each { Identifier int_id ->
-          def matched_id = [:]
+          Map matched_id = [:]
           log.debug("Recognised identifier.. find all occurrences")
-
-  	      ComboCriteria crit = ComboCriteria.createFor(KBComponent.createCriteria())
 
           matched_id.identifier = int_id
 

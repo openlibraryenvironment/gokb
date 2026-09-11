@@ -61,7 +61,7 @@ class BulkImportSpec extends Specification {
       Identifier pkg_id = Identifier.findByNamespaceAndValue(test_idns, "btp2") ?: new Identifier(namespace: test_idns, value: "btp2").save(flush: true, failOnError: true)
       test_bulk_pkg = new Package(name: 'TestBulkPkgOld', provider: test_bulk_org, nominalPlatform: test_bulk_plt).save(flush: true, failOnError: true)
       test_bulk_pkg.curatoryGroups << bulk_cg
-      test_bulk_pkg.ids << pkg_id
+      test_bulk_pkg.addIdentifier(pkg_id, false)
       test_bulk_pkg.save(flush: true, failOnError: true)
     }
   }
@@ -469,18 +469,12 @@ class BulkImportSpec extends Specification {
     expect:
     resp.body().result == 'FINISHED'
     resp.body().report?.test_bulk_import_collection?.report != null
-    def pkg = Package.findByName('TestBulkPkgOld')
-    def new_group = CuratoryGroup.findByName('TestBulkAlternativeCG')
+    Package pkg = Package.findByName('TestBulkPkgOld')
+    CuratoryGroup new_group = CuratoryGroup.findByName('TestBulkAlternativeCG')
     pkg != null
     pkg.refresh()
 
-    def new_curators = CuratoryGroup.executeQuery('''from CuratoryGroup as cg
-                                                            where exists (
-                                                              select 1 from Combo
-                                                              where type = :cpcg
-                                                              and toComponent = cg
-                                                              and fromComponent = :pkg
-                                                        )''', [cpcg: RefdataCategory.lookup('Combo.Type','Package.CuratoryGroups'), pkg: pkg])
+    List new_curators = pkg.curatoryGroups
     new_curators.size() == 1
     new_curators[0] == new_group
 

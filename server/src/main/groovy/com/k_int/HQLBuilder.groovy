@@ -190,18 +190,11 @@ public class HQLBuilder {
   }
 
   static def processQryContextType(hql_builder_context,crit, proppath, parent_scope, the_class) {
-
     // log.debug("processQryContextType.... ${proppath}");
-
-    // Get all the combo properties defined on the class.
-    def allProps = KBComponent.getAllComboPropertyDefinitionsFor(the_class)
-
-    log.debug("combo props for ${the_class} are: ${allProps}")
-
     if ( proppath.size() > 1 ) {
+      String head = proppath.remove(0)
+      String newscope = parent_scope + '_' + head
 
-      def head = proppath.remove(0)
-      def newscope = parent_scope+'_'+head
       if ( hql_builder_context.declared_scopes.containsKey(newscope) ) {
         // Already established scope for this context
         // log.debug("${newscope} already a declared contest");
@@ -209,76 +202,21 @@ public class HQLBuilder {
       else {
         // log.debug("Intermediate establish scope - ${head} :: ${proppath}");
         // We're looking at an intermediate property which needs to add some bind scopes. The property can be a simple
-        // standard association, or it could be a virtual (Combo) property which will need multiple joins.
+        // standard association, or it could be a jointable property which will need multiple joins.
 
-        // 1. Determine if this is a combo property
-        Class target_class = allProps[head]
-        if ( target_class ) {
-          // Combo... Process
-          def intermediate_scope = createComboScope(the_class, head, hql_builder_context, parent_scope)
-          // Recurs into this function with the new proppath
-          processQryContextType(hql_builder_context,crit, proppath, intermediate_scope, target_class)
-          // Now process
-        }
-        else {
+        Class target_class = GrailsClassUtils.getPropertyType(the_class, head)
 
-          // Target class can be looked up in standard way.
-          target_class = GrailsClassUtils.getPropertyType(the_class, head)
-
-          // Standard association, just make a bind variable..
-          establishScope(hql_builder_context, parent_scope, head, newscope)
-          processQryContextType(hql_builder_context,crit, proppath, newscope, target_class)
-        }
+        establishScope(hql_builder_context, parent_scope, head, newscope)
+        processQryContextType(hql_builder_context,crit, proppath, newscope, target_class)
       }
     }
     else {
       log.debug("head prop...");
       // If this is an ordinary property, add the operation. If it's a special, the make the extra joins
-      Class target_class = allProps[proppath[0]]
-      if ( target_class ) {
-        log.debug("Combo property.....");
-        def component_scope_name = createComboScope(the_class, proppath[0], hql_builder_context, parent_scope)
-        // Finally, because the leaf of the query path is a combo property, we must be being asked to match on an
-        // object.
-        addQueryClauseFor(crit,hql_builder_context,component_scope_name)
-      }
-      else {
-        log.debug("Standard property ${proppath}...");
+      log.debug("Standard property ${proppath}...");
         // The property is a standard property
-        addQueryClauseFor(crit,hql_builder_context,parent_scope+'.'+proppath[0])
-      }
+      addQueryClauseFor(crit,hql_builder_context,parent_scope+'.'+proppath[0])
     }
-  }
-
-  static def createComboScope(the_class, propname, hql_builder_context, parent_scope) {
-    // Combo property... We need to establish the target scope, and then add whatever the comparison is
-    boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, propname)
-    // log.debug("combo property, incoming=${incoming}");
-    def combo_set_name = incoming ? 'incomingCombos' : 'outgoingCombos'
-    def combo_prop_name = incoming ? 'fromComponent' : 'toComponent'
-
-    // Firstly, establish a scope called proppath[0]_combo. This will be the combo link to the desired target
-    def combo_scope_name = propname+"_combos"
-    if ( ! hql_builder_context.declared_scopes.containsKey(combo_scope_name) ) {
-      // log.debug("Adding scope ${combo_scope_name}");
-      establishScope(hql_builder_context, parent_scope, combo_set_name, combo_scope_name);
-      def combo_type_bindvar = combo_scope_name+"_type"
-      def combo_status_bindvar = combo_scope_name+"_status"
-      hql_builder_context.query_clauses.add("${combo_scope_name}.type = :${combo_type_bindvar}");
-      hql_builder_context.query_clauses.add("${combo_scope_name}.status = :${combo_status_bindvar}");
-      hql_builder_context.bindvars[combo_type_bindvar] = RefdataCategory.lookupOrCreate ( "Combo.Type", the_class.getComboTypeValueFor (the_class, propname))
-      hql_builder_context.bindvars[combo_status_bindvar] = DomainClassExtender.comboStatusActive
-    }
-
-    def component_scope_name = propname
-    if ( ! hql_builder_context.declared_scopes.containsKey(component_scope_name) ) {
-      // log.debug("Adding scope ${component_scope_name}");
-      establishScope(hql_builder_context, combo_scope_name, combo_prop_name, component_scope_name);
-    }
-
-    // Work out what class we are at in the tree and returnt that as the current class
-
-    component_scope_name
   }
 
   static def establishScope(hql_builder_context, parent_scope, property_to_join, newscope_name) {

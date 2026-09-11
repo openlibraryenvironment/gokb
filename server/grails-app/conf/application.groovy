@@ -152,7 +152,7 @@ globalSearchTemplates = [
           prompt:'SID',
           qparam:'qp_sid',
           placeholder:'SID for item',
-          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value']
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'linkedIds.identifier.value']
         ],
         [
           type:'lookup',
@@ -205,7 +205,7 @@ globalSearchTemplates = [
           prompt:'Identifier',
           qparam:'qp_identifier',
           placeholder:'Identifier Value',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value'],
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'linkedIds.identifier.value'],
           hide:false
         ],
         [
@@ -406,21 +406,21 @@ globalSearchTemplates = [
           prompt:'Publisher',
           qparam:'qp_pub',
           placeholder:'Publisher',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisherLinks.publisher'],
           hide:false
         ],
         [
           prompt:'Identifier',
           qparam:'qp_identifier',
           placeholder:'Identifier Value',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value'],
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'linkedIds.identifier.value'],
           hide:false
         ],
         [
           prompt:'Title Publisher ID',
           qparam:'qp_pub_id',
           placeholder:'Title Publisher ID',
-          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'publisher.id', 'type' : 'java.lang.Long'],
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'publisherLinks.publisher.id', 'type' : 'java.lang.Long'],
           hide:true
         ],
         [
@@ -443,16 +443,7 @@ globalSearchTemplates = [
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status'],
           // II: Default not yet implemented
           default:[ type:'query', query:'select r from RefdataValue where r.value=:v and r.owner.description=:o', params:['Current','KBComponent.Status'] ]
-        ],
-
-        // In order for this to work as users expect, we're going to need a unique clause at the root context, or we get
-        // repeated rows where a wildcard matches multiple titles. [That or this clause needs to be an "exists" caluse]
-        // [
-        //   prompt:'Identifier',
-        //   qparam:'qp_identifier',
-        //   placeholder:'Any identifier',
-        //   contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'ids.value','wildcard':'B']
-        // ],
+        ]
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
@@ -508,7 +499,7 @@ globalSearchTemplates = [
           prompt:'Title Publisher ID',
           qparam:'qp_pub_id',
           placeholder:'Title Publisher ID',
-          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'title.publisher.id', 'type' : 'java.lang.Long'],
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'title.publisherLinks.publisher.id', 'type' : 'java.lang.Long'],
           hide:true
         ],
         [
@@ -949,14 +940,14 @@ globalSearchTemplates = [
           prompt:'Publisher',
           qparam:'qp_pub',
           placeholder:'Publisher',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisherLinks.publisher'],
           hide:true
         ],
         [
           prompt:'Identifier',
           qparam:'qp_identifier',
           placeholder:'Identifier Value',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value'],
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'linkedIds.identifier.value'],
           hide:false
         ],
         [
@@ -1010,14 +1001,14 @@ globalSearchTemplates = [
           prompt:'Publisher',
           qparam:'qp_pub',
           placeholder:'Publisher',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisherLinks.publisher'],
           hide:false
         ],
         [
           prompt:'Identifier',
           qparam:'qp_identifier',
           placeholder:'Identifier Value',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value'],
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'linkedIds.identifier.value'],
           hide:false
         ],
         [
@@ -1064,7 +1055,7 @@ globalSearchTemplates = [
           prompt:'Publisher',
           qparam:'qp_pub',
           placeholder:'Publisher',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisherLinks.publisher'],
           hide:true
         ],
       ],

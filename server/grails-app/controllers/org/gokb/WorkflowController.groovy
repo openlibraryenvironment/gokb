@@ -406,7 +406,7 @@ class WorkflowController{
 
         old_ti.ids.each { old_id ->
           ComponentIdentifier old_ci = ComponentIdentifier.findByComponentAndIdentifier(old_ti, old_id)
-          List dupes = ComponentIdentifier.executeQuery("Select c from ComponentIdentifier as c where c.identifier.id = :ido and c.component.id = :ti", [ido: old_id.id, ti: new_ti.id])
+          List dupes = ComponentIdentifier.executeQuery("from ComponentIdentifier as c where c.identifier.id = :ido and c.component.id = :ti", [ido: old_id.id, ti: new_ti.id])
 
           if (!dupes || dupes.size() == 0) {
             log.debug("Adding Identifier ${old_id} to ${new_ti}")

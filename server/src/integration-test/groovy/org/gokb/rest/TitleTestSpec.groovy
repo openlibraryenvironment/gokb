@@ -32,7 +32,7 @@ class TitleTestSpec extends AbstractAuthSpec {
 
   BlockingHttpClient client
 
-  def last = false
+  boolean last = false
 
   def setupSpec(){
   }
@@ -42,20 +42,20 @@ class TitleTestSpec extends AbstractAuthSpec {
       client = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
 
-    def ns_issn = IdentifierNamespace.findByValue('issn')
-    def ns_eissn = IdentifierNamespace.findByValue('eissn')
-    def new_id = Identifier.findByValue('2345-2331') ?: new Identifier(value: '2345-2331', namespace: ns_eissn).save(flush:true)
-    def new_org = Org.findByName('TestTitleOrg') ?: new Org(name: 'TestTitleOrg').save(flush:true)
-    def new_update_org = Org.findByName('TestTitleOrgUpdate') ?: new Org(name: 'TestTitleOrgUpdate').save(flush:true)
-    def old_id = Identifier.findByValue('2345-2323') ?: new Identifier(value: '2345-2323', namespace: ns_eissn).save(flush:true)
+    IdentifierNamespace ns_issn = IdentifierNamespace.findByValue('issn')
+    IdentifierNamespace ns_eissn = IdentifierNamespace.findByValue('eissn')
+    Identifier new_id = Identifier.findByValue('2345-2331') ?: new Identifier(value: '2345-2331', namespace: ns_eissn).save(flush:true)
+    Org new_org = Org.findByName('TestTitleOrg') ?: new Org(name: 'TestTitleOrg').save(flush:true)
+    Org new_update_org = Org.findByName('TestTitleOrgUpdate') ?: new Org(name: 'TestTitleOrgUpdate').save(flush:true)
+    Identifier old_id = Identifier.findByValue('2345-2323') ?: new Identifier(value: '2345-2323', namespace: ns_eissn).save(flush:true)
 
     if (!JournalInstance.findByName("TitleTestJournal")) {
-      def test_ti = new JournalInstance(name: "TitleTestJournal").save(flush:true)
-      def id_combo = new Combo(fromComponent: test_ti, toComponent: old_id, type: RefdataCategory.lookup('Combo.Type','KBComponent.Ids')).save(flush:true)
+      JournalInstance test_ti = new JournalInstance(name: "TitleTestJournal").save(flush:true)
+      test_ti.addIdentifier(old_id)
       RefdataValue ddc_schema = RefdataCategory.lookup('Subject.Scheme', 'DDC')
-      def ddc_test = Subject.findBySchemeAndHeading(ddc_schema, '001')
+      Subject ddc_test = Subject.findBySchemeAndHeading(ddc_schema, '001')
 
-      test_ti.publisher << new_org
+      test_ti.addPublisher(new_org)
       test_ti.save()
 
       if (!ddc_test) {
@@ -67,41 +67,35 @@ class TitleTestSpec extends AbstractAuthSpec {
       }
     }
 
-    def test_ti = JournalInstance.findByName("TestTitleMergeObject")
+    JournalInstance test_ti = JournalInstance.findByName("TestTitleMergeObject")
 
     if (!test_ti) {
       test_ti = new JournalInstance(name: "TestTitleMergeObject").save(flush:true)
-      def merge_id = Identifier.findByValue('5252-2342') ?: new Identifier(value: '5252-2342', namespace: ns_issn).save(flush:true)
-      test_ti.ids.addAll([merge_id, old_id])
+      Identifier merge_id = Identifier.findByValue('5252-2342') ?: new Identifier(value: '5252-2342', namespace: ns_issn).save(flush:true)
+      test_ti.addIdentifiers([merge_id, old_id])
       test_ti.save(flush: true)
     }
 
     if (!TitleInstancePackagePlatform.findByName("TestTitleMergeTipp")) {
-      def tipp_plt = Platform.findByName("TestTitleMergePlatform") ?: new Platform(name: "TestTitleMergePlatform", primaryUrl: "http://testmergetitle.org").save(flush: true)
-      def tipp_pkg = Package.findByName("TestTitleMergePackage") ?: new Package(name: "TestTitleMergePackage").save(flush: true)
-      tipp_pkg.nominalPlatform = tipp_plt
-      tipp_pkg.save(flush: true)
-      def tipp = TitleInstancePackagePlatform.findByName("TestTitleMergeTipp") ?: new TitleInstancePackagePlatform(name: "TestTitleMergeTipp", url: "http://testmergetitle.org/tipp1").save(flush: true)
-      tipp.pkg = tipp_pkg
-      tipp.hostPlatform = tipp_plt
-      tipp.title = test_ti
-      tipp.save(flush: true)
+      Platform tipp_plt = Platform.findByName("TestTitleMergePlatform") ?: new Platform(name: "TestTitleMergePlatform", primaryUrl: "http://testmergetitle.org").save(flush: true)
+      Package tipp_pkg = Package.findByName("TestTitleMergePackage") ?: new Package(name: "TestTitleMergePackage", nominalPlatform: tipp_plt, provider: new_org).save(flush: true)
+
+      new TitleInstancePackagePlatform(name: "TestTitleMergeTipp", url: "http://testmergetitle.org/tipp1", pkg: tipp_pkg, hostPlatform: tipp_plt, title: test_ti).save(flush: true)
     }
 
-    def test_prev = JournalInstance.findByName("TestPrevJournal") ?: new JournalInstance(name: "TestPrevJournal").save(flush:true)
-    def test_next = JournalInstance.findByName("TestNextJournal") ?: new JournalInstance(name: "TestNextJournal").save(flush:true)
-    def test_upd_history = JournalInstance.findByName("TestUpdateJournalHistory") ?: new JournalInstance(name: "TestUpdateJournalHistory").save(flush:true)
+    JournalInstance test_prev = JournalInstance.findByName("TestPrevJournal") ?: new JournalInstance(name: "TestPrevJournal").save(flush:true)
+    JournalInstance test_next = JournalInstance.findByName("TestNextJournal") ?: new JournalInstance(name: "TestNextJournal").save(flush:true)
+    JournalInstance test_upd_history = JournalInstance.findByName("TestUpdateJournalHistory") ?: new JournalInstance(name: "TestUpdateJournalHistory").save(flush:true)
   }
 
   def cleanup() {
     if (last) {
       sleep(300)
-      JournalInstance.findByName("TestPrevJournal")?.refresh()?.expunge()
-      JournalInstance.findByName("TestNextJournal")?.refresh()?.expunge()
-      JournalInstance.findByName("TestUpdateJournalHistory")?.refresh()?.expunge()
-      JournalInstance.findByName("TitleTestJournal")?.refresh()?.expunge()
-      JournalInstance.findByName("TestFullJournal")?.refresh()?.expunge()
-      JournalInstance.findByName("TestTitleMergeTarget")?.refresh()?.expunge()
+
+      ["TestPrevJournal", "TestNextJournal", "TestUpdateJournalHistory", "TitleTestJournal", "TestFullJournal", "TestTitleMergeTarget"].each {
+        JournalInstance.findByName(it)?.refresh()?.expunge()
+      }
+
       TitleInstancePackagePlatform.findByName("TestTitleMergeTipp")?.refresh()?.expunge()
       Package.findByName("TestTitleMergePackage")?.refresh()?.expunge()
       Platform.findByName("TestTitleMergePlatform")?.refresh()?.expunge()
@@ -159,7 +153,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     def publisher = Org.findByName("TestTitleOrg")
 
     when:
-    def json_record = [
+    Map json_record = [
       name: "TestFullJournal",
       ids: [
         test_id.id,
@@ -192,24 +186,23 @@ class TitleTestSpec extends AbstractAuthSpec {
     body._embedded?.publisher?.size() == 1
     body._embedded?.subjects?.size() == 2
     sleep(500)
-    def new_ti = TitleInstance.findById(body.id)
+    TitleInstance new_ti = TitleInstance.findById(body.id)
 
     new_ti.publisher?.size() == 1
   }
 
   void "test add title history event"() {
-    def urlPath = getUrlPath()
-    def id = JournalInstance.findByName("TitleTestJournal").id
-    def prev_id = JournalInstance.findByName("TestPrevJournal").id
+    String urlPath = getUrlPath()
+    JournalInstance obj = JournalInstance.findByName("TitleTestJournal")
 
     when:
-    def json_record = [
+    Map json_record = [
       date: "2010-01-01",
-      from: [prev_id]
+      from: [JournalInstance.findByName("TestPrevJournal").id]
     ]
 
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.POST("${urlPath}/rest/titles/$id/history", json_record)
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/titles/${obj.id}/history", json_record)
       .bearerAuth(accessToken)
     HttpResponse resp = client.exchange(request, Map)
 
@@ -220,25 +213,23 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   void "test update title history events"() {
-    def urlPath = getUrlPath()
-    def id = JournalInstance.findByName("TestUpdateJournalHistory").id
-    def prev_id = JournalInstance.findByName("TestPrevJournal").id
-    def next_id = JournalInstance.findByName("TestNextJournal").id
+    String urlPath = getUrlPath()
+    JournalInstance obj = JournalInstance.findByName("TestUpdateJournalHistory")
 
     when:
-    def json_record = [
+    Map json_record = [
       [
         date: "1990-01-01",
-        from: [prev_id]
+        from: [JournalInstance.findByName("TestPrevJournal").id]
       ],
       [
         date: "2010-01-01",
-        to: [next_id]
+        to: [JournalInstance.findByName("TestNextJournal").id]
       ]
     ]
 
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/$id/history", json_record)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/${obj.id}/history", json_record)
       .bearerAuth(accessToken)
     HttpResponse resp = client.exchange(request, Map)
 
@@ -248,22 +239,20 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   void "test remove title history event by update"() {
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     last = true
-    def id = JournalInstance.findByName("TestUpdateJournalHistory").id
-    def prev_id = JournalInstance.findByName("TestPrevJournal").id
-    def next_id = JournalInstance.findByName("TestNextJournal").id
+    JournalInstance obj = JournalInstance.findByName("TestUpdateJournalHistory")
 
     when:
-    def json_record = [
+    Map json_record = [
       [
         date: "1990-01-01",
-        from: [prev_id]
+        from: [JournalInstance.findByName("TestPrevJournal").id]
       ]
     ]
 
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/$id/history", json_record)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/${obj.id}/history", json_record)
       .bearerAuth(accessToken)
     HttpResponse resp = client.exchange(request, Map)
 
@@ -272,17 +261,16 @@ class TitleTestSpec extends AbstractAuthSpec {
     resp.body()?.data?.size() == 1
   }
   void "test send stale update info"() {
-    def urlPath = getUrlPath()
-    last = true
-    def id = JournalInstance.findByName("TitleTestJournal").id
+    String urlPath = getUrlPath()
+    JournalInstance obj = JournalInstance.findByName("TitleTestJournal")
 
     when:
-    def json_record = [
+    Map json_record = [
       name: "TitleTestJournalV1"
     ]
 
     String accessToken = getAccessToken()
-    HttpRequest req1 = HttpRequest.PUT("${urlPath}/rest/titles/$id", json_record)
+    HttpRequest req1 = HttpRequest.PUT("${urlPath}/rest/titles/${obj.id}", json_record)
       .bearerAuth(accessToken)
     HttpResponse resp1 = client.exchange(req1, Map)
 
@@ -307,22 +295,22 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   void "test merge titles"() {
-    def urlPath = getUrlPath()
-    def tid = JournalInstance.findByName("TitleTestJournal").id
-    def mergeid = JournalInstance.findByName("TestTitleMergeObject").id
+    String urlPath = getUrlPath()
+    JournalInstance tid = JournalInstance.findByName("TitleTestJournal")
+    JournalInstance mergeid = JournalInstance.findByName("TestTitleMergeObject")
 
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/$mergeid/merge?target=$tid&mergeTipps=true&mergeIds=true", null)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/${mergeid.id}/merge?target=${tid.id}&mergeTipps=true&mergeIds=true", null)
       .bearerAuth(accessToken)
     HttpResponse resp = client.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
     sleep(300)
-    def target = JournalInstance.findById(tid)
-    def merged = JournalInstance.findById(mergeid)
-    def test_tipp = TitleInstancePackagePlatform.findByName("TestTitleMergeTipp")
+    JournalInstance target = JournalInstance.findById(tid)
+    JournalInstance merged = JournalInstance.findById(mergeid)
+    TitleInstancePackagePlatform test_tipp = TitleInstancePackagePlatform.findByName("TestTitleMergeTipp")
     test_tipp.title == target
     merged.refresh().status.value == 'Deleted'
     merged.tipps.size() == 0
@@ -332,12 +320,12 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
  void "test update publisher"() {
-    def urlPath = getUrlPath()
-    def ti = JournalInstance.findByName("TitleTestJournal")
-    def new_pub = Org.findByName('TestTitleOrgUpdate')
+    String urlPath = getUrlPath()
+    JournalInstance ti = JournalInstance.findByName("TitleTestJournal")
+    Org new_pub = Org.findByName('TestTitleOrgUpdate')
 
     when:
-    def json_record = [
+    Map json_record = [
       publisher: [
         new_pub.id
       ]

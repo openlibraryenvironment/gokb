@@ -137,7 +137,7 @@ class TitleAugmentService {
             }
             else if (new_id) {
               log.debug("Adding new ZDB-ID ${new_id}")
-              new ComponentIdentifier(component: titleInstance, identifier: new_id).save(flush: true)
+              titleInstance.addIdentifier(new_id)
 
               touchTitleTipps(titleInstance)
 
@@ -975,10 +975,7 @@ class TitleAugmentService {
       List linked_titles = new_id.getActiveIdentifiedComponents('TitleInstance')
 
       if (linked_titles.size() == 0) {
-        new ComponentIdentifier(component: ti, identifier: new_id).save(flush: true)
-
-        ti.lastUpdateComment = "Added new identifier ${new_id}"
-        ti.save(flush: true, failOnError: true)
+        ti.addIdentifier(new_id)
 
         touchTitleTipps(ti)
 
@@ -1078,6 +1075,9 @@ class TitleAugmentService {
         if (!is_duplicate){
           log.debug("Adding Identifier ${old_id} to ${merge_target_title}")
           new ComponentIdentifier(identifier: old_id, component: merge_target_title, status: old_link.status).save(flush: true, failOnError: true)
+
+          merge_target_title.lastUpdateComment = "Added new ID ${old_id}!"
+          merge_target_title.save()
         }
         else{
           log.debug("Identifier ${old_id} is already connected to ${merge_target_title}..")

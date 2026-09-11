@@ -743,8 +743,8 @@ class BulkPackageImportService {
                     pkg_result.gokb_uuid = obj.uuid
                     pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
 
-                    if (collection_id && !obj.ids.contains(collection_id)) {
-                      new ComponentIdentifier(component: obj, identifier: collection_id).save(flush: true, failOnError: true)
+                    if (collection_id) {
+                      obj.addIdentifier(collection_id)
                     }
 
                     item.other_package_identifiers.each { opid ->

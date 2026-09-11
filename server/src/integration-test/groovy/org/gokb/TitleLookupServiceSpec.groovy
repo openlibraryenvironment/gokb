@@ -47,12 +47,12 @@ class TitleLookupServiceSpec extends Specification {
     Identifier eissn = Identifier.findByNamespaceAndValue(issn_ns, "1532-2033") ?: new Identifier(value: "1532-2033", namespace: eissn_ns).save(flush: true)
     Identifier zdbId = Identifier.findByNamespaceAndValue(issn_ns, "2594355-8") ?: new Identifier(value: "2594355-8", namespace: zdb_ns).save(flush: true)
 
-    journal.ids.addAll([issn, eissn, zdbId])
+    journal.addIdentifiers([issn, eissn, zdbId])
     journal.save(flush: true)
 
     book = BookInstance.findByName("Lookup serviceTest Book!") ?: new BookInstance(name: "Lookup serviceTest Book!").save(flush: true)
     Identifier pisbn = Identifier.findByNamespaceAndNormname(pisbn_ns, "9783631733158") ?: new Identifier(value: "9783631733158", namespace: pisbn_ns).save(flush: true)
-    book.ids << pisbn
+    book.addIdentifier(pisbn)
     book.save(flush: true)
   }
 

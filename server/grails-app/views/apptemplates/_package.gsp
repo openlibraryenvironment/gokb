@@ -103,7 +103,7 @@
       <li role="presentation" class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
       <g:if test="${d.id}">
         <li role="presentation"><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${d.currentTitleCount}/ ${d.currentTippCount} </span></a></li>
-        <li role="presentation"><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a></li>
+        <li role="presentation"><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.activeIdInfo?.size() ?: '0'} </span></a></li>
         <li role="presentation">
           <a href="#altnames" data-toggle="tab">
             Alternate Names
@@ -183,7 +183,7 @@
                     class="form-inline">
                     <input type="hidden" name="__context" value="${d.class?.name}:${d.id}" />
                     <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform" />
-                    <input type="hidden" name="__addToColl" value="tipps" />
+                    <input type="hidden" name="pkg" value="${d.class?.name}:${d.id}" />
                     <input type="hidden" name="__showNew" value="true" />
                     <dl class="dl-horizontal">
                       <dt class="dt-label">Title</dt>

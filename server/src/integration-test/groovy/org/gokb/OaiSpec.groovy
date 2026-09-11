@@ -50,9 +50,9 @@ class OaiSpec extends Specification {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
 
-    def http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
-    def kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
-    def freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
+    RefdataValue http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
+    RefdataValue kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
+    RefdataValue freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
     IdentifierNamespace ttl_ns = IdentifierNamespace.findByName('Test Title NS') ?: new IdentifierNamespace(name: 'Test Title NS', value: 'titleNStest')
     IdentifierNamespace pkg_ns = IdentifierNamespace.findByName('Test Package NS') ?: new IdentifierNamespace(name: 'Test Package NS', value: 'packageNStest')
 
@@ -74,21 +74,17 @@ class OaiSpec extends Specification {
     test_pkg = Package.findByName('OAI Test Package 1')
 
     if (!test_pkg) {
-      test_pkg = new Package(name: 'OAI Test Package 1')
-      test_pkg.source = testSource
-      test_pkg.save(flush: true)
+      test_pkg = new Package(name: 'OAI Test Package 1', source: testSource, nominalPlatform: test_plt, provider: test_org).save(flush: true)
 
       test_pkg.curatoryGroups << CuratoryGroup.findByName('Local')
       test_pkg.save(flush: true)
     }
 
     if (test_pkg.ids?.size() == 0) {
-      test_pkg.provider = test_org
-      test_pkg.nominalPlatform = test_plt
       Identifier isil = Identifier.findByValue('ZDB-1-OAIT') ?: new Identifier(
         value: 'ZDB-1-OAIT',
         namespace: IdentifierNamespace.findByValue('isil')).save(flush: true)
-      test_pkg.ids << isil
+      test_pkg.addIdentifier(isil)
       test_pkg.save(flush: true)
     }
 
@@ -100,38 +96,19 @@ class OaiSpec extends Specification {
     Identifier issn1 = Identifier.findByValue('1234-4567') ?: new Identifier(value: '1234-4567',
       namespace: IdentifierNamespace.findByValue('issn')).save(flush: true)
 
-    title1.ids.addAll([eissn1, issn1])
+    title1.addIdentifiers([eissn1, issn1])
     title1.save(flush: true)
 
     tipp1 = TitleInstancePackagePlatform.findByName('OaiTestTIPP')
 
     if (!tipp1) {
-      tipp1 = new TitleInstancePackagePlatform(name: 'OaiTestTIPP').save(flush: true)
+      tipp1 = new TitleInstancePackagePlatform(name: 'OaiTestTIPP', pkg: test_pkg, hostPlatform: test_plt, title: title1).save(flush: true)
       tipp1.setPrice("list", "1234.56 EUR")
       tipp1.publisherName = "test Publisher"
       tipp1.accessStartDate = new Date()
+      tipp1.addIdentifiers([eissn1, issn1])
 
-      new Combo(fromComponent: test_pkg,
-        toComponent: tipp1,
-        type: RefdataCategory.lookup('Combo.Type', 'Package.Tipps'),
-        status: RefdataCategory.lookup('Combo.Status', 'Active')
-      ).save(flush: true)
-
-      new Combo(fromComponent: test_plt,
-        toComponent: tipp1,
-        type: RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps'),
-        status: RefdataCategory.lookup('Combo.Status', 'Active')
-      ).save(flush: true)
-
-      new Combo(fromComponent: title1,
-        toComponent: tipp1,
-        type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps'),
-        status: RefdataCategory.lookup('Combo.Status', 'Active')
-      ).save(flush: true)
-
-      tipp1.ids.addAll([eissn1, issn1])
-
-      def coverageStatement = [
+      Map coverageStatement = [
         startDate: new Date(),
         startVolume: "1",
         startIssue: "1"

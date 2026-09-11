@@ -35,19 +35,20 @@ class OrgServiceSpec extends Specification {
   @Autowired
   SessionFactory sessionFactory
 
-  def setup() {
-    Org old_org = Org.findByName("OrgService Test Org Old") ?: new Org(name: "OrgService Test Org Old").save(flush: true, failOnError: true)
+  Org old_org
+  Org new_org
 
-    def new_variant = old_org.ensureVariantName("TestOrgServiceVariant")
-    new_variant.save(flush: true, failOnError: true)
+  def setup() {
+    old_org = Org.findByName("OrgService Test Org Old") ?: new Org(name: "OrgService Test Org Old").save(flush: true, failOnError: true)
+
+    KBComponentVariantName new_variant = old_org.ensureVariantName("TestOrgServiceVariant").save(flush: true, failOnError: true)
 
     IdentifierNamespace viaf_ns = IdentifierNamespace.findByValue('viaf')
     Identifier viaf_id = Identifier.findByNamespaceAndValue(viaf_ns, '0125483') ?: new Identifier(namespace: viaf_ns, value: '0125483').save(flush: true, failOnError: true)
 
-    old_org.ids << viaf_id
-    old_org.save(flush:true, failOnError: true)
+    old_org.addIdentifier(viaf_id)
 
-    Org new_org = Org.findByName("OrgService Test Org New") ?: new Org(name: "OrgService Test Org New").save(flush: true, failOnError: true)
+    new_org = Org.findByName("OrgService Test Org New") ?: new Org(name: "OrgService Test Org New").save(flush: true, failOnError: true)
     Platform plt = Platform.findByName("OrgService Test Platform") ?: new Platform(name: "OrgService Test Platform", provider: old_org).save(flush: true, failOnError: true)
     Package pkg = Package.findByName("OrgService Test Package") ?: new Package(name: "OrgService Test Package", nominalPlatform: plt, provider: old_org).save(flush: true, failOnError: true)
 
@@ -61,32 +62,28 @@ class OrgServiceSpec extends Specification {
 
     if (!journal) {
       journal = new JournalInstance(name: "OrgService Journal").save(flush:true)
-      journal.ids.addAll([issn, eissn])
-      journal.save(flush: true)
-
-      journal.publisher << old_org
-      journal.save(flush: true)
+      journal.addIdentifiers([issn, eissn])
+      journal.addPublisher(old_org)
     }
 
     TitleInstancePackagePlatform test_tipp = TitleInstancePackagePlatform.findByName("Test TIPP platform change")
 
     if (!test_tipp) {
-      def tmap = [
-        pkg            : pkg.id,
-        hostPlatform   : plt.id,
-        title          : journal.id,
-        url            : "http://test-url.net/",
-        status         : "Current",
-        name           : "Test TIPP platform change",
-        editStatus     : "Approved",
-        language       : "ger",
+      Map tmap = [
+        pkg: pkg.id,
+        hostPlatform: plt.id,
+        title: journal.id,
+        url: "http://test-url.net/",
+        status: "Current",
+        name: "Test TIPP platform change",
+        editStatus: "Approved",
+        language: "ger",
         publicationType: "Serial"
       ]
 
       test_tipp = tippUpsertService.upsertDTO(tmap)
 
-      test_tipp.ids.addAll([issn, eissn])
-      test_tipp.save(flush: true)
+      test_tipp.addIdentifiers([issn, eissn])
     }
   }
 
@@ -101,31 +98,29 @@ class OrgServiceSpec extends Specification {
   }
 
   void "test package transfer"() {
-    given:
-    def old_org = Org.findByName("OrgService Test Org Old")
-    def new_org = Org.findByName("OrgService Test Org New")
     when:
-    def result = orgService.transferPackages(old_org, new_org)
+    Map result = orgService.transferPackages(old_org, new_org)
+
     then:
     result.result == 'OK'
     result.transferred == 1
-    old_org.status.value == 'Current'
+    old_org.refresh().status.value == 'Current'
 
-    def pkg = Package.findByName("OrgService Test Package")
+    Package pkg = Package.findByName("OrgService Test Package")
     pkg.provider == new_org
 
-    def title = JournalInstance.findByName("OrgService Journal")
+    JournalInstance title = JournalInstance.findByName("OrgService Journal")
     title.currentPublisher == old_org
   }
 
   void "test full merge"() {
     given:
-    def old_org = Org.findByName("OrgService Test Org Old")
-    def new_org = Org.findByName("OrgService Test Org New")
-    def timestamp = new Date()
+    Date timestamp = new Date()
+
     when:
     sleep(1000)
-    def result = orgService.mergeDuplicate(old_org.id, new_org.id)
+    Map result = orgService.mergeDuplicate(old_org.id, new_org.id)
+
     then:
     result.result == 'OK'
     result.ti == 1
@@ -135,16 +130,16 @@ class OrgServiceSpec extends Specification {
     sleep(1000)
     old_org.status.value == 'Deleted'
 
-    def pkg = Package.findByName("OrgService Test Package")
+    Package pkg = Package.findByName("OrgService Test Package")
     pkg.provider == new_org
 
-    def plt = Platform.findByName("OrgService Test Platform")
+    Platform plt = Platform.findByName("OrgService Test Platform")
     plt.provider == new_org
 
-    def title = JournalInstance.findByName("OrgService Journal")
+    JournalInstance title = JournalInstance.findByName("OrgService Journal")
     title.currentPublisher == new_org
 
-    def tipp = TitleInstancePackagePlatform.findByName("Test TIPP platform change")
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findByName("Test TIPP platform change")
     tipp.refresh()
     tipp.lastUpdated >= timestamp
 

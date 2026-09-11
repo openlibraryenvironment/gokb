@@ -91,11 +91,11 @@
       </g:if>
       <li><a href="#identifiers" data-toggle="tab">Identifiers <span
           class="badge badge-warning">
-            ${d.ids?.size() ?: '0'}
+            ${d.activeIds?.size() ?: '0'}
         </span></a></li>
       <li><a href="#publishers" data-toggle="tab">Publishers <span
           class="badge badge-warning">
-            ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size() ?: '0'}
+            ${d.publisherLinks?.size() ?: '0'}
         </span></a></li>
       <li><a href="#subjects" data-toggle="tab">Subjects <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'} </span></a></li>
       <li><a href="#availability" data-toggle="tab">Availability <span
@@ -104,7 +104,7 @@
         </span></a></li>
       <li><a href="#tipls" data-toggle="tab">Platforms <span
           class="badge badge-warning">
-            ${d?.tipls?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}
+            ${d.tipls?.size() ?: '0'}
         </span></a></li>
       <li><a href="#addprops" data-toggle="tab">Custom Fields <span
           class="badge badge-warning">

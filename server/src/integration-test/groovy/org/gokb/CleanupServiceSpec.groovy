@@ -23,30 +23,34 @@ class CleanupServiceSpec extends Specification {
   TitleInstancePackagePlatform tippActive
 
   def setup() {
-    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
     titleOne = JournalInstance.findByName("CleanupHistoryTestTitleOne") ?: new JournalInstance(name: "CleanupHistoryTestTitleOne").save(flush: true, failOnError: true)
+    Org cleanupHistoryOrg = Org.findByName("CleanupHistoryOrg") ?: new Org(name: "CleanupHistoryOrg").save(flush: true, failOnError: true)
+    Platform cleanupHistoryPlatform = Platform.findByName("CleanupHistoryPlatform") ?: new Platform(name: "CleanupHistoryPlatform", provider: cleanupHistoryOrg).save(flush: true, failOnError: true)
 
-    def cleanupHistoryPackage = Package.findByName("CleanupHistoryPackage") ?: new Package(name: "CleanupHistoryPackage").save(flush: true, failOnError: true)
-    def cleanupHistoryPlatform = Platform.findByName("CleanupHistoryPlatform") ?: new Platform(name: "CleanupHistoryPlatform").save(flush: true, failOnError: true)
-    def url_doi = Identifier.findByValue('http://doi.org/10.23242/354-234234-233-23') ?: new Identifier(value: 'http://doi.org/10.23242/354-234234-233-23', namespace: IdentifierNamespace.findByValue('doi')).save(flush: true, validate: false)
-    def test_doi
+    Package cleanupHistoryPackage = Package.findByName("CleanupHistoryPackage") ?: new Package(name: "CleanupHistoryPackage", provider: cleanupHistoryOrg, nominalPlatform: cleanupHistoryPlatform).save(flush: true, failOnError: true)
+    Identifier url_doi = Identifier.findByValue('http://doi.org/10.23242/354-234234-233-23') ?: new Identifier(value: 'http://doi.org/10.23242/354-234234-233-23', namespace: IdentifierNamespace.findByValue('doi')).save(flush: true, validate: false)
 
-    tippActive = TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp") ?: new TitleInstancePackagePlatform(name: "CleanupHistoryTestTipp", url: "http://tets-url.com/testcleanup").save(flush: true, failOnError: true)
+    tippActive = TitleInstancePackagePlatform.findByName("CleanupHistoryTestTipp")
 
-    if (tippActive.pkg == null) {
-      tippActive.pkg = cleanupHistoryPackage
-      tippActive.hostPlatform = cleanupHistoryPlatform
-      tippActive.title = titleOne
-      tippActive.ids << url_doi
+    if (!tippActive) {
+      Map tippInfo = [
+        pkg: cleanupHistoryPackage,
+        nominalPlatform: cleanupHistoryPlatform,
+        title: titleOne,
+        url: "http://tets-url.com/testcleanup",
+        name: "CleanupHistoryTestTipp"
+      ]
 
-      tippActive.save(flush: true, failOnError: true)
+      tippActive = new TitleInstancePackagePlatform(tippInfo).save(flush: true)
+      tippActive.addIdentifier(url_doi)
     }
 
     titleTwo = JournalInstance.findByName("CleanupHistoryTestTitleTwo") ?: new JournalInstance(name: "CleanupHistoryTestTitleTwo", status: status_deleted).save(flush: true, failOnError: true)
 
     if (titleTwo?.titleHistory?.size() == 0) {
-      def event = new ComponentHistoryEvent(eventDate: new Date()).save(flush: true, failOnError: true)
+      ComponentHistoryEvent event = new ComponentHistoryEvent(eventDate: new Date()).save(flush: true, failOnError: true)
       event.addToParticipants(participant: titleTwo, participantRole: 'out')
       event.addToParticipants(participant: titleOne, participantRole: 'in')
       event.save(flush: true, failOnError: true)
@@ -55,17 +59,18 @@ class CleanupServiceSpec extends Specification {
       log.debug("Existing history!")
     }
 
-    def book_doi = BookInstance.findByName("CleanupTestNewDoiBook") ?: new BookInstance(name: "CleanupTestNewDoiBook").save(flush: true, failOnError: true)
+    BookInstance book_doi = BookInstance.findByName("CleanupTestNewDoiBook") ?: new BookInstance(name: "CleanupTestNewDoiBook").save(flush: true, failOnError: true)
 
-    def tipp_doi = TitleInstancePackagePlatform.findByName("CleanupTestNewDoiTipp")
+    TitleInstancePackagePlatform tipp_doi = TitleInstancePackagePlatform.findByName("CleanupTestNewDoiTipp")
 
     if (!tipp_doi) {
-      def tipp_map = [
+      Map tipp_map = [
         name: "CleanupTestNewDoiTipp",
         pkg: cleanupHistoryPackage,
         hostPlatform: cleanupHistoryPlatform,
         title: book_doi,
-        importId: '10.23434/234666523X'
+        importId: '10.23434/234666523X',
+        url: 'http://doi.org/10.23434/234666523X'
       ]
 
       tipp_doi = new TitleInstancePackagePlatform(tipp_map).save(flush: true, failOnError: true)
@@ -102,7 +107,7 @@ class CleanupServiceSpec extends Specification {
 
   void "test fixDoiUrlIds"() {
     when:
-    def result = cleanupService.fixDoiUrlIds()
+    int result = cleanupService.fixDoiUrlIds()
     then:
     result == 1
     Identifier.findByValue('10.23242/354-234234-233-23') != null
@@ -110,18 +115,18 @@ class CleanupServiceSpec extends Specification {
 
   void "test ensureTipls"() {
     when:
-    def result = cleanupService.ensureTipls()
+    Map result = cleanupService.ensureTipls()
     then:
     result.new_tipls == 1
   }
 
   void "test generateTitleDOIsFromTippInfo"() {
     when:
-    def result = cleanupService.generateTitleDOIsFromTippInfo()
+    Map result = cleanupService.generateTitleDOIsFromTippInfo()
     then:
     result.result == 'OK'
     result.counts['LINKED'] == 1
-    def doi_ti = BookInstance.findByName("CleanupTestNewDoiBook")
+    BookInstance doi_ti = BookInstance.findByName("CleanupTestNewDoiBook")
     doi_ti.ids.size() == 1
     doi_ti.ids[0].value == '10.23434/234666523X'
   }

@@ -290,7 +290,7 @@
           <thead>
           <tr>
             <th>Publisher Name</th>
-            <th>Combo Status</th>
+            <th>Link Status</th>
             <th>Publisher From</th>
             <th>Publisher To</th>
             <th>Actions</th>

@@ -195,10 +195,10 @@ class IngestKbartRun {
 
         log.debug("Handling header ${header}")
 
-        int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
-                              'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                              'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status != :sd',
-                            [pkg: pkg_info.id, sd: RefdataCategory.lookup('KBComponent.Status', 'Deleted')])[0]
+        int old_tipp_count = TitleInstancePackagePlatform.executeQuery('''select count(*) from TitleInstancePackagePlatform as tipp
+                                                                          where tipp.pkg.id = :pkg
+                                                                          and tipp.status != :sd''',
+                                                                          [pkg: pkg_info.id, sd: RefdataCategory.lookup('KBComponent.Status', 'Deleted')])[0]
 
         result.report = [
           numRows: file_info.rows.total,
@@ -220,11 +220,10 @@ class IngestKbartRun {
 
         if (!dryRun) {
           Package.withNewTransaction {
-            RefdataValue combo_fa_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
             Package p = Package.get(pkg_info.id)
             p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
             p.lastSeen = new Date().getTime()
-            new Combo(fromComponent: p, toComponent: datafile, type: RefdataCategory.lookup('Combo.Type','KBComponent.FileAttachments')).save(flush: true, failOnError: true)
+            new ComponentAttachment(component: p, file: datafile).save(flush: true, failOnError: true)
           }
         }
 
@@ -438,7 +437,6 @@ class IngestKbartRun {
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
     RefdataValue status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-    RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
     Map cleanup_current_pars = [
       pkgid: pkgId,
@@ -446,7 +444,6 @@ class IngestKbartRun {
       so: status_current,
       sn: (isCleanup ? status_deleted : status_retired),
       igdt: dateFormatService.parseDate(date),
-      ctp: combo_type,
       now: new Date()
     ]
 
@@ -455,7 +452,6 @@ class IngestKbartRun {
       closed: RefdataCategory.lookup('ReviewRequest.Status', 'Closed'),
       now: new Date(),
       open: RefdataCategory.lookup('ReviewRequest.Status', 'Open'),
-      ctp: combo_type,
       nstatus: (isCleanup ? status_deleted : status_retired)
     ]
 
@@ -463,12 +459,7 @@ class IngestKbartRun {
 
     long removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
         set tipp.status = :sn, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
-        where exists (
-          select 1 from Combo as tc
-          where tc.fromComponent.id = :pkgid
-          and tc.toComponent.id = tipp.id
-          and tc.type = :ctp
-        )
+        where tipp.pkg.id = :pkgid
         and (
           tipp.lastSeen is null
           or tipp.lastSeen < :dt
@@ -480,7 +471,6 @@ class IngestKbartRun {
       dt: ingest_systime,
       so: status_expected,
       sn: status_deleted,
-      ctp: combo_type,
       now: new Date()
     ]
 
@@ -488,12 +478,7 @@ class IngestKbartRun {
 
     long removed_expected_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
         set tipp.status = :sn, tipp.lastUpdated = :now
-        where exists (
-          select 1 from Combo as tc
-          where tc.fromComponent.id = :pkgid
-          and tc.toComponent.id = tipp.id
-          and tc.type = :ctp
-        )
+        where tipp.pkg.id = :pkgid
         and (
           tipp.lastSeen is null
           or tipp.lastSeen < :dt
@@ -505,11 +490,10 @@ class IngestKbartRun {
     long closed_rrs_count = ReviewRequest.executeUpdate('''update ReviewRequest as rr
         set rr.status = :closed, rr.lastUpdated = :now
         where exists (
-          select 1 from Combo as tc
-          where tc.fromComponent.id = :pkgid
-          and tc.toComponent.id = rr.componentToReview.id
-          and tc.toComponent.status = :nstatus
-          and tc.type = :ctp
+          select 1 from TitleInstancePackagePlatform
+          where pkg.id = :pkgid
+          and id = rr.componentToReview.id
+          and status = :nstatus
         )
         and rr.status = :open''', rr_pars)
 

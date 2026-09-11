@@ -51,16 +51,13 @@ class PackageTestSpec extends AbstractAuthSpec {
     Identifier serial_eissn = Identifier.findByValueAndNamespace('1872-6291', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '1872-6291', namespace: IdentifierNamespace.findByValue('eissn'))
     IdentifierNamespace testJournalNs = IdentifierNamespace.findByValue('testj') ?: new IdentifierNamespace(value: 'testj').save(flush: true)
     IdentifierNamespace testMonoNs = IdentifierNamespace.findByValue('testm') ?: new IdentifierNamespace(value: 'testm').save(flush: true)
-    Platform handlePlt = Platform.findByName("dx.doi.org") ?: new Platform(name: "dx.doi.org", primaryUrl: "http://dx.doi.org/", status: RefdataCategory.lookup('KBComponent.Status', 'Deleted')).save(flush: true)
-    Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
     Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
-    testPlt.provider = testOrg
-    testPlt.save(flush: true)
+    Platform handlePlt = Platform.findByName("dx.doi.org") ?: new Platform(name: "dx.doi.org", primaryUrl: "http://dx.doi.org/", status: RefdataCategory.lookup('KBComponent.Status', 'Deleted')).save(flush: true, failOnError: true)
+    Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt", provider: testOrg).save(flush: true, failOnError: true)
 
     RefdataValue http_method = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
     RefdataValue kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
     RefdataValue freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
-    RefdataValue combo_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids').save(flush: true)
     Source testSource = Source.findByName("TestPack") ?: new Source(
         name: "TestPack",
         url: "https://org/package",
@@ -81,38 +78,25 @@ class PackageTestSpec extends AbstractAuthSpec {
     }
 
     if (!urlTestPackage) {
-      urlTestPackage = new Package(name: "TestPackHandleUrl").save(flush: true)
-      urlTestPackage.nominalPlatform = testPlt
-      urlTestPackage.provider = testOrg
-      urlTestPackage.save(flush: true)
+      urlTestPackage = new Package(name: "TestPackHandleUrl", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
     }
 
     if (!testPackageError) {
-      testPackageError = new Package(name: "TestPackPartialError").save(flush: true)
-      testPackageError.nominalPlatform = testPlt
-      testPackageError.provider = testOrg
-      testPackageError.save(flush: true)
+      testPackageError = new Package(name: "TestPackPartialError", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
+
     }
 
     if (!testPackageInitNoDates) {
-      testPackageInitNoDates = new Package(name: "TestPackInitNoDates").save(flush: true)
-      testPackageInitNoDates.nominalPlatform = testPlt
-      testPackageInitNoDates.provider = testOrg
-      testPackageInitNoDates.save(flush: true)
+      testPackageInitNoDates = new Package(name: "TestPackInitNoDates", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
     }
 
     if (!testPackageInitWithDates) {
-      testPackageInitWithDates = new Package(name: "TestPackInitWithDates").save(flush: true)
-      testPackageInitWithDates.nominalPlatform = testPlt
-      testPackageInitWithDates.provider = testOrg
-      testPackageInitWithDates.save(flush: true)
+      testPackageInitWithDates = new Package(name: "TestPackInitWithDates", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
+
     }
 
     if (!testPackageUpdateDates) {
-      testPackageUpdateDates = new Package(name: "TestPackUpdateDates").save(flush: true)
-      testPackageUpdateDates.nominalPlatform = testPlt
-      testPackageUpdateDates.provider = testOrg
-      testPackageUpdateDates.save(flush: true)
+      testPackageUpdateDates = new Package(name: "TestPackUpdateDates", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
     }
 
     if (!testPackageNormNameMatch) {
@@ -123,50 +107,42 @@ class PackageTestSpec extends AbstractAuthSpec {
 
     if (!testTitle) {
       testTitle = new JournalInstance(name: "PackTestTitle").save(flush: true)
-      testTitle.ids.add(serial_issn)
-      testTitle.ids.add(serial_eissn)
-      testTitle.save(flush: true)
+      testTitle.addIdentifiers([serial_issn, serial_eissn])
     }
 
-    def test_book = BookInstance.findByName('PackTestBook')
+    BookInstance test_book = BookInstance.findByName('PackTestBook')
 
     if (!test_book) {
       test_book = new BookInstance(name: 'PackTestBook').save(flush: true)
-      test_book.ids.add(book_doi)
-      test_book.ids.add(book_isbn)
+      test_book.addIdentifiers([book_doi, book_isbn])
       test_book.save(flush: true)
     }
 
     if (!TitleInstancePackagePlatform.findByName('TestPackJournalTIPP')) {
-      def test_tipp1 = new TitleInstancePackagePlatform([
-          'name'           : 'TestPackJournalTIPP',
-          'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Serial'),
-          'importId'       : 'packTitleID',
-          'url'            : 'https://test.url/journal']).save(flush: true)
+      TitleInstancePackagePlatform test_tipp1 = new TitleInstancePackagePlatform([
+        pkg: testPackage,
+        hostPlatform: testPlt,
+        title: testTitle,
+        name: 'TestPackJournalTIPP',
+        publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Serial'),
+        importId: 'packTitleID',
+        url: 'https://test.url/journal']).save(flush: true)
 
-      test_tipp1.pkg = testPackage
-      test_tipp1.title = testTitle
-      test_tipp1.hostPlatform = testPlt
-      test_tipp1.save(flush: true)
-
-      test_tipp1.ids.addAll([serial_issn, serial_eissn])
+      test_tipp1.addIdentifiers([serial_issn, serial_eissn])
       test_tipp1.save(flush: true)
     }
 
     if (!TitleInstancePackagePlatform.findByName('TestPackBookTIPP')) {
-      def test_tipp2 = TitleInstancePackagePlatform.findByName('TestPackBookTIPP') ?: new TitleInstancePackagePlatform([
-          'name'           : 'TestPackBookTIPP',
-          'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Monograph'),
-          'importId'       : 'packBookID',
-          'url'            : 'https://test.url/book']).save(flush: true)
+      TitleInstancePackagePlatform test_tipp2 = TitleInstancePackagePlatform.findByName('TestPackBookTIPP') ?: new TitleInstancePackagePlatform([
+        pkg: testPackage,
+        hostPlatform: testPlt,
+        title: test_book,
+        name: 'TestPackBookTIPP',
+        publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Monograph'),
+        importId: 'packBookID',
+        url: 'https://test.url/book']).save(flush: true)
 
-      test_tipp2.pkg = testPackage
-      test_tipp2.title = test_book
-      test_tipp2.hostPlatform = testPlt
-      test_tipp2.save(flush: true)
-
-      new Combo(fromComponent: test_tipp2, toComponent: book_doi, type: combo_ids).save(flush: true)
-      new Combo(fromComponent: test_tipp2, toComponent: book_isbn, type: combo_ids).save(flush: true)
+      test_tipp2.addIdentifiers([book_doi, book_isbn])
     }
   }
 
@@ -190,6 +166,8 @@ class PackageTestSpec extends AbstractAuthSpec {
     ].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
+
+    Source.findByName("TestPack")?.expunge()
 
     [
       "TestPack",
@@ -232,13 +210,12 @@ class PackageTestSpec extends AbstractAuthSpec {
     Platform.findByName("PackTestPlt")?.expunge()
     Platform.findByName("dx.doi.org")?.expunge()
     Org.findByName("PackTestOrg")?.expunge()
-    Source.findByName("TestPack")?.expunge()
   }
 
   void "test /rest/packages/<id> without token"() {
     given:
-    def urlPath = getUrlPath()
-    def testPackage = Package.findByName("TestPack")
+    String urlPath = getUrlPath()
+    Package testPackage = Package.findByName("TestPack")
     when:
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/packages/${testPackage.id}")
     HttpResponse resp = http.exchange(request)
@@ -249,8 +226,8 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages with valid token"() {
     given:
-    def urlPath = getUrlPath()
-    def testPackage = Package.findByName("TestPack")
+    String urlPath = getUrlPath()
+    Package testPackage = Package.findByName("TestPack")
     when:
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/packages/${testPackage.id}")
@@ -308,7 +285,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages post with provider, source and platform"() {
     given:
-    def testSource = Source.findByName("TestPack")
+    Source testSource = Source.findByName("TestPack")
     Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
     Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
     Map new_body = [
@@ -331,7 +308,8 @@ class PackageTestSpec extends AbstractAuthSpec {
         source         : testSource.id,
         scope          : [name: "Front File"]
     ]
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
+
     when:
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body)
@@ -352,7 +330,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages post with duplicate name"() {
     given:
-    def testSource = Source.findByName("TestPack")
+    Source testSource = Source.findByName("TestPack")
     Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
     Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
     Map new_body = [
@@ -375,7 +353,8 @@ class PackageTestSpec extends AbstractAuthSpec {
         source         : testSource.id,
         scope          : [name: "Front File"]
     ]
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
+
     when:
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body)
@@ -402,7 +381,8 @@ class PackageTestSpec extends AbstractAuthSpec {
         provider       : testOrg.id,
         nominalPlatform: testPlt.id
     ]
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
+
     when:
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body)
@@ -446,7 +426,8 @@ class PackageTestSpec extends AbstractAuthSpec {
             ]
         ]
     ]
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
+
     when:
     String accessToken = getAccessToken()
     URI uri = UriBuilder.of(urlPath)
@@ -457,6 +438,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     HttpRequest request = HttpRequest.POST(uri, upd_body)
       .bearerAuth(accessToken)
     HttpResponse resp = http.exchange(request, Map)
+
     then:
     resp.status == HttpStatus.CREATED
     resp.body()?._embedded?.tipps?.size() == 1
@@ -466,10 +448,11 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest with matching tipps"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_update.txt")
-    def pkg = Package.findByName("TestPack")
+    Package pkg = Package.findByName("TestPack")
     Platform testPlt = Platform.findByName("PackTestPlt")
+
     when:
     String accessToken = getAccessToken()
     MultipartBody requestBody = MultipartBody.builder()
@@ -495,10 +478,11 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest with partial matching conflicts"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_update_conflicts.txt")
-    def pkg = Package.findByName("TestPack")
+    Package pkg = Package.findByName("TestPack")
     Platform testPlt = Platform.findByName("PackTestPlt")
+
     when:
     String accessToken = getAccessToken()
     MultipartBody requestBody = MultipartBody.builder()
@@ -525,7 +509,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest platform fallback"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_import_platform_fallback.txt")
     Package pkg = Package.findByName("TestPackHandleUrl")
     Platform handlePlt = Platform.findByName("dx.doi.org")
@@ -546,6 +530,7 @@ class PackageTestSpec extends AbstractAuthSpec {
       .bearerAuth(accessToken)
       .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
     HttpResponse resp = http.exchange(request, Map)
+
     then:
     resp.status == HttpStatus.OK
     resp.body().job_result?.report?.created == 2
@@ -554,7 +539,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest with single invalid line"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_import_partial_error.txt")
     Package pkg = Package.findByName("TestPackPartialError")
 
@@ -583,7 +568,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest with single invalid line & skipInvalid"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_import_partial_error.txt")
     Package pkg = Package.findByName("TestPackPartialError")
 
@@ -612,7 +597,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest initial load without access_start_date"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_initial_no_access.txt")
     Package pkg = Package.findByName("TestPackInitNoDates")
 
@@ -641,7 +626,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest initial load with access_start_date"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_initial_access_dates.txt")
     Package pkg = Package.findByName("TestPackInitWithDates")
 
@@ -674,7 +659,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest update access dates"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_initial_no_access.txt")
     Resource kbart_file_update = new ClassPathResource("/test_rest_initial_access_dates.txt")
     Package pkg = Package.findByName("TestPackUpdateDates")
@@ -725,7 +710,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest with mixed package and separate namespaces"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_mixed_valid_separate_namespaces.txt")
     Package pkg = Package.findByName("TestPack")
     IdentifierNamespace testJournalNs = IdentifierNamespace.findByValue('testj')
@@ -758,7 +743,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id>/ingest with publication_type 'other'"() {
     given:
-    def urlPath = getUrlPath()
+    String urlPath = getUrlPath()
     Resource kbart_file = new ClassPathResource("/test_rest_other_separate_namespaces.txt")
     Package pkg = Package.findByName("TestPackHandleUrl")
     IdentifierNamespace testJournalNs = IdentifierNamespace.findByValue('testj')
