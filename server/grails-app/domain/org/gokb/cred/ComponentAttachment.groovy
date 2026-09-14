@@ -19,7 +19,7 @@ class ComponentAttachment {
     component column:'ca_comp_fk', index: 'ca_cmp_idx,ci_full_idx'
     file column:'ca_file_fk', index: 'ca_file_idx,ci_full_idx'
     dateCreated column:'ci_date_created', index: 'ci_created_idx'
-    lastUpdated column:'ci_last_updated',
+    lastUpdated column:'ci_last_updated'
     importName column: 'ci_import_name'
   }
 

@@ -9,11 +9,11 @@ class TitleInstancePlatform extends KBComponent {
   Platform hostPlatform
   TitleInstance title
 
-  static mapping = [
+  static mapping = {
     includes KBComponent.mapping
     hostPlatform column: 'tipl_host_platform_fk'
     title column: 'tipl_title_fk'
-  ]
+  }
 
   static constraints = {
     url (nullable:true, blank:true)

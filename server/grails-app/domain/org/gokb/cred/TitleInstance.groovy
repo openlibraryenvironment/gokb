@@ -39,7 +39,7 @@ class TitleInstance extends KBComponent {
   ]
 
   static mappedBy = [
-    publisherLinks: 'title'
+    publisherLinks: 'title',
     tipps: 'title',
     tipls: 'title',
   ]

@@ -41,7 +41,6 @@ class ConcurrencyManagerService {
     pools = Collections.unmodifiableMap(['smallJobs': new CachedThreadPoolPromiseFactory(1, 60L, TimeUnit.SECONDS)])
   }
 
-
   public class Job implements Promise, Future<?> {
     String uuid
     private Promise task
@@ -218,10 +217,10 @@ class ConcurrencyManagerService {
     return new ConcurrentHashMap<String, Job>(map)
   }
 
-  public def getActiveImportJobs() {
-    def result = []
-    def allJobs = getJobs()
-    def jobTypes = [
+  public List getActiveImportJobs() {
+    List result = []
+    Map allJobs = getJobs()
+    List jobTypes = [
       RefdataCategory.lookup('Job.Type', 'PackageTitleMatch'),
       RefdataCategory.lookup('Job.Type', 'KBARTIngest'),
       RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest'),
@@ -362,7 +361,7 @@ class ConcurrencyManagerService {
  * @param offset
  * @return List of Jobs
  */
-  public Map getFilteredJobs(String propertyName, id, max, offset, showFinished) {
+  private Map getFilteredJobs(String propertyName, id, max, offset, showFinished) {
     Map result = [:]
     Map allJobs = getJobs()
     List selected = []
@@ -416,6 +415,8 @@ class ConcurrencyManagerService {
       }
     }
 
+    int total = selected.size()
+
     if (offset > 0) {
       selected = selected.drop(offset)
     }
@@ -423,7 +424,7 @@ class ConcurrencyManagerService {
     result.data = selected.take(max)
 
     result._pagination = [
-        total : selected.size(),
+        total : total,
         limit : max,
         offset: offset
     ]
@@ -433,15 +434,16 @@ class ConcurrencyManagerService {
   }
 
   public JobResult persistJobResult(Job j, def result_object = null) {
-    def jobResult = JobResult.findByUuid(j.uuid)
+    JobResult jobResult = JobResult.findByUuid(j.uuid)
 
     if (!jobResult) {
       log.debug("Persisting Job result for Job '${j.description}'")
+
       if (!result_object) {
         result_object = j.get()
       }
 
-      def job_map = [
+      Map job_map = [
           uuid        : (j.uuid),
           description : (j.description),
           resultObject: (result_object as JSON).toString(),

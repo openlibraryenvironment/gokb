@@ -909,25 +909,25 @@ class CleanupService {
 
   @Transactional
   public Map deleteOrphanedHistoryEvents (Job j = null) {
-    Map result = [total: 0]
+    Map result = [result: 'OK', total: 0]
 
     try {
       Session session = sessionFactory.currentSession
-      result.total = cleanupEvents(session, result)
+      result.total = cleanupEvents(session)
     }
     catch (Exception e) {
       log.debug("No session. Create new ..")
 
       TitleInstance.withNewSession { tsession ->
-        result.total = cleanupEvents(tsession, result)
+        result.total = cleanupEvents(tsession)
       }
     }
 
     result
   }
 
-  private int cleanupEvents(session, result) {
-    RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+  private int cleanupEvents(session) {
+    RefdataValue deleted_status = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     int result = 0
     boolean more = true
 
@@ -940,11 +940,11 @@ class CleanupService {
                                                                     [max: 50])
 
       batch.each { eid ->
-        def event = ComponentHistoryEvent.get(eid)
+        ComponentHistoryEvent event = ComponentHistoryEvent.get(eid)
 
         if (event) {
           log.debug("Processing event ${event}")
-          def components_to_update = []
+          List components_to_update = []
 
           event.participants.each { chep ->
             if (chep.participant.status != deleted_status) {
@@ -974,6 +974,8 @@ class CleanupService {
         more = false
       }
     }
+
+    result
   }
 
   public int closeOrphanedReviews() {

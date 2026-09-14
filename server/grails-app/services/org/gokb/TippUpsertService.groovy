@@ -33,7 +33,7 @@ class TippUpsertService {
       result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid,
                                                     pkg: tipp_fields.pkg,
                                                     hostPlatform: tipp_fields.hostPlatform,
-                                                    title: tipp_fields.title
+                                                    title: tipp_fields.title,
                                                     status: tipp_status,
                                                     editStatus: tipp_editstatus,
                                                     publicationType: tipp_pubtype,

@@ -24,7 +24,7 @@ class RestMappingService {
   def dateFormatService
   def validationService
 
-  static final List<String> defaultIgnore = [
+  static final List defaultIgnore = [
       'bucketHash',
       'shortcode',
       'normname',
@@ -38,17 +38,18 @@ class RestMappingService {
       'componentHash',
       'lastUpdateComment',
       'duplicateOf',
-      'componentDiscriminator'
+      'componentDiscriminator',
+      'fileAttachments'
   ]
 
-  static final List<String> defaultEmbed = [
+  static final List defaultEmbed = [
       'linkedIds',
       'variantNames',
       'additionalProperties',
       'reviewRequests'
   ]
 
-  static final List<String> defaultImmmutable = [
+  static final List defaultImmmutable = [
       'id',
       'uuid',
       'lastUpdated',
@@ -58,9 +59,9 @@ class RestMappingService {
       'version'
   ]
 
-  static final Map<String,String> MAPPED_PROPS = [
-      'linkedIds': 'ids',
-      'publisherLinks': 'publisher'
+  static final Map MAPPED_PROPS = [
+      linkedIds: 'ids',
+      publisherLinks: 'publisher'
   ]
 
   /**
@@ -69,13 +70,13 @@ class RestMappingService {
    * @param params : The map of request parameters
    */
 
-  public Map mapObjectToJson(proxy, params, def user = null) {
+  public Map mapObjectToJson(proxy, params, User user = null) {
     log.debug("mapObjectToJson: ${proxy.class.name} -- ${params}")
     Object obj = ClassUtils.deproxy(proxy).refresh()
     Map result = [:]
-    List<String> embed_active = params['_embed']?.split(',') ?: []
-    List<String> include_list = params['_include']?.split(',') ?: null
-    List<String> exclude_list = params['_exclude']?.split(',') ?: null
+    List embed_active = params['_embed']?.split(',') ?: []
+    List include_list = params['_include']?.split(',') ?: null
+    List exclude_list = params['_exclude']?.split(',') ?: null
     Map jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
     String base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     boolean nested = params['nested'] ? true : false
@@ -91,7 +92,7 @@ class RestMappingService {
 
       result.type = obj.niceName
 
-      def href = ((obj.isEditable() && is_curator) || user?.isAdmin()) ? base + obj.restPath + "/${obj.id}" : null
+      String href = ((obj.isEditable() && is_curator) || user?.isAdmin()) ? (base + obj.restPath + "/${obj.id}") : null
       result._links.update = ['href': href]
       result._links.delete = ['href': href]
 
@@ -105,15 +106,15 @@ class RestMappingService {
         if (!nested) {
           embed_active = defaultEmbed
         }
-        else if (jsonMap?.defaultEmbeds?.contains('ids')) {
-          embed_active.add('ids')
+        else if (jsonMap?.defaultEmbeds?.contains('linkedIds')) {
+          embed_active.add('linkedIds')
         }
       }
 
       if (!nested && jsonMap?.defaultEmbeds?.size() > 0) {
-        jsonMap.defaultEmbeds.each {
-          if (!embed_active.contains(it)) {
-            embed_active.add(it)
+        jsonMap.defaultEmbeds.each { de ->
+          if (!embed_active.contains(de)) {
+            embed_active.add(de)
           }
         }
       }
@@ -126,7 +127,7 @@ class RestMappingService {
 
     result['id'] = obj.id
 
-    pent.getPersistentProperties().each { p ->
+    for (p in pent.persistentProperties) {
       if (!defaultIgnore.contains(p.name) && (!jsonMap || !jsonMap.ignore.contains(p.name)) && (!include_list || include_list.contains(p.name))) {
         if (p instanceof Association) {
           if (p instanceof ManyToOne || p instanceof OneToOne) {
@@ -137,9 +138,9 @@ class RestMappingService {
                 def assoc_obj = ClassUtils.deproxy(obj[p.name])
 
                 result[p.name] = [
-                    'name': label,
-                    'type': assoc_obj.niceName,
-                    'id'  : assoc_obj.id
+                  'name': label,
+                  'type': assoc_obj.niceName,
+                  'id'  : assoc_obj.id
                 ]
 
                 if (p.type == IdentifierNamespace) {
@@ -177,14 +178,14 @@ class RestMappingService {
                   if (process_deleted_links || assoc_obj.status?.value == 'Active') {
                     mapped_item = getEmbeddedJson(assoc_obj.identifier, user)
 
-                    mapped_item.['_linkStatus'] = assoc_obj.status.value
+                    mapped_item['_linkStatus'] = assoc_obj.status.value
                   }
                 }
                 else if (assoc_obj instanceof TitlePublisher) {
                   if (process_deleted_links || assoc_obj.status?.value == 'Active') {
                     mapped_item = getEmbeddedJson(assoc_obj.publisher, user)
 
-                    mapped_item.['_linkStatus'] = assoc_obj.status.value
+                    mapped_item['_linkStatus'] = assoc_obj.status.value
                   }
                 }
                 else if (!assoc_obj.hasProperty('status') || process_deleted_links || assoc_obj.status?.value != 'Deleted') {
@@ -216,7 +217,7 @@ class RestMappingService {
                 }
 
                 result[p.name] = pstring
-                break
+                break;
               }
             case Long.class:
               result[p.name] = obj[p.name] ? "${obj[p.name]}" : null
@@ -246,9 +247,9 @@ class RestMappingService {
       result.allocatedGroups = []
       def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
 
-      obj.allocatedGroups?.each {
-        if (it.status == inProgress){
-          result.allocatedGroups << [name: it.group.name, id: it.group.id]
+      obj.allocatedGroups?.each { ag ->
+        if (ag.status == inProgress){
+          result.allocatedGroups << [name: ag.group.name, id: ag.group.id]
         }
       }
     }
@@ -1131,8 +1132,8 @@ class RestMappingService {
     List existing_links = TitlePublisher.executeQuery("select id from TitlePublisher where title = :ti ", [ti: obj])
     List new_links = []
 
-    new_vals.each { pub ->
-      Org pub_obj = null
+    for (pub in new_vals) {
+      Org pub_obj
 
       if (pub instanceof Map) {
         pub_obj = Org.get(pub.id)
@@ -1166,7 +1167,7 @@ class RestMappingService {
           if (pub.containsKey('_linkedStatus')) {
             RefdataValue link_status = pub['_linkedStatus'] ? RefdataCategory.lookup(TitlePublisher.RD_STATUS, pub['_linkedStatus']) : null
 
-            if (!link_status || (pub['_linkedStatus'] && link_status)) {
+            if (link_status) {
               tp.status = link_status
             }
             else {
@@ -1182,10 +1183,8 @@ class RestMappingService {
           result.errors << [message: "Unable to save dates for publisher link with info ${pub}!", baddata: pub]
         }
       }
-      else {
-        log.warn("Duplicate for incoming publisher ${pub}!")
-      }
     }
+
     log.debug("New list of pubs: ${new_pubs}")
 
     if (remove && !result.errors) {

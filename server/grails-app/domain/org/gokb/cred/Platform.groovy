@@ -19,7 +19,7 @@ class Platform extends KBComponent {
   Set roles = []
 
   static hasMany = [
-    roles: RefdataValue
+    roles: RefdataValue,
     curatoryGroups: CuratoryGroup
   ]
 

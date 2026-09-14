@@ -43,7 +43,7 @@ class Identifier {
 
   static mapping = {
     value column: 'id_value', index: 'id_value_idx'
-    namespace column: 'id_namespace_fk', index: 'id_namespace_idx',
+    namespace column: 'id_namespace_fk', index: 'id_namespace_idx'
     normname column: 'id_normname', index: 'id_normname_idx'
     dateCreated column: 'id_date_created'
     lastUpdated column: 'id_last_updated'

@@ -127,7 +127,6 @@ class UserAlertingService implements ApplicationContextAware {
         Map cmp_info = [id: obj.id, name: obj.name, uuid: obj.uuid, lastUpdated: dateFormatService.formatTimestampOffset(obj.lastUpdated)]
 
         if (classKey == 'Package') {
-          String edit_base = grailsApplication.config.getProperty('gokb.uiUrl') ? grailsApplication.config.getProperty('gokb.uiUrl') + 'package/' : null
           cmp_info['changed_tipps_count'] = TitleInstancePackagePlatform.executeQuery('''select count(*) from TitleInstancePackagePlatform
                                                                                           where pkg = :pkg
                                                                                           and lastUpdated > :start

@@ -72,7 +72,6 @@ class ReviewRequestService {
     Map result = [result: 'OK']
     Map errors = [:]
     RefdataValue type_ext = RefdataCategory.lookup('ReviewRequest.StdDesc', 'External Editorial Request')
-    User user = User.get(springSecurityService.principal.id)
     CuratoryGroup editorialTargetGroup
     Map pars = [:]
 

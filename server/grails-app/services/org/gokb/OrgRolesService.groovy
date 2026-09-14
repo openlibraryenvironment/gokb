@@ -18,7 +18,7 @@ class OrgRolesService {
                                   )
                                   and :rp not member of o.roles'''
 
-    List missing_provider_orgs = Org.executeQuery(qry_string, [sc: status_current rp: rdv_platform_provider])
+    List missing_provider_orgs = Org.executeQuery(qry_string, [sc: status_current, rp: rdv_platform_provider])
 
     missing_provider_orgs.each { org ->
       org.addToRoles(rdv_platform_provider)
@@ -36,7 +36,7 @@ class OrgRolesService {
                                   )
                                   and :rp not member of o.roles'''
 
-    List missing_publisher_orgs = Org.executeQuery(qry_string, [sc: status_current rp: rdv_publisher])
+    List missing_publisher_orgs = Org.executeQuery(qry_string, [sc: status_current, rp: rdv_publisher])
 
     missing_publisher_orgs.each { org ->
       org.addToRoles(rdv_publisher)

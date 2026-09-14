@@ -263,7 +263,7 @@ class TitleInstancePackagePlatform extends KBComponent {
                                                   language: tipp_language,
                                                   url: tipp_fields.url,
                                                   pkg: tipp_fields.pkg,
-                                                  hostPlatform: tipp_fields.hostPlatform
+                                                  hostPlatform: tipp_fields.hostPlatform,
                                                   title: tipp_fields.title).save(failOnError: true, flush:true)
 
     if (result) {
