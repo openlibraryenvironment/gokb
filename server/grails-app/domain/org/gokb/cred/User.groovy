@@ -38,16 +38,13 @@ class User extends Party {
   public static final String jsonLabel = "username"
 
   Set curatoryGroups = []
-  Set updateTokens = []
 
   static hasMany = [
-    curatoryGroups : CuratoryGroup,
-    updateTokens: UpdateToken
+    curatoryGroups : CuratoryGroup
   ]
 
   static mappedBy = [
-    curatoryGroups: "users",
-    updateTokens: "updateUser"
+    curatoryGroups: "users"
   ]
 
   static constraints = {

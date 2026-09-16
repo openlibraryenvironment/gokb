@@ -6,7 +6,6 @@ import groovy.transform.Synchronized
 import org.grails.web.json.JSONArray
 import org.grails.web.json.JSONObject
 
-import javax.persistence.Transient
 import java.util.regex.Pattern
 import groovy.util.logging.*
 
@@ -184,7 +183,6 @@ class Identifier {
     false
   }
 
-  @Override
   public String getName() {
     return value
   }
@@ -194,7 +192,6 @@ class Identifier {
     "${namespace.value}:${value} (${getNiceName()} ${id})".toString()
   }
 
-  @Transient
   public static Map validateDTOs(JSONArray identifierDTOs, Locale locale) {
     Map id_errors = [:]
     List to_remove = []
