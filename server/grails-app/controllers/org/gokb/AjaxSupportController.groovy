@@ -1,20 +1,19 @@
 package org.gokb
 
-import grails.converters.JSON
-import java.text.SimpleDateFormat
-import java.text.MessageFormat
-
 import com.k_int.ClassUtils
 
-import org.gokb.cred.*
-
-import org.springframework.security.access.annotation.Secured;
+import grails.converters.JSON
+import grails.core.GrailsClass
 import grails.gorm.transactions.Transactional
 import grails.util.GrailsNameUtils
-import grails.core.GrailsClass
+import grails.validation.ValidationException
+
+import org.gokb.cred.*
+import org.springframework.security.access.annotation.Secured
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
-import grails.validation.ValidationException
+
+import java.time.LocalDate
 
 class AjaxSupportController {
 
@@ -98,6 +97,16 @@ class AjaxSupportController {
 
 
   Map refdata_config = [
+    'KBComponent.Status' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      required:true,
+      qryParams:[],
+      rdvCat: "KBComponent.Status",
+      cols:['value'],
+      format:'simple'
+    ],
     'KBComponent.EditStatus' : [
       domain:'RefdataValue',
       countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc = ?0",
@@ -235,7 +244,7 @@ class AjaxSupportController {
 
           if (params.__newObjectClass == "org.gokb.cred.KBComponentVariantName") {
             String norm_variant = GOKbTextUtils.normaliseString(params.variantName)
-            List existing_variants = KBComponentVariantName.findByNormVariantNameAndOwner(norm_variant, contextObj)
+            KBComponentVariantName existing_variants = KBComponentVariantName.findByNormVariantNameAndOwner(norm_variant, contextObj)
 
             if (existing_variants){
               log.debug("found dupes!")
@@ -311,6 +320,7 @@ class AjaxSupportController {
                       catch (Exception e) {
                         log.debug("Unable to parse date value ${arams[p.name]} as LocalDate")
                       }
+                      break;
 
                     case Float.class:
                       log.debug("Set simple prop ${p.name} = ${params[p.name]} (as float=${Float.valueOf(params[p.name])})");
@@ -1415,7 +1425,7 @@ class AjaxSupportController {
     else {
       result.code = 404
       result.message = "Unable to reference ComponentIdentifier!"
-      flash.error = message(code:'default.not.found.message', args:["TitlePublisher", params.id])
+      flash.error = message(code:'default.not.found.message', args:["ComponentIdentifier", params.id])
     }
 
     withFormat {

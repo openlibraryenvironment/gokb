@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import java.time.LocalDate
+
 class ComponentIdentifier {
   static final String RD_STATUS = 'ComponentIdentifier.Status'
   static final String STATUS_ACTIVE = "Active"

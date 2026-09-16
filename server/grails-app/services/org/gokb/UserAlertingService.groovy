@@ -4,7 +4,6 @@ import org.apache.commons.validator.routines.EmailValidator
 import groovy.text.SimpleTemplateEngine
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
-import org.gokb.cred.Folder
 import org.gokb.cred.User
 
 

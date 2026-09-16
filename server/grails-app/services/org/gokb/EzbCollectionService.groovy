@@ -476,12 +476,12 @@ class EzbCollectionService {
           }
 
           if (!obj.ids*.id.contains(collection_id.id)) {
-            obj.ids.add(collection_id)
+            obj.addIdentifier(collection_id)
             hasChanged = true
           }
 
           if (zdb_sigel && !obj.ids*.id.contains(zdb_sigel.id)) {
-            obj.ids.add(zdb_sigel)
+            obj.addIdentifier(zdb_sigel)
             hasChanged = true
           }
 
@@ -494,7 +494,7 @@ class EzbCollectionService {
             obj.save(flush: true)
           }
 
-          def open_reviews_count = ReviewRequest.executeQuery('''select count(*) from ReviewRequest as rr
+          int open_reviews_count = ReviewRequest.executeQuery('''select count(*) from ReviewRequest as rr
               where exists (
                 select 1 from TitleInstancePackagePlatform as tipp
                 where tipp.pkg = :pkg

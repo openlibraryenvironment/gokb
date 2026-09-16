@@ -33,15 +33,15 @@ class CuratoryGroupAlertingService {
 
   public Map sendJobFailureAlert(JobResult jr) {
     log.debug("sendJobFailureAlert...");
-    def result = [result: 'OK']
-    def edit_link
-    def support_address = grailsApplication.config.getProperty('gokb.support.emailTo')
-    def alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
+    Map result = [result: 'OK']
+    String edit_link
+    String support_address = grailsApplication.config.getProperty('gokb.support.emailTo')
+    String alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
 
     Package.withNewSession {
       Package pkg = Package.get(jr.linkedItemId)
 
-      def groups = pkg.curatoryGroups
+      List groups = pkg.curatoryGroups
 
       groups.each { cg ->
           Locale locale = new Locale(it.preferredLocaleString ?: (grailsApplication.config.getProperty('gokb.support.locale') ?: 'en'))

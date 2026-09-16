@@ -348,8 +348,8 @@ class CuratoryGroupsController {
           result.data << [
             uuid: j.uuid,
             description: j.description,
-            type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-            linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+            type: j.type ? ([id: j.type.id, name: j.type.value, value: j.type.value]) : null,
+            linkedItem: (component ? ([id: component.id, type: component.niceName, uuid: component.uuid, name: component.name]) : null),
             startTime: j.startTime,
             endTime: j.endTime,
             status: j.statusText

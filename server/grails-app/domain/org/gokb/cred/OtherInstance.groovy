@@ -1,18 +1,10 @@
 package org.gokb.cred
 
-import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
-import org.gokb.DomainClassExtender
 import groovy.util.logging.*
-import static grails.async.Promises.*
-
 
 @Slf4j
 class OtherInstance extends TitleInstance {
-
-  @Transient
-  def titleLookupService
-
   String summaryOfContent
 
   private static refdataDefaults = [

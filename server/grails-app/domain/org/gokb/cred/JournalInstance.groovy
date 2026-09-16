@@ -1,10 +1,8 @@
 package org.gokb.cred
 
-import javax.persistence.Transient
-import org.gokb.GOKbTextUtils
-import org.gokb.DomainClassExtender
 import groovy.util.logging.*
-import static grails.async.Promises.*
+
+import org.gokb.GOKbTextUtils
 
 @Slf4j
 class JournalInstance extends TitleInstance {

@@ -38,7 +38,7 @@ class JobsController {
 
         result.errors['user'] = [message: 'Unable to retrieve results filtered by another user!']
       }
-      if (params.curatoryGroup && !user.curatoryGroups?.find { it.id == params.int('curatoryGroup') }) {
+      if (params.curatoryGroup && !user.curatoryGroups?.find { it.id == params.long('curatoryGroup') }) {
         result.result = 'ERROR'
         response.status = 403
         result.message = "Insuffictient permissions to retrieve jobs for these filters!"
@@ -78,7 +78,7 @@ class JobsController {
 
         if (offset == 0) {
           result.data = active_jobs.data
-          max = max - active_jobs
+          max = max - active_jobs.data.size()
         }
 
         Map jr_result = jobResultService.fetchJobs(params, max, offset)
@@ -129,7 +129,7 @@ class JobsController {
 
       if (user.isAdmin() || (job.ownerId && job.ownerId.toLong() == user.id) || job.linkedItem) {
         result.description = job.description
-        result.type = job.type ? [id: job.type.id, name: job.type.value, value: job.type.value] : null
+        result.type = job.type ? ([id: job.type.id, name: job.type.value, value: job.type.value]) : null
         result.startTime = job.startTime
         result.messages = job.messages
         result.progress = job.progress
@@ -165,12 +165,12 @@ class JobsController {
 
         result.uuid = jobResult.uuid
         result.description = jobResult.description
-        result.type = jobResult.type ? [id: jobResult.type.id, name: jobResult.type.value, value: jobResult.type.value] : null
+        result.type = jobResult.type ? ([id: jobResult.type.id, name: jobResult.type.value, value: jobResult.type.value]) : null
         result.startTime = jobResult.startTime
         result.endTime = jobResult.endTime
         result.status = jobResult.statusText
         result.finished = true
-        result.linkedItem = linkedComponent ? [id: linkedComponent.id, type: linkedComponent.niceName, uuid: linkedComponent.uuid, name: linkedComponent.name] : null
+        result.linkedItem = linkedComponent ? ([id: linkedComponent.id, type: linkedComponent.niceName, uuid: linkedComponent.uuid, name: linkedComponent.name]) : null
         result.job_result = jobResult.resultJson
       }
       else {

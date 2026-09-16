@@ -42,7 +42,7 @@ class AugmentEzbJob{
       log.info("Starting EZB augment job.")
       RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       IdentifierNamespace ezbNs = IdentifierNamespace.findByValue('ezb')
-      List<IdentifierNamespace> issnNs = []
+      List issnNs = []
       issnNs << IdentifierNamespace.findByValue('issn')
       issnNs << IdentifierNamespace.findByValue('eissn')
 
@@ -55,7 +55,7 @@ class AugmentEzbJob{
       int count_journals_without_ezb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(),[current: status_current, ns: ezbNs, issns: issnNs, lastRun: startDate])[0]
 
       while (offset < count_journals_without_ezb_id) {
-        List<Long> journals_without_ezb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(),[current: status_current, ns: ezbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
+        List journals_without_ezb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(),[current: status_current, ns: ezbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
         log.debug("Processing ${count_journals_without_ezb_id} journals.")
 
         journals_without_ezb_id.each { ti_id ->

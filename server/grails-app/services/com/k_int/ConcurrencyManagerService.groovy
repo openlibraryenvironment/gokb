@@ -41,7 +41,7 @@ class ConcurrencyManagerService {
     pools = Collections.unmodifiableMap(['smallJobs': new CachedThreadPoolPromiseFactory(1, 60L, TimeUnit.SECONDS)])
   }
 
-  public class Job implements Promise, Future<?> {
+  public class Job implements Promise {
     String uuid
     private Promise task
     private Closure work
@@ -399,12 +399,12 @@ class ConcurrencyManagerService {
           CuratoryGroup cg = v.groupId ? CuratoryGroup.get(v.groupId) : null
 
           selected << [
-              group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
+              group      : cg ? ([id: cg.id, name: cg.name, uuid: cg.uuid]) : null,
               uuid       : v.uuid,
               progress   : v.progress,
               messages   : v.messages,
               description: v.description,
-              type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+              type       : v.type ? ([id: v.type.id, name: v.type.value, value: v.type.value]) : null,
               begun      : v.begun,
               linkedItem : v.linkedItem,
               startTime  : v.startTime,

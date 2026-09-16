@@ -1,9 +1,8 @@
 package org.gokb.cred
 
 import com.k_int.ClassUtils
-import grails.gorm.transactions.Transactional
+
 import org.gokb.GOKbTextUtils
-import org.gokb.DomainClassExtender
 import org.grails.web.json.JSONObject
 
 import groovy.util.logging.*
@@ -360,7 +359,7 @@ class Package extends KBComponent {
     RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
     RefdataValue rr_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
 
-    def qry_params = [
+    Map qry_params = [
       ret: new_status,
       sce: [expected_status, current_status],
       comment: "Status set to ${new_status.value} due to package change!",
@@ -373,7 +372,7 @@ class Package extends KBComponent {
       qry_params.sce << RefdataCategory.lookup('KBComponent.Status', 'Retired')
     }
 
-    def qry = '''update TitleInstancePackagePlatform as t
+    String qry = '''update TitleInstancePackagePlatform as t
                   set t.status = :ret,
                   t.lastUpdateComment = :comment,
                   t.lastUpdated = :now,
@@ -381,7 +380,7 @@ class Package extends KBComponent {
                   where t.status in :sce
                   and t.pkg = :pkg'''
 
-    def rr_qry = '''update ReviewRequest as rr
+    String rr_qry = '''update ReviewRequest as rr
                     set rr.status = :closed,
                     rr.lastUpdated = :now
                     where rr.status = :open
@@ -391,7 +390,7 @@ class Package extends KBComponent {
                       and rr.componentToReview = t
                     )'''
 
-    def params_rr = [
+    Map params_rr = [
       closed: rr_closed,
       open: rr_open,
       pkg: this.id,
@@ -404,29 +403,28 @@ class Package extends KBComponent {
 
 
 
-  def availableActions() {
-    [
+  public List availableActions() {
+    return [
       [code: 'method::deleteSoft', label: 'Delete (with associated TIPPs)', perm: 'delete'],
       [code: 'method::retire', label: 'Retire Package (with associated TIPPs)'],
       [code: 'exportPackage', label: 'TSV Export'],
       [code: 'kbartExport', label: 'KBART Export'],
       [code: 'verifyTitleList', label: 'Verify Title List'],
       [code: 'packageUrlUpdate', label: 'Trigger Update']
-      // [code:'method::registerWebhook', label:'Register Web Hook']
     ]
   }
 
 
-  def getWebHooks() {
-    def result = []
+  public List getWebHooks() {
+    List result = []
 
-    result.hooks = WebHook.findAllByOid("org.gokb.cred.Package:${this.id}");
+    result.hooks = WebHook.findAllByOid("org.gokb.cred.Package:${this.id}")
 
     result
   }
 
 
-  static def oaiConfig = [
+  static Map oaiConfig = [
     id             : 'packages',
     textDescription: 'Package repository for GOKb',
     query          : " from Package as o ",
@@ -439,7 +437,7 @@ class Package extends KBComponent {
    *  Render this package as OAI_dc
    */
 
-  def toOaiDcXml(builder, attr) {
+  public void toOaiDcXml(builder, attr) {
     builder.'dc'(attr) {
       'dc:title'(name)
     }

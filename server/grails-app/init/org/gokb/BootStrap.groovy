@@ -1,11 +1,15 @@
 package org.gokb
 
+import com.k_int.apis.A_Api;
+import com.k_int.ConcurrencyManagerService.Job
+
 import grails.util.Environment
 import grails.config.ConfigMap
 import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
 import groovy.json.JsonOutput
+
 import org.apache.commons.collections.CollectionUtils
 import org.opensearch.client.indices.CreateIndexRequest
 import org.opensearch.client.indices.GetIndexRequest
@@ -23,12 +27,7 @@ import javax.servlet.http.HttpServletRequest
 
 import grails.plugin.springsecurity.acl.*
 
-import org.gokb.DomainClassExtender
-import org.gokb.ComponentStatisticService
 import org.gokb.cred.*
-
-import com.k_int.apis.A_Api;
-import com.k_int.ConcurrencyManagerService.Job
 
 class BootStrap {
 
@@ -36,7 +35,7 @@ class BootStrap {
     def aclUtilService
     def gokbAclService
     def cleanupService
-    def ComponentStatisticService
+    def componentStatisticService
     def concurrencyManagerService
     def languagesService
     def ESWrapperService
@@ -135,11 +134,6 @@ class BootStrap {
                     UserRole.create adminUser, role
                 }
             }
-        }
-
-        if (grailsApplication.config.getProperty('gokb.decisionSupport', Boolean, false)) {
-            log.debug("Configuring default decision support parameters");
-            DSConfig()
         }
 
         refdataCats()
@@ -429,7 +423,7 @@ class BootStrap {
             hk_job.startTime = new Date()
 
             log.debug("Checking for missing component statistics")
-            ComponentStatisticService.updateCompStats()
+            componentStatisticService.updateCompStats()
 
             if (Environment.current != Environment.TEST) {
                 if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
@@ -1366,86 +1360,6 @@ class BootStrap {
         Source.findByName('ASKEWS') ?: new Source(name: 'ASKEWS').save(flush: true, failOnError: true)
         Source.findByName('EBSCO') ?: new Source(name: 'EBSCO').save(flush: true, failOnError: true)
     }
-
-
-    def DSConfig() {
-        DSCategory.withTransaction {
-            [
-                'accessdl': 'Access - Download',
-                'accessol': 'Access - Read Online',
-                'accbildl': 'Accessibility - Download',
-                'accbilol': 'Accessibility - Read Online',
-                'device'  : 'Device Requirements for Download',
-                'drm'     : 'DRM',
-                'format'  : 'Format',
-                'lic'     : 'Licensing',
-                'other'   : 'Other',
-                'ref'     : 'Referencing',
-            ].each { k, v ->
-                def dscat = DSCategory.findByCode(k) ?: new DSCategory(code: k, description: v).save(flush: true, failOnError: true)
-            }
-
-            [
-                ['format', 'Downloadable PDF', '', ''],
-                ['format', 'Embedded PDF', '', ''],
-                ['format', 'ePub', '', ''],
-                ['format', 'OeB', '', ''],
-                ['accessol', 'Book Navigation', '', ''],
-                ['accessol', 'Table of contents navigation', '', ''],
-                ['accessol', 'Pagination', '', ''],
-                ['accessol', 'Page Search', '', ''],
-                ['accessol', 'Search Within Book', '', ''],
-                ['accessdl', 'Download Extent', '', ''],
-                ['accessdl', 'Download Time', '', ''],
-                ['accessdl', 'Download Reading View Navigation', '', ''],
-                ['accessdl', 'Table of Contents Navigation', '', ''],
-                ['accessdl', 'Pagination', '', ''],
-                ['accessdl', 'Page Search', '', ''],
-                ['accessdl', 'Search Within Book', '', ''],
-                ['accessdl', 'Read Aloud or Listen Option', '', ''],
-                ['device', 'General', '', ''],
-                ['device', 'Android', '', ''],
-                ['device', 'iOS', '', ''],
-                ['device', 'Kindle Fire', '', ''],
-                ['device', 'PC', '', ''],
-                ['drm', 'Copying', '', ''],
-                ['drm', 'Printing', '', ''],
-                ['accbilol', 'Dictionary', '', ''],
-                ['accbilol', 'Text Resize', '', ''],
-                ['accbilol', 'Change Reading Colour', '', ''],
-                ['accbilol', 'Read aloud or Listen Option', '', ''],
-                ['accbilol', 'Integrated Help', '', ''],
-                ['accbildl', 'Copying', '', ''],
-                ['accbildl', 'Printing', '', ''],
-                ['accbildl', 'Add Notes', '', ''],
-                ['accbildl', 'Dictionary', '', ''],
-                ['accbildl', 'Text Resize', '', ''],
-                ['accbildl', 'Change Reading Colour', '', ''],
-                ['accbildl', 'Integrated Help', '', ''],
-                ['accbildl', 'Other Accessibility features or Support', '', ''],
-                ['ref', 'Export to bibliographic software', '', ''],
-                ['ref', 'Sharing / Social Media', '', ''],
-                ['other', 'Changes / Redevelopment in the near future', '', ''],
-                ['lic', 'Number of users', '', ''],
-                ['lic', 'Credit Payment Model', '', ''],
-                ['lic', 'Publishers Included', '', '']
-            ].each { crit ->
-                def cat = DSCategory.findByCode(crit[0]);
-                if (cat) {
-                    def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
-                        owner: cat,
-                        title: crit[1],
-                        description: crit[2],
-                        explanation: crit[3]).save(flush: true, failOnError: true)
-                } else {
-                    log.error("Unable to locate category: ${crit[0]}")
-                }
-            }
-        }
-        //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedFrom'));
-        //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedTo'));
-    }
-
 
     def registerUsers() {
         grailsApplication.config.getProperty('sysusers', List, []).each { su ->

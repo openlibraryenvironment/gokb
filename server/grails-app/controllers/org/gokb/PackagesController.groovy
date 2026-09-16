@@ -18,20 +18,21 @@ class PackagesController {
   def packageService
   def packageCSVExportService
 
-  public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp where pkg.id = :pkg order by tipp.id';
+  public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp where pkg.id = :pkg order by tipp.id'
 
   def packageContent() {
     log.debug("packageContent::${params}")
-    def result = [:]
+    Map result = [:]
+
     if (params.id) {
-      def pkg_id_components = params.id.split(':');
-      def pkg_id = pkg_id_components[1]
+      List pkg_id_components = params.id.split(':')
+      String pkg_id = pkg_id_components[1]
       result.pkgData = Package.executeQuery('select p.id, p.name from Package as p where p.id = :pkg', [pkg: Long.parseLong(pkg_id)])
       result.pkgId = result.pkgData[0][0]
       result.pkgName = result.pkgData[0][1]
-      log.debug("Tipp qry name: ${result.pkgName}");
+      log.debug("Tipp qry name: ${result.pkgName}")
       result.tipps = TitleInstancePackagePlatform.executeQuery(TIPPS_QRY, [pkg: result.pkgId, ct: 'Package.Tipps'], [offset: 0, max: 10])
-      log.debug("Tipp qry done ${result.tipps?.size()}");
+      log.debug("Tipp qry done ${result.tipps?.size()}")
     }
     result
   }
@@ -39,14 +40,14 @@ class PackagesController {
   @Secured("hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()")
   def compareContents() {
     log.debug("compareContents")
-    def result = [params: params, result: 'OK']
-    def user = springSecurityService.currentUser
+    Map result = [params: params, result: 'OK']
+    User user = springSecurityService.currentUser
 
     if (params.one && params.two) {
       def date = params.date ? dateFormatService.parseDate(params.date)  : null
-      def full = params.full ? params.boolean('full') : false
-      def listOne = params.list('one')
-      def listTwo = params.list('two')
+      boolean full = params.full ? params.boolean('full') : false
+      List listOne = params.list('one')
+      List listTwo = params.list('two')
 
       if (params.wait) {
         result = packageService.compareLists(listOne, listTwo, full, date)
@@ -72,11 +73,12 @@ class PackagesController {
   @Secured("hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()")
   def connectedRRs() {
     log.debug("connectedRRs::${params}")
-    def result = [:]
+    Map result = [:]
+
     if (params.id) {
-      def pkg = Package.get(params.id)
-      def open_only = true
-      def restr = false
+      Package pkg = Package.get(params.id)
+      boolean open_only = true
+      boolean restr = false
       result.restriction = 'open'
 
       if (params.getAll) {
@@ -97,65 +99,9 @@ class PackagesController {
 
   @Secured("hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()")
   @Transactional
-  def preflight() {
-    def result = [:]
-    log.debug("preflight::${params}")
-    def jobid = null;
-
-    if (request.method == 'POST') {
-      log.debug("Handling post")
-
-      if (request instanceof MultipartHttpServletRequest) {
-
-        def upload_mime_type = request.getFile("content")?.contentType  // getPart?
-        def upload_filename = request.getFile("content")?.getOriginalFilename()
-        def new_datafile_id = null
-
-        log.debug("Multipart")
-
-        if (upload_mime_type &&
-          upload_filename &&
-          params.pkg &&
-          params.platformUrl &&
-          params.fmt &&
-          params.source) {
-
-          def deposit_token = java.util.UUID.randomUUID().toString()
-          def temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("content"))
-          log.debug("Got file content")
-          def format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype', params.fmt).save()
-          def pkg = params.pkg
-          def platformUrl = params.platformUrl
-          def source = Source.findByName(params.source) ?: new Source(name: params.source).save(flush: true, failOnError: true)
-          def providerName = params.providerName
-          def providerObj = Org.findByName(providerName) ?: null
-          def providerIdentifierNamespace = IdentifierNamespace.findByValue(params.providerIdentifierNamespace)
-
-          if (providerObj?.titleNamespace) {
-            providerIdentifierNamespace = providerObj?.titleNamespace
-          }
-
-          def info = analyse(temp_file);
-
-          TSVIngestionService.preflight(format_rdv,
-            pkg,
-            new java.net.URL(platformUrl),
-            source,
-            request.getFile("content"),
-            providerName,
-            providerIdentifierNamespace)
-
-        }
-      }
-    }
-  }
-
-  @Secured("hasAnyRole('ROLE_ADMIN', 'ROLE_POWERUSER') and isFullyAuthenticated()")
-  @Transactional
   def deposit() {
-    def result = [:]
+    Map result = [:]
     log.debug("deposit::${params}")
-    def jobid = null
 
     Job background_job = null
     User user = springSecurityService.currentUser
@@ -168,9 +114,9 @@ class PackagesController {
 
         if (request instanceof MultipartHttpServletRequest) {
 
-          def upload_mime_type = request.getFile("content")?.contentType  // getPart?
-          def upload_filename = request.getFile("content")?.getOriginalFilename()
-          def new_datafile_id = null
+          String upload_mime_type = request.getFile("content")?.contentType  // getPart?
+          String upload_filename = request.getFile("content")?.getOriginalFilename()
+          Long new_datafile_id = null
 
           log.debug("Multipart ${upload_mime_type} ${upload_filename}")
 
@@ -181,26 +127,26 @@ class PackagesController {
             params.fmt &&
             params.source) {
 
-            def deposit_token = java.util.UUID.randomUUID().toString()
-            def temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("content"))
+            String deposit_token = java.util.UUID.randomUUID().toString()
+            File temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("content"))
             log.debug("Got file content")
-            def format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype', params.fmt).save()
-            def pkg = params.pkg
-            def platformUrl = params.platformUrl
+            RefdataValue format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype', params.fmt).save()
+            String pkg = params.pkg
+            String platformUrl = params.platformUrl
             // def source = params.source
-            def source = Source.findByName(params.source) ?: new Source(name: params.source).save(flush: true, failOnError: true)
-            def providerName = params.providerName
-            def providerObj = Org.findByName(providerName) ?: null
-            def providerIdentifierNamespace = IdentifierNamespace.findByValue(params.providerIdentifierNamespace)
+            Source source = Source.findByName(params.source) ?: new Source(name: params.source).save(flush: true, failOnError: true)
+            String providerName = params.providerName
+            Org providerObj = Org.findByName(providerName) ?: null
+            IdentifierNamespace providerIdentifierNamespace = IdentifierNamespace.findByValue(params.providerIdentifierNamespace)
 
             if (providerObj?.titleNamespace) {
               providerIdentifierNamespace = providerObj?.titleNamespace
             }
 
-            def info = TSVIngestionService.analyseFile(temp_file)
+            Map info = TSVIngestionService.analyseFile(temp_file)
 
             log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
-            def existing_file = DataFile.findByMd5(info.md5sumHex)
+            DataFile existing_file = DataFile.findByMd5(info.md5sumHex)
 
             if (existing_file != null) {
               log.debug("Found a match !")
@@ -216,7 +162,7 @@ class PackagesController {
               log.debug("Create new datafile")
 
               DataFile.withNewTransaction {
-                def new_datafile = new DataFile(
+                DataFile new_datafile = new DataFile(
                   guid: deposit_token,
                   md5: info.md5sumHex,
                   uploadName: upload_filename,
@@ -234,8 +180,8 @@ class PackagesController {
             }
 
 
-            log.debug("Create background job");
-            def incremental_flag = params.incremental
+            log.debug("Create background job")
+            String incremental_flag = params.incremental
             Map additional_params = [
               curatoryGroup: params.curatoryGroup,
               description  : params.description
@@ -246,7 +192,7 @@ class PackagesController {
             // (and probably will) outlive the http request.
             params.each { k, v ->
               if (k.toLowerCase().startsWith('pkg.')) {
-                additional_params[k] = v;
+                additional_params[k] = v
               }
             }
             log.debug("Additional params will be ${additional_params}")
@@ -286,7 +232,7 @@ class PackagesController {
             background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'DepositDatafile')
             background_job.ownerId = user.id
             background_job.startOrQueue()
-            jobid = background_job.uuid
+
             log.debug("Background job started")
           } else {
             log.error("Missing parameters :: ${params}")
@@ -315,11 +261,11 @@ class PackagesController {
   @Transactional(readOnly = true)
   def kbart() {
     if (request.method == "POST") {
-      def packs = []
+      List packs = []
       def type = request.JSON.data.exportType == 'title' ? PackageCSVExportService.ExportType.KBART_TITLE : PackageCSVExportService.ExportType.KBART_TIPP
 
       request.JSON.data.ids.each { id ->
-        def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
+        Package pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
 
         if (pkg)
           packs << pkg
@@ -328,14 +274,14 @@ class PackagesController {
       packageCSVExportService.sendZip(packs, type, response)
     }
     else {
-      def ids = params.list('pkg') ?: [params.id]
+      List ids = params.list('pkg') ?: [params.id]
       def type = params.exportType == 'title' ? PackageCSVExportService.ExportType.KBART_TITLE : PackageCSVExportService.ExportType.KBART_TIPP
 
       if (!ids) {
         response.status = 400
       }
       else if (ids.size() == 1) {
-        def pkg = Package.findByUuid(ids[0]) ?: (genericOIDService.oidToId(ids[0]) ? Package.get(genericOIDService.oidToId(ids[0])) : null)
+        Package pkg = Package.findByUuid(ids[0]) ?: (genericOIDService.oidToId(ids[0]) ? Package.get(genericOIDService.oidToId(ids[0])) : null)
 
         if (pkg) {
           packageCSVExportService.sendFile(pkg, type, response)
@@ -346,7 +292,7 @@ class PackagesController {
         }
       }
       else {
-        def packs = []
+        List packs = []
 
         ids.each { id ->
           def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
@@ -363,10 +309,10 @@ class PackagesController {
   @Transactional(readOnly = true)
   def packageTSVExport() {
     if (request.method == "POST") {
-      def packs = []
+      List packs = []
 
       request.JSON.data.ids.each { id ->
-        def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
+        Package pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
 
         if (pkg)
           packs << pkg
@@ -375,13 +321,13 @@ class PackagesController {
       packageCSVExportService.sendZip(packs, PackageCSVExportService.ExportType.TSV, response)
     }
     else {
-      def ids = params.list('pkg') ?: [params.id]
+      List ids = params.list('pkg') ?: [params.id]
 
       if (!ids) {
         response.status = 400
       }
       else if (ids.size() == 1) {
-        def pkg = Package.findByUuid(ids[0]) ?: (genericOIDService.oidToId(ids[0]) ? Package.get(genericOIDService.oidToId(ids[0])) : null)
+        Package pkg = Package.findByUuid(ids[0]) ?: (genericOIDService.oidToId(ids[0]) ? Package.get(genericOIDService.oidToId(ids[0])) : null)
 
         if (pkg) {
           packageCSVExportService.sendFile(pkg, PackageCSVExportService.ExportType.TSV, response)
@@ -391,10 +337,11 @@ class PackagesController {
           response.status = 404
         }
       } else {
-        def packs = []
+        List packs = []
 
         ids.each { id ->
-          def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
+          Package pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
+
           if (pkg)
             packs << pkg
         }

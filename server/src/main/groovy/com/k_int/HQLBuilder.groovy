@@ -1,10 +1,9 @@
 package com.k_int
 
-import groovy.util.logging.*
-import org.gokb.DomainClassExtender
-import org.gokb.cred.*;
 import grails.util.GrailsClassUtils
 import groovy.util.logging.Slf4j
+
+import org.gokb.cred.*
 
 @Slf4j
 public class HQLBuilder {

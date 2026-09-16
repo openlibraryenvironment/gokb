@@ -41,11 +41,10 @@ class TitleInstance extends KBComponent {
   static mappedBy = [
     publisherLinks: 'title',
     tipps: 'title',
-    tipls: 'title',
+    tipls: 'title'
   ]
 
   static constraints = {
-
     medium(nullable: true, blank: false)
     pureOA(nullable: true, blank: false)
     reasonRetired(nullable: true, blank: false)
@@ -72,7 +71,7 @@ class TitleInstance extends KBComponent {
 
   public static final String restPath = "/titles"
 
-  static Map jsonMapping = [
+  static jsonMapping = [
     'ignore'       : [
       'pureOA',
       'continuingSeries',
@@ -134,7 +133,7 @@ class TitleInstance extends KBComponent {
           "variantType": (title_type),
           "owner"      : this,
           "locale"     : (locale_rd),
-          "status"     : RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
+          "status"     : RefdataCategory.lookup('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
           "variantName": (title)
         ])
         result = true
@@ -201,7 +200,7 @@ class TitleInstance extends KBComponent {
     return result
   }
 
-  public TitlePublisher addPublisher(Org pub, boolean update_comment = false) {
+  public TitlePublisher addPublisher(Org pub, boolean update_comment = true) {
     TitlePublisher result
     TitlePublisher dupe = TitlePublisher.findByTitleAndPublisher(this, pub)
 
@@ -260,12 +259,12 @@ class TitleInstance extends KBComponent {
 
   @Transient
   static Map oaiConfig = [
-    id             : 'titles',
+    id: 'titles',
     textDescription: 'Title repository for GOKb',
-    query          : " from TitleInstance as o ",
-    statusFilter   : ['Expected'],
-    pageSize       : 20,
-    uriPath        : '/title'
+    query: " from TitleInstance as o ",
+    statusFilter: ['Expected'],
+    pageSize: 20,
+    uriPath: '/title'
   ]
 
   /**

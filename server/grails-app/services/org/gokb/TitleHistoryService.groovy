@@ -1,14 +1,12 @@
 package org.gokb
 
 import com.k_int.ClassUtils
+
 import grails.gorm.transactions.Transactional
-import org.gokb.FTControl
-import org.hibernate.ScrollMode
-import java.nio.charset.Charset
-import java.util.GregorianCalendar
-import org.gokb.cred.ComponentHistoryEventParticipant
-import org.gokb.cred.ComponentHistoryEvent
-import org.gokb.cred.TitleInstance
+
+import java.time.LocalDateTime
+
+import org.gokb.cred.*
 import org.grails.web.json.JSONObject
 
 @Transactional
@@ -60,6 +58,7 @@ class TitleHistoryService {
     Map result = [result: 'OK']
     List current_history = ti.titleHistory
     List events = []
+    Map errors = [:]
 
     log.debug("Current history: ${current_history}")
 
@@ -274,7 +273,7 @@ class TitleHistoryService {
         }
       }
 
-      if (errors.size() > 0) {
+      if (errors) {
         result.result = 'ERROR'
         result.message = "There were errors updating the title history!"
         result.errors = errors

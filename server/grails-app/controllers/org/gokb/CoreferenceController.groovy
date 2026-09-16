@@ -27,7 +27,7 @@ class CoreferenceController {
           result.status = 404
         }
         else {
-          matched_ids = Identifier.findAllByNamespaceAndNormname(params.idpart)
+          matched_ids = Identifier.findAllByNamespaceAndNormname(namespace, normVal)
         }
       }
 
@@ -77,6 +77,10 @@ class CoreferenceController {
         r.records.each { cr ->
           List rec_identifiers = []
 
+          cr.activeIds.each { rid ->
+            rec_identifiers.add(['namespace': rid.namespace.value, 'identifier': rid.value])
+          }
+
           rec_identifier.linkedComponents.add([
             'type':cr.class.name,
             'id':cr.id,
@@ -84,10 +88,6 @@ class CoreferenceController {
             'gokbIdentifier':"${cr.class.name}:${cr.id}",
             'sameAs':rec_identifiers
           ])
-
-          cr.ids.each { rid ->
-            rec_identifiers.add(['namespace': rid.namespace.value, 'identifier': rid.value])
-          }
         }
 
         api_response.matchedIdentifiers.add(rec_identifier)

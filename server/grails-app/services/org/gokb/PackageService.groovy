@@ -9,8 +9,7 @@ import groovy.util.logging.Slf4j
 
 import org.gokb.cred.*
 import org.hibernate.Session
-
-import static grails.async.Promises.*
+import org.grails.web.json.JSONObject
 
 @Slf4j
 class PackageService {

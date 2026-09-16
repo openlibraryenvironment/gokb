@@ -574,7 +574,7 @@ class AdminController {
         log.debug("${job}")
 
         result.description = job.description
-        result.type = job.type ? [value: job.type.value, id: job.type.id] : null
+        result.type = job.type ? ([value: job.type.value, id: job.type.id, name: job.type.value]) : null
         result.linkedItem = job.linkedItem
         result.startTime = job.startTime
 
@@ -609,8 +609,8 @@ class AdminController {
           }
 
           result.description = persistedResult.description
-          result.type = persistedResult.type ? [value: persistedResult.type.value, id: persistedResult.type.id] : null
-          result.linkedItem = linkedItemMap
+          result.type = persistedResult.type ? ([value: persistedResult.type.value, id: persistedResult.type.id]) : null
+          result.linkedItem = linkedItemMap ?: null
           result.startTime = persistedResult.startTime
           result.endTime = persistedResult.endTime
           result.job_result = new JsonSlurper().parseText(persistedResult.resultObject)
@@ -633,7 +633,7 @@ class AdminController {
   def setupAcl() {
     log.info("Setting up default ACL config ..")
 
-    Map default_dcs = [
+    List default_dcs = [
       "BookInstance",
       "JournalInstance",
       "TitleInstancePackagePlatform",
@@ -702,6 +702,26 @@ class AdminController {
     aclUtilService.addPermission(dc_id, 'ROLE_ADMIN', BasePermission.CREATE)
     aclUtilService.addPermission(dc_id, 'ROLE_ADMIN', BasePermission.DELETE)
     aclUtilService.addPermission(dc_id, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
+
+
+    ["org.gokb.cred.ComponentIdentifier", "org.gokb.cred.TitlePublisher", "org.gokb.cred.ComponentAttachment"].each { link_type ->
+      KBDomainInfo dc_lt = KBDomainInfo.findByDcName(link_type)
+
+      aclUtilService.addPermission(dc_lt, 'ROLE_USER', BasePermission.READ)
+
+      aclUtilService.addPermission(dc_lt, 'ROLE_CONTRIBUTOR', BasePermission.READ)
+      aclUtilService.addPermission(dc_lt, 'ROLE_CONTRIBUTOR', BasePermission.CREATE)
+      aclUtilService.addPermission(dc_lt, 'ROLE_CONTRIBUTOR', BasePermission.DELETE)
+
+      aclUtilService.addPermission(dc_lt, 'ROLE_EDITOR', BasePermission.READ)
+      aclUtilService.addPermission(dc_lt, 'ROLE_EDITOR', BasePermission.CREATE)
+      aclUtilService.addPermission(dc_lt, 'ROLE_EDITOR', BasePermission.DELETE)
+
+      aclUtilService.addPermission(dc_lt, 'ROLE_ADMIN', BasePermission.READ)
+      aclUtilService.addPermission(dc_lt, 'ROLE_ADMIN', BasePermission.CREATE)
+      aclUtilService.addPermission(dc_lt, 'ROLE_ADMIN', BasePermission.DELETE)
+      aclUtilService.addPermission(dc_lt, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
+    }
 
     KBDomainInfo dc_cg = KBDomainInfo.findByDcName('org.gokb.cred.CuratoryGroup')
 

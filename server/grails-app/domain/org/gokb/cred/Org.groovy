@@ -148,33 +148,6 @@ class Org extends KBComponent {
     result
   }
 
-  static Org lookupUsingComponentIdOrAlternate(ids) {
-    def located_org = null
-
-    switch (ids) {
-
-      case List:
-
-        // Assume [identifierType : "", identifierValue : "" ] format.
-        // See if we can locate the item using any of the custom identifiers.
-        ids.each { ci ->
-
-          // We've already located an org for this identifier, the new identifier should be new (And therefore added to this org) or
-          // resolve to this org. If it resolves to some other org, then there is a conflict and we fail!
-          located_org = lookupByIO(ci.identifierType, ci.identifierValue)
-          if (located_org) return located_org
-        }
-        break
-      case Identifier:
-        located_org = lookupByIO(
-            ids.ns.ns,
-            ids.value
-        )
-        break
-    }
-    located_org
-  }
-
   public int getProvidedPackagesCount() {
     RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
 

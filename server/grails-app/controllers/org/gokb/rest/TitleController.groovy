@@ -29,7 +29,7 @@ class TitleController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def getTypes() {
-    Map result = ["serial","monograph","database"]
+    List result = ["serial","monograph","database"]
 
     return result as JSON
   }

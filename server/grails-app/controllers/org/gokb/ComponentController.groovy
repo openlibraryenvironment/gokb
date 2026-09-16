@@ -83,9 +83,14 @@ class ComponentController {
 
         if (params.ctype == 'st') {
           String staticClause = ''' kbc.kbc_status_rv_fk <> :deleted
-            AND (SELECT count(c.id) FROM component_identifier AS c JOIN identifier AS id ON (c.ci_ident_fk = id.kbc_id) WHERE
-              c.ci_comp_fk = kbc.kbc_id AND c.ci_status_rv_fk = :ciStatus
-              AND id.id_namespace_fk = :namespace) > 1'''
+                                    AND (
+                                      SELECT count(c.id) FROM component_identifier AS c
+                                      JOIN identifier AS id
+                                      ON (c.ci_ident_fk = id.kbc_id)
+                                      WHERE c.ci_comp_fk = kbc.kbc_id
+                                      AND c.ci_status_rv_fk = :ciStatus
+                                      AND id.id_namespace_fk = :namespace
+                                    ) > 1'''
 
           StringWriter query = new StringWriter()
           StringWriter cqry = new StringWriter()

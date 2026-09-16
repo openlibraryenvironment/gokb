@@ -70,7 +70,7 @@ class AugmentZdbJob implements InterruptableJob {
         RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
         RefdataValue ci_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
         IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
-        List<IdentifierNamespace> issnNs = []
+        List issnNs = []
         issnNs << IdentifierNamespace.findByValue('issn')
         issnNs << IdentifierNamespace.findByValue('eissn')
 
@@ -79,7 +79,7 @@ class AugmentZdbJob implements InterruptableJob {
         boolean run_full_update = (ZonedDateTime.now(ZoneId.of("Europe/Berlin")).getHour() == 22) // -> 23:30
         Date lastStart = context.getPreviousFireTime() ?: Date.from(zdt_minus_one.toInstant())
 
-        def qry_params = [
+        Map qry_params = [
           current: status_current,
           lastRun: lastStart
         ]
@@ -95,7 +95,7 @@ class AugmentZdbJob implements InterruptableJob {
         }
 
         result.total = JournalInstance.executeQuery("select count(ti.id) ${run_full_update ? query_full : query_new_only}".toString(), qry_params)[0]
-        List<Long> journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${run_full_update ? query_full : query_new_only}".toString(), qry_params)
+        List journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${run_full_update ? query_full : query_new_only}".toString(), qry_params)
 
         log.debug("Processing ${result.total}")
 
@@ -172,7 +172,7 @@ class AugmentZdbJob implements InterruptableJob {
     interrupted = true
   }
 
-  def cleanUpGorm() {
+  private void cleanUpGorm() {
     log.debug("Clean up GORM")
     TitleInstance.withTransaction {
       def session = sessionFactory.currentSession

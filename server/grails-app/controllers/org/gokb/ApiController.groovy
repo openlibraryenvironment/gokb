@@ -1,12 +1,12 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService
-import com.k_int.ExtendedHibernateDetachedCriteria
+
 import grails.converters.JSON
 import grails.util.GrailsNameUtils
 import groovy.util.logging.*
+
 import org.gokb.cred.*
-import org.gokb.refine.RefineProject
 import org.hibernate.criterion.CriteriaSpecification
 import org.hibernate.criterion.Subqueries
 import org.springframework.security.access.annotation.Secured
@@ -22,12 +22,9 @@ import java.security.SecureRandom
 @Slf4j
 class ApiController {
   SecureRandom rand = new SecureRandom()
-  def ESWrapperService
   def ESSearchService
   def zdbAPIService
-
   def springSecurityService
-  def componentLookupService
   def genericOIDService
   ConcurrencyManagerService concurrencyManagerService
 
@@ -38,45 +35,6 @@ class ApiController {
     apiReturn(["isUp" : true])
   }
 
-  // Internal API return object that ensures consistent formatting of API return objects
-  private def apiReturn = {result, String message = "", String status = (result instanceof Throwable) ? "error" : "success" ->
-
-    // If the status is error then we should log an entry.
-    if (status == 'error') {
-
-      // Generate 6bytes of random data to be base64 encoded which can be returned to the user to help with tracking issues in the logs.
-      byte[] randomBytes = new byte[6]
-      rand.nextBytes(randomBytes)
-      def ticket = Base64.encodeBase64String(randomBytes);
-
-      // Let's see if we have a throwable.
-      if (result && result instanceof Throwable) {
-
-        // Log the error with the stack...
-        log.error("[[${ticket}]] - ${message == "" ? result.getLocalizedMessage() : message}", result)
-      } else {
-        log.error("[[${ticket}]] - ${message == "" ? 'An error occured, but no message or exception was supplied. Check preceding log entries.' : message}")
-      }
-
-      // Ensure we have something to send back to the user.
-      if (message == "") {
-        message = "An unknow error occurred."
-      } else {
-
-        // We should now send the message along with the ticket.
-        message = "${message}".replaceFirst("\\.\\s*\$", ". The error has been logged with the reference '${ticket}'")
-      }
-    }
-
-    def data = [
-      code    : (status),
-      result    : (result),
-      message    : (message),
-    ]
-
-    render data as JSON
-  }
-
   def index() {
   }
 
@@ -85,48 +43,9 @@ class ApiController {
     apiReturn(["login": true])
   }
 
-  def refdata() {
-    def result = [:];
-
-    // Should take a type parameter and do the right thing. Initially only do one type
-    switch ( params.type ) {
-      case 'cp' :
-        def oq = Org.createCriteria()
-        def orgs = oq.listDistinct {
-          roles {
-            "owner" {
-              eq('desc','Org.Role');
-            }
-            eq('value','Content Provider');
-          }
-          order("name", "asc")
-        }
-        result.datalist=new java.util.ArrayList()
-        orgs.each { o ->
-          result.datalist.add([ "value" : "${o.id}", "name" : (o.name) ])
-        }
-        break;
-
-      case 'org' :
-        def oq = Org.createCriteria()
-        def orgs = oq.listDistinct {
-          order("name", "asc")
-        }
-        result.datalist=new java.util.ArrayList()
-        orgs.each { o ->
-          result.datalist.add([ "value" : "${o.id}", "name" : (o.name) ])
-        }
-        break;
-      default:
-        break;
-    }
-    apiReturn(result)
-  }
-
   def namespaces() {
-
-    def result = []
-    def all_ns = null
+    List result = []
+    List all_ns = []
 
     if (params.category && params.category?.trim().size() > 0) {
       all_ns = IdentifierNamespace.findAllByFamily(params.category)
@@ -143,8 +62,7 @@ class ApiController {
   }
 
   def groups() {
-
-    def result = []
+    List result = []
 
     CuratoryGroup.list().each {
       result << [
@@ -209,7 +127,7 @@ class ApiController {
    * find : Query the Elasticsearch index via ESSearchService
   **/
   def find() {
-    def result = [:]
+    Map result = [:]
     def searchParams = params
 
     if (!searchParams.mapRecords) {
@@ -346,5 +264,44 @@ class ApiController {
     }
 
     render result as JSON
+  }
+
+  // Internal API return object that ensures consistent formatting of API return objects
+  private def apiReturn = { result, String message = "", String status = (result instanceof Throwable) ? "error" : "success" ->
+
+    // If the status is error then we should log an entry.
+    if (status == 'error') {
+
+      // Generate 6bytes of random data to be base64 encoded which can be returned to the user to help with tracking issues in the logs.
+      byte[] randomBytes = new byte[6]
+      rand.nextBytes(randomBytes)
+      def ticket = Base64.encodeBase64String(randomBytes);
+
+      // Let's see if we have a throwable.
+      if (result && result instanceof Throwable) {
+
+        // Log the error with the stack...
+        log.error("[[${ticket}]] - ${message == "" ? result.getLocalizedMessage() : message}", result)
+      } else {
+        log.error("[[${ticket}]] - ${message == "" ? 'An error occured, but no message or exception was supplied. Check preceding log entries.' : message}")
+      }
+
+      // Ensure we have something to send back to the user.
+      if (message == "") {
+        message = "An unknow error occurred."
+      } else {
+
+        // We should now send the message along with the ticket.
+        message = "${message}".replaceFirst("\\.\\s*\$", ". The error has been logged with the reference '${ticket}'")
+      }
+    }
+
+    def data = [
+      code    : (status),
+      result    : (result),
+      message    : (message),
+    ]
+
+    render data as JSON
   }
 }

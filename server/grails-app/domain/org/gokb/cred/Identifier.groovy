@@ -20,6 +20,7 @@ class Identifier {
   String value
 
   String normname
+  String uuid
 
   Date dateCreated
   Date lastUpdated
@@ -45,6 +46,7 @@ class Identifier {
     value column: 'id_value', index: 'id_value_idx'
     namespace column: 'id_namespace_fk', index: 'id_namespace_idx'
     normname column: 'id_normname', index: 'id_normname_idx'
+    uuid column: 'id_uuid', index: 'id_uuid_idx'
     dateCreated column: 'id_date_created'
     lastUpdated column: 'id_last_updated'
   }
@@ -99,12 +101,6 @@ class Identifier {
     return id.toLowerCase().trim().replaceAll("\\W", "")
   }
 
-  private void generateShortcode() {
-    if (!shortcode && namespace && value) {
-      // Generate the short code.
-      shortcode = generateShortcode("${namespace.value}:${value}").replaceAll("\\W", "-")
-    }
-  }
 
   public List getComponentLinks() {
     List result = ComponentIdentifier.findAllByIdentifier(this)
@@ -124,7 +120,7 @@ class Identifier {
 
   public List getIdentifiedComponentsOfType(String classFilter) {
     List result = []
-    Collection<String> classNames = []
+    List classNames = []
 
     if (classFilter == 'TitleInstance') {
       classNames = ['JournalInstance', 'BookInstance', 'DatabaseInstance', 'OtherInstance']
@@ -176,14 +172,16 @@ class Identifier {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj != null) {
-      def dep = KBComponent.deproxy(obj)
-      if (dep instanceof Identifier) {
-        return this.normname == dep.normname &&
-          this.namespace == dep.namespace
-      }
+    Object o = KBComponent.deproxy(obj)
+
+    if (o != null) {
+      // Deproxy the object first to ensure it isn't a hibernate proxy.
+      boolean r = (this.getClassName() == o.getClass().name) && (this.getId() == o.getId())
+      return r
     }
-    return false
+
+    // Return false if we get here.
+    false
   }
 
   @Override

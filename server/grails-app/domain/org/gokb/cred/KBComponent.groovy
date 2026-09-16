@@ -5,7 +5,6 @@ import groovy.util.logging.*
 
 import org.grails.datastore.mapping.model.PersistentEntity
 import org.grails.datastore.mapping.model.PersistentProperty
-import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 
 import java.time.LocalDate

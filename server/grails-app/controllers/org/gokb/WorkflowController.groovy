@@ -28,50 +28,51 @@ class WorkflowController{
   def orgService
   def tippUpsertService
 
-  def actionConfig = [
-      'method::deleteSoft'     : [actionType: 'simple'],
-      'title::transfer'        : [actionType: 'workflow', view: 'titleTransfer'],
-      'platform::replacewith'  : [actionType: 'workflow', view: 'platformReplacement'],
+  Map actionConfig = [
+      'method::deleteSoft': [actionType: 'simple'],
+      'title::transfer': [actionType: 'workflow', view: 'titleTransfer'],
+      'platform::replacewith': [actionType: 'workflow', view: 'platformReplacement'],
       'method::registerWebhook': [actionType: 'workflow', view: 'registerWebhook'],
-      'method::RRTransfer'     : [actionType: 'workflow', view: 'revReqTransfer'],
-      'method::RRClose'        : [actionType: 'simple'],
-      'packageUrlUpdate'       : [actionType: 'process', method: 'triggerSourceUpdate'],
-      'title::reconcile'       : [actionType: 'workflow', view: 'titleReconcile'],
-      'title::merge'           : [actionType: 'workflow', view: 'titleMerge'],
-      'tipp::retire'           : [actionType: 'workflow', view: 'tippRetire'],
-      'tipp::move'             : [actionType: 'workflow', view: 'tippMove'],
-      'exportPackage'          : [actionType: 'process', method: 'packageTSVExport'],
-      'kbartExport'            : [actionType: 'process', method: 'packageKBartExport'],
-      'method::retire'         : [actionType: 'simple'],
-      'method::setActive'      : [actionType: 'simple'],
-      'method::setExpected'    : [actionType: 'simple'],
-      'setStatus::Retired'     : [actionType: 'simple'],
-      'setStatus::Current'     : [actionType: 'simple'],
-      'setStatus::Expected'    : [actionType: 'simple'],
-      'setStatus::Deleted'     : [actionType: 'simple'],
-      'org::transferPackages'  : [actionType: 'workflow', view: 'transferProviderPackages'],
-      'org::deprecateReplace'  : [actionType: 'workflow', view: 'deprecateOrg'],
-      'org::deprecateDelete'   : [actionType: 'workflow', view: 'deprecateDeleteOrg'],
-      'verifyTitleList'        : [actionType: 'process', method: 'verifyTitleList']
+      'method::RRTransfer': [actionType: 'workflow', view: 'revReqTransfer'],
+      'method::RRClose': [actionType: 'simple'],
+      'packageUrlUpdate': [actionType: 'process', method: 'triggerSourceUpdate'],
+      'title::reconcile': [actionType: 'workflow', view: 'titleReconcile'],
+      'title::merge': [actionType: 'workflow', view: 'titleMerge'],
+      'tipp::retire': [actionType: 'workflow', view: 'tippRetire'],
+      'tipp::move': [actionType: 'workflow', view: 'tippMove'],
+      'exportPackage': [actionType: 'process', method: 'packageTSVExport'],
+      'kbartExport': [actionType: 'process', method: 'packageKBartExport'],
+      'method::retire': [actionType: 'simple'],
+      'method::setActive': [actionType: 'simple'],
+      'method::setExpected': [actionType: 'simple'],
+      'setStatus::Retired': [actionType: 'simple'],
+      'setStatus::Current': [actionType: 'simple'],
+      'setStatus::Expected': [actionType: 'simple'],
+      'setStatus::Deleted': [actionType: 'simple'],
+      'org::transferPackages': [actionType: 'workflow', view: 'transferProviderPackages'],
+      'org::deprecateReplace': [actionType: 'workflow', view: 'deprecateOrg'],
+      'org::deprecateDelete': [actionType: 'workflow', view: 'deprecateDeleteOrg'],
+      'verifyTitleList': [actionType: 'process', method: 'verifyTitleList']
   ]
 
   def action(){
     log.debug("WorkflowController::action(${params})")
-    def result = [:]
+    Map result = [:]
     result.ref = request.getHeader('referer')
 
-    def action_config = actionConfig[params.selectedBulkAction]
+    Map action_config = actionConfig[params.selectedBulkAction]
 
-    if (action_config){
+    if (action_config) {
       result.objects_to_action = []
 
-      if (params.batch_on == 'all'){
+      if (params.batch_on == 'all') {
         log.debug("Requested batch_on all.. so evaluate the query and do the right thing...")
         if (params.qbe){
-          def qresult = [:]
-          if (params.qbe.startsWith('g:')){
+          Map qresult = [:]
+
+          if (params.qbe.startsWith('g:')) {
             // Global template, look in config
-            def global_qbe_template_shortcode = params.qbe.substring(2, params.qbe.length())
+            String global_qbe_template_shortcode = params.qbe.substring(2, params.qbe.length())
             // log.debug("Looking up global template ${global_qbe_template_shortcode}")
             qresult.qbetemplate = grailsApplication.config.getProperty("globalSearchTemplates.$global_qbe_template_shortcode")
             // log.debug("Using template: ${result.qbetemplate}")
@@ -84,8 +85,8 @@ class WorkflowController{
             def target_class = grailsApplication.getArtefact("Domain", qresult.qbetemplate.baseclass)
             com.k_int.HQLBuilder.build(grailsApplication, qresult.qbetemplate, params, qresult, target_class, genericOIDService)
 
-            qresult.recset.each{
-              def oid_to_action = "${it.class.name}:${it.id}"
+            qresult.recset.each {
+              String oid_to_action = "${it.class.name}:${it.id}"
               result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
             }
           }
@@ -93,39 +94,41 @@ class WorkflowController{
       }
       else{
         log.debug("Assuming standard selection of rows to action")
-        params.each{ p ->
-          if ((p.key.startsWith('bulk:')) && (p.value) && (p.value instanceof String)){
-            def oid_to_action = p.key.substring(5)
+        params.each { p ->
+          if ((p.key.startsWith('bulk:')) && (p.value) && (p.value instanceof String)) {
+            String oid_to_action = p.key.substring(5)
             result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
           }
         }
       }
 
-      switch (action_config.actionType){
+      switch (action_config.actionType) {
         case 'simple':
-          def method_config = params.selectedBulkAction.split(/\:\:/) as List
-          switch (method_config[0]){
+          List method_config = params.selectedBulkAction.split(/\:\:/) as List
+
+          switch (method_config[0]) {
             case "method":
-              def context = [user: request.user]
+              Map context = [user: request.user]
               // Everything after the first 2 "parts" are args for the method.
-              def method_params = []
+              List method_params = []
               method_params.add(context)
-              if (method_config.size() > 2){
+
+              if (method_config.size() > 2) {
                 method_params.addAll(method_config.subList(2, method_config.size()))
               }
               // We should just call the method on the targets.
-              result.objects_to_action.each{ def target ->
+              result.objects_to_action.each { target ->
                 log.debug("Target: ${target} (${target.class.name})")
                 log.debug("Attempting to fire method ${method_config[1]} (${method_params})")
                 // Wrap in a transaction.
-                KBComponent.withTransaction{ def trans_status ->
-                  try{
+                KBComponent.withTransaction { trans_status ->
+                  try {
                     // Just try and fire the method.
                     target.invokeMethod("${method_config[1]}", method_params ? method_params as Object[] : null)
                     // Save the object.
                     target.save(failOnError: true)
                   }
-                  catch (Throwable t){
+                  catch (Throwable t) {
                     // Rollback and log error.
                     trans_status.setRollbackOnly()
                     t.printStackTrace()
@@ -135,16 +138,16 @@ class WorkflowController{
                 // target.save(flush: true, failOnError:true)
                 log.debug("After transaction: ${target?.status}")
               }
-              result.objects_to_action.each{
+              result.objects_to_action.each {
                 log.debug("${it.status}")
               }
               break
             case "setStatus":
               log.debug("SetStatus: ${method_config[1]}")
-              def status_to_set = RefdataCategory.lookup('KBComponent.Status', method_config[1])
+              RefdataValue status_to_set = RefdataCategory.lookup('KBComponent.Status', method_config[1])
               // def ota_ids = result.objects_to_action.collect{ it.id }
-              if (status_to_set){
-                def res = KBComponent.executeUpdate("update KBComponent as kbc set kbc.status = :st where kbc IN (:clist)", [st: status_to_set, clist: result.objects_to_action])
+              if (status_to_set) {
+                List res = KBComponent.executeUpdate("update KBComponent as kbc set kbc.status = :st where kbc IN (:clist)", [st: status_to_set, clist: result.objects_to_action])
                 log.debug("Updated status of ${res} components")
               }
               break
@@ -163,14 +166,14 @@ class WorkflowController{
           break
       }
     }
-    else{
+    else {
       flash.error = "Unable to locate action config for ${params.selectedBulkAction}".toString()
       log.warn("Unable to locate action config for ${params.selectedBulkAction}")
       redirect(url: result.ref)
     }
   }
 
-  def startTitleChange(){
+  def startTitleChange() {
     log.debug("startTitleChange(${params})")
 
     RefdataValue active_status = RefdataCategory.lookup('Activity.Status', 'Active')
@@ -190,7 +193,7 @@ class WorkflowController{
     // Iterate through before titles.. For each one of these will will close out any existing tipps
     params.list('beforeTitles').each { title_oid ->
       log.debug("process ${title_oid}")
-      if (first_title == null){
+      if (first_title == null) {
         first_title = title_oid
       }
       else{
@@ -206,7 +209,7 @@ class WorkflowController{
           'select tipp from TitleInstancePackagePlatform as tipp where tipp.title = :ti tipp.status <> :sd',
           [ti: title_obj, sd: status_deleted])
 
-      tipps.each{ tipp ->
+      tipps.each { tipp ->
         if ((tipp.status != status_deleted) && (tipp.pkg.scope?.value != 'GOKb Master')) {
           log.debug("Add tipp to discontinue ${tipp}")
 
@@ -226,7 +229,7 @@ class WorkflowController{
               newtipps: []
           ]
 
-          params.list('afterTitles').each{ new_title_oid ->
+          params.list('afterTitles').each { new_title_oid ->
             TitleInstance new_title_obj = genericOIDService.resolveOID2(new_title_oid)
             Map new_tipp_info = [
               title_id: new_title_obj.id,
@@ -427,7 +430,7 @@ class WorkflowController{
       if (merge_params['merge_pb']) {
         old_ti.publisher.each{ old_pb ->
           if (!new_ti.publisher.contains(old_pb)) {
-            new_ti.publisher.add(old_pb)
+            new_ti.addPublisher(old_pb)
           }
         }
       }
@@ -469,7 +472,7 @@ class WorkflowController{
             new_from = ohe.from
 
             ohe.from.each { hep ->
-              def he_match = ComponentHistoryEvent.executeQuery('''select che from ComponentHistoryEvent as che
+              List he_match = ComponentHistoryEvent.executeQuery('''select che from ComponentHistoryEvent as che
                                                                     where exists (
                                                                       select chep from ComponentHistoryEventParticipant as chep
                                                                       where chep.event = che

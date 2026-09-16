@@ -49,7 +49,7 @@ class IdentifierService {
         result.data << [
           name: ns.name,
           value: ns.value,
-          targetType: ns.targetType?.value ?: null,
+          targetType: (ns.targetType?.value ?: null),
           id: ns.id,
           pattern: ns.pattern,
           family: ns.family,

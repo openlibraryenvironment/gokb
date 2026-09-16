@@ -190,13 +190,14 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   public static final String restPath = "/package-titles"
 
-  def availableActions() {
-    [[code: 'setStatus::Retired', label: 'Retire'],
-     [code: 'tipp::retire', label: 'Retire (with Date)'],
-     [code: 'setStatus::Deleted', label: 'Delete', perm: 'delete'],
-     [code: 'setStatus::Expected', label: 'Mark Expected'],
-     [code: 'setStatus::Current', label: 'Set Current'],
-     [code: 'tipp::move', label: 'Move TIPP']
+  public List availableActions() {
+    return [
+      [code: 'setStatus::Retired', label: 'Retire'],
+      [code: 'tipp::retire', label: 'Retire (with Date)'],
+      [code: 'setStatus::Deleted', label: 'Delete', perm: 'delete'],
+      [code: 'setStatus::Expected', label: 'Mark Expected'],
+      [code: 'setStatus::Current', label: 'Set Current'],
+      [code: 'tipp::move', label: 'Move TIPP']
     ]
   }
 
@@ -212,15 +213,15 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Override
   static TitleInstancePackagePlatform lookupByIO(String idtype, String idvalue) {
-    def result = null
-    def normid = Identifier.normalizeIdentifier(idvalue)
-    def namespace = IdentifierNamespace.findByValueIlike(idtype)
+    TitleInstancePackagePlatform result = null
+    Identifier normid = Identifier.normalizeIdentifier(idvalue)
+    IdentifierNamespace namespace = IdentifierNamespace.findByValueIlike(idtype)
 
     if (normid && namespace) {
-      def id = Identifier.findByNamespaceAndNormname(namespace, normid)
+      Identifier id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
       id?.activeIdentifiedComponents.each { proxy ->
-        def component = KBComponent.deproxy(proxy)
+        KBComponent component = KBComponent.deproxy(proxy)
 
         if (component.class == TitleInstancePackagePlatform && !result) {
           result = component
@@ -232,16 +233,16 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   @Override
-  static def lookupAllByIO(String idtype, String idvalue) {
+  static List lookupAllByIO(String idtype, String idvalue) {
     Set result = []
-    def normid = Identifier.normalizeIdentifier(idvalue)
-    def namespace = IdentifierNamespace.findByValueIlike(idtype)
+    Identifier normid = Identifier.normalizeIdentifier(idvalue)
+    IdentifierNamespace namespace = IdentifierNamespace.findByValueIlike(idtype)
 
     if (normid && namespace) {
-      def id = Identifier.findByNamespaceAndNormname(namespace, normid)
+      Identifier id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
       id?.activeIdentifiedComponents.each { proxy ->
-        def component = KBComponent.deproxy(proxy)
+        KBComponent component = KBComponent.deproxy(proxy)
 
         if (component.class == TitleInstancePackagePlatform) {
           result.add(component)
@@ -252,19 +253,23 @@ class TitleInstancePackagePlatform extends KBComponent {
     result
   }
 
-  public static TitleInstancePackagePlatform tiplAwareCreate(tipp_fields = [:]) {
-    def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
-    def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
-    def tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
-    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid,
-                                                  status: tipp_status,
-                                                  editStatus: tipp_editstatus,
-                                                  name: tipp_fields.name,
-                                                  language: tipp_language,
-                                                  url: tipp_fields.url,
-                                                  pkg: tipp_fields.pkg,
-                                                  hostPlatform: tipp_fields.hostPlatform,
-                                                  title: tipp_fields.title).save(failOnError: true, flush:true)
+  public static TitleInstancePackagePlatform tiplAwareCreate(Map tipp_fields = [:]) {
+    TitleInstancePackagePlatform result
+    RefdataValue tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
+    RefdataValue tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
+    RefdataValue tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
+
+    if (tipp_fields.pkg && tipp_fields.hostPlatform) {
+      result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid,
+                                                        status: tipp_status,
+                                                        editStatus: tipp_editstatus,
+                                                        name: tipp_fields.name,
+                                                        language: tipp_language,
+                                                        url: tipp_fields.url,
+                                                        pkg: tipp_fields.pkg,
+                                                        hostPlatform: tipp_fields.hostPlatform,
+                                                        title: tipp_fields.title).save(failOnError: true, flush:true)
+    }
 
     if (result) {
       if (tipp_fields.title) {
@@ -281,9 +286,9 @@ class TitleInstancePackagePlatform extends KBComponent {
   /**
    * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
    */
-  public static def validateDTO(tipp_dto, locale) {
-    def result = ['valid': true]
-    def errors = [:]
+  public static Map validateDTO(tipp_dto, locale) {
+    Map result = ['valid': true]
+    Map errors = [:]
     def pkgLink = tipp_dto.pkg ?: tipp_dto.package
     def pltLink = tipp_dto.hostPlatform ?: tipp_dto.platform
     def tiLink = tipp_dto.title
@@ -293,7 +298,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       errors.pkg = [[message: "Missing package link!", baddata: pkgLink]]
     }
     else {
-      def pkg = null
+      Package pkg = null
 
       if (pkgLink instanceof Map) {
         pkg = Package.get(pkgLink.id ?: pkgLink.internalId)
@@ -313,7 +318,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       errors.hostPlatform = [[message: "Missing platform link!", baddata: pltLink]]
     }
     else {
-      def plt = null
+      Platform plt = null
 
       if (pltLink instanceof Map) {
         plt = Platform.get(pltLink.id ?: pltLink.internalId)
@@ -331,7 +336,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     // since a tipp is valid without a title connection, the validation of the tipp should drop this
     // precondition too
     if (tiLink) {
-      def ti = null
+      TitleInstance ti = null
 
       if (tiLink instanceof Map) {
         ti = TitleInstance.get(tiLink.id ?: tiLink.internalId)
@@ -348,12 +353,14 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     String idJsonKey = 'ids'
     def ids_list = tipp_dto[idJsonKey]
+
     if (!ids_list) {
       idJsonKey = 'identifiers'
       ids_list = tipp_dto[idJsonKey]
     }
     if (ids_list) {
-      def id_errors = Identifier.validateDTOs(ids_list, locale)
+      List id_errors = Identifier.validateDTOs(ids_list, locale)
+
       if (id_errors.size() > 0) {
         errors.put(idJsonKey, id_errors)
       }
@@ -501,12 +508,12 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   static Map oaiConfig = [
-      id             : 'tipps',
-      textDescription: 'TIPP repository for GOKb',
-      pkg            : 'Package.Tipps',
-      query          : " from TitleInstancePackagePlatform as o ",
-      pageSize       : 10,
-      uriPath        : '/package-title'
+    id: 'tipps',
+    textDescription: 'TIPP repository for GOKb',
+    pkg: 'Package.Tipps',
+    query: " from TitleInstancePackagePlatform as o ",
+    pageSize: 10,
+    uriPath: '/package-title'
   ]
 
   /**

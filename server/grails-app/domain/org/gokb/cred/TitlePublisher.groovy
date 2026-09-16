@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import java.time.LocalDate
+
 class TitlePublisher {
   static final String RD_STATUS = 'TitlePublisher.Status'
   static final String STATUS_ACTIVE = "Active"

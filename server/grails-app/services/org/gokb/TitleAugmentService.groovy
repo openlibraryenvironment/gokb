@@ -10,7 +10,6 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.LocalDateTime
 
-import org.gokb.DomainClassExtender
 import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
 import org.grails.web.json.JSONObject
@@ -42,7 +41,7 @@ class TitleAugmentService {
                                                             where component = :ti
                                                             and identifier = ido
                                                             and status = :ca
-                                                          )'''
+                                                          )''',
                                                           [ti: titleInstance, ca: status_active])[0]
 
     if (titleInstance.niceName == 'Journal') {
@@ -66,6 +65,7 @@ class TitleAugmentService {
                                                             and rr.stdDesc = :type
                                                             and rr.status != :sd ''',
                                                             [ti: titleInstance, type: rr_no_results, sd: rr_status_deleted])
+
         List existing_multiple = ReviewRequest.executeQuery('''from ReviewRequest as rr
                                                             where rr.componentToReview = :ti
                                                             and rr.stdDesc = :type''',
@@ -77,7 +77,8 @@ class TitleAugmentService {
                                                 where component = :ti
                                                 and identifier = ido
                                                 and status = :sca
-                                              )''', [ti: titleInstance, sca: status_active])
+                                              )''',
+                                              [ti: titleInstance, sca: status_active])
 
         Map lookup_result = zdbAPIService.lookup(titleInstance.name, ids)
 
@@ -871,7 +872,7 @@ class TitleAugmentService {
 
         // Now create a new TitlePublisher
         new TitlePublisher(title: ti, publisher: new_publisher, startDate: (null_start ? null : new Date())).save(flush:true)
-        //this.publisher.add(new_publisher)
+        ti.lastUpdateComment = "Added new publisher ${new_publisher}"
         ti.save(flush:true)
         return true
       }

@@ -1,8 +1,7 @@
 package org.gokb
 
 
-import org.gokb.cred.Package
-import org.gokb.cred.RefdataCategory
+import org.gokb.cred.*
 
 class AutoUpdatePackagesJob {
 
@@ -28,7 +27,7 @@ class AutoUpdatePackagesJob {
       RefdataValue status_expected = RefdataCategory.lookup("KBComponent.Status", "Expected")
 
       // find all updateable packages
-      List<Long> updPacks = Package.executeQuery(
+      List updPacks = Package.executeQuery(
         '''select p.id from Package p
            where p.source is not null and
            p.source.automaticUpdates = true

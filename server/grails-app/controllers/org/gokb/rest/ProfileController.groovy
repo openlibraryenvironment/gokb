@@ -37,13 +37,13 @@ class ProfileController {
         email: cg.email,
         _links: [
           self: [
-            href: base + "/curatoryGroups/$cg.id",
+            href: base + "/curatoryGroups/${cg.id}",
           ],
           update: [
-            href: (cg.owner == user || user.isAdmin()) ? base + "/curatoryGroups/$cg.id" : null
+            href: (cg.owner == user || user.isAdmin()) ? base + "/curatoryGroups/${cg.id}" : null
           ],
           delete: [
-            href: (user.superUserStatus) ? base + "/curatoryGroups/$cg.id" : null
+            href: (user.superUserStatus) ? base + "/curatoryGroups/${cg.id}" : null
           ]
         ]
       ]

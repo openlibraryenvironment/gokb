@@ -1,9 +1,10 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
+
 import grails.gorm.DetachedCriteria
 import grails.gorm.transactions.Transactional
-import org.gokb.DomainClassExtender
+
 import org.gokb.cred.*
 import org.hibernate.ScrollMode
 import org.hibernate.ScrollableResults
@@ -311,14 +312,14 @@ class CleanupService {
         List<Long> dupes_to_remove = []
 
         dupes_vals?.each { d ->
-          List<Identifier> duplicates = Identifier.executeQuery('''from Identifier as i
+          List duplicates = Identifier.executeQuery('''from Identifier as i
                                                       where i.normname = :val
                                                       and i.namespace.id = :ns''',
                                                     [
                                                       val: d[1],
                                                       ns: d[2]
                                                     ])
-          Indentifier first = duplicates[0]
+          Identifier first = duplicates[0]
 
           duplicates.eachWithIndex { dui, idx ->
             if (idx > 0) {

@@ -153,8 +153,7 @@ class IdentifierController {
 
             if (comp) {
               if ( comp?.isEditable() ) {
-                comp.ids.add(obj)
-                comp.save(flush:true)
+                comp.addIdentifier(obj)
 
                 params['_embed'] = params['_embed'] ?: 'identifiedComponents'
                 response.status = 201

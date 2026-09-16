@@ -53,17 +53,20 @@ class PublicController {
       }
 
       if (result.pkg) {
-        RefdataValue status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+        RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status','Current')
 
         result.pkgId = result.pkg.id
         result.pkgName = result.pkg.name
         log.debug("Tipp qry name: ${result.pkgName}")
         int offset = params.offset ? params.int('offset') : 0
 
-        result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) ' + TIPPS_QRY, [pkg: result.pkgId, cs: status_current])[0]
+        result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) ' + TIPPS_QRY,
+                                                                        [pkg: result.pkgId, cs: status_current])[0]
         result.tipps = []
 
-        def tipps = TitleInstancePackagePlatform.executeQuery('select tipp ' + TIPPS_QRY + ' order by tipp.id', [pkg: result.pkgId, cs: status_current], [offset: offset, max:10, readOnly: true])
+        List tipps = TitleInstancePackagePlatform.executeQuery('select tipp ' + TIPPS_QRY + ' order by tipp.id',
+                                                                [pkg: result.pkgId, cs: status_current],
+                                                                [offset: offset, max: 10, readOnly: true])
 
         tipps.each { t ->
           Map tobj = [
@@ -71,7 +74,7 @@ class PublicController {
             ids: []
           ]
 
-          t.ids.each { i ->
+          t.activeIds.each { ido ->
             tobj.ids << [value: ido.value, namespace: ido.namespace.value]
           }
 
@@ -87,9 +90,9 @@ class PublicController {
 
   def index() {
     log.debug("PublicController::index ${params}")
-    def result = [:]
+    Map result = [:]
 
-    def mutableParams = new HashMap(params)
+    HashMap mutableParams = new HashMap(params)
 
     if (mutableParams.max) {
       try {
@@ -153,7 +156,7 @@ class PublicController {
   // @Transactional(readOnly = true)
   def kbart() {
     def type = params.exportType == 'title' ? PackageCSVExportService.ExportType.KBART_TITLE : PackageCSVExportService.ExportType.KBART_TIPP
-    def pkg = Package.findByUuid(params.id) ?: (genericOIDService.oidToId(params.id) ? Package.get(genericOIDService.oidToId(params.id)) : null)
+    Package pkg = Package.findByUuid(params.id) ?: (genericOIDService.oidToId(params.id) ? Package.get(genericOIDService.oidToId(params.id)) : null)
 
     def export_date = dateFormatService.formatDate(new Date())
 
@@ -167,9 +170,7 @@ class PublicController {
   }
 
   def packageTSVExport() {
-    def export_date = dateFormatService.formatDate(new Date())
-
-    def pkg = genericOIDService.resolveOID(params.id)
+    Package pkg = genericOIDService.resolveOID(params.id)
 
     if (pkg) {
       packageCSVExportService.sendFile(pkg, PackageCSVExportService.ExportType.TSV, response)

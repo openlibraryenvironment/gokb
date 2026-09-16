@@ -1,23 +1,16 @@
 package org.gokb.cred
 
 import com.k_int.ClassUtils
-import org.gokb.IntegrationController
-import org.grails.web.json.JSONObject
 
-import javax.persistence.Transient
-import org.gokb.GOKbTextUtils
-import org.gokb.DomainClassExtender
 import groovy.util.logging.*
 
 import java.time.LocalDateTime
 
-import static grails.async.Promises.*
-
+import org.grails.web.json.JSONObject
+import org.gokb.GOKbTextUtils
 
 @Slf4j
 class BookInstance extends TitleInstance {
-
-  @Transient
   def titleLookupService
 
   String editionDifferentiator
