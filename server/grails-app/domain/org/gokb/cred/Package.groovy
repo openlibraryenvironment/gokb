@@ -86,6 +86,7 @@ class Package extends KBComponent {
     nominalPlatform column: 'pkg_nominal_platform_fk'
     parent column: 'pkg_parent_fk'
     previous column: 'pkg_previous_fk'
+    curatoryGroups column: 'package_id', joinTable: 'package_curatory_groups'
   }
 
   static constraints = {

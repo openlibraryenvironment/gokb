@@ -42,6 +42,7 @@ class Source extends KBComponent {
     includes KBComponent.mapping
     url column:'source_url'
     ruleset column:'source_ruleset', type:'text'
+    curatoryGroups column: 'source_id', joinTable: 'source_curatory_groups'
   }
 
   static constraints = {

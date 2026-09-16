@@ -37,6 +37,7 @@ class Platform extends KBComponent {
     shibbolethAuthentication column: 'plat_auth_by_shib_fk_rv'
     passwordAuthentication column: 'plat_auth_by_pass_fk_rv'
     provider column: 'plat_provider_fk'
+    curatoryGroups column: 'platform_id', joinTable: 'platform_curatory_groups'
   }
 
   static constraints = {

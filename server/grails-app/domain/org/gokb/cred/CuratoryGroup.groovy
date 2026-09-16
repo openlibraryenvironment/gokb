@@ -19,19 +19,31 @@ class CuratoryGroup extends KBComponent {
 
   static hasMany = [
     users: User,
-    subordinatedGroups: CuratoryGroup
+    subordinatedGroups: CuratoryGroup,
+    packages: Package,
+    orgs: Org,
+    platforms: Platform,
+    sources: Source
   ]
 
   static mapping = {
     includes KBComponent.mapping
     organizationType column:'cg_orgatype_fk_rv'
     cancelledImportAlerts column: 'cg_cancelled_import_alerts'
-    preferredLocaleString column: 'cg_preferred_locale_string'
+    preferredLocaleString column: 'cg_preferred_locale_string',
+    packages column: 'curatory_group_id', joinTable: 'package_curatory_groups'
+    org column: 'curatory_group_id', joinTable: 'orgs_curatory_groups'
+    platforms column: 'curatory_group_id', joinTable: 'platform_curatory_groups'
+    sources column: 'curatory_group_id', joinTable: 'sources_curatory_groups'
   }
 
   static mappedBy = [
     users: "curatoryGroups",
-    subordinatedGroups: "superordinatedGroup"
+    subordinatedGroups: "superordinatedGroup",
+    packages: "curatoryGroups",
+    orgs: "curatoryGroups",
+    platforms: "curatoryGroups",
+    sources: "curatoryGroups"
   ]
 
   static constraints = {

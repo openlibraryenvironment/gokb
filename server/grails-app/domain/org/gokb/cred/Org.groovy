@@ -83,6 +83,7 @@ class Org extends KBComponent {
     parent column: 'org_parent_fk'
     successor column: 'org_successor_fk'
     roles joinTable: 'org_role'
+    curatoryGroups column: 'org_id', joinTable: 'org_curatory_groups'
   }
 
   static constraints = {
