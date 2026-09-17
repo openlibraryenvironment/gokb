@@ -187,6 +187,9 @@ environments:
             ezbOpenCollections:
                 enabled: false
                 url: https://ezb-api.ur.de/collections/v1/
+            ftIndexCleanup:
+                enabled: true
+                cron: "45 30 15 * * 6 *"
             es:
                 host: localhost
                 ports:

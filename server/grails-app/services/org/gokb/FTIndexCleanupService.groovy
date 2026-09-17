@@ -1,5 +1,6 @@
 package org.gokb
 
+import com.k_int.ConcurrencyManagerService
 import com.k_int.ESSearchService
 import grails.core.GrailsApplication
 import org.gokb.cred.RefdataCategory
@@ -21,7 +22,7 @@ class FTIndexCleanupService {
     @Autowired
     FTUpdateService ftUpdateService
 
-    Map syncTippsBetweenIndexAndDB (def job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill = null, boolean dryRun, boolean isStartedFromQuartz) {
+    Map syncTippsBetweenIndexAndDB (ConcurrencyManagerService.Job job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill = null, boolean dryRun, boolean isStartedFromQuartz) {
         Map result = [result: "OK"]
         int numberUpdatedTippsInPeriod = 0
         int numberCheckedTipps = 0
@@ -35,39 +36,45 @@ class FTIndexCleanupService {
 
 
         TitleInstancePackagePlatform.withNewSession {
-            RefdataValue thisJobType = RefdataCategory.lookup("Job.Type", "FTIndexCleanupJob")
-            RefdataValue tippIndexingJobType = RefdataCategory.lookup("Job.Type", "ESTippUpdateJob")
+            RefdataValue cleanupJobType = RefdataCategory.lookup("Job.Type", "FTIndexCleanupJob")
+            RefdataValue tippIndexJobType = RefdataCategory.lookup("Job.Type", "ESTippUpdateJob")
 
-            ScheduledJobControl scheduledJobControl = ScheduledJobControl.findByJobType(thisJobType)
+            ScheduledJobControl cleanupJobControl = ScheduledJobControl.findByJobType(cleanupJobType)
+            ScheduledJobControl tippIndexJobControl = ScheduledJobControl.findByJobType(tippIndexJobType)
             boolean completed = true
 
-            if (scheduledJobControl) {
+            if (cleanupJobControl) {
+                cleanupJobControl.lastEnd = null
+            } else {
+                cleanupJobControl = new ScheduledJobControl()
+                cleanupJobControl.jobType = cleanupJobType
+            }
+
+            cleanupJobControl.lastStart = LocalDateTime.now()
+            cleanupJobControl.save(flush: true, failOnError: true)
+
+            if (tippIndexJobControl) {
                 // try waiting for completion if other indexing-job is running in parallel, max 10 minutes
                 long startWaitingTime = new Date().getTime()
-                while (scheduledJobControl.lastStart && scheduledJobControl.lastEnd == null) {
+                while (tippIndexJobControl.lastStart && tippIndexJobControl.lastEnd == null) {
                     sleep(20 * 1000)
                     if (new Date().getTime() - startWaitingTime > 10 * 60 * 1000) {
                         result.result = "WARNING"
                         result.message = "FT Index Cleanup Job could not start."
                         log.warn("FT Index Cleanup Job could not start because of other concurrent job running.")
+                        cleanupJobControl.lastEnd = LocalDateTime.now()
+                        cleanupJobControl.save(flush: true, failOnError: true)
                         return result
                     }
                 }
-
-                scheduledJobControl.lastEnd = null
-
-            } else {
-                scheduledJobControl = new ScheduledJobControl()
-                scheduledJobControl.jobType = thisJobType
             }
 
-            scheduledJobControl.lastStart = LocalDateTime.now()
-            scheduledJobControl.save(flush: true, failOnError: true)
+            FTUpdateService.tippsRunning = true
 
             if (!updatedSince) {
                 //default is last successful starttime of job, fallback minus 1 week start of day
-                if (scheduledJobControl && scheduledJobControl.lastStartComplete) {
-                    from = Date.from(scheduledJobControl.lastStartComplete.atZone(ZoneId.systemDefault()).toInstant())
+                if (cleanupJobControl && cleanupJobControl.lastStartComplete) {
+                    from = Date.from(cleanupJobControl.lastStartComplete.atZone(ZoneId.systemDefault()).toInstant())
                 }
                 else {
                     LocalDateTime oneWeekBefore = LocalDate.now().minusWeeks(1).atStartOfDay()
@@ -91,10 +98,9 @@ class FTIndexCleanupService {
             List<TitleInstancePackagePlatform> tipps = TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where ( (tipp.lastUpdated > :us OR tipp.dateCreated > :us) AND tipp.lastUpdated <= :ut AND tipp.dateCreated <= :ut) order by tipp.lastUpdated, tipp.id", [us: from, ut: till], [readonly: true])
             numberUpdatedTippsInPeriod = tipps.size()
 
-            log.debug("Checking " + tipps.size() + " TIPPS...")
+            log.debug("Checking " + numberUpdatedTippsInPeriod + " TIPPS...")
 
             for (TitleInstancePackagePlatform tipp: tipps) {
-                log.debug("11111: " + tipp.getUuid())
                 Map esRepresentation = esSearchService.find([componentType: 'TitleInstancePackagePlatform', uuid: tipp.getUuid(), skipDomainMapping: true])
                 Map esTipp = null
 
@@ -105,8 +111,7 @@ class FTIndexCleanupService {
                         log.info("NOT YET INDEXED: " + tipp.getName() + ": " + tipp.getUuid())
                     }
                     else {
-                        log.info("xxxxx AMBIGUOUS xxxxxx: " + esRepresentation.records)
-                        log.info("xxxxx AMBIGUOUS xxxxxx: " + esRepresentation.records)
+                        log.info("AMBIGUOUS Tipps in Index: " + esRepresentation.records)
                     }
                 }
                 else {
@@ -122,7 +127,7 @@ class FTIndexCleanupService {
                     Date dbDate = tipp.getLastUpdated()
 
                     // We accept a deviation of 999 milliseconds as loss of precision due to the different Time Formats in DB and Index
-                    // dbDate.getTime() should always be >= esDate.getTime
+                    // dbDate.getTime() should always be >= esDate.getTime, however we use Math.abs for safety
                     long epsilon = Math.abs(dbDate.getTime() - esDate.getTime())
                     if (epsilon < 1000) {
                         //ok, Index Record is up to date
@@ -135,12 +140,14 @@ class FTIndexCleanupService {
 
             }
 
-
-            log.debug("######## REINDEX " + tippsToReindex.size() + " TIPPS ######################")
+            log.debug("REINDEX " + tippsToReindex.size() + " TIPPS ")
 
             if (!dryRun) {
                 // Reindex not-up-to-date Tipps
                 Map updateResult = ftUpdateService.updateSpecifiedTippBulk(tippsToReindex, job)
+                if (updateResult.result != "OK") {
+                    completed = false
+                }
                 numberNewIndexedTipps = updateResult.indexed
             }
 
@@ -154,7 +161,6 @@ class FTIndexCleanupService {
                     numberNewIndexedTipps: numberNewIndexedTipps
             ]
 
-
             log.info("FT Index Cleanup Result: " + result)
 
             if ( (numberNotYetIndexedTipps + numberNotActualTipps) != numberNewIndexedTipps ) {
@@ -163,15 +169,17 @@ class FTIndexCleanupService {
             }
 
             if ( numberUpdatedTippsInPeriod != (numberCheckedTipps + numberNotYetIndexedTipps) ) {
-                log.warn("FT Index Cleanup: found TIPP with ambiguous OS representation. Expected number: " + numberUpdatedTippsInPeriod + ", but was: " + (numberCheckedTipps + numberNotYetIndexedTipps) )
+                log.warn("FT Index Cleanup: found TIPPs with ambiguous OS representation. Expected number: " + numberUpdatedTippsInPeriod + ", but was: " + (numberCheckedTipps + numberNotYetIndexedTipps) )
             }
 
-            scheduledJobControl.lastEnd = LocalDateTime.now()
+            FTUpdateService.tippsRunning = false
+
+            cleanupJobControl.lastEnd = LocalDateTime.now()
             if (completed) {
-                scheduledJobControl.lastStartComplete = scheduledJobControl.lastStart
-                scheduledJobControl.lastEndComplete = scheduledJobControl.lastEnd
+                cleanupJobControl.lastStartComplete = cleanupJobControl.lastStart
+                cleanupJobControl.lastEndComplete = cleanupJobControl.lastEnd
             }
-            scheduledJobControl.save(flush: true, failOnError: true)
+            cleanupJobControl.save(flush: true, failOnError: true)
 
         }
         return result

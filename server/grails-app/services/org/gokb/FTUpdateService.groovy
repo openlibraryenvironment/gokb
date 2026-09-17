@@ -13,7 +13,9 @@ import org.opensearch.client.RequestOptions
 import org.opensearch.common.xcontent.XContentType
 
 import groovy.transform.Synchronized
+import org.quartz.JobDataMap
 
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 class FTUpdateService {
@@ -38,13 +40,20 @@ class FTUpdateService {
   def updateFTIndexes(Job j = null) {
     log.debug("updateFTIndexes")
 
-    ['packages','orgs','platforms','titles', 'tipps'].each { indexType ->
-      if (this."${indexType}Running" == false) {
-        this."${indexType}Update"(j)
-      } else {
-        if (j) j.message("Indexing for $indexType is already running.. skip")
-        log.debug("Skipping indexing for $indexType .. already running!")
-      }
+    if (!packagesRunning) {
+      packagesUpdate(j, null)
+    }
+    if (!orgsRunning) {
+      orgsUpdate(j, null)
+    }
+    if (!platformsRunning) {
+      platformsUpdate(j, null)
+    }
+    if (!titlesRunning) {
+      titlesUpdate(j, null)
+    }
+    if (!tippsRunning) {
+      tippsUpdate(j, null)
     }
 
     return new Date()
@@ -473,7 +482,8 @@ class FTUpdateService {
   }
 
   def doBackgroundReindex(j) {
-    log.debug("doFTUpdate")
+    //TODO: if this should be used some time updateEs method calls must be changed
+    /* log.debug("doFTUpdate")
     log.debug("Execute IndexUpdateJob starting at ${new Date()}")
     def esclient = ESWrapperService.getClient()
 
@@ -492,7 +502,9 @@ class FTUpdateService {
     }
 
     return new Date()
+  */
   }
+
 
   def updateSingleItem(kbc) {
     def idx_record = buildEsRecord(kbc)
@@ -508,71 +520,103 @@ class FTUpdateService {
     }
   }
 
-  def triggerUpdateForClass(cls, Job j = null) {
-    log.debug("triggerUpdateForClass")
-    def indexType = ESWrapperService.indicesPerType[cls.simpleName]
 
-    if (this."${indexType}Running" == false) {
-      this."${indexType}Running" = true
-      this."${indexType}Update"(j)
-      log.debug("FTUpdate done.")
+  public void executeUpdateJobForIndex(Job j = null, RefdataValue jobType, JobDataMap dataMap ) {
 
-      return new Date()
+    ScheduledJobControl jobControl = ScheduledJobControl.findByJobType(jobType)
+
+    if (jobControl) {
+      jobControl.lastEnd = null
+    } else {
+      jobControl = new ScheduledJobControl()
+      jobControl.jobType = jobType
     }
-    else {
-      if (j) j.message("Indexing for $indexType is already running.. skip")
-      log.debug("FTUpdate for index $indexType already running")
+    jobControl.lastStart = LocalDateTime.now()
+    jobControl.save(flush: true, failOnError: true)
 
-      return "Job cancelled – FTUpdate for index $indexType was already running!"
+    boolean completed = false
+
+    switch (jobType.value) {
+      case "ESTitleUpdateJob":
+        completed = titlesUpdate(j, dataMap)
+        break
+      case "ESTippUpdateJob":
+        completed = tippsUpdate(j, dataMap)
+        break
+      case "ESOrgUpdateJob":
+        completed = orgsUpdate(j, dataMap)
+        break
+      case "ESPlatformUpdateJob":
+        completed = platformsUpdate(j, dataMap)
+        break
+      case "ESPackageUpdateJob":
+        completed = packagesUpdate(j, dataMap)
+        break
+      default:
+        break
     }
+
+    jobControl.lastEnd = LocalDateTime.now()
+    if (completed) {
+      jobControl.lastStartComplete = jobControl.lastStart
+      jobControl.lastEndComplete = jobControl.lastEnd
+    }
+    jobControl.save(flush: true, failOnError: true)
+
   }
 
-  private void packagesUpdate(j) {
+
+
+  public boolean packagesUpdate(Job j = null, JobDataMap dataMap = null) {
     packagesRunning = true
     def esclient = ESWrapperService.getClient()
-    updateES(esclient, Package.class, j)
+    boolean completed = updateES(esclient, Package.class, dataMap, j)
     packagesRunning = false
+    return completed
   }
 
-  private void orgsUpdate(j) {
+  public boolean orgsUpdate(Job j = null, JobDataMap dataMap = null) {
     orgsRunning = true
     def esclient = ESWrapperService.getClient()
-    updateES(esclient, Org.class, j)
+    boolean completed = updateES(esclient, Org.class, dataMap, j)
     orgsRunning = false
+    return completed
   }
 
-  private void platformsUpdate(j) {
+  public boolean platformsUpdate(Job j = null, JobDataMap dataMap = null) {
     platformsRunning = true
     def esclient = ESWrapperService.getClient()
-    updateES(esclient, Platform.class, j)
+    boolean completed = updateES(esclient, Platform.class, dataMap, j)
     platformsRunning = false
+    return completed
   }
 
-  private void titlesUpdate(j) {
+  public boolean titlesUpdate(j, JobDataMap dataMap = null) {
     titlesRunning = true
     def esclient = ESWrapperService.getClient()
-    updateES(esclient, JournalInstance.class, j)
-    updateES(esclient, DatabaseInstance.class, j)
-    updateES(esclient, OtherInstance.class, j)
-    updateES(esclient, BookInstance.class, j)
+    boolean completedJ = updateES(esclient, JournalInstance.class, dataMap, j)
+    boolean completedDB = updateES(esclient, DatabaseInstance.class, dataMap, j)
+    boolean completedO = updateES(esclient, OtherInstance.class, dataMap, j)
+    boolean completedB = updateES(esclient, BookInstance.class, dataMap, j)
     titlesRunning = false
+    return completedB && completedDB && completedJ && completedO
   }
 
-  private void tippsUpdate(j) {
+  public boolean tippsUpdate(j, JobDataMap dataMap = null) {
     tippsRunning = true
     def esclient = ESWrapperService.getClient()
-    updateES(esclient, TitleInstancePackagePlatform.class, j)
+    boolean completed = updateES(esclient, TitleInstancePackagePlatform.class, dataMap, j )
     tippsRunning = false
+    return completed
   }
 
 
   Map updateSpecifiedTippBulk(List<TitleInstancePackagePlatform> tipps, Job job = null) {
-    tippsRunning = true
+    // tippsRunning = true
 
     Map result = [result: "OK"]
 
     def esClient = ESWrapperService.getClient()
-    // def indexName = grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType.get(domain.simpleName))
     def indexName = grailsApplication.config.getProperty('gokb.es.indices.tipps')
 
     BulkRequest bulkRequest = new BulkRequest()
@@ -583,7 +627,8 @@ class FTUpdateService {
 
       for (TitleInstancePackagePlatform tipp : tipps) {
         if (Thread.currentThread().isInterrupted()) {
-          log.warn("Job cancelling ..")
+          log.warn("Thread interrupted - Job cancelling ..")
+          result.result = "ERROR"
           break
         }
 
@@ -606,6 +651,7 @@ class FTUpdateService {
           if (bulkResponse.hasFailures()) {
             logBulkFailures(bulkResponse)
             log.error("Bulk Update had errors!")
+            result.result = "ERROR"
             break
           }
           log.debug("... BulkResponse: ${bulkResponse}")
@@ -632,18 +678,20 @@ class FTUpdateService {
 
     log.debug("... final:: Processed ${count} out of ${total} records. ")
 
-    tippsRunning = false
+    // tippsRunning = false
 
     return result
   }
 
-  def updateES(esClient, domain, job, boolean reindex = false) {
+  boolean updateES(esClient, domain, boolean reindex = false, JobDataMap dataMap, job) {
     int bulkSize = 100
     int limitPerJob = Integer.MAX_VALUE //no limit
 
     log.debug("updateES(${domain}...)")
     def indexType = ESWrapperService.indicesPerType[domain.name]
     def indexName = grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType.get(domain.simpleName))
+
+    boolean completed = true
 
     domain.withNewSession {
       try {
@@ -688,7 +736,7 @@ class FTUpdateService {
         long p_bulkStartTime = new Date().getTime()
         long p_timeTotal = 0
         long p_highestBulkTime = 0
-        int p_estimationInterval = 15 // in minutes
+        int p_estimationInterval = 5 // in minutes
 
         long p_totalStartTime = new Date().getTime()
         long p_hourStartTime = new Date().getTime()
@@ -696,10 +744,16 @@ class FTUpdateService {
         int p_journals = 0
         int p_books = 0
 
+        if (dataMap) {
+          dataMap.put('start', new Date())
+          dataMap.put('progress', '0')
+          dataMap.put('estimation', '0')
+        }
 
         for (record in q) {
           if (Thread.currentThread().isInterrupted()) {
             log.warn("Job cancelling ..")
+            completed = false
             break
           }
 
@@ -744,6 +798,7 @@ class FTUpdateService {
             if (bulkResponse.hasFailures()) {
               logBulkFailures(bulkResponse)
               log.error("Bulk Update had errors, skipping domain ${domain}!")
+              completed = false
               break
             }
 
@@ -764,6 +819,10 @@ class FTUpdateService {
 
             cleanUpGorm()
 
+            if (dataMap) {
+              dataMap.progress = "${count}/${total}"
+            }
+
             long p_bulkDuration = new Date().getTime() - p_bulkStartTime
             p_timeTotal += p_bulkDuration
             if (p_bulkDuration > p_highestBulkTime) {
@@ -781,10 +840,17 @@ class FTUpdateService {
 
             if (new Date().getTime() - p_hourStartTime >= p_estimationInterval * 60 * 1000) {
               long estimatedDuration = ((long) (p_timeTotal/p_actualBulk)) * (p_bulksTotal - p_actualBulk)
-              log.info("${domain.name} Indexing Update: ${(p_actualBulk - p_bulkAtHour) * bulkSize} Records were updated in the last ${p_estimationInterval} Minutes. " +
-                      "##### Estimated Duration is: " + String.format("%02d min, %02d sec",
+              String formattedEstimation = String.format("%02d min, %02d sec",
                       TimeUnit.MILLISECONDS.toMinutes(estimatedDuration),
-                      TimeUnit.MILLISECONDS.toSeconds(estimatedDuration) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(estimatedDuration))))
+                      TimeUnit.MILLISECONDS.toSeconds(estimatedDuration) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(estimatedDuration)))
+
+              if (dataMap) {
+                dataMap.estimation = formattedEstimation
+              }
+
+              log.debug("${domain.name} Indexing Update: ${(p_actualBulk - p_bulkAtHour) * bulkSize} Records were updated in the last ${p_estimationInterval} Minutes. " +
+                      "##### Estimated Duration is: " + formattedEstimation)
+
               p_hourStartTime = new Date().getTime()
               p_bulkAtHour = p_actualBulk
             }
@@ -805,9 +871,12 @@ class FTUpdateService {
         log.debug("... final:: Processed ${count} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
       }
       catch (Exception e) {
+        completed = false
         log.error("Problem with FT index", e)
       }
     }
+
+    return completed
   }
 
 

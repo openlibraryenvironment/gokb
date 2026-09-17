@@ -1,26 +1,27 @@
 package org.gokb
 
+import com.k_int.ConcurrencyManagerService
+import grails.core.GrailsApplication
 import org.springframework.beans.factory.annotation.Autowired
 
 
 class FTIndexCleanupJob {
 
+    GrailsApplication grailsApplication
     static concurrent = false
 
     @Autowired
     FTIndexCleanupService ftIndexCleanupService
 
     static triggers = {
-        // Cron timer executes every Saturday 15:30.
-        cron name: 'FTCleanupTrigger', cronExpression: "30 15 * * 6 ?", startDelay:120000
-        // cron name: 'FTCleanupTrigger', cronExpression: "* */2 * * * ?", startDelay:120000
+        // Cron timer executes every Saturday 15:30:45.
+        // configured in bootstrap.groovy via application.yml
     }
 
     def execute() {
-        //TODO: set Config property
-        if ( grailsApplication.config.getProperty('gokb.ftcleanup_enabled', Boolean, false) ) {
-            log.debug ("Start Job FT Index Cleanup... ")
-            ftIndexCleanupService.syncTippsBetweenIndexAndDB(this, null, null, false, true)
+        if ( grailsApplication.config.getProperty('gokb.ftIndexCleanup.enabled', Boolean, false) ) {
+            log.debug ("Start scheduled Job FT Index Cleanup... ")
+            ftIndexCleanupService.syncTippsBetweenIndexAndDB(null, null, null, false, true)
             log.debug ("FT Index Cleanup finished.")
         }
         else {

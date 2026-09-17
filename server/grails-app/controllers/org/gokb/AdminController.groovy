@@ -797,7 +797,6 @@ class AdminController {
   }
 
   def cleanupFTIndex () {
-    // Map result = ftIndexCleanupService.syncTippsBetweenIndexAndDB()
     LocalDateTime dateFrom = null
     LocalDateTime dateTill = null
 
@@ -805,7 +804,7 @@ class AdminController {
       dateFrom = GOKbTextUtils.completeDateString(params.updatedSince)
 
       if (!dateFrom) {
-        log.debug("No Date from given - proceed with default, i.e. 1 Week ago")
+        log.debug("No Date from given - proceed with default, i.e. startdate of the last complete run")
       }
     }
 
@@ -829,7 +828,6 @@ class AdminController {
 
     render(view: "logViewer", model: logViewer())
 
-    //render result as JSON
 
   }
 
