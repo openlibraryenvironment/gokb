@@ -1110,7 +1110,7 @@ class ESSearchService{
       }
 
       if( !errors && exactQuery.hasClauses() ) {
-        if (!params.status && (!user || !user.isAdmin())) {
+        if (!params.status && (!user || !user.isAdmin()) && !params.uuid) {
           QueryBuilder statusQuery = QueryBuilders.boolQuery()
           statusQuery.mustNot(QueryBuilders.termQuery('status', 'Deleted'))
           exactQuery.must(statusQuery)
