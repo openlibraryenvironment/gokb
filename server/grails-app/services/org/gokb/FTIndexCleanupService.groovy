@@ -6,6 +6,8 @@ import grails.core.GrailsApplication
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.TitleInstancePackagePlatform
+import org.hibernate.Session
+import org.hibernate.SessionFactory
 import org.springframework.beans.factory.annotation.Autowired
 
 import java.time.LocalDate
@@ -21,6 +23,7 @@ class FTIndexCleanupService {
     ESSearchService esSearchService
     @Autowired
     FTUpdateService ftUpdateService
+    SessionFactory sessionFactory
 
     Map syncTippsBetweenIndexAndDB (ConcurrencyManagerService.Job job = null, LocalDateTime updatedSince = null, LocalDateTime updatedTill = null, boolean dryRun, boolean isStartedFromQuartz) {
         Map result = [result: "OK"]
@@ -29,7 +32,8 @@ class FTIndexCleanupService {
         int numberNotActualTipps = 0
         int numberNotYetIndexedTipps = 0
         int numberNewIndexedTipps = 0
-        List<TitleInstancePackagePlatform> tippsToReindex = new ArrayList<>()
+        List<TitleInstancePackagePlatform> tippsToReindex
+        List<Integer> tippIDsToReindex = new ArrayList<>()
 
         Date from = null
         Date till = null
@@ -94,21 +98,24 @@ class FTIndexCleanupService {
 
             log.info("Start Syncing Tipps that were updated between: ... " + from + " - " + till)
 
-
-            List<TitleInstancePackagePlatform> tipps = TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where ( (tipp.lastUpdated > :us OR tipp.dateCreated > :us) AND tipp.lastUpdated <= :ut AND tipp.dateCreated <= :ut) order by tipp.lastUpdated, tipp.id", [us: from, ut: till], [readonly: true])
-            numberUpdatedTippsInPeriod = tipps.size()
+            List tippIDs = TitleInstancePackagePlatform.executeQuery("select tipp.id, tipp.uuid, tipp.lastUpdated from TitleInstancePackagePlatform as tipp where ( (tipp.lastUpdated > :us OR tipp.dateCreated > :us) AND tipp.lastUpdated <= :ut AND tipp.dateCreated <= :ut) order by tipp.lastUpdated, tipp.id", [us: from, ut: till], [readonly: true])
+            numberUpdatedTippsInPeriod = tippIDs.size()
 
             log.debug("Checking " + numberUpdatedTippsInPeriod + " TIPPS...")
 
-            for (TitleInstancePackagePlatform tipp: tipps) {
-                Map esRepresentation = esSearchService.find([componentType: 'TitleInstancePackagePlatform', uuid: tipp.getUuid(), skipDomainMapping: true])
+            int count = 0
+
+            for (List tippStub: tippIDs) {
+                count++
+                // id: tippStub[0], uuid: tippStub[1], lastUpdated: tippStub[2]
+                Map esRepresentation = esSearchService.find([componentType: 'TitleInstancePackagePlatform', uuid: tippStub[1], skipDomainMapping: true])
                 Map esTipp = null
 
                 if (esRepresentation.records?.size() != 1) {
                     if (esRepresentation.records?.size() == 0) {
                         numberNotYetIndexedTipps++
-                        tippsToReindex.add(tipp)
-                        log.info("NOT YET INDEXED: " + tipp.getName() + ": " + tipp.getUuid())
+                        tippIDsToReindex.add(tippStub[0])
+                        log.info("NOT YET INDEXED: " + tippStub[1] )
                     }
                     else {
                         log.info("AMBIGUOUS Tipps in Index: " + esRepresentation.records)
@@ -120,11 +127,10 @@ class FTIndexCleanupService {
 
                 if (esTipp) {
                     numberCheckedTipps++
-                    // Date esDate = Date.from(LocalDateTime.parse(esRepresentation?.data?.lastUpdated.get(0)).atStartOfDay(ZoneId.systemDefault()).toInstant())
                     ZonedDateTime zdt = ZonedDateTime.parse(esTipp.lastUpdatedDisplay)
                     Date esDate = Date.from(zdt.toInstant())
 
-                    Date dbDate = tipp.getLastUpdated()
+                    Date dbDate = tippStub[2]
 
                     // We accept a deviation of 999 milliseconds as loss of precision due to the different Time Formats in DB and Index
                     // dbDate.getTime() should always be >= esDate.getTime, however we use Math.abs for safety
@@ -133,22 +139,26 @@ class FTIndexCleanupService {
                         //ok, Index Record is up to date
                     } else {
                         numberNotActualTipps++
-                        tippsToReindex.add(tipp)
-                        log.info("NOT ACTUAL: " + tipp.getName() + ", " + tipp.getUuid() +  ", diff: " + (dbDate.getTime() - esDate.getTime()))
+                        tippIDsToReindex.add(tippStub[0])
+                        // log.info("NOT ACTUAL: " + tipp.getName() + ", " + tipp.getUuid() +  ", diff: " + (dbDate.getTime() - esDate.getTime()))
                     }
                 }
 
-            }
+                if (tippIDsToReindex.size() % 100 == 0 || count == numberUpdatedTippsInPeriod) {
+                    if (!dryRun) {
+                        tippsToReindex = TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where tipp.id IN :ids", [ids: tippIDsToReindex], [readonly: true])
+                        // Reindex not-up-to-date Tipps
+                        Map updateResult = ftUpdateService.updateSpecifiedTippBulk(tippsToReindex, job)
+                        if (updateResult.result != "OK") {
+                            completed = false
+                        }
+                        numberNewIndexedTipps += updateResult.indexed
+                        tippIDsToReindex = new ArrayList<>()
 
-            log.debug("REINDEX " + tippsToReindex.size() + " TIPPS ")
-
-            if (!dryRun) {
-                // Reindex not-up-to-date Tipps
-                Map updateResult = ftUpdateService.updateSpecifiedTippBulk(tippsToReindex, job)
-                if (updateResult.result != "OK") {
-                    completed = false
+                        sessionFactory.getCurrentSession().clear()
+                    }
                 }
-                numberNewIndexedTipps = updateResult.indexed
+
             }
 
             result.report = [

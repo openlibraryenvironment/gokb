@@ -30,7 +30,7 @@ class ESPackageUpdateJob implements InterruptableJob {
       log.debug ("Beginning scheduled package es update job.")
       RefdataValue indexJobType = RefdataCategory.lookup("Job.Type", "ESPackageUpdateJob")
       JobDataMap dataMap = context.mergedJobDataMap
-      ftUpdateService.executeUpdateJobForIndex(null, indexJobType, dataMap)
+      ftUpdateService.executeUpdateJobForIndex(indexJobType, null, dataMap)
     }
     else {
       log.debug("FTUpdate is not enabled - set config.ftupdate_enabled = true in config to enable")

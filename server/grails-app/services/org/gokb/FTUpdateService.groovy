@@ -521,7 +521,7 @@ class FTUpdateService {
   }
 
 
-  public void executeUpdateJobForIndex(Job j = null, RefdataValue jobType, JobDataMap dataMap ) {
+  public void executeUpdateJobForIndex(RefdataValue jobType, Job j = null, JobDataMap dataMap = null) {
 
     ScheduledJobControl jobControl = ScheduledJobControl.findByJobType(jobType)
 
@@ -612,8 +612,6 @@ class FTUpdateService {
 
 
   Map updateSpecifiedTippBulk(List<TitleInstancePackagePlatform> tipps, Job job = null) {
-    // tippsRunning = true
-
     Map result = [result: "OK"]
 
     def esClient = ESWrapperService.getClient()
@@ -677,8 +675,6 @@ class FTUpdateService {
     }
 
     log.debug("... final:: Processed ${count} out of ${total} records. ")
-
-    // tippsRunning = false
 
     return result
   }

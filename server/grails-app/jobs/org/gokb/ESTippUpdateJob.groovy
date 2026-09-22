@@ -31,7 +31,7 @@ class ESTippUpdateJob implements InterruptableJob {
 
       RefdataValue tippIndexJobType = RefdataCategory.lookup("Job.Type", "ESTippUpdateJob")
       JobDataMap dataMap = context.mergedJobDataMap
-      ftUpdateService.executeUpdateJobForIndex(null, tippIndexJobType, dataMap)
+      ftUpdateService.executeUpdateJobForIndex(tippIndexJobType, null, dataMap)
     }
     else {
       log.debug("FTUpdate is not enabled - set config.ftupdate_enabled = true in config to enable")

@@ -29,7 +29,7 @@ class ESTitleUpdateJob implements InterruptableJob{
 
       RefdataValue indexJobType = RefdataCategory.lookup("Job.Type", "ESTitleUpdateJob")
       JobDataMap dataMap = context.mergedJobDataMap
-      ftUpdateService.executeUpdateJobForIndex(null, indexJobType, dataMap)
+      ftUpdateService.executeUpdateJobForIndex(indexJobType, null, dataMap)
       log.debug ("ESTitleUpdateJob completed.")
     }
     else {
