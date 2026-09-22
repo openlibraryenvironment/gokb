@@ -65,7 +65,7 @@ class WekbIngestionService {
     String wekbUUID = extractUUIDFromUrlString(sourceUrl)
 
     def packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
-    int titleCount = packageInfo[0]?.titleCount
+    int titleCount = packageInfo[0]?.titleCount ? packageInfo[0]?.titleCount : 0
     List<String> validTippStatusList = Arrays.asList("Deleted", "Retired", "Current", "Expected")
 
     if ( restrictSize && titleCount > SIZE_LIMIT ) {
