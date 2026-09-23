@@ -60,19 +60,33 @@ class WekbIngestionService {
     def ingestDate = LocalDate.now().toString()
     int batchSize = 100
     def missedBatches = []
+    int titleCount = 0
 
     String sourceUrl = pkg_source?.url
     String wekbUUID = extractUUIDFromUrlString(sourceUrl)
 
-    def packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
-    int titleCount = packageInfo[0]?.titleCount
+    List packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
+
+    if (packageInfo == null || packageInfo.isEmpty()) {
+      result.result = 'ERROR'
+      result.message = "The package with the given UUID does not seem to exist in WEKB anymore."
+    }
+    else {
+      titleCount = packageInfo[0]?.titleCount ? packageInfo[0]?.titleCount : 0
+    }
+
     List<String> validTippStatusList = Arrays.asList("Deleted", "Retired", "Current", "Expected")
 
     if ( restrictSize && titleCount > SIZE_LIMIT ) {
       result.result = 'ERROR'
       //result.messageCode = 'kbart.errors.url.fileSize'
       result.message = "The package you want to import is too big! Packages with more than 30.000 titles have to be authorized manually by an administrator."
-    } else {
+    }
+
+    if (result.result != "OK") {
+      // skip complete logic except writing the job result
+    }
+    else {
       identifierTargetTypes = loadIdentifierTargetTypes()
       Map validIdentifierForPubType = [:]
       validIdentifierForPubType.put("Monograph", getValidIdentifiersForPublicationType("Monograph"))
@@ -98,15 +112,15 @@ class WekbIngestionService {
               [pkg: pkg.id, ct: combo_pkg, sd: rdv_deleted])[0]
 
       result.report = [
-        numRows : titleCount,
-        skipped : 0,
-        matched : 0,
-        partial : 0,
-        created : 0,
-        retired : 0,
-        reviews : 0,
-        invalid : 0,
-        previous: old_tipp_count
+              numRows : titleCount,
+              skipped : 0,
+              matched : 0,
+              partial : 0,
+              created : 0,
+              retired : 0,
+              reviews : 0,
+              invalid : 0,
+              previous: old_tipp_count
       ]
 
       if (old_tipp_count > 0) {
@@ -132,7 +146,7 @@ class WekbIngestionService {
             tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
             trials++
             if (!tipps) {
-              log.debug("TIPPS nicht vorhanden --> sleep... Request-Versuch: " + trials )
+              log.debug("TIPPS nicht vorhanden --> sleep... Request-Versuch: " + trials)
               sleep(1500)
             }
           } while (!tipps && trials < 6)
@@ -204,7 +218,8 @@ class WekbIngestionService {
 
             if (pubtype == 'Serial') {
               targetNamespaceTitleId = targetNamespaceTitleIdSerial
-            } else {
+            }
+            else {
               targetNamespaceTitleId = targetNamespaceTitleIdMonograph
             }
 
@@ -231,12 +246,12 @@ class WekbIngestionService {
                   switch (identifier.namespace) {
                     case "eisbn":
                       if (pubtype == "Monograph") {
-                          identifierType = "isbn"
+                        identifierType = "isbn"
                       }
                       break;
                     case "isbn":
                       if (pubtype == "Monograph") {
-                          identifierType = "pisbn"
+                        identifierType = "pisbn"
                       }
                       break;
                     case "title_id":
@@ -259,44 +274,44 @@ class WekbIngestionService {
 
 
             def tipp_map = [
-              uuid                       : tipp.uuid?.trim(),
-              url                        : tipp.url?.trim(),
-              coverageStatements         : tipp.coverage ?: [
-                [
-                  embargo      : null,
-                  coverageDepth: 'Fulltext',
-                  coverageNote : null,
-                  startDate    : null,
-                  startVolume  : null,
-                  startIssue   : null,
-                  endDate      : null,
-                  endVolume    : null,
-                  endIssue     : null
-                ]
-              ],
-              importId                   : title_id?.trim(),
-              name                       : tipp.name?.trim(),
-              publicationType            : tipp.publicationType?.trim(),
-              parentPublicationTitleId   : tipp.parentPublicationTitleId?.trim(),
-              precedingPublicationTitleId: tipp.precedingPublicationTitleId?.trim(),
-              firstAuthor                : tipp.firstAuthor?.trim(),
-              publisherName              : tipp.publisherName?.trim(),
-              volumeNumber               : tipp.volumeNumber?.trim(),
-              editionStatement           : tipp.editionStatement?.trim(),
-              dateFirstInPrint           : tipp.dateFirstInPrint?.trim(),
-              dateFirstOnline            : tipp.dateFirstOnline?.trim(),
-              firstEditor                : tipp.firstEditor?.trim(),
-              subjectArea                : tipp.subjectArea?.trim(),
-              series                     : tipp.series?.trim(),
-              language                   : lang,
-              medium                     : tipp.medium?.trim(),
-              accessStartDate            : tipp.accessStartDate?.trim(),
-              accessEndDate              : tipp.accessEndDate?.trim(),
-              lastSeen                   : ingest_systime,
-              identifiers                : identifiers,
-              pkg                        : [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-              hostPlatform               : [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
-              paymentType                : tipp.accessType == "Free" ? "F" : "P"
+                    uuid                       : tipp.uuid?.trim(),
+                    url                        : tipp.url?.trim(),
+                    coverageStatements         : tipp.coverage ?: [
+                            [
+                                    embargo      : null,
+                                    coverageDepth: 'Fulltext',
+                                    coverageNote : null,
+                                    startDate    : null,
+                                    startVolume  : null,
+                                    startIssue   : null,
+                                    endDate      : null,
+                                    endVolume    : null,
+                                    endIssue     : null
+                            ]
+                    ],
+                    importId                   : title_id?.trim(),
+                    name                       : tipp.name?.trim(),
+                    publicationType            : tipp.publicationType?.trim(),
+                    parentPublicationTitleId   : tipp.parentPublicationTitleId?.trim(),
+                    precedingPublicationTitleId: tipp.precedingPublicationTitleId?.trim(),
+                    firstAuthor                : tipp.firstAuthor?.trim(),
+                    publisherName              : tipp.publisherName?.trim(),
+                    volumeNumber               : tipp.volumeNumber?.trim(),
+                    editionStatement           : tipp.editionStatement?.trim(),
+                    dateFirstInPrint           : tipp.dateFirstInPrint?.trim(),
+                    dateFirstOnline            : tipp.dateFirstOnline?.trim(),
+                    firstEditor                : tipp.firstEditor?.trim(),
+                    subjectArea                : tipp.subjectArea?.trim(),
+                    series                     : tipp.series?.trim(),
+                    language                   : lang,
+                    medium                     : tipp.medium?.trim(),
+                    accessStartDate            : tipp.accessStartDate?.trim(),
+                    accessEndDate              : tipp.accessEndDate?.trim(),
+                    lastSeen                   : ingest_systime,
+                    identifiers                : identifiers,
+                    pkg                        : [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
+                    hostPlatform               : [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
+                    paymentType                : tipp.accessType == "Free" ? "F" : "P"
             ]
 
             def line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
@@ -312,7 +327,7 @@ class WekbIngestionService {
           }
 
           if (cancelled) {
-             break
+            break
           }
 
           int progress = (int) ((offset / titleCount) * 100)
@@ -407,15 +422,14 @@ class WekbIngestionService {
           field_errors.each { er ->
             if (er.field == 'uuid' && er.code == 'unique') {
               result.errors << [
-                message: 'At least one title with the same UUID has already been imported in another package!',
-                baddata: er.rejectValue
+                      message: 'At least one title with the same UUID has already been imported in another package!',
+                      baddata: er.rejectValue
               ]
-            }
-            else {
+            } else {
               result.errors << [
-                message: 'At least one title failed validation while saving!',
-                field: er.field,
-                baddata: er.rejectValue
+                      message: 'At least one title failed validation while saving!',
+                      field  : er.field,
+                      baddata: er.rejectValue
               ]
             }
           }
@@ -426,37 +440,34 @@ class WekbIngestionService {
         result.result = 'ERROR'
         result.exception = e.message
       }
+    }
 
-      if (job) {
-        job.setProgress(100)
-        job.endTime = new Date()
+    if (job) {
+      job.setProgress(100)
+      job.endTime = new Date()
 
-        JobResult.withNewTransaction {
-          def result_object = JobResult.findByUuid(job.uuid)
+      JobResult.withNewTransaction {
+        def result_object = JobResult.findByUuid(job.uuid)
 
-          /*if (result.titleMatch) {
-              result.titleMatch.rowConflicts = titleMatchConflicts
-          } */
+        if (!result_object) {
+          def job_map = [
+            uuid        : (job.uuid),
+            description : "External Source Import".toString(),
+            resultObject: (result as JSON).toString(),
+            type        : (job.type),
+            statusText  : (result.result),
+            ownerId     : (job.ownerId),
+            groupId     : (job.groupId),
+            startTime   : (job.startTime),
+            endTime     : (job.endTime),
+            linkedItemId: (job.linkedItem?.id)
+          ]
 
-          if (!result_object) {
-            def job_map = [
-              uuid        : (job.uuid),
-              description : "External Source Import".toString(),
-              resultObject: (result as JSON).toString(),
-              type        : (job.type),
-              statusText  : (result.result),
-              ownerId     : (job.ownerId),
-              groupId     : (job.groupId),
-              startTime   : (job.startTime),
-              endTime     : (job.endTime),
-              linkedItemId: (job.linkedItem?.id)
-            ]
-
-            def jr = new JobResult(job_map).save(flush: true, failOnError: true)
-          }
+          def jr = new JobResult(job_map).save(flush: true, failOnError: true)
         }
       }
     }
+
 
     return result
   }
