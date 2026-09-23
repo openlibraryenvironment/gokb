@@ -144,7 +144,8 @@ class FTIndexCleanupService {
                     }
                 }
 
-                if (tippIDsToReindex.size() % 100 == 0 || count == numberUpdatedTippsInPeriod) {
+
+                if ( !tippIDsToReindex.isEmpty() && (tippIDsToReindex.size() % 100 == 0 || count == numberUpdatedTippsInPeriod) ) {
                     if (!dryRun) {
                         tippsToReindex = TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where tipp.id IN :ids", [ids: tippIDsToReindex], [readonly: true])
                         // Reindex not-up-to-date Tipps
