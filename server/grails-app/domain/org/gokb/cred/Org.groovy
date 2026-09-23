@@ -61,17 +61,18 @@ class Org extends KBComponent {
     roles: RefdataValue,
     children: Org,
     'previous': Org,
-    curatoryGroups: CuratoryGroup,
     offices: Office,
     providedPlatforms: Platform,
-    providedPackages: Package
+    providedPackages: Package,
+    linkedCurators: OrgCuratoryGroup
   ]
 
   static mappedBy = [
     children: 'parent',
     offices: 'org',
     providedPlatforms: 'provider',
-    providedPackages: 'provider'
+    providedPackages: 'provider',
+    linkedCurators: 'org'
   ]
 
   static mapping = {
@@ -83,7 +84,6 @@ class Org extends KBComponent {
     parent column: 'org_parent_fk'
     successor column: 'org_successor_fk'
     roles joinTable: 'org_role'
-    curatoryGroups column: 'org_id', joinTable: 'org_curatory_groups'
   }
 
   static constraints = {
@@ -118,7 +118,7 @@ class Org extends KBComponent {
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'curatoryGroups',
+      'linkedCurators',
       'providedPlatforms',
       'offices',
       'roles',
@@ -175,6 +175,73 @@ class Org extends KBComponent {
                                                 [pub: this, active: status_active, current: status_current])[0]
 
     return result
+  }
+
+  /*
+  * Methods for replicating dynamic handling of curatoryGroups
+  */
+
+  public List getCuratoryGroups() {
+    List result = CuratoryGroup.executeQuery('''from CuratoryGroup as c
+                                                where exists (
+                                                  select 1 from OrgCuratoryGroup
+                                                  where pkg = :comp
+                                                  and group = c
+                                                )''', [comp: this])
+
+    result
+  }
+
+  public Org addToCuratoryGroups(CuratoryGroup group) {
+    OrgCuratoryGroup dupe = OrgCuratoryGroup.findByOrgAndGroup(this, group)
+
+    if (!dupe) {
+      if (linkedCurators == null) {
+        linkedCurators = []
+      }
+      OrgCuratoryGroup new_obj = new OrgCuratoryGroup(group: group, org: this)
+      this.addToLinkedCurators(new_obj)
+      new_obj.save(flush: true)
+    }
+
+    return this
+  }
+
+  public Org removeFromCuratoryGroups(CuratoryGroup group) {
+    OrgCuratoryGroup to_remove = OrgCuratoryGroup.findByOrgAndGroup(this, group)
+
+    if (to_remove) {
+      this.removeFromLinkedCurators(to_remove)
+      to_remove.delete(flush: true)
+    }
+
+    return this
+  }
+
+  public Org retainCuratoryGroups(List<CuratoryGroup> retain_groups) {
+    boolean changed = false
+    List current = getCuratoryGroups()
+
+    retain_groups.each { rg ->
+      if (!current.contains(rg)) {
+        addToCuratoryGroups(rg)
+        changed = true
+      }
+    }
+
+    current.each { ccg ->
+      if (!retain_groups.contains(ccg)) {
+        removeFromCuratoryGroups(ccg)
+        changed = true
+      }
+    }
+
+    if (changed && update_comment) {
+      this.lastUpdateComment = "Retained curatory groups: ${retain_groups}"
+      this.save(flush: true)
+    }
+
+    return this
   }
 
   @Override

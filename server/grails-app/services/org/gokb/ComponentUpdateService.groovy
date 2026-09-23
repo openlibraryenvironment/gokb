@@ -473,7 +473,7 @@ class ComponentUpdateService {
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
       }
 
-      ComponentAttachment.removeAll(obj)
+      ComponentAttachment.removeAllForComponent(obj)
 
       if (obj.class == CuratoryGroup) {
         AllocatedReviewGroup.removeAll(obj)

@@ -1076,39 +1076,41 @@ class AjaxSupportController {
 
   @Transactional
   def plusOne() {
-    log.debug("plusOne ${params}");
-    def result       = [:]
-    def user         = springSecurityService.currentUser
+    log.debug("plusOne ${params}")
+    Map result = [:]
+    User user = springSecurityService.currentUser
     def oid = params.object
+
     if (oid) {
-      def oid_components = oid.split(':');
+      List oid_components = oid.split(':')
+      log.debug("oid_components:${oid_components}")
 
-      log.debug("oid_components:${oid_components}");
+       if (oid_components.length == 2) {
+         List existing_like = ComponentLike.executeQuery('select cl from ComponentLike as cl where cl.ownerClass=:oc and cl.ownerId=:oi and cl.user=:u',
+                             [oc: oid_components[0], oi: Long.parseLong(oid_components[1]), u:user])
 
-       if ( oid_components.length == 2 ) {
-         def existing_like = ComponentLike.executeQuery('select cl from ComponentLike as cl where cl.ownerClass=:oc and cl.ownerId=:oi and cl.user=:u',
-                             [oc:oid_components[0], oi:Long.parseLong(oid_components[1]), u:user]);
-         switch ( existing_like.size() ) {
+         switch (existing_like.size()) {
            case 0:
-             log.debug("Like");
+             log.debug("Like")
              new ComponentLike(ownerClass:oid_components[0], ownerId:Long.parseLong(oid_components[1]), user:user).save(flush:true, failOnError:true)
-             break;
+             break
            case 1:
-             log.debug("UnLike");
+             log.debug("UnLike")
              existing_like.get(0).delete(flush:true, failOnError:true)
-             break;
+             break
            default:
-             break;
+             break
          }
        }
 
        result.status = 'OK'
        result.newcount = ComponentLike.executeQuery('select count(cl) from ComponentLike as cl where cl.ownerClass=:oc and cl.ownerId=:oi',
-                             [oc:oid_components[0], oi:Long.parseLong(oid_components[1])]).get(0)
+                             [oc: oid_components[0], oi: Long.parseLong(oid_components[1])]).get(0)
 
 
     }
-    log.debug("result: ${result}");
+
+    log.debug("result: ${result}")
     render result as JSON
   }
 
@@ -1124,7 +1126,7 @@ class AjaxSupportController {
     KBComponentVariantName variant = KBComponentVariantName.get(params.id)
     User user = springSecurityService.currentUser
 
-    if ( variant != null) {
+    if (variant != null) {
       KBComponent owner = variant.owner
       boolean editable = checkEditable(owner, user)
 
@@ -1344,7 +1346,7 @@ class AjaxSupportController {
       boolean editable = checkEditable(tipp, user)
 
       if (editable) {
-        tcs.delete()
+        tipp.removeFromCoverageStatements(tcs)
         tipp.lastUpdateComment = "Deleted Coverage Statement."
         tipp.save(flush: true)
       }

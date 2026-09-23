@@ -47,22 +47,21 @@ class Package extends KBComponent {
   Package previous
 
   private static refdataDefaults = [
-    "scope"      : "Front File",
-    "listStatus" : "In Progress",
-    "breakable"  : "Unknown",
-    "consistent" : "Unknown",
-    "fixed"      : "Unknown",
+    "scope": "Front File",
+    "listStatus": "In Progress",
+    "breakable": "Unknown",
+    "consistent": "Unknown",
+    "fixed": "Unknown",
     "paymentType": "Unknown",
-    "global"     : "Global"
+    "global": "Global"
   ]
 
   static hasMany = [
-    children      : Package,
-    curatoryGroups: CuratoryGroup
+    children: Package
   ]
 
   static mappedBy = [
-    children : 'parent',
+    children: 'parent',
     successor: 'previous'
   ]
 
@@ -86,7 +85,6 @@ class Package extends KBComponent {
     nominalPlatform column: 'pkg_nominal_platform_fk'
     parent column: 'pkg_parent_fk'
     previous column: 'pkg_previous_fk'
-    curatoryGroups column: 'package_id', joinTable: 'package_curatory_groups'
   }
 
   static constraints = {
@@ -424,6 +422,68 @@ class Package extends KBComponent {
     result
   }
 
+  public List getCuratoryGroups() {
+    List result = CuratoryGroup.executeQuery('''from CuratoryGroup as c
+                                                where exists (
+                                                  select 1 from PackageCuratoryGroup
+                                                  where pkg = :comp
+                                                  and group = c
+                                                )''', [comp: this])
+
+    result
+  }
+
+  public Package addToCuratoryGroups(CuratoryGroup group) {
+    PackageCuratoryGroup dupe = PackageCuratoryGroup.findByPkgAndGroup(this, group)
+
+    if (!dupe) {
+      if (linkedCurators == null) {
+        linkedCurators = []
+      }
+      PackageCuratoryGroup new_obj = new PackageCuratoryGroup(group: group, pkg: this)
+      this.addToLinkedCurators(new_obj)
+      new_obj.save(flush: true)
+    }
+
+    return this
+  }
+
+  public Package removeFromCuratoryGroups(CuratoryGroup group) {
+    PackageCuratoryGroup to_remove = PackageCuratoryGroup.findByPkgAndGroup(this, group)
+
+    if (to_remove) {
+      this.removeFromLinkedCurators(to_remove)
+      to_remove.delete(flush: true)
+    }
+
+    return this
+  }
+
+  public Package retainCuratoryGroups(List<CuratoryGroup> retain_groups) {
+    boolean changed = false
+    List current = getCuratoryGroups()
+
+    retain_groups.each { rg ->
+      if (!current.contains(rg)) {
+        addToCuratoryGroups(rg)
+        changed = true
+      }
+    }
+
+    current.each { ccg ->
+      if (!retain_groups.contains(ccg)) {
+        removeFromCuratoryGroups(ccg)
+        changed = true
+      }
+    }
+
+    if (changed && update_comment) {
+      this.lastUpdateComment = "Retained curatory groups: ${retain_groups}"
+      this.save(flush: true)
+    }
+
+    return this
+  }
 
   static Map oaiConfig = [
     id             : 'packages',
@@ -645,16 +705,18 @@ class Package extends KBComponent {
   }
 
   public void addCuratoryGroupIfNotPresent(String cgname) {
-    boolean add_needed = true;
+    boolean add_needed = true
 
     curatoryGroups.each { cgtest ->
       if (cgtest.name.equalsIgnoreCase(cgname))
-        add_needed = false;
+        add_needed = false
     }
 
     if (add_needed) {
       CuratoryGroup cg = CuratoryGroup.findByName(cgname) ?: new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
-      curatoryGroups.add(cg);
+      addToCuratoryGroups(cg)
+      this.lastUpdateComment = "Added new curatory group: ${cg}"
+      this.save()
     }
   }
 

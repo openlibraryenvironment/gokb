@@ -22,6 +22,7 @@ class TitlePublisher {
   Date lastUpdated
 
   static mapping = {
+    id column: 'tp_id'
     publisher column:'tp_publisher_fk', index: 'tp_pub_idx,tp_full_idx'
     title column:'tp_title_fk', index: 'tp_ttl_idx,tp_full_idx'
     status column:'tp_status_rv_fk', index: 'tp_pub_idx,tp_ttl_idx,tp_full_idx'
@@ -48,6 +49,7 @@ class TitlePublisher {
 
     if (this.status == null) {
       this.status = status_active
+      this.save()
     }
   }
 }

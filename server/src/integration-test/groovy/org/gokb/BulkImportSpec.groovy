@@ -60,7 +60,7 @@ class BulkImportSpec extends Specification {
     if (!test_bulk_pkg) {
       Identifier pkg_id = Identifier.findByNamespaceAndValue(test_idns, "btp2") ?: new Identifier(namespace: test_idns, value: "btp2").save(flush: true, failOnError: true)
       test_bulk_pkg = new Package(name: 'TestBulkPkgOld', provider: test_bulk_org, nominalPlatform: test_bulk_plt).save(flush: true, failOnError: true)
-      test_bulk_pkg.curatoryGroups << bulk_cg
+      test_bulk_pkg.addToCuratoryGroups(bulk_cg)
       test_bulk_pkg.addIdentifier(pkg_id, false)
       test_bulk_pkg.save(flush: true, failOnError: true)
     }

@@ -477,51 +477,78 @@ where cp.owner = :c
 
   public List getActiveIds() {
     RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
-    List result = []
-
-    this.linkedIds.each { cio ->
-      if (cio.status == status_active) {
-        result << cio.identifier
-      }
-    }
+    List result = Identifier.executeQuery('''from Identifier as ido
+                                              where exists (
+                                                select 1 from ComponentIdentifier
+                                                where identifier = ido
+                                                and status = :sa
+                                                and component = :comp
+                                              )''', [sa: status_active, comp: this])
 
     result
   }
 
-  public ComponentIdentifier addIdentifier(Identifier ido, boolean update_comment = true) {
-    ComponentIdentifier result
+  public KBComponent addIdentifier(Identifier ido, boolean update_comment = true) {
     ComponentIdentifier dupe = ComponentIdentifier.findByComponentAndIdentifier(this, ido)
 
     if (!dupe) {
-      result = new ComponentIdentifier(component: this, identifier: ido).save(flush: true, failOnError: true)
+      if (linkedIds == null) {
+        linkedIds = []
+      }
+
+      ComponentIdentifier new_obj = new ComponentIdentifier(identifier: ido, component: this)
+      this.addToLinkedIds(new_obj)
+      new_obj.save(flush: true)
 
       if (update_comment) {
         this.lastUpdateComment = "Added new ID: ${ido}"
-        save(flush: true)
       }
+
+      this.save(flush: true)
     }
 
-    result
+    return this
   }
 
-  public int addIdentifiers(List<Identifier> idos, boolean update_comment = true) {
+  public KBComponent addIdentifiers(List<Identifier> idos, boolean update_comment = true) {
     int added = 0
+
+    if (linkedIds == null) {
+      linkedIds = []
+    }
 
     idos.each { Identifier ido ->
       ComponentIdentifier dupe = ComponentIdentifier.findByComponentAndIdentifier(this, ido)
 
       if (!dupe) {
-        new ComponentIdentifier(component: this, identifier: ido).save(flush: true, failOnError: true)
+        ComponentIdentifier new_obj = new ComponentIdentifier(identifier: ido, component: this)
+
+        this.addToLinkedIds(new_obj)
+        new_obj.save(flush: true)
         added++
       }
     }
 
     if (added > 0 && update_comment) {
-      this.lastUpdateComment = "Added new IDs: ${idos}"
-      save(flush: true)
+      this.lastUpdateComment = "Added ${added} new IDs: ${idos}"
     }
 
-    return added
+    this.save(flush: true)
+
+    return this
+  }
+
+  public KBComponent attachFile(DataFile ido) {
+
+    if (fileAttachments == null) {
+      fileAttachments = []
+    }
+
+    ComponentAttachment new_obj = new ComponentAttachment(file: ido, component: this)
+    this.addToFileAttachments(new_obj)
+    new_obj.save(flush: true)
+
+    return this
   }
 
   static KBComponent lookupByIO(String idtype, String idvalue) {
@@ -629,12 +656,12 @@ where cp.owner = :c
     return r
   }
 
-  protected def generateNormname() {
+  protected void generateNormname() {
     log.debug("checking for normname")
     this.normname = generateNormname(name);
   }
 
-  protected def generateComponentHash() {
+  protected void generateComponentHash() {
     // Default component hash generation -- Override in subclasses
 
     // To try and find instances
@@ -1092,6 +1119,11 @@ where cp.owner = :c
       this.users*.id.each { user_id ->
         User.get(user_id).removeFromCuratoryGroups(this).save()
       }
+
+      OrgCuratoryGroup.executeQuery("delete from OrgCuratoryGroup as o where group = :component", [component: this])
+      PackageCuratoryGroup.executeQuery("delete from PackageCuratoryGroup as o where group = :component", [component: this])
+      PlatformCuratoryGroup.executeQuery("delete from PlatformCuratoryGroup as o where group = :component", [component: this])
+      SourceCuratoryGroup.executeQuery("delete from SourceCuratoryGroup as o where group = :component", [component: this])
     }
     else {
       ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview = :component)", [component: this])
@@ -1106,6 +1138,16 @@ where cp.owner = :c
     }
     else if (this.class == Org) {
       TitlePublisher.executeUpdate("delete from TitlePublisher where publisher = :component", [component: this])
+      OrgCuratoryGroup.executeQuery("delete from OrgCuratoryGroup as o where org = :component", [component: this])
+    }
+    else if (this.class == Package) {
+      PackageCuratoryGroup.executeQuery("delete from PackageCuratoryGroup as o where pkg = :component", [component: this])
+    }
+    else if (this.class == Platform) {
+      PlatformCuratoryGroup.executeQuery("delete from PlatformCuratoryGroup as o where platform = :component", [component: this])
+    }
+    else if (this.class == Source) {
+      SourceCuratoryGroup.executeQuery("delete from SourceCuratoryGroup as o where source = :component", [component: this])
     }
 
     ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component = :component", [component: this])
@@ -1142,11 +1184,22 @@ where cp.owner = :c
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
       }
 
+      // No batch delete for CuratoryGroups!
+
       if (this.respondsTo('publisherLinks')) {
         TitlePublisher.executeUpdate("delete from TitlePublisher where title in (:component)", [component: batch])
       }
       else if (this.class == Org) {
         TitlePublisher.executeUpdate("delete from TitlePublisher where publisher in (:component)", [component: batch])
+      }
+      else if (this.class == Package) {
+        PackageCuratoryGroup.executeQuery("delete from PackageCuratoryGroup as o where pkg IN (:component)", [component: batch])
+      }
+      else if (this.class == Platform) {
+        PlatformCuratoryGroup.executeQuery("delete from PlatformCuratoryGroup as o where platform in (:component)", [component: batch])
+      }
+      else if (this.class == Source) {
+        SourceCuratoryGroup.executeQuery("delete from SourceCuratoryGroup as o where source in (:component)", [component: batch])
       }
 
       ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component in (:component)", [component: batch])

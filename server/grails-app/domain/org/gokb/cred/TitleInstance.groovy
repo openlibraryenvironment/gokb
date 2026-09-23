@@ -200,20 +200,44 @@ class TitleInstance extends KBComponent {
     return result
   }
 
-  public TitlePublisher addPublisher(Org pub, boolean update_comment = true) {
-    TitlePublisher result
-    TitlePublisher dupe = TitlePublisher.findByTitleAndPublisher(this, pub)
+  public TitleInstance addPublisher(Org pub, boolean update_comment = true) {
+    RefdataValue status_active = RefdataCategory.lookup(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_ACTIVE)
+    TitlePublisher dupe = TitlePublisher.findByTitleAndPublisherAndStatus(this, pub, status_active)
 
     if (!dupe) {
-      result = new TitlePublisher(title: this, publisher: pub).save(flush: true, failOnError: true)
+      if (publisherLinks == null) {
+        publisherLinks = []
+      }
+
+      TitlePublisher new_obj = new TitlePublisher(title: this, publisher: pub)
+      this.addToPublisherLinks(new_obj)
+      new_obj.save(flush: true, failOnError: true)
+
 
       if (update_comment) {
-        this.lastUpdateComment = "Added new Publisher: ${new_id}"
+        this.lastUpdateComment = "Added new publisher: ${pub}"
         save(flush: true)
       }
     }
 
-    result
+    return this
+  }
+
+  public TitleInstance removeActivePublisherLink(Org pub, boolean update_comment = true) {
+    RefdataValue status_active = RefdataCategory.lookup(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_ACTIVE)
+    TitlePublisher to_remove = TitlePublisher.findByTitleAndPublisherAndStatus(this, pub, status_active)
+
+    if (to_remove) {
+      this.removeFromPublisherLinks(to_remove)
+      to_remove.delete(flush: true)
+
+      if (update_comment) {
+        this.lastUpdateComment = "Removed active publisher: ${pub}"
+        save(flush: true)
+      }
+    }
+
+    return this
   }
 
   /**

@@ -34,15 +34,10 @@ class Source extends KBComponent {
   RefdataValue transferMethod
   LocalDate lastImportFileDate
 
-  static hasMany = [
-    curatoryGroups: CuratoryGroup
-  ]
-
   static mapping = {
     includes KBComponent.mapping
     url column:'source_url'
     ruleset column:'source_ruleset', type:'text'
-    curatoryGroups column: 'source_id', joinTable: 'source_curatory_groups'
   }
 
   static constraints = {
@@ -119,6 +114,74 @@ class Source extends KBComponent {
     }
 
     result
+  }
+
+    /*
+  * Methods for replicating dynamic handling of curatoryGroups
+  */
+
+  public List getCuratoryGroups() {
+    List result = CuratoryGroup.executeQuery('''from CuratoryGroup as c
+                                                where exists (
+                                                  select 1 from SourceCuratoryGroup
+                                                  where platform = :comp
+                                                  and group = c
+                                                )''', [comp: this])
+
+    result
+  }
+
+  public Source addToCuratoryGroups(CuratoryGroup group) {
+    SourceCuratoryGroup dupe = SourceCuratoryGroup.findBySourceAndGroup(this, group)
+
+    if (!dupe) {
+      if (linkedCurators == null) {
+        linkedCurators = []
+      }
+
+      SourceCuratoryGroup new_obj = new SourceCuratoryGroup(group: group, source: this)
+      this.addToLinkedCurators(new_obj)
+      new_obj.save(flush: true)
+    }
+
+    return this
+  }
+
+  public Source removeFromCuratoryGroups(CuratoryGroup group) {
+    SourceCuratoryGroup to_remove = SourceCuratoryGroup.findBySourceAndGroup(this, group)
+
+    if (to_remove) {
+      this.removeFromLinkedCurators(to_remove)
+      to_remove.delete(flush: true)
+    }
+
+    return this
+  }
+
+  public Source retainCuratoryGroups(List<CuratoryGroup> retain_groups) {
+    boolean changed = false
+    List current = this.getCuratoryGroups()
+
+    retain_groups.each { rg ->
+      if (!current.contains(rg)) {
+        this.addToCuratoryGroups(rg)
+        changed = true
+      }
+    }
+
+    current.each { ccg ->
+      if (!retain_groups.contains(ccg)) {
+        this.removeFromCuratoryGroups(ccg)
+        changed = true
+      }
+    }
+
+    if (changed && update_comment) {
+      this.lastUpdateComment = "Retained curatory groups: ${retain_groups}"
+      this.save(flush: true)
+    }
+
+    return this
   }
 
   @Transient

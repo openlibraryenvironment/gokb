@@ -170,6 +170,9 @@ class RestMappingService {
                 boolean addToList = false
                 Map mapped_item = [:]
 
+                if (p.name == 'linkedCurators') {
+                  mapped_item = getEmbeddedJson(assoc_obj.group, user)
+                }
                 if (assoc_obj instanceof ComponentSubject) {
                   mapped_item = getEmbeddedJson(assoc_obj.subject, user)
                   log.debug("Using subject ${assoc_obj} for embed mapping ..")

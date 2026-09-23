@@ -22,9 +22,12 @@ class ComponentIdentifier {
   Date lastUpdated
 
   static mapping = {
+    id column: 'ci_id'
     component column:'ci_comp_fk', index: 'ci_cmp_idx,ci_full_idx'
     identifier column:'ci_ident_fk', index: 'ci_ident_idx,ci_full_idx'
     status column:'ci_status_rv_fk', index: 'ci_ident_idx,ci_cmp_idx,ci_full_idx'
+    startDate column:'ci_start_date'
+    endDate column:'ci_end_date'
     dateCreated column:'ci_date_created', index: 'ci_created_idx'
     lastUpdated column:'ci_last_updated'
   }
@@ -61,7 +64,7 @@ class ComponentIdentifier {
     endDate
   }
 
-  static void removeAll(KBComponent comp) {
-    executeUpdate 'DELETE FROM ComponentIdentifier WHERE component = :comp', [comp: comp]
+  static int removeAllForComponent(KBComponent comp) {
+    return executeUpdate('DELETE FROM ComponentIdentifier WHERE component = :comp', [comp: comp])
   }
 }

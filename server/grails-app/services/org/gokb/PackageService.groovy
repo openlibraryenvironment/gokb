@@ -794,7 +794,7 @@ class PackageService {
             src = new Source(source_config).save(flush: true)
 
             result.curatoryGroups.each { cg ->
-              src.curatoryGroups.add(cg)
+              src.addToCuratoryGroups(cg)
             }
           }
           else {

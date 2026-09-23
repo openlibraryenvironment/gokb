@@ -42,8 +42,8 @@ class EzbCollectionServiceSpec extends Specification {
       testId = Identifier.findByValue("EZB-TEST-12345") ?: new Identifier(value: 'EZB-TEST-12345', namespace: IdentifierNamespace.findByValue('ezb-collection-id')).save(flush: true)
       Source testSrc = Source.findByName("EZB-TEST-12345: EzbTestPkg") ?: new Source(name: "EZB-TEST-12345: EzbTestPkg", url: "https://ezb.uni-regensburg.de/services/titlelist.phtml?collection_id=EZB-NALFO-01634&title_split=1").save(flush:true)
       testPackage = Package.findByName("EzbTestPkg") ?: new Package(name: "EzbTestPkg", source: testSrc, provider: testProvider, nominalPlatform: testPlatform).save(flush: true)
-      testPackage.addIdentifier (testId)
-      testPackage.curatoryGroups << testCurator
+      testPackage.addIdentifier(testId)
+      testPackage.addToCuratoryGroups(testCurator)
       testPackage.save(flush: true)
     }
   }

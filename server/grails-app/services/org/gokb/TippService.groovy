@@ -1035,7 +1035,7 @@ class TippService {
             }
 
             if (!ti.currentPublisher) {
-              titleAugmentService.addPublisher(tipp.publisherName, ti)
+              titleAugmentService.addPublisherForName(tipp.publisherName, ti)
 
               if (ti.currentPublisher) {
                 ti_changed = true
@@ -1115,7 +1115,7 @@ class TippService {
     log.debug("Set name ${ti.name} ..")
     ti.save(flush: true, failOnError: true)
 
-    titleAugmentService.addPublisher(tipp.publisherName, ti)
+    titleAugmentService.addPublisherForName(tipp.publisherName, ti)
     ti.save(flush: true, failOnError: true)
 
     log.debug("Transfering new ti ids: ${tipp_ids}")

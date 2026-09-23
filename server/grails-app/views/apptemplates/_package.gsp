@@ -1,4 +1,4 @@
-<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true' && request.user.isAdmin())) }" />
+<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (curator != null && curator.size() > 0) : true) || (params.curationOverride == 'true' && request.user.isAdmin())) }" />
   <dl class="dl-horizontal">
   <dt>
     <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
@@ -54,17 +54,6 @@
       </dd>
     </g:if>
 
-    <g:if test="${d.lastProject}">
-      <dt>
-        <g:annotatedLabel owner="${d}" property="lastProject">Last Project</g:annotatedLabel>
-      </dt>
-      <dd>
-        <g:link controller="resource" action="show"
-          id="${d.lastProject?.getClassName()+':'+d.lastProject?.id}">
-          ${d.lastProject?.name}
-        </g:link>
-      </dd>
-    </g:if>
     <dt> <g:annotatedLabel owner="${d}" property="listStatus">List Status</g:annotatedLabel> </dt>
     <dd>
       <g:xEditableRefData owner="${d}" field="listStatus" config='Package.ListStatus' />

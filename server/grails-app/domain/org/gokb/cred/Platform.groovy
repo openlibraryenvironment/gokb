@@ -19,12 +19,11 @@ class Platform extends KBComponent {
   Set roles = []
 
   static hasMany = [
-    roles: RefdataValue,
-    curatoryGroups: CuratoryGroup
+    roles: RefdataValue
   ]
 
-  private static refdataDefaults = [
-    "authentication": "Unknown"
+  static mappedBy = [
+    linkedCuratoryGroups: 'platform'
   ]
 
   static mapping = {
@@ -37,7 +36,6 @@ class Platform extends KBComponent {
     shibbolethAuthentication column: 'plat_auth_by_shib_fk_rv'
     passwordAuthentication column: 'plat_auth_by_pass_fk_rv'
     provider column: 'plat_provider_fk'
-    curatoryGroups column: 'platform_id', joinTable: 'platform_curatory_groups'
   }
 
   static constraints = {
@@ -64,6 +62,10 @@ class Platform extends KBComponent {
     })
     provider(nullable: true)
   }
+
+  private static refdataDefaults = [
+    "authentication": "Unknown"
+  ]
 
   public static final String restPath = "/platforms"
 
@@ -177,26 +179,115 @@ class Platform extends KBComponent {
     result
   }
 
-  public Integer getProvidedPackagesCount() {
+  public int getProvidedPackagesCount() {
     RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
-    Integer result = Package.executeQuery("select count(id) from Package where status != :sd and nominalPlatform = :plt", [plt: this, sd: status_deleted])[0]
+    int result = Package.executeQuery("select count(id) from Package where status != :sd and nominalPlatform = :plt", [plt: this, sd: status_deleted])[0]
 
     return result
   }
 
-  public Integer getHostedTippsCount() {
+  public int getHostedTippsCount() {
     RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
-    Integer result = TitleInstancePackagePlatform.executeQuery("select count(id) from TitleInstancePackagePlatform where status != :sd and hostPlatform = :plt", [plt: this, sd: status_deleted])[0]
+    int result = TitleInstancePackagePlatform.executeQuery("select count(id) from TitleInstancePackagePlatform where status != :sd and hostPlatform = :plt", [plt: this, sd: status_deleted])[0]
 
     return result
   }
 
-  def availableActions() {
-    [
+  /*
+  * Methods for replicating dynamic handling of curatoryGroups
+  */
+
+  public List getCuratoryGroups() {
+    List result = CuratoryGroup.executeQuery('''from CuratoryGroup as c
+                                                where exists (
+                                                  select 1 from PlatformCuratoryGroup
+                                                  where platform = :comp
+                                                  and group = c
+                                                )''', [comp: this])
+
+    result
+  }
+
+  public Platform addToCuratoryGroups(CuratoryGroup group) {
+    PlatformCuratoryGroup dupe = PlatformCuratoryGroup.findByPlatformAndGroup(this, group)
+
+    if (!dupe) {
+      if (linkedCurators == null) {
+        linkedCurators = []
+      }
+
+      PlatformCuratoryGroup new_obj = new PlatformCuratoryGroup(group: group, platform: this)
+      this.addToLinkedCurators(new_obj)
+      new_obj.save(flush: true)
+    }
+
+    return this
+  }
+
+  public Platform removeFromCuratoryGroups(CuratoryGroup group) {
+    PlatformCuratoryGroup to_remove = PlatformCuratoryGroup.findByPlatformAndGroup(this, group)
+
+    if (to_remove) {
+      this.removeFromLinkedCurators(to_remove)
+      to_remove.delete(flush: true)
+    }
+
+    return this
+  }
+
+  public Platform retainCuratoryGroups(List<CuratoryGroup> retain_groups) {
+    boolean changed = false
+    List current = getCuratoryGroups()
+
+    retain_groups.each { rg ->
+      if (!current.contains(rg)) {
+        addToCuratoryGroups(rg)
+        changed = true
+      }
+    }
+
+    current.each { ccg ->
+      if (!retain_groups.contains(ccg)) {
+        removeFromCuratoryGroups(ccg)
+        changed = true
+      }
+    }
+
+    if (changed && update_comment) {
+      this.lastUpdateComment = "Retained curatory groups: ${retain_groups}"
+      this.save(flush: true)
+    }
+
+    return this
+  }
+
+  public List availableActions() {
+    return [
       [code: 'platform::replacewith', label: 'Replace platform with...', perm: 'admin'],
       [code: 'method::deleteSoft', label: 'Delete Platform', perm: 'delete'],
       [code: 'method::retire', label: 'Retire Platform (with hosted TIPPs)', perm: 'admin']
     ]
+  }
+
+  public void retire() {
+    log.debug("platform::retire")
+    RefdataValue status_retired = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+    RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+
+    this.status = status_retired
+    this.save()
+
+    // Delete the tipps too as a TIPP should not exist without the associated,
+    // package.
+    log.debug("platform::retire -- Retiring tipps")
+
+    int retired_tipps_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform
+                              set status = :retired,
+                              lastUpdated = :now
+                              where hostPlatform = :plt
+                              and status = :current''', [retired: status_retired, now: new Date(), plt: this, current: status_current])
+
+    log.debug("platform::retire -- Retired ${retired_tipps_count} TIPPs.")
   }
 
   /**
@@ -204,36 +295,8 @@ class Platform extends KBComponent {
    *    platformUrl:'platformUrl',
    *}*/
 
-  public void retire(context) {
-    log.debug("platform::retire");
-    // Call the delete method on the superClass.
-    log.debug("Updating platform status to retired");
-    this.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired');
-    this.save();
-
-    // Delete the tipps too as a TIPP should not exist without the associated,
-    // package.
-    log.debug("Retiring tipps");
-    def tipps = getHostedTipps()
-
-    tipps.each { def t ->
-      log.debug("deroxy ${t} ${t.class.name}");
-
-      // SO: There are 2 deproxy methods. One in the static context that takes in an argument and one,
-      // against an instance which attempts to deproxy this component. Calling deproxy(t) here will invoke the method
-      // against the current package. this.deproxy(t).
-      // So Package.deproxy(t) or t.deproxy() should work...
-      def tipp = Package.deproxy(t)
-      log.debug("Retiring tipp ${tipp.id}");
-      tipp.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired');
-      tipp.save()
-    }
-  }
-
-
-  @Transient
-  public static def validateDTO(platformDTO) {
-    def result = ['valid': true, 'errors': [:]]
+  public static Map validateDTO(platformDTO) {
+    Map result = ['valid': true, 'errors': [:]]
 
     if (platformDTO?.name?.trim()) {
     } else {

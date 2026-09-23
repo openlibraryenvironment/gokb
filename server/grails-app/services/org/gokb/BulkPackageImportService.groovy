@@ -830,7 +830,7 @@ class BulkPackageImportService {
                           }
                         }
 
-                        obj.curatoryGroups << curator
+                        obj.addToCuratoryGroups(curator)
                         obj.save(flush: true)
                       }
                       else if (listInfo.curatorPolicy?.value == 'Old') {
@@ -853,7 +853,7 @@ class BulkPackageImportService {
                       }
 
                       if (source) {
-                        source.curatoryGroups << curator
+                        source.addToCuratoryGroups(curator)
                         source.save()
 
                         obj.source = source
@@ -865,15 +865,7 @@ class BulkPackageImportService {
                         log.debug("Not updating source curators ..")
                       }
                       else {
-                        obj.curatoryGroups.each { pcg ->
-                          if (!source.curatoryGroups.contains(pcg)) {
-                            source.curatoryGroups << pcg
-                          }
-                        }
-
-                        source.save(flush: true)
-
-                        source.curatoryGroups.retainAll(obj.curatoryGroups)
+                        source.retainGroups(obj.curatoryGroups)
                         source.save(flush: true)
                       }
                     }

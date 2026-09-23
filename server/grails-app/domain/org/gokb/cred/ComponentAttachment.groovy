@@ -16,11 +16,12 @@ class ComponentAttachment {
   Date lastUpdated
 
   static mapping = {
-    component column:'ca_comp_fk', index: 'ca_cmp_idx,ci_full_idx'
-    file column:'ca_file_fk', index: 'ca_file_idx,ci_full_idx'
-    dateCreated column:'ci_date_created', index: 'ci_created_idx'
-    lastUpdated column:'ci_last_updated'
-    importName column: 'ci_import_name'
+    id column:'ca_id'
+    component column:'ca_comp_fk', index: 'ca_cmp_idx,ca_full_idx'
+    file column:'ca_file_fk', index: 'ca_file_idx,ca_full_idx'
+    dateCreated column:'ca_date_created', index: 'ca_created_idx'
+    lastUpdated column:'ca_last_updated'
+    importName column: 'ca_import_name'
   }
 
   static constraints = {
@@ -29,7 +30,7 @@ class ComponentAttachment {
     importName(nullable: true, blank:false)
   }
 
-  static void removeAll(KBComponent comp) {
-    executeUpdate 'DELETE FROM ComponentAttachment WHERE component = :comp', [comp: comp]
+  static int removeAllForComponent(KBComponent comp) {
+    return executeUpdate('DELETE FROM ComponentAttachment WHERE component = :comp', [comp: comp])
   }
 }

@@ -76,7 +76,7 @@ class OaiSpec extends Specification {
     if (!test_pkg) {
       test_pkg = new Package(name: 'OAI Test Package 1', source: testSource, nominalPlatform: test_plt, provider: test_org).save(flush: true)
 
-      test_pkg.curatoryGroups << CuratoryGroup.findByName('Local')
+      test_pkg.addToCuratoryGroups(CuratoryGroup.findByName('Local'))
       test_pkg.save(flush: true)
     }
 

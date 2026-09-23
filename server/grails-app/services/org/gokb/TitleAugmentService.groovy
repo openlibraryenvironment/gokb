@@ -243,7 +243,7 @@ class TitleAugmentService {
             else {
               if (num_existing_zdb_ids == 0) {
                 titleInstance.refresh()
-                titleInstance.ids << new_id
+                titleInstance.addIdentifier(new_id)
                 titleInstance.save(flush: true)
 
                 touchTitleTipps(titleInstance)
@@ -788,7 +788,7 @@ class TitleAugmentService {
     result
   }
 
-  public TitleInstance addPerson (person_name, role, ti, user = null, project = null) {
+  public TitleInstance addPerson (String person_name, RefdataValue role, TitleInstance ti, User user = null) {
     if (person_name && person_name.trim()) {
       String norm_person_name = KBComponent.generateNormname(person_name)
       List person = org.gokb.cred.Person.findAllByNormname(norm_person_name)
@@ -850,7 +850,7 @@ class TitleAugmentService {
   /**
    * Close off any existing publisher relationships and add a new one for this publiser
    */
-  public boolean changePublisher(ti, new_publisher, boolean null_start = false) {
+  public boolean changePublisher(TitleInstance ti, Org new_publisher, boolean null_start = false) {
 
     if (new_publisher != null) {
 
@@ -863,7 +863,7 @@ class TitleAugmentService {
       else {
         List publisher_links = ti.publisherLinks
 
-        publisher_links.each { pc ->
+        publisher_links?.each { pc ->
           if (pc.endDate == null) {
             pc.endDate = new Date()
             pc.save()
@@ -871,7 +871,10 @@ class TitleAugmentService {
         }
 
         // Now create a new TitlePublisher
-        new TitlePublisher(title: ti, publisher: new_publisher, startDate: (null_start ? null : new Date())).save(flush:true)
+        TitlePublisher new_obj = new TitlePublisher(title: ti, publisher: new_publisher, startDate: (null_start ? null : new Date()))
+        ti.addToPublisherLinks(new_obj)
+        new_obj.save(flush:true)
+
         ti.lastUpdateComment = "Added new publisher ${new_publisher}"
         ti.save(flush:true)
         return true
@@ -882,7 +885,11 @@ class TitleAugmentService {
     return false
   }
 
-  public void addPublisher (publisher_name, ti, boolean create = false) {
+  /*
+  * Create a new publisher link for a matched Org, only if there are no existing links (including expired ones)
+  */
+
+  public void addPublisherForName (String publisher_name, TitleInstance ti) {
     if (publisher_name != null && publisher_name.trim()) {
       log.debug("Add publisher ${publisher_name}")
 
@@ -911,15 +918,22 @@ class TitleAugmentService {
         }
       }
 
-      log.debug("Found publisher ${publisher}")
+      if (publisher) {
+        log.debug("Found publisher ${publisher}")
 
-      List existing_links = TitlePublisher.executeQuery("from TitlePublisher where title = :ti and publisher = :pub", [ti: ti, pub: publisher])
+        List existing_links = TitlePublisher.executeQuery("from TitlePublisher where title = :ti and publisher = :pub", [ti: ti, pub: publisher])
 
-      if (publisher && existing_links.size() == 0) {
-        new TitlePublisher(title: ti, publisher: publisher).save(flush: true, failOnError: true)
-        log.debug("Added new publisher ..")
-      } else {
-        log.debug("Not adding dupe")
+        if (existing_links.size() == 0) {
+          TitlePublisher new_obj = new TitlePublisher(title: ti, publisher: publisher)
+          ti.addToPublisherLinks(new_obj)
+          new_obj.save(flush: true, failOnError: true)
+          log.debug("Added new publisher ..")
+        } else {
+          log.debug("Not adding dupe")
+        }
+      }
+      else {
+        log.debug("Unable to match any org for name ${publisher_name}")
       }
     }
     else {
@@ -927,7 +941,7 @@ class TitleAugmentService {
     }
   }
 
-  public void addVariantName(variant, ti) {
+  public void addVariantName(String variant, TitleInstance ti) {
     if (variant.trim()) {
 
       // Variant names use different normalisation method.
@@ -947,7 +961,7 @@ class TitleAugmentService {
     }
   }
 
-  public def addMissingDoiFromTipps(ti) {
+  public Map addMissingDoiFromTipps(TitleInstance ti) {
     log.debug("addMissingDoiFromTipps for ${ti}")
     Map result = [result: 'OK', candidates: []]
 
