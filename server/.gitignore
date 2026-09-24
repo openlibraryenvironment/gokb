@@ -2,7 +2,6 @@ Thumbs.db
 .DS_Store
 .gradle
 build/
-migrations/
 project-files/
 out/
 .idea

@@ -45,7 +45,7 @@ class Org extends KBComponent {
 
   Set roles = []
 
-  def availableActions() {
+  public Map availableActions() {
     [
       [code: 'org::transferPackages', label: 'Transfer Packages to...', perm: 'admin'],
       [code: 'org::deprecateReplace', label: 'Merge into...', perm: 'delete'],
@@ -72,7 +72,8 @@ class Org extends KBComponent {
     offices: 'org',
     providedPlatforms: 'provider',
     providedPackages: 'provider',
-    linkedCurators: 'org'
+    linkedCurators: 'org',
+    previous: 'successor'
   ]
 
   static mapping = {

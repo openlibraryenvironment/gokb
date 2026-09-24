@@ -87,7 +87,7 @@ class BookInstance extends TitleInstance {
   }
 
   @Override
-  protected def generateComponentHash() {
+  protected void generateComponentHash() {
 
     this.componentDiscriminator = generateBookDiscriminator(['volumeNumber': volumeNumber, 'editionDifferentiator': editionDifferentiator, 'firstAuthor': firstAuthor])
 
