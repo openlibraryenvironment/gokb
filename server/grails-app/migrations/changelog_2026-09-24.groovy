@@ -1,5 +1,5 @@
 databaseChangeLog = {
-    // Merged after initial split from g5_master
+    // Changes after last merge from g5_master
 
     changeSet(author: "horn (generated)", id: "1790176327340-12") {
         createTable(tableName: "scheduled_job_control") {
@@ -820,6 +820,22 @@ databaseChangeLog = {
 
                 confirm("transfer fields to identifier: ${countUpdate}")
                 changeSet.setComments("transfer fields to identifier: ${countUpdate}")
+            }
+        }
+        rollback {}
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-198") {
+        grailsChange {
+            change {
+                sql.execute('''delete from kbcomponent
+                        where exists (
+                            select 1 from identifier
+                            where id = kbc_id
+                        );''')
+
+                confirm("delete identifier rows from kbcomponent")
+                changeSet.setComments("deleted identifier rows from kbcomponent")
             }
         }
         rollback {}
