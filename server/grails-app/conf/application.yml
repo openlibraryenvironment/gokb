@@ -187,6 +187,9 @@ environments:
             ezbOpenCollections:
                 enabled: false
                 url: https://ezb-api.ur.de/collections/v1/
+            ftIndexCleanup:
+                enabled: true
+                cron: "45 30 15 ? * 6 *"
             es:
                 host: localhost
                 ports:
@@ -256,6 +259,9 @@ environments:
                 rrCurators: EZB
                 cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
                 breakInMs: 1000
+            ftIndexCleanup:
+                enabled: false
+                cron: "45 30 15 ? * 6 *"
             es:
                 host: localhost
                 ports:
@@ -332,8 +338,9 @@ environments:
                 rrCurators: EZB
                 cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
                 breakInMs: 1000
-            ygorUrl: null
-            languagesUrl : null
+            ftIndexCleanup:
+                enabled: false
+                cron: "45 30 15 ? * 6 *"
             es:
                 host: localhost
                 ports:

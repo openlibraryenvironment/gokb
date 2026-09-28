@@ -45,19 +45,33 @@ class WekbIngestionService {
     String ingestDate = LocalDate.now().toString()
     int batchSize = 100
     List missedBatches = []
+    int titleCount = 0
     Session session = sessionFactory.currentSession
 
     String sourceUrl = pkg_source?.url
     String wekbUUID = extractUUIDFromUrlString(sourceUrl)
 
     List packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
-    int titleCount = packageInfo[0]?.titleCount
+
+    if (packageInfo == null || packageInfo.isEmpty()) {
+      result.result = 'ERROR'
+      result.message = "The package with the given UUID does not seem to exist in WEKB anymore."
+    }
+    else {
+      titleCount = packageInfo[0]?.titleCount ? packageInfo[0]?.titleCount : 0
+    }
 
     if ( restrictSize && titleCount > SIZE_LIMIT ) {
       result.result = 'ERROR'
       //result.messageCode = 'kbart.errors.url.fileSize'
       result.message = "The package you want to import is too big! Packages with more than 30.000 titles have to be authorized manually by an administrator."
-    } else {
+
+    }
+
+    if (result.result != "OK") {
+      // skip complete logic except writing the job result
+    }
+    else {
       identifierTargetTypes = loadIdentifierTargetTypes()
       Map validIdentifierForPubType = [:]
       validIdentifierForPubType.put("Monograph", getValidIdentifiersForPublicationType("Monograph"))
@@ -78,14 +92,14 @@ class WekbIngestionService {
               [pkg: pkg, sd: rdv_deleted])[0]
 
       result.report = [
-        numRows : titleCount,
-        skipped : 0,
-        matched : 0,
-        partial : 0,
-        created : 0,
-        retired : 0,
-        reviews : 0,
-        invalid : 0,
+        numRows: titleCount,
+        skipped: 0,
+        matched: 0,
+        partial: 0,
+        created: 0,
+        retired: 0,
+        reviews: 0,
+        invalid: 0,
         previous: old_tipp_count
       ]
 
@@ -114,7 +128,7 @@ class WekbIngestionService {
             trials++
 
             if (!tipps) {
-              log.debug("TIPPS nicht vorhanden --> sleep... Request-Versuch: " + trials )
+              log.debug("TIPPS nicht vorhanden --> sleep... Request-Versuch: " + trials)
               sleep(1500)
             }
           } while (!tipps && trials < 6)
@@ -207,12 +221,12 @@ class WekbIngestionService {
                   switch (identifier.namespace) {
                     case "eisbn":
                       if (pubtype == "Monograph") {
-                          identifierType = "isbn"
+                        identifierType = "isbn"
                       }
                       break;
                     case "isbn":
                       if (pubtype == "Monograph") {
-                          identifierType = "pisbn"
+                        identifierType = "pisbn"
                       }
                       break;
                     case "title_id":
@@ -364,7 +378,8 @@ class WekbIngestionService {
 
           if (!async) {
             result.matchingJob = matching_job.get()
-          } else {
+          }
+          else {
             result.matchingJob = matching_job.uuid
           }
         }
@@ -398,34 +413,34 @@ class WekbIngestionService {
         result.result = 'ERROR'
         result.exception = e.message
       }
+    }
 
-      if (job) {
-        job.setProgress(100)
-        job.endTime = new Date()
+    if (job) {
+      job.setProgress(100)
+      job.endTime = new Date()
 
-        JobResult.withNewTransaction {
-          JobResult result_object = JobResult.findByUuid(job.uuid)
+      JobResult.withNewTransaction {
+        JobResult result_object = JobResult.findByUuid(job.uuid)
 
-          /*if (result.titleMatch) {
-              result.titleMatch.rowConflicts = titleMatchConflicts
-          } */
+        /*if (result.titleMatch) {
+            result.titleMatch.rowConflicts = titleMatchConflicts
+        } */
 
-          if (!result_object) {
-            Map job_map = [
-              uuid        : (job.uuid),
-              description : "External Source Import".toString(),
-              resultObject: (result as JSON).toString(),
-              type        : (job.type),
-              statusText  : (result.result),
-              ownerId     : (job.ownerId),
-              groupId     : (job.groupId),
-              startTime   : (job.startTime),
-              endTime     : (job.endTime),
-              linkedItemId: (job.linkedItem?.id)
-            ]
+        if (!result_object) {
+          Map job_map = [
+            uuid: (job.uuid),
+            description: "External Source Import".toString(),
+            resultObject: (result as JSON).toString(),
+            type: (job.type),
+            statusText: (result.result),
+            ownerId: (job.ownerId),
+            groupId: (job.groupId),
+            startTime: (job.startTime),
+            endTime: (job.endTime),
+            linkedItemId: (job.linkedItem?.id)
+          ]
 
-            new JobResult(job_map).save(flush: true, failOnError: true)
-          }
+          new JobResult(job_map).save(flush: true, failOnError: true)
         }
       }
     }

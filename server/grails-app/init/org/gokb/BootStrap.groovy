@@ -468,6 +468,10 @@ class BootStrap {
                 else {
                     log.info("Sending of curatory alerts for new reviews is disabled via config override of 'gokb.reviewRequestNotification.enabled = false'!")
                 }
+
+                if (grailsApplication.config.getProperty('gokb.ftIndexCleanup.enabled', Boolean, false)) {
+                    FTIndexCleanupJob.schedule(grailsApplication.config.getProperty('gokb.ftIndexCleanup.cron'))
+                }
             }
         }
 
@@ -1240,6 +1244,12 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'Admin Org Merge').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'Admin Platform Merge').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'ForcePackageCaching').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'FTIndexCleanupJob').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'ESTippUpdateJob').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'ESOrgUpdateJob').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'ESPackageUpdateJob').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'ESPlatformUpdateJob').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'ESTitleUpdateJob').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)

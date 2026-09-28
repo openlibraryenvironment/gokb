@@ -3,6 +3,7 @@ package org.gokb
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService.Job
 import grails.gorm.transactions.Transactional
+import grails.plugins.quartz.JobManagerService
 
 import groovy.util.logging.Slf4j
 import groovy.xml.StreamingMarkupBuilder
@@ -21,6 +22,7 @@ class PackageCachingService {
   def dateFormatService
   def grailsApplication
   def packageCSVExportService
+  JobManagerService jobManagerService
   def jobManagerService
   def sessionFactory
 
