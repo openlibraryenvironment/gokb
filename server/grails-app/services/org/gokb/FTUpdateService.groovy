@@ -681,7 +681,6 @@ class FTUpdateService {
 
   boolean updateES(esClient, domain, boolean reindex = false, JobDataMap dataMap, job) {
     int bulkSize = 100
-    int limitPerJob = Integer.MAX_VALUE //no limit
 
     log.debug("updateES(${domain}...)")
     def indexType = ESWrapperService.indicesPerType[domain.name]
@@ -712,12 +711,12 @@ class FTUpdateService {
         log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
 
         Date from = new Date(latest_ft_record.lastTimestamp)
-        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts)", [ts: from, lid: latest_ft_record.lastId, max: limitPerJob], [readonly: true])[0]
+        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts)", [ts: from, lid: latest_ft_record.lastId], [readonly: true])[0]
 
         if (job) job.message("Indexing start for ${countq} ${domain.simpleName} ..".toString())
 
         log.debug("Will process ${countq} records")
-        def q = domain.executeQuery("select o.id, o.lastUpdated from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id", [ts: from, lid: latest_ft_record.lastId, max: limitPerJob], [readonly: true])
+        def q = domain.executeQuery("select o.id, o.lastUpdated from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) order by o.lastUpdated, o.id", [ts: from, lid: latest_ft_record.lastId], [readonly: true])
         log.debug("Query completed.. processing rows...")
 
         BulkRequest bulkRequest = new BulkRequest()
@@ -826,11 +825,11 @@ class FTUpdateService {
             }
 
             if (domain.simpleName == "TitleInstancePackagePlatform") {
-              log.debug("TIPP Statistik - Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal/p_actualBulk)} " +
+              log.debug("updateES :: TIPP statistics - Bulk ${p_actualBulk}/${p_bulksTotal} -- Duration: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal/p_actualBulk)} " +
                       "slowest: ${p_highestBulkTime}, Books: ${p_books}, Journals: ${p_journals}" )
             }
             else {
-              log.debug("${domain.simpleName} Statistik - Gesamt-Bulk ${p_actualBulk}/${p_bulksTotal} ## Dauer: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal / p_actualBulk)} " +
+              log.debug("updateES :: ${domain.simpleName} statistics - Bulk ${p_actualBulk}/${p_bulksTotal} -- Duration: ${p_bulkDuration}, Avg.: ${(long) (p_timeTotal / p_actualBulk)} " +
                       "slowest: ${p_highestBulkTime}")
             }
 
@@ -844,8 +843,7 @@ class FTUpdateService {
                 dataMap.estimation = formattedEstimation
               }
 
-              log.debug("${domain.name} Indexing Update: ${(p_actualBulk - p_bulkAtHour) * bulkSize} Records were updated in the last ${p_estimationInterval} Minutes. " +
-                      "##### Estimated Duration is: " + formattedEstimation)
+              log.debug("${domain.name} Indexing Update: ${(p_actualBulk - p_bulkAtHour) * bulkSize} records were updated in the last ${p_estimationInterval} Minutes. Estimated duration is: " + formattedEstimation)
 
               p_hourStartTime = new Date().getTime()
               p_bulkAtHour = p_actualBulk
