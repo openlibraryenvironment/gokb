@@ -5,7 +5,7 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import org.gokb.cred.*
 import org.hibernate.criterion.CriteriaSpecification
-
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.acls.domain.BasePermission
 
@@ -35,6 +35,9 @@ class AdminController {
   CleanupService cleanupService
   ConcurrencyManagerService concurrencyManagerService
   TippService tippService
+  @Autowired
+  FTIndexCleanupService ftIndexCleanupService
+  RuntimeVariableService runtimeVariableService
 
   def index() {
     redirect(controller: 'admin', action: 'jobs')
@@ -792,4 +795,54 @@ class AdminController {
 
     render(view: "logViewer", model: logViewer())
   }
+
+  def cleanupFTIndex () {
+    LocalDateTime dateFrom = null
+    LocalDateTime dateTill = null
+
+    if (params.updatedSince) {
+      dateFrom = GOKbTextUtils.completeDateString(params.updatedSince)
+
+      if (!dateFrom) {
+        log.debug("No Date from given - proceed with default, i.e. startdate of the last complete run")
+      }
+    }
+
+    if (params.updatedTill) {
+      dateTill = GOKbTextUtils.completeDateString(params.updatedTill)
+
+      if (!dateTill) {
+        log.debug("No Date till given - proceed with default, i.e. now")
+      }
+    }
+
+    boolean dryRun = params.boolean('dryRun') ?: false
+
+    Job j = concurrencyManagerService.createJob { Job j ->
+      Map result = ftIndexCleanupService.syncTippsBetweenIndexAndDB(j, dateFrom, dateTill, dryRun, false)
+    }.startOrQueue()
+
+    j.description = "Cleanup TIPP FT Index "
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'FTIndexCleanupJob')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+
+
+  }
+
+  def setRuntimeVariable () {
+    boolean remove = params.boolean('remove') ?: false
+
+    if (remove && params.name) {
+      runtimeVariableService.removeRuntimeVariable(params.name)
+    }
+    else if (params.name && params.value) {
+      runtimeVariableService.addOrUpdateRuntimeVariable(params.name, params.value)
+    }
+
+    render(view: "logViewer", model: logViewer())
+  }
+
+
 }

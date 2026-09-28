@@ -21,6 +21,7 @@ class TIPPCoverageStatement {
   ]
 
   static mapping = {
+    owner column:'owner_id', index:'tcs_owner_idx'
     startDate column:'tipp_start_date'
     startVolume column:'tipp_start_volume'
     startIssue column:'tipp_start_issue'
