@@ -531,6 +531,7 @@ class FTUpdateService {
       jobControl = new ScheduledJobControl()
       jobControl.jobType = jobType
     }
+
     jobControl.lastStart = LocalDateTime.now()
     jobControl.save(flush: true, failOnError: true)
 
@@ -557,6 +558,7 @@ class FTUpdateService {
     }
 
     jobControl.lastEnd = LocalDateTime.now()
+
     if (completed) {
       jobControl.lastStartComplete = jobControl.lastStart
       jobControl.lastEndComplete = jobControl.lastEnd
