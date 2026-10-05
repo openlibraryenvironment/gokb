@@ -361,14 +361,17 @@ class ConcurrencyManagerService {
  * @param offset
  * @return List of Jobs
  */
-  private Map getFilteredJobs(String propertyName, id, max, offset, showFinished) {
+  public Map getFilteredJobs(String propertyName, id, max, offset, showFinished) {
     def allJobs = getJobs()
     def selected = []
     def result = [:]
     def total = null
 
-    if (id == null || propertyName == null) {
-      return null
+    if (id && !propertyName) {
+      result.result = 'ERROR'
+      result.message = 'Missing property filter name for given ID!'
+
+      return result
     }
 
     // Filter the jobs.
@@ -376,12 +379,17 @@ class ConcurrencyManagerService {
       allJobs.each { k, v ->
         boolean select = false
 
-        if (v && v.hasProperty(propertyName) && (showFinished || !v.isDone())) {
-          if (['ownerId', 'groupId', 'type'].contains(propertyName) && v[propertyName] == id) {
+        if (v && (showFinished || !v.isDone())) {
+          if (!propertyName || !id) {
             select = true
           }
-          else if (propertyName == 'linkedItem' && v.linkedItem?.id == id) {
-            select = true
+          else if (v.hasProperty(propertyName)) {
+            if (['ownerId', 'groupId', 'type'].contains(propertyName) && v[propertyName] == id) {
+              select = true
+            }
+            else if (propertyName == 'linkedItem' && v.linkedItem?.id == id) {
+              select = true
+            }
           }
         }
         else if (!v) {
@@ -389,7 +397,8 @@ class ConcurrencyManagerService {
         }
 
         if (select) {
-          CuratoryGroup cg = CuratoryGroup.get(v.groupId)
+          CuratoryGroup cg = v.groupId ? CuratoryGroup.get(v.groupId) : null
+
           selected << [
               group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
               uuid       : v.uuid,
