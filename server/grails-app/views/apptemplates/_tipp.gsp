@@ -349,19 +349,6 @@
                     </dl>
                 </g:if>
             </dd>
-            <dt>
-                <g:annotatedLabel owner="${d}" property="coverageNote">Coverage Note</g:annotatedLabel>
-            </dt>
-            <dd>
-                <g:xEditable class="ipe" owner="${d}" field="coverageNote"/>
-            </dd>
-            <dt>
-                <g:annotatedLabel owner="${d}" property="coverageDepth">Coverage Depth</g:annotatedLabel>
-            </dt>
-            <dd>
-                <g:xEditableRefData owner="${d}" field="coverageDepth"
-                                    config='TitleInstancePackagePlatform.CoverageDepth'/>
-            </dd>
         </dl>
     </div>
 
@@ -371,7 +358,9 @@
       <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: editable]}" />
     </div>
 
-    <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
+    <div class="tab-pane" id="subjects">
+        <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
+    </div>
 
     <g:if test="${d.isEditable()}">
         <div class="tab-pane" id="addprops">
@@ -383,9 +372,6 @@
             <g:render template="/apptemplates/revreqtab" model="${[d: d]}"/>
         </div>
     </g:if>
-    <div class="tab-pane" id="review">
-      <g:render template="/apptemplates/revreqtab" model="${[d:d]}" />
-    </div>
 
     <div class="tab-pane" id="subjectArea">
       <dl class="dl-horizontal">

@@ -57,12 +57,14 @@ class Package extends KBComponent {
   ]
 
   static hasMany = [
-    children: Package
+    children: Package,
+    linkedCurators: PackageCuratoryGroup
   ]
 
   static mappedBy = [
     children: 'parent',
-    successor: 'previous'
+    successor: 'previous',
+    linkedCurators: 'pkg'
   ]
 
   static mapping = {
@@ -88,7 +90,6 @@ class Package extends KBComponent {
   }
 
   static constraints = {
-    lastProject(nullable: true, blank: false)
     scope(nullable: true, blank: false)
     listStatus(nullable: true, blank: false)
     breakable(nullable: true, blank: false)
@@ -97,7 +98,6 @@ class Package extends KBComponent {
     paymentType(nullable: true, blank: false)
     global(nullable: true, blank: false)
     globalNote(nullable: true, blank: true)
-    lastProject(nullable: true, blank: false)
     descriptionURL(nullable: true, blank: true)
     startYear(validator: { val, obj ->
       if (val) {
@@ -172,13 +172,13 @@ class Package extends KBComponent {
     'defaultLinks' : [
       'provider',
       'nominalPlatform',
-      'curatoryGroups',
+      'linkedCurators',
       'contentProvider'
     ],
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'curatoryGroups',
+      'linkedCurators',
       'subjects',
       'comments'
     ]
@@ -217,25 +217,27 @@ class Package extends KBComponent {
         def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
         all_titles = TitleInstance.executeQuery('''select title
-          from TitleInstance as title
+            from TitleInstance as title
             where exists (
               select 1 from TitleInstancePackagePlatform as tipp
               where tipp.pkg = :pkg
               and tipp.title = title
               and tipp.status = :stipp
             )
-            and title.status = :stitle'''
-          , [pkg: this, stipp: refdata_current, stitle: refdata_current], [max: max, offset: offset])
+            and title.status = :stitle''',
+            [pkg: this, stipp: refdata_current, stitle: refdata_current],
+            [max: max, offset: offset])
       }
       else {
         all_titles = TitleInstance.executeQuery('''select title
-          from TitleInstance as title
+            from TitleInstance as title
             where exists (
               select 1 from TitleInstancePackagePlatform as tipp
               where tipp.pkg = :pkg
               and tipp.title = title
-            )'''
-          , [pkg: this], [max: max, offset: offset])
+            )''',
+            [pkg: this],
+            [max: max, offset: offset])
       }
     }
 
@@ -247,15 +249,15 @@ class Package extends KBComponent {
     RefdataValue refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
     int result = TitleInstance.executeQuery('''select count(title.id)
-                                                    from TitleInstance as title
-                                                      where exists (
-                                                        select 1 from TitleInstancePackagePlatform as tipp
-                                                        where tipp.pkg = :pkg
-                                                        and tipp.title = title
-                                                        and tipp.status = :sc
-                                                      )
-                                                      and title.status = :sc''',
-                                                [pkg: this, sc: refdata_current])[0]
+        from TitleInstance as title
+        where exists (
+          select 1 from TitleInstancePackagePlatform as tipp
+          where tipp.pkg = :pkg
+          and tipp.title = title
+          and tipp.status = :sc
+        )
+        and title.status = :sc''',
+        [pkg: this, sc: refdata_current])[0]
 
     result
   }
@@ -283,14 +285,14 @@ class Package extends KBComponent {
 
   public List getReviews(boolean onlyOpen = true, boolean onlyCurrent = false, int max = 0, int offset = 0) {
     def qry = '''select rr from ReviewRequest as rr,
-            TitleInstance as title,
-            TitleInstancePackagePlatform as tipp
-          where tipp.pkg = :pkg
-            and tipp.title = title
-            and (
-              rr.componentToReview = title
-              or rr.componentToReview = tipp
-            )'''
+        TitleInstance as title,
+        TitleInstancePackagePlatform as tipp
+        where tipp.pkg = :pkg
+        and tipp.title = title
+        and (
+          rr.componentToReview = title
+          or rr.componentToReview = tipp
+        )'''
 
     Map qry_params = [pkg: this]
 
@@ -483,6 +485,10 @@ class Package extends KBComponent {
     }
 
     return this
+  }
+
+  public List getSuccessors() {
+    return Package.findAllByPrevious(this)
   }
 
   static Map oaiConfig = [

@@ -196,11 +196,6 @@ class RefdataCategory {
     }
   }
 
-
-//  def availableActions() {
-//    [ [ code:'object::delete' , label: 'Delete' ] ]
-//  }
-
   static String getOID(category_name, value) {
     String result = null
     def cat = RefdataCategory.findByDesc(category_name)

@@ -135,9 +135,13 @@
         </dd>
       </dl>
     </div>
+    <div class="tab-pane" id="altnames">
+      <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+    </div>
 
-    <g:render template="/tabTemplates/showVariantnames"
-      model="${[d:displayobj, showActions:true]}" />
+    <div class="tab-pane" id="subjects">
+      <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
+    </div>
 
     <div class="tab-pane" id="ds">
       <g:render template="/apptemplates/dstab" model="${[d:d]}" />

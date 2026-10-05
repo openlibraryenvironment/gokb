@@ -35,14 +35,6 @@
   </dd>
 
   <dt>
-    <g:annotatedLabel owner="${d}" property="reasonRetired">Status Reason</g:annotatedLabel>
-  </dt>
-  <dd>
-    <g:xEditableRefData owner="${d}" field="reasonRetired"
-                        config='TitleInstance.ReasonRetired'/>
-  </dd>
-
-  <dt>
     <g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel>
   </dt>
   <dd>
@@ -102,7 +94,7 @@
     </li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span
         class="badge badge-warning">
-      ${d.publisherLinks?.size() ?: '0'}
+      ${params.publisher_status ? d.getPublisherLinksForStatus(params.publisher_status)?.size() : d.publisherLinks.size()}
     </span></a></li>
     <li><a href="#availability" data-toggle="tab">Package Availability <span
         class="badge badge-warning">
@@ -137,14 +129,6 @@
           <dd>
             <g:xEditableRefData owner="${d}" field="OAStatus"
                                 config='TitleInstance.OAStatus'/>
-          </dd>
-
-          <dt>
-            <g:annotatedLabel owner="${d}" property="continuingSeries">Continuing Series</g:annotatedLabel>
-          </dt>
-          <dd>
-            <g:xEditableRefData owner="${d}" field="continuingSeries"
-                                config='TitleInstance.ContinuingSeries'/>
           </dd>
         </dl>
       </g:if>

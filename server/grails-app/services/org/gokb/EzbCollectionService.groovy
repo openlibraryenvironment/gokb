@@ -37,7 +37,7 @@ class EzbCollectionService {
 
   public Map startUpdate(User user = null) {
     Map result = [result: 'OK']
-    List running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest'))
+    List running_jobs = concurrencyManagerService.getActiveJobsForType('EZBCollectionIngest')
 
     if (running_jobs.size() == 0) {
         log.debug("Creating new job..")

@@ -336,7 +336,7 @@ class ComponentLookupService {
               if (mapped_field == 'ids') {
                 validStr.add(Identifier.normalizeIdentifier(a))
               }
-              else if (!addedLong) {
+              else if (!addedLong && p.type != RefdataValue) {
                 validStr.add(a.toLowerCase())
               }
             }
@@ -381,19 +381,23 @@ class ComponentLookupService {
 
             if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
               paramStr += "("
+
               if (validLong.size() > 0) {
-                paramStr += "p.${p.name}.id IN :${p.name}"
+                paramStr += "p.${p.name}.id IN (:${p.name})"
                 qryParams[p.name] = validLong
               }
+
               if (validStr.size() > 0) {
                 if (validLong.size() > 0) {
                   paramStr += " OR "
                 }
 
-                paramStr += "p.${p.name}.${selectPreferredLabelProp(p.type)} IN :${p.name}_str"
+                log.debug("Looking for String values: ${validStr}")
+
+                paramStr += "p.${p.name}.${selectPreferredLabelProp(p.type)} IN (:${p.name}_str)"
 
                 if (p.type.hasProperty('uuid')) {
-                  paramStr += " OR p.${p.name}.uuid IN :${p.name}_str"
+                  paramStr += " OR p.${p.name}.uuid IN (:${p.name}_str)"
                 }
                 qryParams["${p.name}_str"] = validStr
               }
@@ -526,6 +530,9 @@ class ComponentLookupService {
                 }
               }
             }
+          }
+          else {
+            log.warn("unhandled link type for property ${p.name}!")
           }
         }
         else if (p.type == Long) {

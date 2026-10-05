@@ -24,6 +24,7 @@ class SourcesController {
   def restMappingService
   def componentLookupService
   def messageService
+  def componentUpdateService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {

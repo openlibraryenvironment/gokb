@@ -201,31 +201,39 @@
         </g:if>
       </div>
 
-      <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:editable]}" />
+      <div class="tab-pane" id="identifiers">
+        <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: editable]}" />
+      </div>
 
-      <g:render template="/tabTemplates/showComments" model="${[d:displayobj, showActions:editable]}" />
+      <div class="tab-pane" id="altnames">
+        <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:editable]}" />
+      </div>
 
-      <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: editable]}" />
+      <div class="tab-pane" id="subjects">
+        <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:editable]}" />
+      </div>
 
-      <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:editable]}" />
+      <div class="tab-pane" id="comments">
+        <g:render template="/tabTemplates/showComments" model="${[d:displayobj, showActions:editable]}" />
+      </div>
 
       <div class="tab-pane" id="relationships">
         <g:if test="${d.id != null}">
           <dl class="dl-horizontal">
             <dt>
-              <g:annotatedLabel owner="${d}" property="successor">Successor</g:annotatedLabel>
+              <g:annotatedLabel owner="${d}" property="previous">Predecessor</g:annotatedLabel>
             </dt>
             <dd>
-              <g:manyToOneReferenceTypedown owner="${d}" field="successor" baseClass="org.gokb.cred.Package">${d.successor?.name}</g:manyToOneReferenceTypedown>
+              <g:manyToOneReferenceTypedown owner="${d}" field="previous" baseClass="org.gokb.cred.Package">${d.previous?.name}</g:manyToOneReferenceTypedown>
             </dd>
             <dt>
-              <g:annotatedLabel owner="${d}" property="successor">Predecessor(s)</g:annotatedLabel>
+              <g:annotatedLabel owner="${d}" property="successor">Successor(s)</g:annotatedLabel>
             </dt>
             <dd>
-              <ul>
-                <g:each in="${d.previous}" var="c">
-                  <li>
-                    <g:link controller="resource" action="show" id="${c.getClassName()+':'+c.id}">
+                <ul>
+                  <g:each in="${d.successors}" var="c">
+                    <li>
+                    <g:link controller="resource" action="show" id="${c.getClassName() + ':' + c.id}">
                       ${c.name}
                     </g:link>
                   </li>

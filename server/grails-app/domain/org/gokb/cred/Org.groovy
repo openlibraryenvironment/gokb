@@ -45,7 +45,7 @@ class Org extends KBComponent {
 
   Set roles = []
 
-  public Map availableActions() {
+  public List availableActions() {
     [
       [code: 'org::transferPackages', label: 'Transfer Packages to...', perm: 'admin'],
       [code: 'org::deprecateReplace', label: 'Merge into...', perm: 'delete'],

@@ -56,9 +56,6 @@ class BootStrap {
             cleanUpMissingDomains()
         }
 
-        // Add our custom metaclass methods for all KBComponents.
-        alterDefaultMetaclass()
-
         // Add Custom APIs.
         addCustomApis()
 
@@ -596,14 +593,6 @@ class BootStrap {
                     }
                 }
             }
-        }
-    }
-
-    def alterDefaultMetaclass = {
-        // Inject helpers to Domain classes.
-        grailsApplication.domainClasses.each { GrailsClass domainClass ->
-            // Extend the domain class.
-            DomainClassExtender.extend(domainClass)
         }
     }
 

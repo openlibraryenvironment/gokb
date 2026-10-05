@@ -98,11 +98,12 @@ class TitleInstance extends KBComponent {
     ]
   ]
 
-  public Map availableActions() {
-    [[code: 'method::deleteSoft', label: 'Delete', perm: 'delete'],
-     [code: 'setStatus::Current', label: 'Set Current', perm: 'admin'],
-     [code: 'setStatus::Expected', label: 'Mark Expected'],
-     [code: 'title::merge', label: 'Title Merge']
+  public List availableActions() {
+    [
+      [code: 'method::deleteSoft', label: 'Delete', perm: 'delete'],
+      [code: 'setStatus::Current', label: 'Set Current', perm: 'admin'],
+      [code: 'setStatus::Expected', label: 'Mark Expected'],
+      [code: 'title::merge', label: 'Title Merge']
     ]
   }
 
@@ -474,8 +475,17 @@ class TitleInstance extends KBComponent {
                                                                           [ti: this])
 
     all_related_history_events.each { he ->
-      List from_titles = he.participants.findAll { it.participantRole == 'in' }
-      List to_titles = he.participants.findAll { it.participantRole == 'out' }
+      List from_titles = []
+      List to_titles = []
+
+      he.participants.each { p ->
+        if (p.participantRole == 'in') {
+          from_titles << p
+        }
+        else {
+          to_titles << p
+        }
+      }
 
       String hint = "unknown"
 

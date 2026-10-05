@@ -23,7 +23,6 @@ class PackageCachingService {
   def grailsApplication
   def packageCSVExportService
   JobManagerService jobManagerService
-  def jobManagerService
   def sessionFactory
 
   static boolean activeCaching = false

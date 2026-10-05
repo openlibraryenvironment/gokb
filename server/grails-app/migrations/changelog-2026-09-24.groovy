@@ -1,41 +1,41 @@
 databaseChangeLog = {
     // Changes after last merge from g5_master
 
-    changeSet(author: "horn (generated)", id: "1790176327340-12") {
-        createTable(tableName: "scheduled_job_control") {
-            column(autoIncrement: "true", name: "id", type: "BIGINT") {
-                constraints(nullable: "false", primaryKey: "true", primaryKeyName: "scheduled_job_controlPK")
-            }
+    // changeSet(author: "horn (generated)", id: "1790176327340-12") {
+    //     createTable(tableName: "scheduled_job_control") {
+    //         column(autoIncrement: "true", name: "id", type: "BIGINT") {
+    //             constraints(nullable: "false", primaryKey: "true", primaryKeyName: "scheduled_job_controlPK")
+    //         }
 
-            column(name: "version", type: "BIGINT")
+    //         column(name: "version", type: "BIGINT")
 
-            column(name: "last_end", type: "TIMESTAMP WITHOUT TIME ZONE")
+    //         column(name: "last_end", type: "TIMESTAMP WITHOUT TIME ZONE")
 
-            column(name: "last_start_complete", type: "TIMESTAMP WITHOUT TIME ZONE")
+    //         column(name: "last_start_complete", type: "TIMESTAMP WITHOUT TIME ZONE")
 
-            column(name: "last_end_complete", type: "TIMESTAMP WITHOUT TIME ZONE")
+    //         column(name: "last_end_complete", type: "TIMESTAMP WITHOUT TIME ZONE")
 
-            column(name: "last_start", type: "TIMESTAMP WITHOUT TIME ZONE")
+    //         column(name: "last_start", type: "TIMESTAMP WITHOUT TIME ZONE")
 
-            column(name: "job_type_id", type: "BIGINT")
-        }
-    }
+    //         column(name: "job_type_id", type: "BIGINT")
+    //     }
+    // }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-81") {
-        addForeignKeyConstraint(baseColumnNames: "job_type_id", baseTableName: "scheduled_job_control", constraintName: "FKek6dhfe48uxwpm3bnspq57g1x", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value", validate: "true")
-    }
+    // changeSet(author: "horn (generated)", id: "1790176327340-81") {
+    //     addForeignKeyConstraint(baseColumnNames: "job_type_id", baseTableName: "scheduled_job_control", constraintName: "FKek6dhfe48uxwpm3bnspq57g1x", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value", validate: "true")
+    // }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-21") {
-        addColumn(tableName: "source") {
-            column(name: "last_import_file_date", type: "date")
-        }
-    }
+    // changeSet(author: "horn (generated)", id: "1790176327340-21") {
+    //     addColumn(tableName: "source") {
+    //         column(name: "last_import_file_date", type: "date")
+    //     }
+    // }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-66") {
-        createIndex(indexName: "tcs_owner_idx", tableName: "tippcoverage_statement") {
-            column(name: "owner_id")
-        }
-    }
+    // changeSet(author: "horn (generated)", id: "1790176327340-66") {
+    //     createIndex(indexName: "tcs_owner_idx", tableName: "tippcoverage_statement") {
+    //         column(name: "owner_id")
+    //     }
+    // }
 
     // New join tables for manyByCombo entries
 
@@ -104,7 +104,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated from combo
@@ -208,7 +208,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated
@@ -311,7 +311,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated
@@ -414,7 +414,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated
@@ -517,7 +517,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                                             combo_from_fk,
                                             date_created,
                                             last_updated
@@ -658,7 +658,7 @@ databaseChangeLog = {
             change {
                 def new_category_id = sql.rows("select rdc_id from refdata_category where rdc_label = 'TitlePublisher.Status';")[0].rdc_id
 
-                def old_status_vals = sql.execute("""select * from refdata_value
+                def old_status_vals = sql.rows("""select * from refdata_value
                         where rdv_owner = (
                             select rdc_id from refdata_category
                             where rdc_label = 'Combo.Status'
@@ -714,8 +714,8 @@ databaseChangeLog = {
                                 ${it.last_updated},
                                 ${it.combo_from_fk},
                                 ${it.combo_to_fk},
-                                ${it.getDate('combo_start_date')},
-                                ${it.getDate('combo_end_date')},
+                                ${it.combo_start_date?.toLocalDateTime()?.toLocalDate() ?: null},
+                                ${it.combo_end_date?.toLocalDateTime()?.toLocalDate() ?: null},
                                 (
                                     select rdv_id from refdata_value
                                     where rdv_owner = (
@@ -811,8 +811,8 @@ databaseChangeLog = {
                     countUpdate++
                     sql.execute("""update identifier
                             set version = 0,
-                            id_date_created = ${it.date_created},
-                            ca_last_updated = ${it.last_updated},
+                            id_date_created = ${it.kbc_date_created},
+                            id_last_updated = ${it.kbc_last_updated},
                             id_normname = ${it.kbc_normname},
                             id_uuid = ${it.kbc_uuid}
                             where id = ${it.kbc_id};""")
@@ -820,22 +820,6 @@ databaseChangeLog = {
 
                 confirm("transfer fields to identifier: ${countUpdate}")
                 changeSet.setComments("transfer fields to identifier: ${countUpdate}")
-            }
-        }
-        rollback {}
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-198") {
-        grailsChange {
-            change {
-                sql.execute('''delete from kbcomponent
-                        where exists (
-                            select 1 from identifier
-                            where id = kbc_id
-                        );''')
-
-                confirm("delete identifier rows from kbcomponent")
-                changeSet.setComments("deleted identifier rows from kbcomponent")
             }
         }
         rollback {}
@@ -938,7 +922,32 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def new_category_id = sql.rows("select rdc_id from refdata_category where rdc_label = 'ComponentIdentifier.Status';")[0].rdc_id
+
+                def old_status_vals = sql.rows("""select * from refdata_value
+                        where rdv_owner = (
+                            select rdc_id from refdata_category
+                            where rdc_label = 'Combo.Status'
+                        );""")
+
+                old_status_vals.each {
+                    sql.execute("""insert into refdata_value(
+                                rdv_id,
+                                rdv_version,
+                                rdv_value,
+                                rdv_owner,
+                                rdv_sortkey
+                            )
+                            values (
+                                (select nextval ('hibernate_sequence')),
+                                0,
+                                ${it.rdv_value},
+                                ${new_category_id},
+                                ${it.rdv_sortkey}
+                            );""")
+                }
+
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -957,12 +966,13 @@ databaseChangeLog = {
                 combos.each {
                     countUpdate ++
                     sql.execute("""insert into component_identifier(
-                                ca_id,
+                                ci_id,
                                 version,
-                                ca_date_created,
-                                ca_last_updated,
-                                ca_comp_fk,
-                                ca_file_fk
+                                ci_date_created,
+                                ci_last_updated,
+                                ci_comp_fk,
+                                ci_ident_fk,
+                                ci_status_rv_fk
                             )
                             values (
                                 (select nextval ('hibernate_sequence')),
@@ -970,7 +980,18 @@ databaseChangeLog = {
                                 ${it.date_created},
                                 ${it.last_updated},
                                 ${it.combo_from_fk},
-                                ${it.combo_to_fk}
+                                ${it.combo_to_fk},
+                                (
+                                    select rdv_id from refdata_value
+                                    where rdv_owner = (
+                                        SELECT rdc_id FROM refdata_category
+                                        WHERE rdc_description = 'ComponentIdentifier.Status'
+                                    )
+                                    and rdv_value = (
+                                        select rdv_value from refdata_value
+                                        where rdv_id = ${it.combo_status_rv_fk}
+                                    )
+                                )
                             );""")
                 }
 
@@ -983,11 +1004,10 @@ databaseChangeLog = {
 
     // Office
 
-    changeSet(author: "horn (generated)", id: "1790176327340-22") {
+
+    changeSet(author: "horn (generated)", id: "1790176327340-224") {
         addColumn(tableName: "office") {
-            column(name: "office_org_fk", type: "int8") {
-                constraints(nullable: "false")
-            }
+            column(name: "office_org_fk", type: "int8")
         }
     }
 
@@ -995,12 +1015,31 @@ databaseChangeLog = {
         addForeignKeyConstraint(baseColumnNames: "office_org_fk", baseTableName: "office", constraintName: "FK4vjj3l2ko7j4eja0b570e7g91", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "kbc_id", referencedTableName: "org", validate: "true")
     }
 
+    changeSet(author: "horn (generated)", id: "1790176327340-22") {
+        grailsChange {
+            change {
+                def office_to_delete_ids = sql.rows('''select kbc_id from office
+                        where not exists (
+                            select 1 from combo
+                            where combo_to_fk = kbc_id
+                            OR combo_from_fk = kbc_id
+                        );''')
+
+                office_to_delete_ids.each {
+                    sql.execute("""delete from office where kbc_id = ${it.kbc_id};""")
+                    sql.execute("""delete from kbcomponent where kbc_id = ${it.kbc_id};""")
+                }
+            }
+            rollback {}
+        }
+    }
+
     changeSet(author: "horn (generated)", id: "1790176327340-207") {
         grailsChange {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1030,6 +1069,10 @@ databaseChangeLog = {
         }
     }
 
+    changeSet(author: "horn (generated)", id: "1790176327340-225") {
+        addNotNullConstraint(tableName: "office", columnName: "office_org_fk")
+    }
+
     // Org
 
     changeSet(author: "horn (generated)", id: "1790176327340-23") {
@@ -1043,12 +1086,12 @@ databaseChangeLog = {
         addForeignKeyConstraint(baseColumnNames: "org_parent_fk", baseTableName: "org", constraintName: "FK3ysi8pwtmyee8cwt7ytjubsr2", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "kbc_id", referencedTableName: "org", validate: "true")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-208") {
+    changeSet(author: "horn (generated)", id: "1790176327340-222") {
         grailsChange {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1093,7 +1136,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1140,7 +1183,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1185,7 +1228,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1230,7 +1273,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1275,7 +1318,7 @@ databaseChangeLog = {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1315,12 +1358,12 @@ databaseChangeLog = {
         addForeignKeyConstraint(baseColumnNames: "pkg_provider_fk", baseTableName: "package", constraintName: "FKmxamrrttlt0bq2eu1ioesegg2", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "kbc_id", referencedTableName: "org", validate: "true")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-212") {
+    changeSet(author: "horn (generated)", id: "1790176327340-213") {
         grailsChange {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1362,12 +1405,12 @@ databaseChangeLog = {
         addForeignKeyConstraint(baseColumnNames: "plat_provider_fk", baseTableName: "platform", constraintName: "FKrgirc6hvu9v50t0wqoylcrltf", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "kbc_id", referencedTableName: "org", validate: "true")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-212") {
+    changeSet(author: "horn (generated)", id: "1790176327340-214") {
         grailsChange {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1401,9 +1444,7 @@ databaseChangeLog = {
 
     changeSet(author: "horn (generated)", id: "1790176327340-33") {
         addColumn(tableName: "title_instance_platform") {
-            column(name: "tipl_host_platform_fk", type: "int8") {
-                constraints(nullable: "false")
-            }
+            column(name: "tipl_host_platform_fk", type: "int8")
         }
     }
 
@@ -1411,12 +1452,12 @@ databaseChangeLog = {
         addForeignKeyConstraint(baseColumnNames: "tipl_host_platform_fk", baseTableName: "title_instance_platform", constraintName: "FKpuwoiit5uadm3gp9rc5jf4h8u", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "kbc_id", referencedTableName: "platform", validate: "true")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-212") {
+    changeSet(author: "horn (generated)", id: "1790176327340-215") {
         grailsChange {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1446,11 +1487,13 @@ databaseChangeLog = {
         }
     }
 
+    changeSet(author: "horn (generated)", id: "1790176327340-226") {
+        addNotNullConstraint(tableName: "title_instance_platform", columnName: "tipl_host_platform_fk")
+    }
+
     changeSet(author: "horn (generated)", id: "1790176327340-34") {
         addColumn(tableName: "title_instance_platform") {
-            column(name: "tipl_title_fk", type: "int8") {
-                constraints(nullable: "false")
-            }
+            column(name: "tipl_title_fk", type: "int8")
         }
     }
 
@@ -1458,12 +1501,12 @@ databaseChangeLog = {
         addForeignKeyConstraint(baseColumnNames: "tipl_title_fk", baseTableName: "title_instance_platform", constraintName: "FKrn0umksw35ywgqgblq2tt7brx", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "kbc_id", referencedTableName: "title_instance", validate: "true")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-212") {
+    changeSet(author: "horn (generated)", id: "1790176327340-216") {
         grailsChange {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1493,6 +1536,10 @@ databaseChangeLog = {
         }
     }
 
+    changeSet(author: "horn (generated)", id: "1790176327340-227") {
+        addNotNullConstraint(tableName: "title_instance_platform", columnName: "tipl_title_fk")
+    }
+
     // TIPP
 
     changeSet(author: "horn (generated)", id: "1790176327340-35") {
@@ -1505,12 +1552,12 @@ databaseChangeLog = {
         addForeignKeyConstraint(baseColumnNames: "tipp_host_platform_fk", baseTableName: "title_instance_package_platform", constraintName: "FKoiotwfahqljocmuksac3p5kov", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "kbc_id", referencedTableName: "platform", validate: "true")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-212") {
+    changeSet(author: "horn (generated)", id: "1790176327340-217") {
         grailsChange {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1547,16 +1594,20 @@ databaseChangeLog = {
         }
     }
 
+    changeSet(author: "horn (generated)", id: "1790176327340-150") {
+        dropForeignKeyConstraint(baseTableName: "title_instance_package_platform", constraintName: "fksxt9j6270a5mt3vehbghjtxtb")
+    }
+
     changeSet(author: "horn (generated)", id: "1790176327340-76") {
         addForeignKeyConstraint(baseColumnNames: "tipp_pkg_fk", baseTableName: "title_instance_package_platform", constraintName: "FK9rad3hn4ct51x6d2nruxxcakq", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "kbc_id", referencedTableName: "package", validate: "true")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-212") {
+    changeSet(author: "horn (generated)", id: "1790176327340-218") {
         grailsChange {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1596,12 +1647,12 @@ databaseChangeLog = {
         addForeignKeyConstraint(baseColumnNames: "tipp_title_fk", baseTableName: "title_instance_package_platform", constraintName: "FKof4dd82vcvdm5oje81vyin3bk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "kbc_id", referencedTableName: "title_instance", validate: "true")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-212") {
+    changeSet(author: "horn (generated)", id: "1790176327340-219") {
         grailsChange {
             change {
                 int countUpdate = 0
 
-                def ca_combos = sql.rows('''select combo_to_fk,
+                def combos = sql.rows('''select combo_to_fk,
                         combo_from_fk,
                         date_created,
                         last_updated,
@@ -1630,6 +1681,113 @@ databaseChangeLog = {
             rollback {}
         }
     }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-220") {
+        grailsChange {
+            change {
+                int countUpdate = 0
+
+                def missing_coverage_tipps = sql.rows('''select kbc_id,
+                        tipp_coverage_depth,
+                        tipp_coverage_note,
+                        tipp_embargo,
+                        tipp_end_date,
+                        tipp_end_issue,
+                        tipp_end_volume,
+                        tipp_start_date,
+                        tipp_start_issue,
+                        tipp_start_volume
+                        from title_instance_package_platform as tipp
+                        where not exists (
+                            select 1 from tippcoverage_statement
+                            where owner_id = tipp.kbc_id
+                        );''')
+
+                missing_coverage_tipps.each { mct ->
+                    countUpdate++
+                    sql.execute("""insert into tippcoverage_statement(
+                                id,
+                                version,
+                                owner_id,
+                                tipp_coverage_depth,
+                                tipp_coverage_note,
+                                tipp_embargo,
+                                tipp_end_date,
+                                tipp_end_issue,
+                                tipp_end_volume,
+                                tipp_start_date,
+                                tipp_start_issue,
+                                tipp_start_volume
+                            )
+                            values (
+                                (select nextval ('hibernate_sequence')),
+                                0,
+                                ${mct.kbc_id},
+                                (
+                                    select rdv_id from refdata_value
+                                    where rdv_owner = (
+                                        select rdc_id from refdata_category
+                                        where rdc_label = 'TIPPCoverageStatement.CoverageDepth'
+                                    )
+                                    and rdv_value = (
+                                        select rdv_value from refdata_value
+                                        where rdv_id = ${mct.tipp_coverage_depth}
+                                    )
+                                ),
+                                ${mct.tipp_coverage_note},
+                                ${mct.tipp_embargo},
+                                ${mct.tipp_end_date},
+                                ${mct.tipp_end_issue},
+                                ${mct.tipp_end_volume},
+                                ${mct.tipp_start_date},
+                                ${mct.tipp_start_issue},
+                                ${mct.tipp_start_volume}
+                            );""")
+                }
+
+                confirm("create missing coverage statements: ${countUpdate}")
+                changeSet.setComments("create missing coverage statements: ${countUpdate}")
+            }
+            rollback {}
+        }
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-187") {
+        dropColumn(columnName: "tipp_coverage_depth", tableName: "title_instance_package_platform")
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-188") {
+        dropColumn(columnName: "tipp_coverage_note", tableName: "title_instance_package_platform")
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-189") {
+        dropColumn(columnName: "tipp_embargo", tableName: "title_instance_package_platform")
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-190") {
+        dropColumn(columnName: "tipp_end_date", tableName: "title_instance_package_platform")
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-191") {
+        dropColumn(columnName: "tipp_end_issue", tableName: "title_instance_package_platform")
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-192") {
+        dropColumn(columnName: "tipp_end_volume", tableName: "title_instance_package_platform")
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-193") {
+        dropColumn(columnName: "tipp_start_date", tableName: "title_instance_package_platform")
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-194") {
+        dropColumn(columnName: "tipp_start_issue", tableName: "title_instance_package_platform")
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-195") {
+        dropColumn(columnName: "tipp_start_volume", tableName: "title_instance_package_platform")
+    }
+
 
     // Cleanup
 
@@ -1798,10 +1956,6 @@ databaseChangeLog = {
         dropForeignKeyConstraint(baseTableName: "folder_entry", constraintName: "fkse1dy2yymgie3ucb2i2guo4pa")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-150") {
-        dropForeignKeyConstraint(baseTableName: "title_instance_package_platform", constraintName: "fksxt9j6270a5mt3vehbghjtxtb")
-    }
-
     changeSet(author: "horn (generated)", id: "1790176327340-151") {
         dropForeignKeyConstraint(baseTableName: "refine_project", constraintName: "fkt70yc8y9yotrq10rakh8yi0ot")
     }
@@ -1820,6 +1974,22 @@ databaseChangeLog = {
 
     changeSet(author: "horn (generated)", id: "1790176327340-155") {
         dropTable(tableName: "combo")
+    }
+
+    changeSet(author: "horn (generated)", id: "1790176327340-221") {
+        grailsChange {
+            change {
+                sql.execute('''delete from kbcomponent
+                        where exists (
+                            select 1 from identifier
+                            where id = kbc_id
+                        );''')
+
+                confirm("delete identifier rows from kbcomponent")
+                changeSet.setComments("deleted identifier rows from kbcomponent")
+            }
+        }
+        rollback {}
     }
 
     changeSet(author: "horn (generated)", id: "1790176327340-156") {
@@ -1862,7 +2032,7 @@ databaseChangeLog = {
         dropTable(tableName: "macro_tags_value")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-209") {
+    changeSet(author: "horn (generated)", id: "1790176327340-223") {
         dropTable(tableName: "org_role")
     }
 
@@ -1928,42 +2098,6 @@ databaseChangeLog = {
 
     changeSet(author: "horn (generated)", id: "1790176327340-186") {
         dropColumn(columnName: "refine_project_id", tableName: "review_request")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-187") {
-        dropColumn(columnName: "tipp_coverage_depth", tableName: "title_instance_package_platform")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-188") {
-        dropColumn(columnName: "tipp_coverage_note", tableName: "title_instance_package_platform")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-189") {
-        dropColumn(columnName: "tipp_embargo", tableName: "title_instance_package_platform")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-190") {
-        dropColumn(columnName: "tipp_end_date", tableName: "title_instance_package_platform")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-191") {
-        dropColumn(columnName: "tipp_end_issue", tableName: "title_instance_package_platform")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-192") {
-        dropColumn(columnName: "tipp_end_volume", tableName: "title_instance_package_platform")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-193") {
-        dropColumn(columnName: "tipp_start_date", tableName: "title_instance_package_platform")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-194") {
-        dropColumn(columnName: "tipp_start_issue", tableName: "title_instance_package_platform")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-195") {
-        dropColumn(columnName: "tipp_start_volume", tableName: "title_instance_package_platform")
     }
 
     changeSet(author: "horn (generated)", id: "1790176327340-196") {

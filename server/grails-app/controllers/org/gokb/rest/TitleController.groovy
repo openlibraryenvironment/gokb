@@ -26,6 +26,7 @@ class TitleController {
   def componentLookupService
   def dateFormatService
   def reviewRequestService
+  def componentUpdateService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def getTypes() {

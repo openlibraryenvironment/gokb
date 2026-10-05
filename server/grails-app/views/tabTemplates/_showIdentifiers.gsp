@@ -3,7 +3,7 @@
     <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
   </dt>
   <div style="margin:5px 0px;">
-    <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="ids" params="${params.findAll{k, v -> k != 'ids_status'}}">
+    <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="identifiers" params="${params.findAll{k, v -> k != 'ids_status'}}">
       <span>Hide Deleted:</span> <g:select name="ids_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.ids_status}" />
     </g:form>
   </div>
@@ -12,9 +12,8 @@
     <table class="table table-striped table-bordered">
       <thead>
         <tr>
-          <g:each in="${cols}" var="ch">
-            <th>${ch.colhead}</th>
-          </g:each>
+          <th>Namespace</th>
+          <th>Value</th>
           <g:if test="${showActions}">
             <th>Actions</th>
           </g:if>
@@ -23,21 +22,12 @@
       <tbody>
         <g:each in="${d.getLinkedIds()}" var="row">
           <tr>
-            <g:each in="${cols}" var="c">
-              <td>
-                <g:if test="${c.action=='link'}">
-                  <g:link controller="resource" action="show" id="org.gokb.cred.Identifier:${row.identifier.id}">${row.identifier.value}</g:link>
-                </g:if>
-                <g:elseif test="${c.action=='editRefData'}">
-                  <g:xEditableRefData owner="${row}" field="${c.expr}" config='ComponentIdentifier.Status' />
-                </g:elseif>
-                <g:else>
-                  <span class="${row.status?.value == 'Deleted' ? 'text-deleted' : ''}" title="${row.status?.value == 'Deleted' ? 'This identifier link has been marked as Deleted.' : ''}">
-                    ${row.identifier.value}
-                  </span>
-                </g:else>
-              </td>
-            </g:each>
+            <td>
+              ${row.identifier.namespace.value}
+            </td>
+            <td>
+              ${row.identifier.value}
+            </td>
             <td>
               <g:if test="${d.isEditable() && showActions}">
                 <span>

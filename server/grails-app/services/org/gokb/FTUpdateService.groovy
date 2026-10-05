@@ -710,7 +710,6 @@ class FTUpdateService {
 
         log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
 
-        int total = 0
         Date from = new Date(latest_ft_record.lastTimestamp)
         int countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (o.lastUpdated > :ts OR (o.lastUpdated = :ts AND o.id > :lid) OR o.dateCreated > :ts) ",
               [

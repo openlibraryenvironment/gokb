@@ -25,8 +25,9 @@ class TitleInstancePlatform extends KBComponent {
     "gokb:TIPL:${title?.id}:${hostPlatform?.id}"
   }
 
-  def availableActions() {
-    [ [code:'method::retire', label:'Retire'],
+  public List availableActions() {
+    [
+      [code:'method::retire', label:'Retire'],
       [code:'method::deleteSoft', label:'Delete', perm:'delete'],
       [code:'method::setActive', label:'Set Current']
     ]

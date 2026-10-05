@@ -152,7 +152,7 @@ class ProfileController {
       if (params.boolean('combined') == true) {
         Map active_jobs = concurrencyManagerService.getUserJobs(user.id, max, offset, false)
 
-        int combined_total += finished_results._pagination.total + active_jobs._pagination.total
+        int combined_total = finished_results._pagination.total + active_jobs._pagination.total
 
         if (offset == 0) {
           result.data = active_jobs.data + finished_results.data

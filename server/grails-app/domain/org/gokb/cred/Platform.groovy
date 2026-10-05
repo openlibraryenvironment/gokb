@@ -19,11 +19,12 @@ class Platform extends KBComponent {
   Set roles = []
 
   static hasMany = [
-    roles: RefdataValue
+    roles: RefdataValue,
+    linkedCurators: PlatformCuratoryGroup
   ]
 
   static mappedBy = [
-    linkedCuratoryGroups: 'platform'
+    linkedCurators: 'platform'
   ]
 
   static mapping = {
@@ -82,12 +83,12 @@ class Platform extends KBComponent {
     ],
     'defaultLinks' : [
       'provider',
-      'curatoryGroups'
+      'linkedCurators'
     ],
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'curatoryGroups',
+      'linkedCurators',
       'comments'
     ]
   ]
@@ -199,11 +200,11 @@ class Platform extends KBComponent {
 
   public List getCuratoryGroups() {
     List result = CuratoryGroup.executeQuery('''from CuratoryGroup as c
-                                                where exists (
-                                                  select 1 from PlatformCuratoryGroup
-                                                  where platform = :comp
-                                                  and group = c
-                                                )''', [comp: this])
+        where exists (
+          select 1 from PlatformCuratoryGroup
+          where platform = :comp
+          and group = c
+        )''', [comp: this])
 
     result
   }

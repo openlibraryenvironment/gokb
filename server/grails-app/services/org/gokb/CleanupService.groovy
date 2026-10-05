@@ -374,7 +374,6 @@ class CleanupService {
     long start_time = System.currentTimeMillis()
 
     result.projected_deletes = ComponentIdentifier.executeQuery("select count(*) ${query}".toString())[0]
-    more = true
 
     result.deleted = ComponentIdentifier.executeUpdate("delete ${query}".toString())
 

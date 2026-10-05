@@ -40,6 +40,14 @@ class Source extends KBComponent {
     ruleset column:'source_ruleset', type:'text'
   }
 
+  static hasMany = [
+    linkedCurators: SourceCuratoryGroup
+  ]
+
+  static mappedBy = [
+    linkedCurators: 'source'
+  ]
+
   static constraints = {
     url(nullable:true, blank:true)
     defaultAccessURL(nullable:true, blank:true)
@@ -85,10 +93,10 @@ class Source extends KBComponent {
     ],
     'es'           : [],
     'defaultLinks' : [
-      'curatoryGroups'
+      'linkedCurators'
     ],
     'defaultEmbeds': [
-      'curatoryGroups',
+      'linkedCurators',
       'comments'
     ]
   ]

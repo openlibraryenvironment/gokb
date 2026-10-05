@@ -45,7 +45,7 @@ class JobResultService {
           base_qry += "and "
         }
 
-        base_qry += "where jr.groupId = :group"
+        base_qry += "jr.groupId = :group"
 
         qry_pars.group = groupFilterObj.id
         first = false
@@ -67,7 +67,7 @@ class JobResultService {
           base_qry += "and "
         }
 
-        base_qry += "where jr.linkedItemId = :linkedItemId"
+        base_qry += "jr.linkedItemId = :linkedItemId"
 
         qry_pars.linkedItemId = linkedItemObj.id
         first = false
@@ -98,6 +98,7 @@ class JobResultService {
         }
         else {
           base_qry += " where "
+          first = false
         }
 
         base_qry += "jr.startTime > :date and jr.startTime < :nd"
@@ -110,8 +111,15 @@ class JobResultService {
     if (params.type == 'import') {
       qry_pars.jt = [RefdataCategory.lookup('Job.Type','KBARTIngest'), RefdataCategory.lookup('Job.Type','KBARTSourceIngest')]
 
-      base_qry += " where type in (:jt)"
-      first = false
+      if (!first) {
+        base_qry += " and "
+      }
+      else {
+        base_qry += " where "
+        first = false
+      }
+
+      base_qry += "type in (:jt)"
     }
     else if (params.long('type')) {
       RefdataValue rdv_type = RefdataValue.get(params.long('type'))
@@ -120,8 +128,15 @@ class JobResultService {
         if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
           qry_pars.jt = rdv_type
 
-          base_qry += " where type = :jt"
-          first = false
+          if (!first) {
+            base_qry += " and "
+          }
+          else {
+            base_qry += " where "
+            first = false
+          }
+
+          base_qry += "type = :jt"
         }
         else {
           result.result = 'ERROR'
@@ -135,16 +150,16 @@ class JobResultService {
     }
 
     if (params.status) {
-      if (first) {
-        base_qry += " where statusText = :st"
+      if (!first) {
+        base_qry += " and "
       }
       else {
-        base_qry *= " and statusText = :st"
+        base_qry += " where "
+        first = false
       }
 
       qry_pars.st = params.status
-
-      first = false
+      base_qry += " and statusText = :st"
     }
 
     if (result.result != 'ERROR') {

@@ -501,10 +501,7 @@ class TitleAugmentService {
       }
 
       if (pub_obj) {
-        new TitlePublisher(title: ti, publisher: pub_obj).save(flush: true, failOnError: true)
-
-        ti.lastUpdateComment = "Added title publisher ${pub_obj}"
-        ti.save()
+        ti.addPublisher(pub_obj)
       }
     }
 

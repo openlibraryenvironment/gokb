@@ -22,6 +22,7 @@ class PlatformController {
   def restMappingService
   def componentLookupService
   def platformService
+  def componentUpdateService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {

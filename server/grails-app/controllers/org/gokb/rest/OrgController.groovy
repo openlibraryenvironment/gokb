@@ -26,6 +26,7 @@ class OrgController {
   def componentLookupService
   def orgService
   def FTUpdateService
+  def componentUpdateService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {

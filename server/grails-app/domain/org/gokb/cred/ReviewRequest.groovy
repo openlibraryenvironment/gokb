@@ -90,20 +90,12 @@ class ReviewRequest {
       "${this.class.name}:${id}"
   }
 
-  def availableActions() {
+  public List availableActions() {
     [
       [code:'method::RRTransfer', label:'Transfer To...'],
       [code:'method::RRClose', label:'Close']
     ]
   }
-
-  static def globalActions() {
-    [
-      [code:'method::RRTransfer', label:'Transfer To...'],
-      [code:'method::RRClose', label:'Close']
-    ]
-  }
-
 
   public void RRClose(rrcontext) {
     log.debug("Close review request ${id} (${this.class.name}) - user=${rrcontext.user}");

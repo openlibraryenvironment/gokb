@@ -7,7 +7,9 @@ class IdentifierService {
   def grailsApplication
 
   public Map fetchNamespaces(params) {
-    Map result = [:]
+    Map result = [
+      data: []
+    ]
     boolean no_isxn = params.boolean('no_isxn') ?: false
     String base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     List<IdentifierNamespace> nss = []

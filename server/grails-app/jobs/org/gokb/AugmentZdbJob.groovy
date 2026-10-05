@@ -52,7 +52,7 @@ class AugmentZdbJob implements InterruptableJob {
 
   public void execute(JobExecutionContext context) {
     if (grailsApplication.config.getProperty('gokb.zdbAugment.enabled', Boolean.class)) {
-      List active_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup("Job.Type", "Sync ZDB data"))
+      List active_jobs = concurrencyManagerService.getActiveJobsForType('Sync ZDB data')
 
       if (!active_jobs) {
         Map result = [

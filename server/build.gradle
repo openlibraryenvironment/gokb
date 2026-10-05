@@ -48,13 +48,13 @@ allprojects {
     }
 }
 
-// configurations {
-//     developmentOnly
-//     runtimeClasspath {
-//         extendsFrom developmentOnly
-//         exclude group: 'org.grails', module: 'grails-shell'
-//     }
-// }
+sourceSets {
+    main {
+        resources {
+            srcDir 'grails-app/migrations'
+        }
+    }
+}
 
 dependencies {
     profile "org.grails.profiles:web"
@@ -214,10 +214,13 @@ webdriverBinaries {
     }
 }
 
-sourceSets {
-    main {
-        resources {
-            srcDir 'migrations'
+task printSourceSetInformation(){
+    doLast{
+        sourceSets.each { srcSet ->
+            println "["+srcSet.name+"]"
+            print "-->Source directories: "+srcSet.allJava.srcDirs+"\n"
+            print "-->Output directories: "+srcSet.output.classesDirs.files+"\n"
+            println ""
         }
     }
 }

@@ -181,10 +181,13 @@
           </dl>
         </div>
 
-        <g:render template="/tabTemplates/showVariantnames" model="${[d:d, showActions:true]}" />
+        <div class="tab-pane" id="altnames">
+          <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+        </div>
 
-        <g:render template="/tabTemplates/showComments" model="${[d:d, showActions:true]}" />
-
+        <div class="tab-pane" id="comments">
+          <g:render template="/tabTemplates/showComments" model="${[d:displayobj, showActions:true]}" />
+        </div>
 
         <div class="tab-pane" id="identifiers">
           <g:render template="/tabTemplates/showIdentifiers" model="${[d:displayobj, showActions: editable]}" />

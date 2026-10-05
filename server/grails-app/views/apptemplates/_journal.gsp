@@ -35,14 +35,6 @@
   </dd>
 
   <dt>
-    <g:annotatedLabel owner="${d}" property="reasonRetired">Status Reason</g:annotatedLabel>
-  </dt>
-  <dd>
-    <g:xEditableRefData owner="${d}" field="reasonRetired"
-                        config='TitleInstance.ReasonRetired'/>
-  </dd>
-
-  <dt>
     <g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel>
   </dt>
   <dd>
@@ -102,11 +94,11 @@
         <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
       </g:if>
       <li><a href="#identifiers" data-toggle="tab">Identifiers <span
-          class="badge badge-warning">${d?.activeIds.size() ?: '0'}</span></a>
+          class="badge badge-warning">${d?.getActiveIds().size() ?: '0'}</span></a>
       </li>
       <li><a href="#publishers" data-toggle="tab">Publishers <span
           class="badge badge-warning">
-        ${d.getPublisherLinksForStatus(params.publisher_status)?.size() ?: '0'}
+        ${params.publisher_status ? d.getPublisherLinksForStatus(params.publisher_status)?.size() : d.publisherLinks.size()}
       </span></a></li>
       <li><a href="#subjects" data-toggle="tab">Subjects <span
           class="badge badge-warning">${d.subjects?.size() ?: '0'}</span></a></li>
@@ -177,20 +169,16 @@
           <g:xEditableRefData owner="${d}" field="OAStatus"
                               config='TitleInstance.OAStatus'/>
         </dd>
-
-        <dt>
-          <g:annotatedLabel owner="${d}" property="continuingSeries">Continuing Series</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditableRefData owner="${d}" field="continuingSeries"
-                              config='TitleInstance.ContinuingSeries'/>
-        </dd>
       </dl>
     </div>
 
-    <g:render template="/tabTemplates/showVariantnames" model="${[d: displayobj, showActions: true]}"/>
+    <div class="tab-pane" id="altnames">
+      <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+    </div>
 
-    <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
+    <div class="tab-pane" id="subjects">
+      <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
+    </div>
 
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">
@@ -297,7 +285,7 @@
           <g:each in="${d.tipls}" var="tipl">
             <tr>
               <td><g:link controller="resource" action="show"
-                          id="${tipl.tiplHostPlatform.class.name}:${tipl.tiplHostPlatform.id}">${tipl.tiplHostPlatform.name}</g:link></td>
+                          id="${tipl.hostPlatform.class.name}:${tipl.hostPlatform.id}">${tipl.hostPlatform.name}</g:link></td>
               <td>${tipl['url']}</td>
               <td><g:xEditableRefData owner="${tipl}" field="status" config='KBComponent.Status'/></td>
             </tr>

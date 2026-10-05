@@ -61,7 +61,8 @@ class RestMappingService {
 
   static final Map MAPPED_PROPS = [
       linkedIds: 'ids',
-      publisherLinks: 'publisher'
+      publisherLinks: 'publisher',
+      linkedCurators: 'curatoryGroups'
   ]
 
   /**
@@ -81,7 +82,7 @@ class RestMappingService {
     String base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     boolean nested = params['nested'] ? true : false
     boolean curatedClass = obj.respondsTo('curatoryGroups')
-    boolean process_deleted_links = params.boolean('_showdeleted') ?: false
+    boolean process_deleted_links = params['_showdeleted'] ? params['_showdeleted'].toBoolean() : false
     boolean is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
@@ -118,6 +119,18 @@ class RestMappingService {
           }
         }
       }
+    }
+
+    if (embed_active.contains('ids')) {
+      embed_active << 'linkedIds'
+    }
+
+    if (embed_active.contains('publisher')) {
+      embed_active << 'publisherLinks'
+    }
+
+    if (embed_active.contains('curatoryGroups')) {
+      embed_active << 'linkedCurators'
     }
 
     if (embed_active.size() > 0) {
@@ -167,13 +180,12 @@ class RestMappingService {
 
               obj[p.name].each { ao ->
                 Object assoc_obj = ClassUtils.deproxy(ao)
-                boolean addToList = false
                 Map mapped_item = [:]
 
                 if (p.name == 'linkedCurators') {
                   mapped_item = getEmbeddedJson(assoc_obj.group, user)
                 }
-                if (assoc_obj instanceof ComponentSubject) {
+                else if (assoc_obj instanceof ComponentSubject) {
                   mapped_item = getEmbeddedJson(assoc_obj.subject, user)
                   log.debug("Using subject ${assoc_obj} for embed mapping ..")
                 }
@@ -187,7 +199,8 @@ class RestMappingService {
                 else if (assoc_obj instanceof TitlePublisher) {
                   if (process_deleted_links || assoc_obj.status?.value == 'Active') {
                     mapped_item = getEmbeddedJson(assoc_obj.publisher, user)
-
+                    mapped_item['_linkStartDate'] = assoc_obj.startDate?.toString() ?: null
+                    mapped_item['_linkEndDate'] = assoc_obj.endDate?.toString() ?: null
                     mapped_item['_linkStatus'] = assoc_obj.status.value
                   }
                 }
@@ -489,12 +502,12 @@ class RestMappingService {
   }
 
   @Transactional
-  public def updateIdentifiers(obj, ids, boolean remove = true) {
+  public Map updateIdentifiers(obj, ids, boolean remove = true) {
     log.debug("updating ids ${ids}")
-    List id_links = obj.linkedIds
+    Set id_links = obj.linkedIds
     RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
     RefdataValue ci_status_deleted = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_DELETED)
-    def result = [changed: false, errors: []]
+    Map result = [changed: false, errors: []]
     Set new_ids = []
 
     if (obj && ids instanceof Collection) {
@@ -505,50 +518,52 @@ class RestMappingService {
         if (i instanceof Integer) {
           id = Identifier.get(i)
         }
-        else if (i instanceof Map && (!i['_linkStatus'] || i['_linkStatus'] == 'Active')) {
-          if (i.id instanceof Integer) {
-            id = Identifier.get(i.id)
-          }
-          else {
-            def ns_val = i.namespace ?: i.type
-
-            if (i.value && ns_val) {
-              def ns = null
-
-              if (ns_val instanceof String) {
-                ns = ns_val
-              }
-              else if (ns_val) {
-                ns = IdentifierNamespace.get(ns_val)?.value ?: null
-              }
-
-              try {
-                if (ns) {
-                  id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
-
-                  if (!id) {
-                    result.errors << [message: "Identifier ${ns_val}:${i.value} is invalid!", baddata: i.value, messageCode: 'identifier.validation.generic']
-                    valid = false
-                  }
-                }
-                else {
-                  log.warn("Unable to determine namespace ${ns_val}!")
-
-                  if (!id) {
-                    result.errors << [message: "Unable to reference namespace ${ns_val}!", baddata: i.value, messageCode: 'identifier.validation.namespace']
-                    valid = false
-                  }
-                }
-              }
-              catch (grails.validation.ValidationException ve) {
-                log.debug("Could not create ID ${ns}:${i.value}")
-
-                result.errors << messageService.processValidationErrors(ve.errors)
-              }
+        else if (i instanceof Map) {
+          if (!i['_linkStatus'] || i['_linkStatus'] == 'Active') {
+            if (i.id instanceof Integer) {
+              id = Identifier.get(i.id)
             }
             else {
-              result.errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
-              valid = false
+              def ns_val = i.namespace ?: i.type
+
+              if (i.value && ns_val) {
+                def ns = null
+
+                if (ns_val instanceof String) {
+                  ns = ns_val
+                }
+                else if (ns_val) {
+                  ns = IdentifierNamespace.get(ns_val)?.value ?: null
+                }
+
+                try {
+                  if (ns) {
+                    id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
+
+                    if (!id) {
+                      result.errors << [message: "Identifier ${ns_val}:${i.value} is invalid!", baddata: i.value, messageCode: 'identifier.validation.generic']
+                      valid = false
+                    }
+                  }
+                  else {
+                    log.warn("Unable to determine namespace ${ns_val}!")
+
+                    if (!id) {
+                      result.errors << [message: "Unable to reference namespace ${ns_val}!", baddata: i.value, messageCode: 'identifier.validation.namespace']
+                      valid = false
+                    }
+                  }
+                }
+                catch (grails.validation.ValidationException ve) {
+                  log.debug("Could not create ID ${ns}:${i.value}")
+
+                  result.errors << messageService.processValidationErrors(ve.errors)
+                }
+              }
+              else {
+                result.errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
+                valid = false
+              }
             }
           }
         }
@@ -572,14 +587,15 @@ class RestMappingService {
           List dupes = ComponentIdentifier.executeQuery("from ComponentIdentifier where component = :fc and identifier = :tc", [fc: obj, tc: i])
 
           if (dupes.size() == 0) {
-            new ComponentIdentifier(component: obj, identifier: i).save(flush: true, failOnError: true)
+            obj.addIdentifier(i)
             result.changed = true
           }
           else if (dupes.size() == 1) {
             if (dupes[0].status == ci_status_deleted) {
               log.debug("Matched active ID link was marked as deleted!")
+              obj.removeFromLinkedIds(dupes[0])
               dupes[0].delete(flush: true)
-              new ComponentIdentifier(component: obj, identifier: i).save(flush: true, failOnError: true)
+              obj.addIdentifier(i)
               result.changed = true
             }
             else {
@@ -595,10 +611,11 @@ class RestMappingService {
         if (remove && result.errors.size() == 0) {
           Iterator items = id_links.iterator()
           Object element
+
           while (items.hasNext()) {
             element = items.next()
 
-            if (!new_ids.contains(element.identifier)) {
+            if (!new_ids.contains(element.identifier) && element.status == status_active) {
               // Remove.
               log.debug("Removing newly missing ID ${element.identifier}")
               element.status = ci_status_deleted
@@ -1152,7 +1169,7 @@ class RestMappingService {
         TitlePublisher tp = TitlePublisher.findByTitleAndPublisher(obj, pub_obj)
 
         if (!tp) {
-          tp = new TitlePublisher(title: obj, publisher: pub_obj).save(flush:true, failOnError: true)
+          obj.addPublisher(pub_obj)
           result.changed = true
         }
 
