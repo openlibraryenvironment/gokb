@@ -225,7 +225,6 @@ class TitleController {
                 "New TI created.",
                 "There have been possible conflicts with other existing titles.",
                 null,
-                null,
                 (additionalInfo as JSON).toString(),
                 rr_type,
                 componentLookupService.findCuratoryGroupOfInterest(obj)

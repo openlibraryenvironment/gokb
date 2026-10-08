@@ -671,7 +671,10 @@ class EzbCollectionService {
 
     if (curator_id) {
       qry_pars.curator = curator_id
-      qry += ''' AND :curator MEMBER OF p.curatoryGroups'''
+      qry += ''' AND EXISTS (
+          SELECT 1 FROM PackageCuratoryGroup
+          WHERE group = :curator
+          AND pkg = p)'''
     }
 
     List result = Package.executeQuery(qry, qry_pars)

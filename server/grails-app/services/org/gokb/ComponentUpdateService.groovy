@@ -7,8 +7,6 @@ import grails.gorm.transactions.Transactional
 import groovy.transform.Synchronized
 
 import org.gokb.cred.*
-import org.opensearch.action.delete.DeleteRequest
-import org.opensearch.client.RequestOptions
 
 @Transactional
 class ComponentUpdateService {
@@ -446,68 +444,6 @@ class ComponentUpdateService {
       log.error("createOrUpdateSource :: Error creating Source:", e)
     }
 
-    result
-  }
-
-  @Transactional
-  public Map expungeComponent(KBComponent obj) {
-    log.debug("Component expunge");
-    Map result = [
-      success: true,
-      deleteType: obj.class.name,
-      deleteId: obj.id,
-      esDelete: false
-    ]
-    String class_simple_name = obj.class.simpleName
-    String oid = "${obj.class.name}:${obj.id}"
-
-    obj.class.withTransaction {
-      ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component = :component", [component: obj])
-      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component = :component", [component: obj])
-      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner = :component", [component: obj])
-
-      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: obj])
-
-      events_to_delete.each {
-        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
-        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
-      }
-
-      ComponentAttachment.removeAllForComponent(obj)
-
-      if (obj.class == CuratoryGroup) {
-        AllocatedReviewGroup.removeAll(obj)
-
-        obj.users*.id.each { user_id ->
-          User.get(user_id).removeFromCuratoryGroups(obj).save()
-        }
-      }
-      else if (obj.respondsTo('publisherLinks')) {
-        TitlePublisher.executeUpdate("delete from TitlePublisher as c where c.title = :component", [component: obj])
-      }
-      else {
-        ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: obj])
-
-        ReviewRequest.executeQuery("select id from ReviewRequest where componentToReview=:component", [component: obj]).each {
-          reviewRequestService.expungeReview(ReviewRequest.findById(it))
-        }
-      }
-
-      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component", [component: obj])
-      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: obj])
-      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: obj])
-      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: obj])
-      KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: obj])
-      result.result = obj.delete(failOnError: true)
-
-      if (ESWrapperService.indicesPerType[class_simple_name]){
-        def esclient = ESWrapperService.getClient()
-        DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
-        def es_response = esclient.delete(req, RequestOptions.DEFAULT)
-        log.debug("${es_response}")
-        result.esDelete = true
-      }
-    }
     result
   }
 

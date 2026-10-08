@@ -747,7 +747,6 @@ class IngestKbartRun {
                   "Ambiguous KBART Record Matches",
                   "A KBART record has been matched on multiple package titles.",
                   user,
-                  null,
                   (additionalInfo as JSON).toString(),
                   RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
                   componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
@@ -822,7 +821,6 @@ class IngestKbartRun {
                   "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
                   "Check the package titles and merge them if necessary.",
                   user,
-                  null,
                   (additionalInfo as JSON).toString(),
                   RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
                   componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)

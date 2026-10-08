@@ -50,59 +50,56 @@ class OaiSpec extends Specification {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
 
-    RefdataValue http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
-    RefdataValue kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
-    RefdataValue freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
-    IdentifierNamespace ttl_ns = IdentifierNamespace.findByName('Test Title NS') ?: new IdentifierNamespace(name: 'Test Title NS', value: 'titleNStest')
-    IdentifierNamespace pkg_ns = IdentifierNamespace.findByName('Test Package NS') ?: new IdentifierNamespace(name: 'Test Package NS', value: 'packageNStest')
+    RefdataValue http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url')
+    RefdataValue kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART')
+    RefdataValue freq = RefdataCategory.lookup('Source.Frequency', 'Weekly')
+    IdentifierNamespace ttl_ns = IdentifierNamespace.findByName('Test Title NS') ?: new IdentifierNamespace(name: 'Test Title NS', value: 'titleNStest').save(flush: true, failOnError: true)
+    IdentifierNamespace pkg_ns = IdentifierNamespace.findByName('Test Package NS') ?: new IdentifierNamespace(name: 'Test Package NS', value: 'packageNStest').save(flush: true, failOnError: true)
 
     test_org = Org.findByName("OAI Test Org") ?: new Org(
       name: 'OAI Test Org',
       titleNamespace: ttl_ns,
       packageNamespace: pkg_ns
-    )
+    ).save(flush: true, failOnError: true)
 
-    test_plt = Platform.findByName('Test Platform') ?: new Platform(name: 'Test Platform', provider: test_org).save(flush: true)
+    test_plt = Platform.findByName('Test Platform') ?: new Platform(name: 'Test Platform', provider: test_org).save(flush: true, failOnError: true)
 
     Source testSource = Source.findByName("PackTestSource") ?: new Source(
       name: "PackTestSource",
       url: "https://org/package",
       frequency: freq,
       defaultSupplyMethod: http,
-      defaultDataFormat: kbart).save(flush: true)
+      defaultDataFormat: kbart).save(flush: true, failOnError: true)
 
     test_pkg = Package.findByName('OAI Test Package 1')
 
     if (!test_pkg) {
-      test_pkg = new Package(name: 'OAI Test Package 1', source: testSource, nominalPlatform: test_plt, provider: test_org).save(flush: true)
+      test_pkg = new Package(name: 'OAI Test Package 1', source: testSource, nominalPlatform: test_plt, provider: test_org).save(flush: true, failOnError: true)
 
       test_pkg.addToCuratoryGroups(CuratoryGroup.findByName('Local'))
-      test_pkg.save(flush: true)
     }
 
     if (test_pkg.ids?.size() == 0) {
       Identifier isil = Identifier.findByValue('ZDB-1-OAIT') ?: new Identifier(
         value: 'ZDB-1-OAIT',
-        namespace: IdentifierNamespace.findByValue('isil')).save(flush: true)
+        namespace: IdentifierNamespace.findByValue('isil')).save(flush: true, failOnError: true)
       test_pkg.addIdentifier(isil)
-      test_pkg.save(flush: true)
     }
 
     title1 = JournalInstance.findByName('Test Title 1') ?: new JournalInstance(name: 'Test Title 1',
-      series: 'Test Series Name').save(flush: true)
+      series: 'Test Series Name').save(flush: true, failOnError: true)
 
     Identifier eissn1 = Identifier.findByValue('1234-3456') ?: new Identifier(value: '1234-3456',
-      namespace: IdentifierNamespace.findByValue('eissn')).save(flush: true)
+      namespace: IdentifierNamespace.findByValue('eissn')).save(flush: true, failOnError: true)
     Identifier issn1 = Identifier.findByValue('1234-4567') ?: new Identifier(value: '1234-4567',
-      namespace: IdentifierNamespace.findByValue('issn')).save(flush: true)
+      namespace: IdentifierNamespace.findByValue('issn')).save(flush: true, failOnError: true)
 
     title1.addIdentifiers([eissn1, issn1])
-    title1.save(flush: true)
 
     tipp1 = TitleInstancePackagePlatform.findByName('OaiTestTIPP')
 
     if (!tipp1) {
-      tipp1 = new TitleInstancePackagePlatform(name: 'OaiTestTIPP', pkg: test_pkg, hostPlatform: test_plt, title: title1).save(flush: true)
+      tipp1 = new TitleInstancePackagePlatform(name: 'OaiTestTIPP', pkg: test_pkg, hostPlatform: test_plt, title: title1).save(flush: true, failOnError: true)
       tipp1.setPrice("list", "1234.56 EUR")
       tipp1.publisherName = "test Publisher"
       tipp1.accessStartDate = new Date()

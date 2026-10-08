@@ -511,8 +511,8 @@ class TippService {
     Boolean changed = false
 
     cov_list?.each { c ->
-      String parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-      String parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+      LocalDateTime parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+      LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
 
       Boolean cs_match = false
       Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
@@ -792,8 +792,9 @@ class TippService {
 
     try {
       tippIDs = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
-                                                              where tipp.pkg.id = :pkg and tipp.title = null)''',
-                                                              [pkg : pkgId])
+          where tipp.pkg.id = :pkg
+          and tipp.title = null''',
+          [pkg : pkgId])
 
       total = tippIDs.size()
 
@@ -951,6 +952,7 @@ class TippService {
                 tipp,
                 "The TIPP could not be linked to an existing title, and cannot create a new one due to a missing name!",
                 "Supply a name for the TIPP or delete it.",
+                null,
                 null,
                 type_mtn,
                 componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
@@ -1762,8 +1764,8 @@ class TippService {
   public Map convertCoverageItem(Map c) {
     Map result = [:]
 
-    String parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-    String parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+    LocalDateTime parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+    LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
     Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
     Date endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
     RefdataValue cov_depth

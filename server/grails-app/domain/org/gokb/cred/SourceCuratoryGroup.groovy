@@ -21,6 +21,6 @@ class SourceCuratoryGroup {
   }
 
   static int removeAllForComponent(Source comp) {
-    return executeUpdate('DELETE FROM SourceCuratoryGroup WHERE source = :comp', [comp: comp])
+    return SourceCuratoryGroup.executeUpdate('DELETE FROM SourceCuratoryGroup WHERE source = :comp', [comp: comp])
   }
 }

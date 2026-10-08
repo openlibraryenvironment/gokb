@@ -9,6 +9,8 @@ class TitleInstancePlatform extends KBComponent {
   Platform hostPlatform
   TitleInstance title
 
+  static belongsTo = [TitleInstance]
+
   static mapping = {
     includes KBComponent.mapping
     hostPlatform column: 'tipl_host_platform_fk'
@@ -17,8 +19,8 @@ class TitleInstancePlatform extends KBComponent {
 
   static constraints = {
     url (nullable:true, blank:true)
-    hostPlatform (nullable: false)
-    title (nullable: false)
+    hostPlatform (nullable: false, blank: true)
+    title (nullable: false, blank: true)
   }
 
   public getPersistentId() {
@@ -38,7 +40,7 @@ class TitleInstancePlatform extends KBComponent {
     return "TIPL";
   }
 
-  public static TitleInstancePlatform ensure(title, platform, url) {
+  public static TitleInstancePlatform ensure(TitleInstance title, Platform platform, String url) {
     if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
       RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
       List r = TitleInstancePlatform.executeQuery('''select id from TitleInstancePlatform as tipl

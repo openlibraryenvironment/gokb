@@ -285,7 +285,6 @@ class PlatformService {
           "New platform created",
           user,
           null,
-          null,
           RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'New Platform')
         )
       }

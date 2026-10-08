@@ -46,7 +46,7 @@ class CleanupService {
           KBComponent component = KBComponent.get(component_id)
 
           if (component) {
-            Map expunge_result = componentUpdateService.expungeComponent(component)
+            Map expunge_result = expungeComponent(component)
             log.debug("${expunge_result}")
 
 
@@ -297,7 +297,7 @@ class CleanupService {
                                                   where c.identifier = i
                                                 )''')
 
-        Map rem_unused = expungeAll(unused, j)
+        Map rem_unused = expungeIdentifiers(unused, j)
 
         log.debug("Removed ${rem_unused.num_expunged} unused identifiers")
         j?.message("Removed ${rem_unused.num_expunged} unused identifiers".toString())
@@ -339,7 +339,7 @@ class CleanupService {
             }
           }
         }
-        Map rem_dupes = expungeAll(dupes_to_remove, j)
+        Map rem_dupes = expungeIdentifiers(dupes_to_remove, j)
 
         log.debug("Removed ${rem_dupes.num_expunged} linked identifiers")
         j?.message("Removed ${rem_dupes.num_expunged} linked identifiers".toString())
@@ -356,6 +356,24 @@ class CleanupService {
     markInvalidComponentNames(j)
 
     j?.endTime = new Date()
+  }
+
+  public Map expungeIdentifiers(List<Long> candidate_ids, Job j = null) {
+    Map result = [num_requested: candidate_ids.size(), num_expunged: 0]
+
+    List<Long> remaining = candidate_ids
+
+    Identifier.withNewTransaction {
+      while (remaining.size() > 0) {
+        Collection batch = remaining.take(50)
+        remaining = remaining.drop(50)
+
+        result.num_expunged += Identifier.executeUpdate("delete from Identifier where id in (:batch)", [batch: batch])
+        j?.setProgress(result.num_expunged, result.num_requested)
+      }
+    }
+
+    result
   }
 
   private void duplicateIdentifierCleanup(Job j = null) {
@@ -386,36 +404,36 @@ class CleanupService {
     Map result = [result: 'OK']
 
     String qryString = '''from ComponentIdentifier as cj
-                          where cj.status = :csa
-                          and cj.identifier.id in (
-                            select id from Identifier
-                            where namespace = :nse
-                          )
-                          and cj.component.id in (
-                            select ji.id from JournalInstance as ji
-                            where ji.status = :sc
-                            and exists (
-                              select 1 from ComponentIdentifier as cc
-                              where cc.type = :cti
-                              and cc.status = :csa
-                              and cc.component = ji
-                              and cc.identifier.id in (
-                                select id from Identifier
-                                where namespace = :nsp
-                                and value = cj.identifier.value
-                              )
-                            )
-                            and exists (
-                              select 1 from ComponentIdentifier as cp
-                              where component = ji
-                              and cp.status = :csa
-                              and cp.identifier.id in (
-                                select id from Identifier
-                                where namespace = :nse
-                                and id != cj.identifier.id
-                              )
-                            )
-                          )'''
+        where cj.status = :csa
+        and cj.identifier.id in (
+          select id from Identifier
+          where namespace = :nse
+        )
+        and cj.component.id in (
+          select ji.id from JournalInstance as ji
+          where ji.status = :sc
+          and exists (
+            select 1 from ComponentIdentifier as cc
+            where cc.type = :cti
+            and cc.status = :csa
+            and cc.component = ji
+            and cc.identifier.id in (
+              select id from Identifier
+              where namespace = :nsp
+              and value = cj.identifier.value
+            )
+          )
+          and exists (
+            select 1 from ComponentIdentifier as cp
+            where component = ji
+            and cp.status = :csa
+            and cp.identifier.id in (
+              select id from Identifier
+              where namespace = :nse
+              and id != cj.identifier.id
+            )
+          )
+        )'''
 
     TitleInstance.withNewSession { session ->
       boolean more = true
@@ -476,30 +494,28 @@ class CleanupService {
 
   public void addMissingCoverageObjects(Job j = null) {
     log.debug("Creating missing coverage statements..")
-    def ctr = 0
-    def errors = 0
+    int ctr = 0
+    int errors = 0
 
     autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform) {
       TitleInstancePackagePlatform.withNewSession {
-        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        def tippIds = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
-                                                                    where status != :sd
-                                                                    and not exists (
-                                                                      select 1 from TIPPCoverageStatement
-                                                                      where owner = tipp
-                                                                    )''',
-                                                                [
-                                                                  sd: status_deleted
-                                                                ])
+        RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+        List tippIds = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
+            where status != :sd
+            and not exists (
+              select 1 from TIPPCoverageStatement
+              where owner = tipp
+            )''',
+            [ sd: status_deleted])
 
         int total_count = tippIds.size()
 
         while (tippIds.size() > 0) {
-          def batch = tippIds.take(50)
+          Collection batch = tippIds.take(50)
           tippIds = tippIds.drop(50)
 
           for (tid in batch) {
-            def tobj = TitleInstancePackagePlatform.get(tid)
+            TitleInstancePackagePlatform tobj = TitleInstancePackagePlatform.get(tid)
 
             try {
               tobj.addToCoverageStatements(
@@ -540,14 +556,12 @@ class CleanupService {
   }
 
   @Transactional
-  def reviewDates(Job j = null) {
+  public void reviewDates(Job j = null) {
     log.debug("Adding Reviews to components with inconsistent dates")
     TitleInstancePackagePlatform.withNewSession {
-      def tippCoverageDates = TIPPCoverageStatement.executeQuery('''from TIPPCoverageStatement
-                                                                    where endDate < startDate''',
-                                                                  [
-                                                                    readOnly: true
-                                                                  ])
+      List tippCoverageDates = TIPPCoverageStatement.executeQuery('''from TIPPCoverageStatement
+          where endDate < startDate''',
+          [readOnly: true])
 
       log.debug("Found ${tippCoverageDates.size()} offending coverageStatements")
       j.message("Found ${tippCoverageDates.size()} offending coverageStatements".toString())
@@ -569,11 +583,9 @@ class CleanupService {
         }
       }
 
-      def tippAccessDates = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform
-                                                                          where accessEndDate < accessStartDate''',
-                                                                      [
-                                                                        readOnly: true
-                                                                      ])
+      List tippAccessDates = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform
+          where accessEndDate < accessStartDate''',
+          [ readOnly: true])
 
       log.debug("Found ${tippAccessDates.size()} offending tipp access dates")
       j.message("Found ${tippAccessDates.size()} offending tipp access dates".toString())
@@ -581,7 +593,7 @@ class CleanupService {
       tippAccessDates.each { tcs ->
         if (tcs){
           log.debug("Adding RR to TIPP ${tcs}")
-          def new_rr = ReviewRequest.raise(
+          ReviewRequest new_rr = reviewRequestService.raise(
             tcs,
             "Please review the coverage dates.",
             "Found an end date earlier than the start date!."
@@ -593,7 +605,7 @@ class CleanupService {
         }
       }
 
-      def titleDates = TitleInstance.executeQuery("from TitleInstance where publishedTo < publishedFrom",[readOnly: true])
+      List titleDates = TitleInstance.executeQuery("from TitleInstance where publishedTo < publishedFrom", [readOnly: true])
 
       log.debug("Found ${titleDates.size()} offending publishing dates")
       j.message("Found ${titleDates.size()} offending publishing dates".toString())
@@ -601,7 +613,7 @@ class CleanupService {
       titleDates.each { tcs ->
         if (tcs){
           log.debug("Adding RR to title ${tcs}")
-          def new_rr = ReviewRequest.raise(
+          ReviewRequest new_rr = reviewRequestService.raise(
             tcs,
             "Please review the publishing dates.",
             "Found an end date earlier than the start date!."
@@ -617,7 +629,7 @@ class CleanupService {
     j.endTime = new Date()
   }
 
-  def cleanUpGorm() {
+  private void cleanUpGorm() {
     log.debug("Clean up GORM");
     def session = sessionFactory.currentSession
     session.flush()
@@ -679,8 +691,73 @@ class CleanupService {
     job.endTime = new Date()
   }
 
-  @Transactional
-  public Map expungeAll(List components, Job j = null) {
+ @Transactional
+  public Map expungeComponent(KBComponent obj) {
+    log.debug("Component expunge")
+    Map result = [
+      success: true,
+      deleteType: obj.class.name,
+      deleteId: obj.id,
+      esDelete: false
+    ]
+    String class_simple_name = obj.class.simpleName
+    String oid = "${obj.class.name}:${obj.id}"
+
+    obj.class.withTransaction {
+      ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component = :component", [component: obj])
+      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component = :component", [component: obj])
+      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner = :component", [component: obj])
+
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: obj])
+
+      events_to_delete.each {
+        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
+        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
+      }
+
+      ComponentAttachment.removeAllForComponent(obj)
+
+      if (obj.class == CuratoryGroup) {
+        AllocatedReviewGroup.removeAll(obj)
+
+        obj.users*.id.each { user_id ->
+          User.get(user_id).removeFromCuratoryGroups(obj).save()
+        }
+      }
+      else if (obj.respondsTo('publisherLinks')) {
+        TitlePublisher.executeUpdate("delete from TitlePublisher as c where c.title = :component", [component: obj])
+      }
+      else {
+        ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: obj])
+
+        ReviewRequest.executeQuery("select id from ReviewRequest where componentToReview=:component", [component: obj]).each {
+          reviewRequestService.expungeReview(ReviewRequest.findById(it))
+        }
+      }
+
+      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component", [component: obj])
+      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: obj])
+      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: obj])
+      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: obj])
+      KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: obj])
+      result.result = obj.delete(failOnError: true)
+
+      if (ESWrapperService.indicesPerType[class_simple_name]){
+        def esclient = ESWrapperService.getClient()
+        DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
+        def es_response = esclient.delete(req, RequestOptions.DEFAULT)
+        log.debug("${es_response}")
+        result.esDelete = true
+      }
+    }
+    result
+  }
+
+  /*
+  * Used to expunge a list of KBComponents via their id in batches
+  */
+
+  public Map expungeComponentsById(List<Long> components, Job j = null) {
     Map result = [num_requested: components.size(), num_expunged: 0]
     def esclient = ESWrapperService.getClient()
     log.debug("Component bulk expunge")
@@ -688,77 +765,76 @@ class CleanupService {
 
     List remaining = components
 
-    KBComponent.withNewTransaction {
-      while (remaining.size() > 0){
-        def batch = remaining.take(50)
-        remaining = remaining.drop(50)
+    while (remaining.size() > 0){
+      def batch = remaining.take(50)
+      remaining = remaining.drop(50)
 
-        ComponentIdentifier.executeUpdate('''delete from ComponentIdentifier as c
-                                              where c.component.id IN (:component)''',
-                                              [component: batch])
+      ComponentIdentifier.executeUpdate('''delete from ComponentIdentifier as c where c.component.id IN (:component)''', [component: batch])
+      ComponentWatch.executeUpdate('''delete from ComponentWatch as cw where cw.component.id IN (:component)''', [component: batch])
+      KBComponentAdditionalProperty.executeUpdate('''delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)''', [component: batch])
+      KBComponentVariantName.executeUpdate('''delete from KBComponentVariantName as c where c.owner.id IN (:component)''', [component: batch])
+      ReviewRequestAllocationLog.executeUpdate('''delete from ReviewRequestAllocationLog as c
+          where c.rr in (
+            select r from ReviewRequest as r
+            where r.componentToReview.id IN (:component)
+          )''',
+          [component: batch])
 
-        ComponentWatch.executeUpdate('''delete from ComponentWatch as cw
-                                        where cw.component.id IN (:component)''',
-                                        [component: batch])
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery('''select c.event from ComponentHistoryEventParticipant as c
+            where c.participant.id IN (:component)''',
+          [
+            component: batch
+          ])
 
-        KBComponentAdditionalProperty.executeUpdate('''delete from KBComponentAdditionalProperty as c
-                                                        where c.fromComponent.id IN (:component)''',
-                                                        [component: batch])
+      events_to_delete.each {
+        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
+        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
+      }
 
-        KBComponentVariantName.executeUpdate('''delete from KBComponentVariantName as c
-                                                where c.owner.id IN (:component)''',
-                                                [component: batch])
+      ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)", [component: batch])
+      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)", [component: batch])
+      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch])
+      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch])
+      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
+      ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
+      ComponentAttachment.executeUpdate("delete from ComponentAttachment as cp where cp.component.id IN (:component)", [component: batch])
 
-        ReviewRequestAllocationLog.executeUpdate('''delete from ReviewRequestAllocationLog as c
-                                                    where c.rr in (
-                                                      select r from ReviewRequest as r
-                                                      where r.componentToReview.id IN (:component)
-                                                    )''',
-                                                    [component: batch])
+      batch.each {
+        KBComponent kbc = KBComponent.get(it)
+        String class_simple_name = kbc.class.getSimpleName()
+        String oid = "${kbc.class.name}:${it}"
 
-        def events_to_delete = ComponentHistoryEventParticipant.executeQuery('''select c.event from ComponentHistoryEventParticipant as c
-                                                                                where c.participant.id IN (:component)''',
-                                                                              [
-                                                                                component: batch
-                                                                              ])
-
-        events_to_delete.each {
-          ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
-          ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
+        if (KBComponent.has(kbc, 'publisherLinks')) {
+          TitlePublisher.executeQuery("delete from TitlePublisher where title = :ti", [ti: kbc])
+        }
+        else if (kbc.class == Org) {
+          TitlePublisher.executeUpdate("delete from TitlePublisher where publisher in (:component)", [component: batch])
+        }
+        else if (kbc.class == Package) {
+          PackageCuratoryGroup.executeUpdate("delete from PackageCuratoryGroup as o where pkg IN (:component)", [component: batch])
+        }
+        else if (kbc.class == Platform) {
+          PlatformCuratoryGroup.executeUpdate("delete from PlatformCuratoryGroup as o where platform in (:component)", [component: batch])
+        }
+        else if (kbc.class == Source) {
+          SourceCuratoryGroup.executeUpdate("delete from SourceCuratoryGroup as o where source in (:component)", [component: batch])
         }
 
-        ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)", [component: batch])
-        ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)", [component: batch])
-        ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch])
-        ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch])
-        KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
-        ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
-        ComponentAttachment.executeUpdate("delete from ComponentAttachment as cp where cp.component.id IN (:component)", [component: batch])
-
-        batch.each {
-          KBComponent kbc = KBComponent.get(it)
-          String class_simple_name = kbc.class.getSimpleName()
-          String oid = "${kbc.class.name}:${it}"
-
-          if (KBComponent.has(kbc, 'publisherLinks')) {
-            TitlePublisher.executeQuery("delete from TitlePublisher where title = :ti", [ti: kbc])
-          }
-
-          if (ESWrapperService.indicesPerType[class_simple_name]){
-            DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
-            esclient.delete(req, RequestOptions.DEFAULT)
-          }
-        }
-
-        result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
-        j?.setProgress(result.num_expunged, result.num_requested)
-
-        if (Thread.currentThread().isInterrupted()){
-          log.debug("Job cancelling ..")
-          break
+        if (ESWrapperService.indicesPerType[class_simple_name]){
+          DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
+          esclient.delete(req, RequestOptions.DEFAULT)
         }
       }
+
+      result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
+      j?.setProgress(result.num_expunged, result.num_requested)
+
+      if (Thread.currentThread().isInterrupted()){
+        log.debug("Job cancelling ..")
+        break
+      }
     }
+
     result
   }
 
@@ -796,7 +872,6 @@ class CleanupService {
             kbc,
             "Remove invalid characters from the title string.",
             "Invalid characters in title string",
-            null,
             null,
             null,
             rr_type,

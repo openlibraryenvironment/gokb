@@ -262,12 +262,21 @@ class Package extends KBComponent {
     result
   }
 
+  public int getTippCount() {
+    int result = TitleInstancePackagePlatform.executeQuery("select count(t.id) from TitleInstancePackagePlatform as t where t.pkg = :pkg"
+            , [pkg: this])[0]
+
+    result
+  }
 
   public int getCurrentTippCount() {
     RefdataValue refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
-    int result = TitleInstancePackagePlatform.executeQuery("select count(t.id) from TitleInstancePackagePlatform as t where t.pkg = :pkg and t.status = :sc"
-      , [pkg: this, sc: refdata_current])[0]
+    int result = TitleInstancePackagePlatform.executeQuery('''select count(t.id)
+        from TitleInstancePackagePlatform as t
+        where t.pkg = :pkg
+        and t.status = :sc''',
+        [pkg: this, sc: refdata_current])[0]
 
     result
   }
@@ -276,15 +285,18 @@ class Package extends KBComponent {
   public int getTippCountForStatus(status) {
     RefdataValue refdata_status = RefdataCategory.lookup('KBComponent.Status', status)
 
-    int result = TitleInstancePackagePlatform.executeQuery("select count(t.id) from TitleInstancePackagePlatform as t where t.pkg = :pkg and t.status = :sc"
-            , [pkg: this, sc: refdata_status])[0]
+    int result = TitleInstancePackagePlatform.executeQuery('''select count(t.id)
+        from TitleInstancePackagePlatform as t
+        where t.pkg = :pkg
+        and t.status = :sc''',
+        [pkg: this, sc: refdata_status])[0]
 
     result
   }
 
 
   public List getReviews(boolean onlyOpen = true, boolean onlyCurrent = false, int max = 0, int offset = 0) {
-    def qry = '''select rr from ReviewRequest as rr,
+    String qry = '''select rr from ReviewRequest as rr,
         TitleInstance as title,
         TitleInstancePackagePlatform as tipp
         where tipp.pkg = :pkg
@@ -453,6 +465,10 @@ class Package extends KBComponent {
   public Package removeFromCuratoryGroups(CuratoryGroup group) {
     PackageCuratoryGroup to_remove = PackageCuratoryGroup.findByPkgAndGroup(this, group)
 
+    if (linkedCurators == null) {
+      linkedCurators = []
+    }
+
     if (to_remove) {
       this.removeFromLinkedCurators(to_remove)
       to_remove.delete(flush: true)
@@ -464,6 +480,10 @@ class Package extends KBComponent {
   public Package retainCuratoryGroups(List<CuratoryGroup> retain_groups) {
     boolean changed = false
     List current = getCuratoryGroups()
+
+    if (linkedCurators == null) {
+      linkedCurators = []
+    }
 
     retain_groups.each { rg ->
       if (!current.contains(rg)) {

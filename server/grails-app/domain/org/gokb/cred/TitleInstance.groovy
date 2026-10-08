@@ -47,7 +47,6 @@ class TitleInstance extends KBComponent {
   static constraints = {
     medium(nullable: true, blank: false)
     pureOA(nullable: true, blank: false)
-    reasonRetired(nullable: true, blank: false)
     OAStatus(nullable: true, blank: false)
     publishedFrom(nullable: true, blank: false)
     publishedTo(validator: { val, obj ->
@@ -71,8 +70,8 @@ class TitleInstance extends KBComponent {
 
   public static final String restPath = "/titles"
 
-  static jsonMapping = [
-    'ignore'       : [
+  static Map jsonMapping = [
+    ignore: [
       'pureOA',
       'continuingSeries',
       'reasonRetired',
@@ -85,12 +84,12 @@ class TitleInstance extends KBComponent {
       'renamedTo',
       'splitFrom'
     ],
-    'es'           : [
-      'publisherUuid': "publisher.uuid",
-      'publisherName': "publisher.name",
-      'publisher'    : "publisher.id"
+    es: [
+      publisherUuid: "publisher.uuid",
+      publisherName: "publisher.name",
+      publisher: "publisher.id"
     ],
-    'defaultEmbeds': [
+    defaultEmbeds: [
       'ids',
       'variantNames',
       'publisher',
@@ -210,7 +209,7 @@ class TitleInstance extends KBComponent {
         publisherLinks = []
       }
 
-      TitlePublisher new_obj = new TitlePublisher(title: this, publisher: pub)
+      TitlePublisher new_obj = new TitlePublisher(title: this, publisher: pub, status: status_active)
       this.addToPublisherLinks(new_obj)
       new_obj.save(flush: true, failOnError: true)
 

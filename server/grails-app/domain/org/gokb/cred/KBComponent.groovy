@@ -1,5 +1,6 @@
 package org.gokb.cred
 
+import grails.core.GrailsApplication
 import grails.util.GrailsNameUtils
 import groovy.util.logging.*
 
@@ -32,17 +33,15 @@ abstract class KBComponent {
 
   static final String RD_LANGUAGE = "KBComponent.Language"
 
-  static final String CURRENT_PRICE_HQL = '''
-select cp
-from ComponentPrice as cp
-where cp.owner = :c
-  and cp.priceType.value = :t
-  and ( ( startDate is null OR startDate <= :d ) and ( endDate is null OR endDate > :d ) )
-'''
+  static final String CURRENT_PRICE_HQL = '''select cp from ComponentPrice as cp
+      where cp.owner = :c
+        and cp.priceType.value = :t
+        and ( ( startDate is null OR startDate <= :d ) and ( endDate is null OR endDate > :d ) )
+      '''
 
   private static refdataDefaults = [
-    "status"    : STATUS_CURRENT,
-    "editStatus": EDIT_STATUS_IN_PROGRESS
+    status: STATUS_CURRENT,
+    editStatus: EDIT_STATUS_IN_PROGRESS
   ]
 
   private static final Map fullDefaultsForClass = [:]
@@ -53,7 +52,7 @@ where cp.owner = :c
 
   private def springSecurityService
 
-  protected grails.core.GrailsApplication grailsApplication
+  protected GrailsApplication grailsApplication
 
   public setSpringSecurityService(sss) {
     this.springSecurityService = sss
@@ -115,7 +114,6 @@ where cp.owner = :c
 
 
   private ensureDefaults() {
-
     try {
 
       // Metaclass
@@ -489,6 +487,7 @@ where cp.owner = :c
   }
 
   public KBComponent addIdentifier(Identifier ido, boolean update_comment = true) {
+    RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
     ComponentIdentifier dupe = ComponentIdentifier.findByComponentAndIdentifier(this, ido)
 
     if (!dupe) {
@@ -496,9 +495,9 @@ where cp.owner = :c
         linkedIds = []
       }
 
-      ComponentIdentifier new_obj = new ComponentIdentifier(identifier: ido, component: this)
+      ComponentIdentifier new_obj = new ComponentIdentifier(identifier: ido, component: this, status: status_active)
       this.addToLinkedIds(new_obj)
-      new_obj.save(flush: true)
+      new_obj.save(flush: true, failOnError: true)
 
       if (update_comment) {
         this.lastUpdateComment = "Added new ID: ${ido}"
@@ -511,6 +510,7 @@ where cp.owner = :c
   }
 
   public KBComponent addIdentifiers(List<Identifier> idos, boolean update_comment = true) {
+    RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
     int added = 0
 
     if (linkedIds == null) {
@@ -521,10 +521,10 @@ where cp.owner = :c
       ComponentIdentifier dupe = ComponentIdentifier.findByComponentAndIdentifier(this, ido)
 
       if (!dupe) {
-        ComponentIdentifier new_obj = new ComponentIdentifier(identifier: ido, component: this)
+        ComponentIdentifier new_obj = new ComponentIdentifier(identifier: ido, component: this, status: status_active)
 
         this.addToLinkedIds(new_obj)
-        new_obj.save(flush: true)
+        new_obj.save(flush: true, failOnError: true)
         added++
       }
     }
@@ -1105,6 +1105,8 @@ where cp.owner = :c
     log.debug("Removing all components");
     ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component", [component: this])
     KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component", [component: this])
+    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf = :component", [component: this])
+    KBComponent.executeUpdate("delete from ComponentPrice where owner = :component", [component: this])
 
     List events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: this])
 
@@ -1120,10 +1122,10 @@ where cp.owner = :c
         User.get(user_id).removeFromCuratoryGroups(this).save()
       }
 
-      OrgCuratoryGroup.executeQuery("delete from OrgCuratoryGroup as o where group = :component", [component: this])
-      PackageCuratoryGroup.executeQuery("delete from PackageCuratoryGroup as o where group = :component", [component: this])
-      PlatformCuratoryGroup.executeQuery("delete from PlatformCuratoryGroup as o where group = :component", [component: this])
-      SourceCuratoryGroup.executeQuery("delete from SourceCuratoryGroup as o where group = :component", [component: this])
+      OrgCuratoryGroup.executeUpdate("delete from OrgCuratoryGroup as o where group = :component", [component: this])
+      PackageCuratoryGroup.executeUpdate("delete from PackageCuratoryGroup as o where group = :component", [component: this])
+      PlatformCuratoryGroup.executeUpdate("delete from PlatformCuratoryGroup as o where group = :component", [component: this])
+      SourceCuratoryGroup.executeUpdate("delete from SourceCuratoryGroup as o where group = :component", [component: this])
     }
     else {
       ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview = :component)", [component: this])
@@ -1135,19 +1137,21 @@ where cp.owner = :c
 
     if (this.respondsTo('publisherLinks')) {
       TitlePublisher.executeUpdate("delete from TitlePublisher where title = :component", [component: this])
+      TitleInstancePlatform.executeUpdate("delete from TitleInstancePlatform where title = :component", [component: this])
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set title = null where title = :component", [component: this])
     }
     else if (this.class == Org) {
       TitlePublisher.executeUpdate("delete from TitlePublisher where publisher = :component", [component: this])
-      OrgCuratoryGroup.executeQuery("delete from OrgCuratoryGroup as o where org = :component", [component: this])
+      OrgCuratoryGroup.executeUpdate("delete from OrgCuratoryGroup as o where org = :component", [component: this])
     }
     else if (this.class == Package) {
-      PackageCuratoryGroup.executeQuery("delete from PackageCuratoryGroup as o where pkg = :component", [component: this])
+      PackageCuratoryGroup.executeUpdate("delete from PackageCuratoryGroup as o where pkg = :component", [component: this])
     }
     else if (this.class == Platform) {
-      PlatformCuratoryGroup.executeQuery("delete from PlatformCuratoryGroup as o where platform = :component", [component: this])
+      PlatformCuratoryGroup.executeUpdate("delete from PlatformCuratoryGroup as o where platform = :component", [component: this])
     }
     else if (this.class == Source) {
-      SourceCuratoryGroup.executeQuery("delete from SourceCuratoryGroup as o where source = :component", [component: this])
+      SourceCuratoryGroup.executeUpdate("delete from SourceCuratoryGroup as o where source = :component", [component: this])
     }
 
     ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component = :component", [component: this])
@@ -1155,64 +1159,7 @@ where cp.owner = :c
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component = :component", [component: this])
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component = :component", [component: this])
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component = :component", [component: this])
-    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf = :component", [component: this])
-    KBComponent.executeUpdate("delete from ComponentPrice where owner = :component", [component: this])
     this.delete(failOnError: true)
-
-    result
-  }
-
-  static Map expungeAll(List components) {
-    log.debug("Component bulk expunge");
-    Map result = [num_requested: components.size(), num_expunged: 0]
-    log.debug("Expunging ${result.num_requested} components")
-    List remaining = components
-
-    while (remaining.size() > 0) {
-      List batch = remaining.take(50)
-      remaining = remaining.drop(50)
-
-      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)", [component: batch])
-      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)", [component: batch])
-
-      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))", [component: batch])
-      AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as g where g.review in ( select r from ReviewRequest as r where r.componentToReview in (:component))", [component: batch])
-      List events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant.id IN (:component)", [component: batch])
-
-      events_to_delete.each {
-        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
-        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
-      }
-
-      // No batch delete for CuratoryGroups!
-
-      if (this.respondsTo('publisherLinks')) {
-        TitlePublisher.executeUpdate("delete from TitlePublisher where title in (:component)", [component: batch])
-      }
-      else if (this.class == Org) {
-        TitlePublisher.executeUpdate("delete from TitlePublisher where publisher in (:component)", [component: batch])
-      }
-      else if (this.class == Package) {
-        PackageCuratoryGroup.executeQuery("delete from PackageCuratoryGroup as o where pkg IN (:component)", [component: batch])
-      }
-      else if (this.class == Platform) {
-        PlatformCuratoryGroup.executeQuery("delete from PlatformCuratoryGroup as o where platform in (:component)", [component: batch])
-      }
-      else if (this.class == Source) {
-        SourceCuratoryGroup.executeQuery("delete from SourceCuratoryGroup as o where source in (:component)", [component: batch])
-      }
-
-      ComponentIdentifier.executeUpdate("delete from ComponentIdentifier as c where c.component in (:component)", [component: batch])
-      ComponentAttachment.executeUpdate("delete from ComponentAttachment as c where c.component in (:component)", [component: batch])
-      ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)", [component: batch])
-      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)", [component: batch])
-      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch])
-      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch])
-      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
-      ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
-
-      result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
-    }
 
     result
   }

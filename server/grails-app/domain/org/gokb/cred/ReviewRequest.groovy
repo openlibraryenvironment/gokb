@@ -92,7 +92,7 @@ class ReviewRequest {
 
   public List availableActions() {
     [
-      [code:'method::RRTransfer', label:'Transfer To...'],
+      [code:'method::RRTransfer', label:'Transfer To...', perm: 'admin'],
       [code:'method::RRClose', label:'Close']
     ]
   }
@@ -110,11 +110,11 @@ class ReviewRequest {
     return "Review Request";
   }
 
-  def getAllocatedGroups() {
+  public List getAllocatedGroups() {
     return AllocatedReviewGroup.findAllByReview(this)
   }
 
-  def getActiveAllocatedGroups() {
+  public List getActiveAllocatedGroups() {
     RefdataValue status_inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
     return AllocatedReviewGroup.findAllByReviewAndStatusNotEqual(this, status_inactive)
   }
@@ -140,29 +140,31 @@ class ReviewRequest {
     }
   }
 
-  def getAdditional() {
-    def result = null
-    if (additionalInfo && additionalInfo.length() > 0 ) {
-      result = JSON.parse(additionalInfo);
-    }
-    result;
-  }
+  public Map getAdditional() {
+    Map result = null
 
-  def getAllocationLog() {
-    def result = ReviewRequestAllocationLog.executeQuery("from ReviewRequestAllocationLog where rr = :rr",[rr: this])
+    if (additionalInfo && additionalInfo.length() > 0 ) {
+      result = JSON.parse(additionalInfo)
+    }
     result
   }
 
-  def expunge() {
+  public List getAllocationLog() {
+    List result = ReviewRequestAllocationLog.executeQuery("from ReviewRequestAllocationLog where rr = :rr", [rr: this])
+
+    result
+  }
+
+  public void expunge() {
     ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog where rr = :rr",[rr: this])
     AllocatedReviewGroup.removeAll(this)
     this.delete(failOnError: true)
   }
 
-  public userAvailableActions() {
-    def user = springSecurityService.currentUser
-    def allActions = []
-    def result = []
+  public List userAvailableActions() {
+    User user = springSecurityService.currentUser
+    List allActions = []
+    List result = []
 
     if (this.respondsTo('availableActions')) {
       allActions = this.availableActions()

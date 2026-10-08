@@ -51,78 +51,68 @@ class TitleInstancePackagePlatform extends KBComponent {
   Set coverageStatements = []
 
   private static refdataDefaults = [
-      "format"       : "Electronic",
-      "delayedOA"    : "Unknown",
-      "hybridOA"     : "Unknown",
-      "primary"      : "No",
-      "coverageDepth": "Fulltext"
+    format: "Electronic",
+    delayedOA: "Unknown",
+    hybridOA: "Unknown",
+    primary: "No"
   ]
 
-  static jsonMapping = [
-      'ignore'       : [
-          'format',
-          'startIssue',
-          'delayedOA',
-          'hybridOA',
-          'coverageNote',
-          'primary',
-          'delayedOAEmbargo',
-          'coverageDepth',
-          'startVolume',
-          'endDate',
-          'embargo',
-          'startDate',
-          'endIssue',
-          'endVolume',
-          'description',
-          'hybridOAUrl'
-      ],
-      'es'           : [
-          'hostPlatformUuid'        : "hostPlatform.uuid",
-          'hostPlatformName'        : "hostPlatform.name",
-          'hostPlatform'            : "hostPlatform.id",
-          'tippTitleUuid'           : "title.uuid",
-          'tippTitleName'           : "title.name",
-          'tippTitle'               : "title.id",
-          'tippPackageUuid'         : "pkg.uuid",
-          'tippPackageName'         : "pkg.name",
-          'tippPackage'             : "pkg.id",
-          'titleType'               : "title.niceName",
-          'coverage'                : "coverageStatements",
-          'publisherName'           : "publisherName",
-          'dateFirstInPrint'        : "dateFirstInPrint",
-          'dateFirstOnline'         : "dateFirstOnline",
-          'firstAuthor'             : "firstAuthor",
-          'publicationType'         : "publicationType",
-          'volumeNumber'            : "volumeNumber",
-          'editionStatement'        : "editionStatement",
-          'firstEditor'             : "firstEditor",
-          'parentPublicationTitleId': "parentPublicationTitleId",
-          'precedingPublicationId'  : "precedingPublicationId",
-          'lastChangedExternal'     : "lastChangedExternal",
-          'medium'                  : "medium",
-          'language'                : "language",
-          'importId'                : "importId"
-      ],
-      'defaultLinks' : [
-          'pkg',
-          'title',
-          'hostPlatform'
-      ],
-      'defaultEmbeds': [
-          'ids',
-          'coverageStatements',
-          'prices',
-          'subjects'
-      ]
+  static Map jsonMapping = [
+    ignore: [
+      'format',
+      'delayedOA',
+      'hybridOA',
+      'primary',
+      'delayedOAEmbargo',
+      'description',
+      'hybridOAUrl'
+    ],
+    es: [
+      hostPlatformUuid: "hostPlatform.uuid",
+      hostPlatformName: "hostPlatform.name",
+      hostPlatform: "hostPlatform.id",
+      tippTitleUuid: "title.uuid",
+      tippTitleName: "title.name",
+      tippTitle: "title.id",
+      tippPackageUuid: "pkg.uuid",
+      tippPackageName: "pkg.name",
+      tippPackage: "pkg.id",
+      titleType: "title.niceName",
+      coverage: "coverageStatements",
+      publisherName: "publisherName",
+      dateFirstInPrint: "dateFirstInPrint",
+      dateFirstOnline: "dateFirstOnline",
+      firstAuthor: "firstAuthor",
+      publicationType: "publicationType",
+      volumeNumber: "volumeNumber",
+      editionStatement: "editionStatement",
+      firstEditor: "firstEditor",
+      parentPublicationTitleId: "parentPublicationTitleId",
+      precedingPublicationId: "precedingPublicationId",
+      lastChangedExternal: "lastChangedExternal",
+      medium: "medium",
+      language: "language",
+      importId: "importId"
+    ],
+    defaultLinks: [
+      'pkg',
+      'title',
+      'hostPlatform'
+    ],
+    defaultEmbeds: [
+      'ids',
+      'coverageStatements',
+      'prices',
+      'subjects'
+    ]
   ]
 
   static hasMany = [
-      coverageStatements: TIPPCoverageStatement
+    coverageStatements: TIPPCoverageStatement
   ]
 
   static mappedBy = [
-      coverageStatements: 'owner'
+    coverageStatements: 'owner'
   ]
 
   public getPersistentId() {
@@ -214,7 +204,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Override
   static TitleInstancePackagePlatform lookupByIO(String idtype, String idvalue) {
     TitleInstancePackagePlatform result = null
-    Identifier normid = Identifier.normalizeIdentifier(idvalue)
+    String normid = Identifier.normalizeIdentifier(idvalue)
     IdentifierNamespace namespace = IdentifierNamespace.findByValueIlike(idtype)
 
     if (normid && namespace) {
@@ -234,8 +224,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Override
   static List lookupAllByIO(String idtype, String idvalue) {
-    Set result = []
-    Identifier normid = Identifier.normalizeIdentifier(idvalue)
+    List result = []
+    String normid = Identifier.normalizeIdentifier(idvalue)
     IdentifierNamespace namespace = IdentifierNamespace.findByValueIlike(idtype)
 
     if (normid && namespace) {

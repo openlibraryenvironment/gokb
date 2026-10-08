@@ -125,19 +125,20 @@ class TippUpsertService {
           tipp = uuid_tipp
         }
         else {
-          log.warn("TIPP matched by ID has different links! (incoming: ${pkg}, ${plt} - match: ${uuid_tipp.pkg}, ${uuid_tipp.hostPlatform})")
+          log.error("TIPP matched by UUID has different links! (incoming: ${pkg}, ${plt} - match: ${uuid_tipp.pkg}, ${uuid_tipp.hostPlatform})")
+          return null
         }
       }
 
       List tipps = []
 
-      if (tipps.size() == 0 && ti) {
+      if (ti) {
         tipps = TitleInstancePackagePlatform.executeQuery('''select tipp from TitleInstancePackagePlatform as tipp
-                                                              where tipp.pkg = :pkg
-                                                              and tipp.hostPlatform = :plt
-                                                              and tipp.title = :ti
-                                                              and tipp.status != :sd''',
-                                                              [pkg: pkg, plt: plt, ti: ti, sd: status_deleted])
+                    where tipp.pkg = :pkg
+                    and tipp.hostPlatform = :plt
+                    and tipp.title = :ti
+                    and tipp.status != :sd''',
+                    [pkg: pkg, plt: plt, ti: ti, sd: status_deleted])
       }
 
       if (!tipp) {

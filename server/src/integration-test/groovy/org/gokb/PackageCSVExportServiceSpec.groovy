@@ -14,19 +14,7 @@ import java.nio.file.Paths
 import java.time.LocalDateTime
 
 import org.gokb.*
-import org.gokb.cred.BookInstance
-import org.gokb.cred.Identifier
-import org.gokb.cred.IdentifierNamespace
-import org.gokb.cred.JournalInstance
-import org.gokb.cred.KBComponent
-import org.gokb.cred.Org
-import org.gokb.cred.Package
-import org.gokb.cred.Platform
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.ReviewRequest
-import org.gokb.cred.TitleInstance
-import org.gokb.cred.TitleInstancePackagePlatform
-import org.gokb.cred.Combo
+import org.gokb.cred.*
 import org.hibernate.SessionFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.annotation.Rollback
@@ -81,12 +69,12 @@ class PackageCSVExportServiceSpec extends Specification {
   def setup() {
     filePath = packageCSVExportService.exportFilePath()
 
-    testOrg = Org.findByName('PackageService Test Org') ?: new Org(name: 'PackageService Test Org').save(flush: true)
-    testPlt = Platform.findByName('PackageService Test Platform') ?: new Platform(name: 'PackageService Test Platform', provider: testOrg).save(flush: true)
+    testOrg = Org.findByName('PackageService Test Org') ?: new Org(name: 'PackageService Test Org').save(flush: true, failOnError: true)
+    testPlt = Platform.findByName('PackageService Test Platform') ?: new Platform(name: 'PackageService Test Platform', provider: testOrg).save(flush: true, failOnError: true)
 
-    Package testPkg1 = Package.findByName('PackageService Test Package') ?: new Package(name: 'PackageService Test Package', provider: testOrg, nominalPlatform: testPlt).save(flush: true)
-    Package testPkg2 = Package.findByName('PackageService Test AddJournal') ?: new Package(name: 'PackageService Test AddJournal', provider: testOrg, nominalPlatform: testPlt).save(flush: true)
-    Package testPkg3 = Package.findByName('PackageService Test FirstLine') ?: new Package(name: 'PackageService Test FirstLine', provider: testOrg, nominalPlatform: testPlt).save(flush: true)
+    Package testPkg1 = Package.findByName('PackageService Test Package') ?: new Package(name: 'PackageService Test Package', provider: testOrg, nominalPlatform: testPlt).save(flush: true, failOnError: true)
+    Package testPkg2 = Package.findByName('PackageService Test AddJournal') ?: new Package(name: 'PackageService Test AddJournal', provider: testOrg, nominalPlatform: testPlt).save(flush: true, failOnError: true)
+    Package testPkg3 = Package.findByName('PackageService Test FirstLine') ?: new Package(name: 'PackageService Test FirstLine', provider: testOrg, nominalPlatform: testPlt).save(flush: true, failOnError: true)
 
 
     if (!issn_ns) {
@@ -99,16 +87,16 @@ class PackageCSVExportServiceSpec extends Specification {
       isbn_ns = IdentifierNamespace.findByValue('isbn')
     }
 
-    isbn = Identifier.findByNamespaceAndValue(isbn_ns, '979-11-655-6390-5') ?: new Identifier(namespace: isbn_ns, value: '979-11-655-6390-5').save(flush: true)
-    pisbn = Identifier.findByNamespaceAndValue(isbn_ns, '979-11-655-6390-5') ?: new Identifier(namespace: isbn_ns, value: '979-11-655-6390-5').save(flush: true)
-    issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
-    eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338')
-    eissn2 = Identifier.findByNamespaceAndValue(eissn_ns, '1727-9445') ?: new Identifier(namespace: eissn_ns, value: '1727-9445')
+    isbn = Identifier.findByNamespaceAndValue(isbn_ns, '979-11-655-6390-5') ?: new Identifier(namespace: isbn_ns, value: '979-11-655-6390-5').save(flush: true, failOnError: true)
+    pisbn = Identifier.findByNamespaceAndValue(isbn_ns, '979-11-655-6390-5') ?: new Identifier(namespace: isbn_ns, value: '979-11-655-6390-5').save(flush: true, failOnError: true)
+    issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483').save(flush: true, failOnError: true)
+    eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338').save(flush: true, failOnError: true)
+    eissn2 = Identifier.findByNamespaceAndValue(eissn_ns, '1727-9445') ?: new Identifier(namespace: eissn_ns, value: '1727-9445').save(flush: true, failOnError: true)
 
     BookInstance book = BookInstance.findByName('PackageService Book 1')
 
     if (!book) {
-      book = new BookInstance(name: 'PackageService Book 1').save(flush:true)
+      book = new BookInstance(name: 'PackageService Book 1').save(flush: true, failOnError: true)
       book.addIdentifier(isbn)
       book.save(flush: true)
     }
@@ -153,14 +141,14 @@ class PackageCSVExportServiceSpec extends Specification {
 
       TitleInstancePackagePlatform tipp = tippUpsertService.upsertDTO(tipp_map)
 
-      tipp.addIdentifiers(isbn)
+      tipp.addIdentifier(isbn)
     }
 
     if (!TitleInstancePackagePlatform.findByName('PackageService BookTipp 2')) {
       Map tipp_map = [
         pkg: testPkg2.id,
         hostPlatform: testPlt.id,
-        title: book.id
+        title: book.id,
         name: 'PackageService BookTipp 2',
         url: 'https://package-caching-test.test/book1',
         editStatus: 'Approved',
@@ -309,6 +297,10 @@ class PackageCSVExportServiceSpec extends Specification {
       col_positions[col] = col_ctr++
     }
 
+    List tipps = TitleInstancePackagePlatform.findAllByPkg(testPkg)
+
+    tipps[0].ids*.value.contains('979-11-655-6390-5')
+
     String[] row_data = csv.readNext()
 
     row_data[col_positions['publication_title']] == 'PackageService BookTipp 1'
@@ -387,7 +379,7 @@ class PackageCSVExportServiceSpec extends Specification {
       ]
     ]
 
-    TitleInstancePackagePlatform tipp1 = tippUpsertService.upsertDTO(tipp1_map)
+    TitleInstancePackagePlatform tipp1 = tippUpsertService.upsertDTO(tipp1_map).save(flush: true, failOnError: true)
     tipp1.addIdentifiers([issn, eissn])
 
     sleep(1000)

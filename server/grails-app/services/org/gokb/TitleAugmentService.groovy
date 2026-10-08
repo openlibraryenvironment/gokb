@@ -127,7 +127,6 @@ class TitleAugmentService {
                 "Review all titles for possible discrepancies",
                 "Matched ZDB-ID is already linked to another title instance.",
                 null,
-                null,
                 (additionalInfo as JSON).toString(),
                 rr_in_use,
                 editorialGroup
@@ -174,7 +173,6 @@ class TitleAugmentService {
             //     titleInstance,
             //     "Check for reference ID",
             //     "No ZDB matches for linked IDs",
-            //     null,
             //     null,
             //     null,
             //     rr_no_results,
@@ -231,7 +229,6 @@ class TitleAugmentService {
                 "Review all titles for possible discrepancies",
                 "Matched ZDB-ID is already linked to another title instance.",
                 null,
-                null,
                 (additionalInfo as JSON).toString(),
                 rr_in_use,
                 editorialGroup
@@ -273,7 +270,6 @@ class TitleAugmentService {
               "Choose the correct ZDB-ID from the list of candidates",
               "Multiple ZDB-IDs found for ISSN ids",
               null,
-              null,
               (additionalInfo as JSON).toString(),
               rr_multiple,
               editorialGroup
@@ -301,7 +297,6 @@ class TitleAugmentService {
             titleInstance,
             "Choose the correct ZDB-ID from the list of candidates",
             "Multiple ZDB-IDs connected to a single title",
-            null,
             null,
             null,
             rr_merged,
@@ -407,7 +402,6 @@ class TitleAugmentService {
                   "No EZB matches for linked ISSNs",
                   null,
                   null,
-                  null,
                   rr_info,
                   editorialGroup
               )
@@ -444,7 +438,6 @@ class TitleAugmentService {
                     "No EZB matches for title name",
                     null,
                     null,
-                    null,
                     rr_info,
                     editorialGroup
                 )
@@ -456,7 +449,6 @@ class TitleAugmentService {
                 titleInstance,
                 "No action required.",
                 "Multiple EZB-IDs found for ISSN and title name",
-                null,
                 null,
                 ([candidates: ezbCandidates] as JSON).toString(),
                 rr_multi_results,
@@ -845,9 +837,10 @@ class TitleAugmentService {
   }
 
   /**
-   * Close off any existing publisher relationships and add a new one for this publiser
+   * Close off any existing publisher relationships and add a new one for this publisher
    */
   public boolean changePublisher(TitleInstance ti, Org new_publisher, boolean null_start = false) {
+    RefdataValue status_active = RefdataCategory.lookup(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_ACTIVE)
 
     if (new_publisher != null) {
 
@@ -868,7 +861,7 @@ class TitleAugmentService {
         }
 
         // Now create a new TitlePublisher
-        TitlePublisher new_obj = new TitlePublisher(title: ti, publisher: new_publisher, startDate: (null_start ? null : new Date()))
+        TitlePublisher new_obj = new TitlePublisher(title: ti, publisher: new_publisher, startDate: (null_start ? null : new Date()), status: status_active)
         ti.addToPublisherLinks(new_obj)
         new_obj.save(flush:true)
 
@@ -892,8 +885,9 @@ class TitleAugmentService {
 
       Org publisher = Org.findByName(publisher_name)
       String norm_pub_name = Org.generateNormname(publisher_name);
-      RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-      RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+      RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+      RefdataValue status_active = RefdataCategory.lookup(TitlePublisher.RD_STATUS, TitlePublisher.STATUS_ACTIVE)
 
       if (!publisher) {
         // Lookup using norm name.
@@ -921,7 +915,7 @@ class TitleAugmentService {
         List existing_links = TitlePublisher.executeQuery("from TitlePublisher where title = :ti and publisher = :pub", [ti: ti, pub: publisher])
 
         if (existing_links.size() == 0) {
-          TitlePublisher new_obj = new TitlePublisher(title: ti, publisher: publisher)
+          TitlePublisher new_obj = new TitlePublisher(title: ti, publisher: publisher, status: status_active)
           ti.addToPublisherLinks(new_obj)
           new_obj.save(flush: true, failOnError: true)
           log.debug("Added new publisher ..")

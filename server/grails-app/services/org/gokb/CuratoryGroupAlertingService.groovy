@@ -133,11 +133,13 @@ class CuratoryGroupAlertingService {
     CuratoryGroup ezb_admin = grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators") ? CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.ezbAugment.rrCurators")) : null
     Session session = sessionFactory.currentSession
 
-    List<JobResult> completed_jobs = JobResult.executeQuery('''select groupId, linkedItemId from JobResult
-                                                                where linkedItemId is not null
-                                                                and groupId is not null
-                                                                and startTime > :lastDay''',
-                                                                [lastDay: lastDayDate])
+    List<JobResult> completed_jobs = JobResult.executeQuery('''select groupId,
+        linkedItemId
+        from JobResult
+        where linkedItemId is not null
+        and groupId is not null
+        and startTime > :lastDay''',
+        [lastDay: lastDayDate])
 
     Map groups_list = [:]
 
@@ -163,15 +165,16 @@ class CuratoryGroupAlertingService {
 
             Package pkg = Package.get(pid)
 
-            int num_new_reviews = ReviewRequest.executeQuery('''select count(rr.id) from ReviewRequest as rr
-                                                                where status = :open
-                                                                and dateCreated > :lastDay
-                                                                and exists (
-                                                                  select 1 from TitleInstancePackagePlatform as t
-                                                                  where t.id = rr.componentToReview.id
-                                                                  t.pkg = :pkg
-                                                                )''',
-                                                                [lastDay: lastDayDate, open: rr_open, pkg: pkg])[0]
+            int num_new_reviews = ReviewRequest.executeQuery('''select count(rr.id)
+                from ReviewRequest as rr
+                where status = :open
+                and dateCreated > :lastDay
+                and exists (
+                  select 1 from TitleInstancePackagePlatform
+                  where id = rr.componentToReview.id
+                  and pkg = :pkg
+                )''',
+                [lastDay: lastDayDate, open: rr_open, pkg: pkg])[0]
 
             if (num_new_reviews > 0) {
               log.debug("Got ${num_new_reviews} new reviews!")

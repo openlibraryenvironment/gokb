@@ -11,15 +11,7 @@ import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.BlockingHttpClient
 
-import org.gokb.cred.Package
-import org.gokb.cred.Platform
-import org.gokb.cred.JournalInstance
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.Identifier
-import org.gokb.cred.IdentifierNamespace
-import org.gokb.cred.TitleInstancePackagePlatform
-import org.gokb.cred.TIPPCoverageStatement
-import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
 import org.springframework.web.client.RestTemplate

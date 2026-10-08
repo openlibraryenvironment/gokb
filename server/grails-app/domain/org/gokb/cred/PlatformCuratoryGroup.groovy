@@ -21,6 +21,6 @@ class PlatformCuratoryGroup {
   }
 
   static int removeAllForComponent(Platform comp) {
-    return executeUpdate('DELETE FROM PlatformCuratoryGroup WHERE platform = :comp', [comp: comp])
+    return PlatformCuratoryGroup.executeUpdate('DELETE FROM PlatformCuratoryGroup WHERE platform = :comp', [comp: comp])
   }
 }

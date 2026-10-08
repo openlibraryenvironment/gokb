@@ -1,3 +1,4 @@
+import grails.util.Environment
 import java.text.SimpleDateFormat
 
 // Added by the Spring Security Core plugin:
@@ -10,7 +11,7 @@ grails.plugin.springsecurity.ui.forgotPassword.emailFrom = "GOKB<no-reply@gokb.o
 grails.mime.file.extensions=false
 grails.plugin.springsecurity.ui.register.postRegisterUrl = '/public/index'
 
-grails.plugin.databasemigration.updateOnStart = true
+grails.plugin.databasemigration.updateOnStart = (Environment.current != Environment.TEST)
 
 grails {
     plugin {

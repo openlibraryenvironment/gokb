@@ -1169,7 +1169,9 @@ class RestMappingService {
         TitlePublisher tp = TitlePublisher.findByTitleAndPublisher(obj, pub_obj)
 
         if (!tp) {
-          obj.addPublisher(pub_obj)
+          tp = new TitlePublisher(title: obj, publisher: pub_obj)
+          obj.addToPublisherLinks(new_obj)
+          tp.save(flush: true)
           result.changed = true
         }
 
@@ -1189,18 +1191,12 @@ class RestMappingService {
 
             if (link_status) {
               tp.status = link_status
+              tp.save(flush: true)
             }
             else {
               result.errors << [message: "Unable to save status for publisher link with info ${pub}!", baddata: pub['_linkedStatus']]
             }
           }
-        }
-
-        if (tp.validate()) {
-          tp.save(flush: true, failOnError: true)
-        }
-        else {
-          result.errors << [message: "Unable to save dates for publisher link with info ${pub}!", baddata: pub]
         }
       }
     }

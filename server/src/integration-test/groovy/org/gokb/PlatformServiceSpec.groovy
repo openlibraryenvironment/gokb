@@ -33,30 +33,28 @@ class PlatformServiceSpec extends Specification {
   SessionFactory sessionFactory
 
   def setup() {
-    Org publisher = Org.findByName("PlatformService Test Org") ?: new Org(name: "PlatformService Test Org").save(flush: true)
-    Platform old_plt = Platform.findByName("PlatformService Test Platform Merge Old") ?: new Platform(name: "PlatformService Test Platform Merge Old", provider: publisher).save(flush: true)
-    Platform new_plt = Platform.findByName("PlatformService Test Platform Merge New") ?: new Platform(name: "PlatformService Test Platform Merge New", provider: publisher).save(flush: true)
-    Package pkg = Package.findByName("PlatformService Test Package") ?: new Package(name: "PlatformService Test Package", nominalPlatform: old_plt, provider: publisher).save(flush: true)
+    Org publisher = Org.findByName("PlatformService Test Org") ?: new Org(name: "PlatformService Test Org").save(flush: true, failOnError: true)
+    Platform old_plt = Platform.findByName("PlatformService Test Platform Merge Old") ?: new Platform(name: "PlatformService Test Platform Merge Old", provider: publisher).save(flush: true, failOnError: true)
+    Platform new_plt = Platform.findByName("PlatformService Test Platform Merge New") ?: new Platform(name: "PlatformService Test Platform Merge New", provider: publisher).save(flush: true, failOnError: true)
+    Package pkg = Package.findByName("PlatformService Test Package") ?: new Package(name: "PlatformService Test Package", nominalPlatform: old_plt, provider: publisher).save(flush: true, failOnError: true)
 
     IdentifierNamespace issn_ns = IdentifierNamespace.findByValue('issn')
     IdentifierNamespace eissn_ns = IdentifierNamespace.findByValue('eissn')
 
-    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
-    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338')
+    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483').save(flush: true, failOnError: true)
+    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338').save(flush: true, failOnError: true)
 
     JournalInstance journal = JournalInstance.findByName("PlatformService Journal")
 
     if (!journal) {
-      journal = new JournalInstance(name: "PlatformService Journal").save(flush:true)
-      journal.addIdentifier(issn)
-      journal.addIdentifier(eissn)
-      journal.save(flush: true)
+      journal = new JournalInstance(name: "PlatformService Journal").save(flush: true, failOnError: true)
+      journal.addIdentifiers([issn, eissn])
     }
 
     TitleInstancePackagePlatform test_tipp = TitleInstancePackagePlatform.findByName("Test TIPP platform change")
 
     if (!test_tipp) {
-      def tmap = [
+      Map tmap = [
         pkg            : pkg.id,
         hostPlatform   : old_plt.id,
         title          : journal.id,
@@ -69,9 +67,7 @@ class PlatformServiceSpec extends Specification {
       ]
 
       test_tipp = tippUpsertService.upsertDTO(tmap)
-
-      test_tipp.addIdentifiers(issn, eissn)
-      test_tipp.save(flush: true)
+      test_tipp.addIdentifiers([issn, eissn])
     }
   }
 
@@ -87,10 +83,10 @@ class PlatformServiceSpec extends Specification {
 
   void "test platform merge"() {
     given:
-    def old_plt = Platform.findByName("PlatformService Test Platform Merge Old")
-    def new_plt = Platform.findByName("PlatformService Test Platform Merge New")
+    Platform old_plt = Platform.findByName("PlatformService Test Platform Merge Old")
+    Platform new_plt = Platform.findByName("PlatformService Test Platform Merge New")
     when:
-    def result = platformService.merge(old_plt.id, new_plt.id)
+    Map result = platformService.merge(old_plt.id, new_plt.id)
     then:
     result.result == 'OK'
     result.tipps == 1
@@ -103,7 +99,7 @@ class PlatformServiceSpec extends Specification {
     List moved_tipl = TitleInstancePlatform.executeQuery("from TitleInstancePlatform as t where hostPlatform = :np)", [np: new_plt])
     moved_tipl.size() == 1
 
-    def pkg = Package.findByName("PlatformService Test Package")
+    Package pkg = Package.findByName("PlatformService Test Package")
     pkg.nominalPlatform == new_plt
   }
 }

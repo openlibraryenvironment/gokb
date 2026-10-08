@@ -569,7 +569,7 @@ class BulkPackageImportService {
                 }
 
                 if (!obj && collection_id) {
-                  def candidates = collection_id.getActiveIdentifiedComponents('Package')
+                  List candidates = collection_id.getActiveIdentifiedComponentsOfType('Package')
 
                   if (candidates.size() == 1) {
                     obj = KBComponent.deproxy(candidates[0])
@@ -786,7 +786,7 @@ class BulkPackageImportService {
                         boolean already_linked = obj.ids?.contains(other_id)
 
                         if (!already_linked && (!other_id.namespace.targetType || other_id.namespace.targetType == ns_type_pkg)) {
-                          new ComponentIdentifier(component: obj, identifier: other_id).save(flush: true, failOnError: true)
+                          obj.addIdentifier(other_id)
                         }
                         else if (already_linked) {
                           log.debug("Skipping existing id ${other_id}")

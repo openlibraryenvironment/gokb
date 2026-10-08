@@ -45,12 +45,10 @@ class TitleAugmentServiceSpec extends Specification {
     Identifier issn = Identifier.findByValueAndNamespace("0178-2312", issn_ns) ?: new Identifier(value: '0178-2312', namespace: issn_ns).save(flush: true)
     titleOne.addIdentifiers([eissn, issn])
     titleOne.addPublisher(publisher)
-    titleOne.save(flush: true)
 
     titleTwo = JournalInstance.findByName("TitleAugmentTestTitleTwo") ?: new JournalInstance(name: "TitleAugmentTestTitleTwo").save(flush: true)
     Identifier zdb_id = Identifier.findByValueAndNamespace('2810346-4', zdb_ns) ?: new Identifier(value: '2810346-4', namespace: zdb_ns).save(flush: true)
     titleTwo.addIdentifier(zdb_id)
-    titleTwo.save(flush: true)
   }
 
   def cleanup() {

@@ -37,7 +37,7 @@ class OtherInstance extends TitleInstance {
   }
 
   def afterInsert() {
-    submitRemapWorkTask();
+    // submitRemapWorkTask();
   }
 
   def submitRemapWorkTask(newMap) {

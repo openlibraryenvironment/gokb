@@ -235,19 +235,29 @@ class ConcurrencyManagerService {
     return result
   }
 
-  public List getActiveJobsForType(String type) {
+  public List getActiveJobsForType(String type_val) {
     List result = []
     Map allJobs = getJobs()
-
-    if (type instanceof String) {
-      type = RefdataCategory.lookup("Job.Type", type)
-    }
+    RefdataValue type = RefdataCategory.lookup("Job.Type", type_val)
 
     if (type) {
       allJobs.each { uuid, value ->
         if (value.type == type && value.begun && !value.isDone() && !value.isCancelled()) {
           result << value
         }
+      }
+    }
+
+    return result
+  }
+
+  public List getActiveJobsForType(RefdataValue type) {
+    List result = []
+    Map allJobs = getJobs()
+
+    allJobs.each { uuid, value ->
+      if (value.type == type && value.begun && !value.isDone() && !value.isCancelled()) {
+        result << value
       }
     }
 

@@ -44,26 +44,26 @@ class PackageTestSpec extends AbstractAuthSpec {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
 
-    CuratoryGroup testGroup = CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush: true)
-    Identifier book_doi = Identifier.findByValueAndNamespace('10.1021/978-3-16-148410-0', IdentifierNamespace.findByValue('doi')) ?: new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi'))
-    Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
-    Identifier serial_issn = Identifier.findByValueAndNamespace('0020-0255', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '0020-0255', namespace: IdentifierNamespace.findByValue('issn'))
-    Identifier serial_eissn = Identifier.findByValueAndNamespace('1872-6291', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '1872-6291', namespace: IdentifierNamespace.findByValue('eissn'))
-    IdentifierNamespace testJournalNs = IdentifierNamespace.findByValue('testj') ?: new IdentifierNamespace(value: 'testj').save(flush: true)
-    IdentifierNamespace testMonoNs = IdentifierNamespace.findByValue('testm') ?: new IdentifierNamespace(value: 'testm').save(flush: true)
-    Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
+    CuratoryGroup testGroup = CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush: true, failOnError: true)
+    Identifier book_doi = Identifier.findByValueAndNamespace('10.1021/978-3-16-148410-0', IdentifierNamespace.findByValue('doi')) ?: new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi')).save(flush: true, failOnError: true)
+    Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn')).save(flush: true, failOnError: true)
+    Identifier serial_issn = Identifier.findByValueAndNamespace('0020-0255', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '0020-0255', namespace: IdentifierNamespace.findByValue('issn')).save(flush: true, failOnError: true)
+    Identifier serial_eissn = Identifier.findByValueAndNamespace('1872-6291', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '1872-6291', namespace: IdentifierNamespace.findByValue('eissn')).save(flush: true, failOnError: true)
+    IdentifierNamespace testJournalNs = IdentifierNamespace.findByValue('testj') ?: new IdentifierNamespace(value: 'testj').save(flush: true, failOnError: true)
+    IdentifierNamespace testMonoNs = IdentifierNamespace.findByValue('testm') ?: new IdentifierNamespace(value: 'testm').save(flush: true, failOnError: true)
+    Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true, failOnError: true)
     Platform handlePlt = Platform.findByName("dx.doi.org") ?: new Platform(name: "dx.doi.org", primaryUrl: "http://dx.doi.org/", status: RefdataCategory.lookup('KBComponent.Status', 'Deleted')).save(flush: true, failOnError: true)
     Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt", provider: testOrg).save(flush: true, failOnError: true)
 
-    RefdataValue http_method = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
-    RefdataValue kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
-    RefdataValue freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
+    RefdataValue http_method = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true, failOnError: true)
+    RefdataValue kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true, failOnError: true)
+    RefdataValue freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true, failOnError: true)
     Source testSource = Source.findByName("TestPack") ?: new Source(
         name: "TestPack",
         url: "https://org/package",
         frequency: freq,
         defaultSupplyMethod: http_method,
-        defaultDataFormat: kbart).save(flush: true)
+        defaultDataFormat: kbart).save(flush: true, failOnError: true)
 
     Package testPackage = Package.findByName("TestPack")
     Package urlTestPackage = Package.findByName("TestPackHandleUrl")
@@ -78,44 +78,43 @@ class PackageTestSpec extends AbstractAuthSpec {
     }
 
     if (!urlTestPackage) {
-      urlTestPackage = new Package(name: "TestPackHandleUrl", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
+      urlTestPackage = new Package(name: "TestPackHandleUrl", nominalPlatform: testPlt, provider: testOrg).save(flush: true, failOnError: true)
     }
 
     if (!testPackageError) {
-      testPackageError = new Package(name: "TestPackPartialError", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
+      testPackageError = new Package(name: "TestPackPartialError", nominalPlatform: testPlt, provider: testOrg).save(flush: true, failOnError: true)
 
     }
 
     if (!testPackageInitNoDates) {
-      testPackageInitNoDates = new Package(name: "TestPackInitNoDates", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
+      testPackageInitNoDates = new Package(name: "TestPackInitNoDates", nominalPlatform: testPlt, provider: testOrg).save(flush: true, failOnError: true)
     }
 
     if (!testPackageInitWithDates) {
-      testPackageInitWithDates = new Package(name: "TestPackInitWithDates", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
+      testPackageInitWithDates = new Package(name: "TestPackInitWithDates", nominalPlatform: testPlt, provider: testOrg).save(flush: true, failOnError: true)
 
     }
 
     if (!testPackageUpdateDates) {
-      testPackageUpdateDates = new Package(name: "TestPackUpdateDates", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
+      testPackageUpdateDates = new Package(name: "TestPackUpdateDates", nominalPlatform: testPlt, provider: testOrg).save(flush: true, failOnError: true)
     }
 
     if (!testPackageNormNameMatch) {
-      testPackageUpdateDates = new Package(name: "Test: Package", nominalPlatform: testPlt, provider: testOrg).save(flush: true)
+      testPackageUpdateDates = new Package(name: "Test: Package", nominalPlatform: testPlt, provider: testOrg).save(flush: true, failOnError: true)
     }
 
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle")
 
     if (!testTitle) {
-      testTitle = new JournalInstance(name: "PackTestTitle").save(flush: true)
+      testTitle = new JournalInstance(name: "PackTestTitle").save(flush: true, failOnError: true)
       testTitle.addIdentifiers([serial_issn, serial_eissn])
     }
 
     BookInstance test_book = BookInstance.findByName('PackTestBook')
 
     if (!test_book) {
-      test_book = new BookInstance(name: 'PackTestBook').save(flush: true)
+      test_book = new BookInstance(name: 'PackTestBook').save(flush: true, failOnError: true)
       test_book.addIdentifiers([book_doi, book_isbn])
-      test_book.save(flush: true)
     }
 
     if (!TitleInstancePackagePlatform.findByName('TestPackJournalTIPP')) {
@@ -126,10 +125,9 @@ class PackageTestSpec extends AbstractAuthSpec {
         name: 'TestPackJournalTIPP',
         publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Serial'),
         importId: 'packTitleID',
-        url: 'https://test.url/journal']).save(flush: true)
+        url: 'https://test.url/journal']).save(flush: true, failOnError: true)
 
       test_tipp1.addIdentifiers([serial_issn, serial_eissn])
-      test_tipp1.save(flush: true)
     }
 
     if (!TitleInstancePackagePlatform.findByName('TestPackBookTIPP')) {
@@ -140,70 +138,29 @@ class PackageTestSpec extends AbstractAuthSpec {
         name: 'TestPackBookTIPP',
         publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Monograph'),
         importId: 'packBookID',
-        url: 'https://test.url/book']).save(flush: true)
+        url: 'https://test.url/book']).save(flush: true, failOnError: true)
 
       test_tipp2.addIdentifiers([book_doi, book_isbn])
     }
   }
 
   def cleanup() {
-    [
-      'TestPackJournalTIPP',
-      'TestJournalTIPPUpdate',
-      'TestJournalTIPPInit',
-      'TestJournalTIPPInitRetired',
-      'TestPackBookTIPP',
-      'TestPackMixedJournal',
-      'TestPackMixedBook',
-      'TestBookTIPPUpdate',
-      'TestBookTIPPInit',
-      'TestJournalTIPPSkip',
-      'TIPP Name',
-      'Journal of agricultural and food chemistry',
-      'Book of agricultural and food chemistry',
-      'TestPackOtherTitle1',
-      'TestPackOtherTitle2'
-    ].each {
-      TitleInstancePackagePlatform.findByName(it)?.expunge()
+    TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform").each {
+      TitleInstancePackagePlatform.findById(it).expunge()
+    }
+
+    Package.executeQuery("select id from Package").each {
+      Package.findById(it).expunge()
     }
 
     Source.findByName("TestPack")?.expunge()
 
-    [
-      "TestPack",
-      "UpdPack",
-      "TestPackageWithTipps",
-      "TestPackageWithProviderAndPlatform",
-      "TestPackHandleUrl",
-      "TestPackPartialError",
-      "TestPackInitNoDates",
-      "TestPackInitWithDates",
-      "TestPackUpdateDates",
-      "Test: Package"
-    ].each {
-      Package.findByName(it)?.expunge()
+    TitleInstance.executeQuery("select id from TitleInstancePlatform").each {
+      TitleInstancePlatform.findById(it)?.expunge()
     }
 
-    [
-      'PackTestTitle',
-      'PackTestBook',
-      'TestPackJournalTIPP',
-      'TestJournalTIPPUpdate',
-      'TestJournalTIPPInit',
-      'TestJournalTIPPInitRetired',
-      'TestPackBookTIPP',
-      'TestPackMixedJournal',
-      'TestPackMixedBook',
-      'TestBookTIPPUpdate',
-      'TestBookTIPPInit',
-      'TestJournalTIPPSkip',
-      'TIPP Name',
-      'Journal of agricultural and food chemistry',
-      'Book of agricultural and food chemistry',
-      'TestPackOtherTitle1',
-      'TestPackOtherTitle2'
-    ].each {
-      TitleInstance.findByName(it)?.expunge()
+    TitleInstance.executeQuery("select id from TitleInstance").each {
+      TitleInstance.findById(it)?.expunge()
     }
 
     CuratoryGroup.findByName("cgtest1")?.expunge()
@@ -259,23 +216,32 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.body().name == "UpdPack"
   }
 
-  void "test /rest/packages update comboList"() {
+  void "test /rest/packages update curatoryGroups"() {
     given:
     CuratoryGroup testGroup = CuratoryGroup.findByName("cgtest1")
     String urlPath = getUrlPath()
     Package testPackage = Package.findByName("TestPack")
 
     Map upd_body = [
-      curatoryGroups: [testGroup.id],
+      name: testPackage.name,
       provider: testPackage.provider.id,
-      nominalPlatform: testPackage.nominalPlatform.id
+      nominalPlatform: testPackage.nominalPlatform.id,
+      curatoryGroups: [testGroup.id]
     ]
 
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body)
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/packages/${testPackage.id}", upd_body)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.exchange(request, Map)
+
+    HttpResponse resp
+
+    try {
+      resp = http.exchange(request, Map)
+    }
+    catch (Exception e) {
+      resp = e.response
+    }
 
     then:
     resp.status == HttpStatus.OK
@@ -432,7 +398,6 @@ class PackageTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
     URI uri = UriBuilder.of(urlPath)
       .path("/rest/packages")
-      .queryParam('_embed', 'tipps')
       .build()
 
     HttpRequest request = HttpRequest.POST(uri, upd_body)
@@ -441,9 +406,8 @@ class PackageTestSpec extends AbstractAuthSpec {
 
     then:
     resp.status == HttpStatus.CREATED
-    resp.body()?._embedded?.tipps?.size() == 1
-    resp.body()?._embedded?.tipps[0].url == upd_body.tipps[0].url
-    resp.body()?._embedded?.tipps[0].name == upd_body.tipps[0].name
+    Package new_pkg = Package.get(resp.body().id)
+    new_pkg?.tippCount == 1
   }
 
   void "test /rest/packages/<id>/ingest with matching tipps"() {
@@ -473,7 +437,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     then:
     resp.status == HttpStatus.OK
     resp.body().job_result.report?.matched == 2
-    pkg.tipps.size() == 2
+    pkg.tippCount == 2
   }
 
   void "test /rest/packages/<id>/ingest with partial matching conflicts"() {
@@ -534,7 +498,8 @@ class PackageTestSpec extends AbstractAuthSpec {
     then:
     resp.status == HttpStatus.OK
     resp.body().job_result?.report?.created == 2
-    !pkg.tipps*.hostPlatform.contains(handlePlt)
+    List tipps = TitleInstancePackagePlatform.findAllByPkg(pkg)
+    !tipps*.hostPlatform.contains(handlePlt)
   }
 
   void "test /rest/packages/<id>/ingest with single invalid line"() {
@@ -771,7 +736,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     then:
     resp.status == HttpStatus.OK
     resp.body().job_result.report.created == 2
-    pkg.refresh().tipps?.size() == 2
+    pkg.refresh().tippCount == 2
     TitleInstancePackagePlatform.findByName('TestPackOtherTitle1')?.ids.find { it.namespace == testMonoNs }
     TitleInstancePackagePlatform.findByName('TestPackOtherTitle2')?.ids.find { it.namespace == testMonoNs }
   }

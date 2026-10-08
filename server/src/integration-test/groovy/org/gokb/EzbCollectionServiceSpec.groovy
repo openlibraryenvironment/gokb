@@ -175,7 +175,7 @@ class EzbCollectionServiceSpec extends Specification {
     type_results.created == 1
     Package.withNewSession {
       Package new_ezb_pkg = Package.findByName("EZB-WISO-01791: WISO Pflege")
-      new_ezb_pkg?.tipps?.size() > 0
+      new_ezb_pkg?.tippCount > 0
     }
   }
 

@@ -37,7 +37,7 @@ class CleanupServiceSpec extends Specification {
     if (!tippActive) {
       Map tippInfo = [
         pkg: cleanupHistoryPackage,
-        nominalPlatform: cleanupHistoryPlatform,
+        hostPlatform: cleanupHistoryPlatform,
         title: titleOne,
         url: "http://tets-url.com/testcleanup",
         name: "CleanupHistoryTestTipp"

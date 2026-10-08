@@ -21,6 +21,6 @@ class OrgCuratoryGroup {
   }
 
   static int removeAllForComponent(Org comp) {
-    return executeUpdate('DELETE FROM OrgCuratoryGroup WHERE org = :comp', [comp: comp])
+    return OrgCuratoryGroup.executeUpdate('DELETE FROM OrgCuratoryGroup WHERE org = :comp', [comp: comp])
   }
 }

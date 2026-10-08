@@ -559,7 +559,7 @@ class TitleLookupService {
     return t;
   }
 
-  private TitleInstance singleTIMatch(String title, TitleInstance ti, User user, project = null) {
+  private TitleInstance singleTIMatch(String title, TitleInstance ti, User user) {
 
     log.debug("singleTIMatch");
 
@@ -614,7 +614,6 @@ class TitleLookupService {
             "'${title}' added as a variant of '${ti.name}'.",
             "Match was made on 1st class identifier but title name seems to be very different.",
             user,
-            project,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookup('ReviewRequest.StdDesc', 'Name Mismatch'),
             componentLookupService.findCuratoryGroupOfInterest(ti, user)

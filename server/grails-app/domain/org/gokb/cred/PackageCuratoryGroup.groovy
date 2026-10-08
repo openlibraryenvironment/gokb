@@ -21,6 +21,6 @@ class PackageCuratoryGroup {
   }
 
   static int removeAllForComponent(Package comp) {
-    return executeUpdate('DELETE FROM PackageCuratoryGroup WHERE pkg = :comp', [comp: comp])
+    return PackageCuratoryGroup.executeUpdate('DELETE FROM PackageCuratoryGroup WHERE pkg = :comp', [comp: comp])
   }
 }

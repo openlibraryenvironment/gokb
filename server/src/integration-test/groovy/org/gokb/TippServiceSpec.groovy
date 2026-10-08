@@ -215,8 +215,8 @@ class TippServiceSpec extends Specification {
 
   void "Test create new title from a minimal TIPP"() {
     given:
-    Package pkg_id = Package.findByName("TippService Test Package").id
-    Platform plt_id = Platform.findByName("TippService Test Platform").id
+    Long pkg_id = Package.findByName("TippService Test Package").id
+    Long plt_id = Platform.findByName("TippService Test Platform").id
 
     Map tmap = [
       pkg: pkg_id,
@@ -242,8 +242,8 @@ class TippServiceSpec extends Specification {
 
   void "Test create new BookInstance from a full TIPP"() {
     given:
-    Package pkg_id = Package.findByName("TippService Test Package").id
-    Platform plt_id = Platform.findByName("TippService Test Platform").id
+    Long pkg_id = Package.findByName("TippService Test Package").id
+    Long plt_id = Platform.findByName("TippService Test Platform").id
 
     Map tmap = [
       pkg: pkg_id,
@@ -290,7 +290,7 @@ class TippServiceSpec extends Specification {
     then:
     result.status == 'created'
     tipp.title != null
-    def title = TitleInstance.findById(tipp.title.id)
+    TitleInstance title = TitleInstance.findById(tipp.title.id)
     tipp.name == title.name
     tipp.firstEditor == title.firstEditor
     tipp.firstAuthor == title.firstAuthor
@@ -305,7 +305,7 @@ class TippServiceSpec extends Specification {
 
   void "Test attach existing title with a TIPP by its IDs"() {
     given:
-    Identifier my_isbn = Identifier.findByNamespaceAndValue(IdentifierNamespace.findByValue('isbn'), '979-11-655-6390-5') ?: new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
+    Identifier my_isbn = Identifier.findByNamespaceAndValue(IdentifierNamespace.findByValue('isbn'), '979-11-655-6390-5') ?: new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5').save(flush: true, failOnError: true)
     Package pkg_id = Package.findByName("TippService Test Package").id
     Platform plt_id = Platform.findByName("TippService Test Platform").id
 
@@ -333,12 +333,12 @@ class TippServiceSpec extends Specification {
 
   void "Test match existing title with minor id conflict"() {
     given:
-    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0894-8410') ?: new Identifier(namespace: issn_ns, value: '0894-8410')
-    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338')
-    def pkg_id = Package.findByName("TippService Test Package").id
-    def plt_id = Platform.findByName("TippService Test Platform").id
+    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0894-8410') ?: new Identifier(namespace: issn_ns, value: '0894-8410').save(flush: true, failOnError: true)
+    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338').save(flush: true, failOnError: true)
+    Long pkg_id = Package.findByName("TippService Test Package").id
+    Long plt_id = Platform.findByName("TippService Test Platform").id
 
-    def tmap = [
+    Map tmap = [
       pkg            : pkg_id,
       hostPlatform   : plt_id,
       'url'            : "http://test-url.net/",
@@ -348,28 +348,27 @@ class TippServiceSpec extends Specification {
     ]
 
     when:
-    def tipp = tippUpsertService.upsertDTO(tmap)
+    TitleInstancePackagePlatform tipp = tippUpsertService.upsertDTO(tmap)
     tipp.addIdentifiers([issn, eissn])
-    tipp.save(flush: true)
 
-    def result = tippService.matchTitle(tipp.id)
+    Map result = tippService.matchTitle(tipp.id)
 
     then:
     result?.status == 'matched'
     result.reviewCreated == true
     tipp.title == JournalInstance.findByName("TippService Journal 1")
-    def rdv_desc = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Secondary Identifier Conflict')
+    RefdataValue rdv_desc = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Secondary Identifier Conflict')
     ReviewRequest.findByComponentToReviewAndStdDesc(tipp, rdv_desc) != null
   }
 
   void "Test create new title due to id & name conflict"() {
     given:
-    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0894-8410') ?: new Identifier(namespace: issn_ns, value: '0894-8410')
-    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338')
-    def pkg_id = Package.findByName("TippService Test Package").id
-    def plt_id = Platform.findByName("TippService Test Platform").id
+    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0894-8410') ?: new Identifier(namespace: issn_ns, value: '0894-8410').save(flush: true, failOnError: true)
+    Identifier eissn = Identifier.findByNamespaceAndValue(eissn_ns, '2180-4338') ?: new Identifier(namespace: eissn_ns, value: '2180-4338').save(flush: true, failOnError: true)
+    Long pkg_id = Package.findByName("TippService Test Package").id
+    Long plt_id = Platform.findByName("TippService Test Platform").id
 
-    def tmap = [
+    Map tmap = [
       pkg            : pkg_id,
       hostPlatform   : plt_id,
       'url'            : "http://test-url.net/",
@@ -379,38 +378,37 @@ class TippServiceSpec extends Specification {
     ]
 
     when:
-    def tipp = tippUpsertService.upsertDTO(tmap)
+    TitleInstancePackagePlatform tipp = tippUpsertService.upsertDTO(tmap)
     tipp.addIdentifiers([issn, eissn])
-    tipp.save(flush: true)
 
-    def result = tippService.matchTitle(tipp.id)
+    Map result = tippService.matchTitle(tipp.id)
 
     then:
     result?.status == 'created'
     result.reviewCreated == true
     tipp.title == JournalInstance.findByName("TippService Journal Conflict 1")
-    def rdv_desc = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
+    RefdataValue rdv_desc = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
     ReviewRequest.findByComponentToReviewAndStdDesc(tipp.title, rdv_desc) != null
   }
 
   void "Test create new title and tipl"() {
     given:
-    def tipp = TitleInstancePackagePlatform.findByName("TippService CreateTiplTest")
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findByName("TippService CreateTiplTest")
 
     when:
-    def result = tippService.matchTitle(tipp.id)
+    Map result = tippService.matchTitle(tipp.id)
 
     then:
     result?.status == 'created'
     sleep(500)
-    def ti = TitleInstance.get(tipp.title.id)
+    TitleInstance ti = TitleInstance.get(tipp.title.id)
     ti?.tipls?.size() == 1
   }
 
 
   void "Test skip title linking due to ambiguous matches"() {
     given:
-    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
+    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483').save(flush: true, failOnError: true)
     Package pkg_id = Package.findByName("TippService Test Package").id
     Platform plt_id = Platform.findByName("TippService Test Platform").id
 
@@ -442,8 +440,8 @@ class TippServiceSpec extends Specification {
     given:
     Package updPack = Package.findByName("TippService Test Package")
     Platform updPlt = Platform.findByName("TippService Test Platform")
-    BookInstance updBook = new BookInstance(name: "TippService Update Book").save(flush: true)
-    Identifier updIsbn = new Identifier(value: '9783631725290', namespace: IdentifierNamespace.findByValue('isbn')).save(flush: true)
+    BookInstance updBook = new BookInstance(name: "TippService Update Book").save(flush: true, failOnError: true)
+    Identifier updIsbn = new Identifier(value: '9783631725290', namespace: IdentifierNamespace.findByValue('isbn')).save(flush: true, failOnError: true)
     updBook.addIdentifier(updIsbn)
     updBook.save(flush: true)
     TitleInstancePackagePlatform tBook = tippUpsertService.tiplAwareCreate([name: "TippService Book 1", pkg: updPack, hostPlatform: updPlt, url: 'http://tippservicebook.com/test'])
@@ -451,7 +449,7 @@ class TippServiceSpec extends Specification {
     tBook.publicationType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Monograph')
     tBook.save(flush: true)
     TitleInstancePackagePlatform tJournal = tippUpsertService.tiplAwareCreate([name: "TippService Update Journal", pkg: updPack, hostPlatform: updPlt, url: 'http://tippservicejournal.com/test'])
-    Identifier issn = new Identifier(namespace: IdentifierNamespace.findByValue('eissn'), value: '2209-7643')
+    Identifier issn = new Identifier(namespace: IdentifierNamespace.findByValue('eissn'), value: '2209-7643').save(flush: true, failOnError: true)
     tJournal.addIdentifier(issn)
     tJournal.publicationType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Serial')
     tJournal.save(flush: true)

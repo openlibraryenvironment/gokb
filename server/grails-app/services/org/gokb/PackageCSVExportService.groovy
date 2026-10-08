@@ -221,12 +221,12 @@ class PackageCSVExportService {
               RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
               RefdataValue status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
               String qry_string_full = '''select tipp.id from TitleInstancePackagePlatform as tipp
-                                          where tipp.pkg.id = :p
+                                          where tipp.pkg = :p
                                           and tipp.status in (:status)
                                           order by tipp.id'''
 
               String qry_string_selective = '''select tipp.id from TitleInstancePackagePlatform as tipp
-                                                where tipp.pkg.id = :p
+                                                where tipp.pkg = :p
                                                 and tipp.lastUpdated > :ts
                                                 order by tipp.id'''
 
@@ -837,12 +837,13 @@ class PackageCSVExportService {
   }
 
   private List kbartRecordsFor (TitleInstancePackagePlatform tipp, ExportType exportType) {
-    def recordList = []
-    def record = [:]
-    def ti = ClassUtils.deproxy(tipp.title)
+    List recordList = []
+    Map record = [:]
+    TitleInstance ti = ClassUtils.deproxy(tipp.title)
 
     record.publication_title = pick(tipp.name, ti?.name, exportType)
     record.publication_type = pick(tipp.publicationType, ti?.niceName == 'Book' ? 'Monograph' : 'Serial', exportType)
+
     if (record.publication_type == 'Monograph') {
       record.print_identifier = pick(tipp.getIdentifierValue('pISBN'), ti?.getIdentifierValue('pISBN'), exportType)
       record.online_identifier = pick(tipp.getIdentifierValue('ISBN'), ti?.getIdentifierValue('ISBN'), exportType)
@@ -868,7 +869,7 @@ class PackageCSVExportService {
     record.gokb_tipp_uid = tipp.uuid
     record.gokb_title_uid = ti?.uuid
 
-    if (tipp.coverageStatements.size() > 0 ){
+    if (tipp.coverageStatements.size() > 0){
       // several records
       tipp.coverageStatements.each { cst ->
         record.date_first_issue_online = cst.startDate ? dateFormatService.formatDate(cst.startDate) : null
@@ -884,17 +885,17 @@ class PackageCSVExportService {
         recordList << record.clone()
       }
     }
-    else{
+    else {
       // just one
-      record.date_first_issue_online = tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null
-      record.num_first_issue_online = tipp.startIssue
-      record.num_first_vol_online = tipp.startVolume
-      record.date_last_issue_online = tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null
-      record.num_last_issue_online = tipp.endIssue
-      record.num_last_vol_online = tipp.endVolume
-      record.embargo_info = tipp.embargo
-      record.coverage_depth = tipp.coverageDepth ? tipp.coverageDepth.value.toLowerCase() : null
-      record.notes = tipp.coverageNote
+      record.date_first_issue_online = null
+      record.num_first_issue_online = null
+      record.num_first_vol_online = null
+      record.date_last_issue_online = null
+      record.num_last_issue_online = null
+      record.num_last_vol_online = null
+      record.embargo_info = null
+      record.coverage_depth = null
+      record.notes = null
 
       recordList << record
     }

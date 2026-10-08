@@ -9,6 +9,7 @@ import com.opencsv.CSVParserBuilder
 import grails.util.Environment
 import grails.validation.ValidationException
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.regex.Matcher
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
@@ -822,7 +823,7 @@ class ValidationService {
 
   public String checkDate(String value) {
     String result = null
-    String full_date = GOKbTextUtils.completeDateString(value)
+    LocalDateTime full_date = GOKbTextUtils.completeDateString(value)
 
     if (full_date) {
       result = value
@@ -952,8 +953,8 @@ class ValidationService {
   }
 
   public String checkDatePair(String startDate, String endDate) {
-    String final_start = GOKbTextUtils.completeDateString(startDate)
-    String final_end = GOKbTextUtils.completeDateString(endDate)
+    LocalDateTime final_start = GOKbTextUtils.completeDateString(startDate)
+    LocalDateTime final_end = GOKbTextUtils.completeDateString(endDate)
 
     if (final_start && final_end && final_end < final_start) {
       return 'error'
