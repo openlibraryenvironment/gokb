@@ -6,6 +6,7 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.apache.commons.lang.StringUtils
+import org.gokb.CuratoryGroupsService
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.CuratoryGroupType
 import org.gokb.cred.JobResult
@@ -28,10 +29,15 @@ class CuratoryGroupsController {
   def springSecurityService
   def componentLookupService
   ConcurrencyManagerService concurrencyManagerService
+  CuratoryGroupsService curatoryGroupsService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
+
+    User user = springSecurityService.currentUser
+    Map result = curatoryGroupsService.restLookup(user, params)
+
+    /* def status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
     if (params.status) {
       def status = RefdataCategory.lookup('KBComponent.Status', params.status)
@@ -65,6 +71,7 @@ class CuratoryGroupsController {
     curGroups.each { group ->
       result.data += restMappingService.mapObjectToJson(group, params, null)
     }
+     */
 
     render result as JSON
   }
