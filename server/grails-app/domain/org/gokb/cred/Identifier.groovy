@@ -148,7 +148,7 @@ class Identifier {
     result
   }
 
-  public def getActiveIdentifiedComponentsOfType(String classFilter) {
+  public List getActiveIdentifiedComponentsOfType(String classFilter) {
     List result = []
     RefdataValue status_active = RefdataCategory.lookup(ComponentIdentifier.RD_STATUS, ComponentIdentifier.STATUS_ACTIVE)
     Collection<String> classNames = []

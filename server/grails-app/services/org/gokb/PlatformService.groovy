@@ -463,14 +463,14 @@ class PlatformService {
 
         affected_tipls_batch.each { ctp ->
           int dupes = TitleInstancePlatform.executeQuery('''select count(*) from TitleInstancePlatform
-                                                            where title = :ti
-                                                            and status != :sd
-                                                            and hostPlatform = :np)''',
-                                                            [
-                                                              ti: ctp.title,
-                                                              sd: status_deleted,
-                                                              np: new_platform
-                                                            ])[0]
+              where title = :ti
+              and status != :sd
+              and hostPlatform = :np''',
+              [
+                ti: ctp.title,
+                sd: status_deleted,
+                np: new_platform
+              ])[0]
 
           if (dupes == 0) {
             ctp.hostPlatform = new_platform
@@ -513,7 +513,7 @@ class PlatformService {
     result
   }
 
-  private Map updateLinks(Platform obj, JSONObject reqBody, changed, boolean remove = true) {
+  private Map updateLinks(Platform obj, JSONObject reqBody, Boolean changed, boolean remove = true) {
     Map errors = [:]
     log.debug("Updating platform hasMany links ..")
 

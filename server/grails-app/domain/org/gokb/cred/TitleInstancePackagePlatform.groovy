@@ -615,7 +615,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           'name'(hostPlatform.name?.trim())
         }
         'access'([start: (accessStartDate ? DateFormatService.formatDate(accessStartDate) : null), end: (accessEndDate ? DateFormatService.formatDate(accessEndDate) : null)])
-        List cov_statements = getCoverageStatements()
+        Collection cov_statements = getCoverageStatements()
 
         if (cov_statements?.size() > 0) {
           cov_statements.each { tcs ->

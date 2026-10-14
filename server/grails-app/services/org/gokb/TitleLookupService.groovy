@@ -674,21 +674,6 @@ class TitleLookupService {
     result
   }
 
-  def Object getTitleField(title_id, field_name) {
-    def result = TitleInstance.executeQuery("select ti." + field_name + " from TitleInstance as ti where ti.id = :ti", [ti: title_id])
-    return result.size() == 1 ? result[0] : null;
-  }
-
-  def Object getTitleFieldForIdentifier(ids, field_name) {
-    def result = null
-    def l = matchClassOneComponentIds(ids)
-    if (l && l.size() == 1) {
-      result = TitleInstance.executeQuery("select ti." + field_name + " from TitleInstance as ti where ti.id = :ti", [ti: l[0]])[0]
-    }
-    log.debug("getTitleFieldForIdentifier(${ids},${field_name} : ${result}")
-    return result
-  }
-
   // A task will be created to remap a title instance by an update to that title which touches
   // any field that might change the Instance -> Work mapping. We have to wait for that update to
   // complete before processing
@@ -712,13 +697,15 @@ class TitleLookupService {
     }
   }
 
-  public List getTitlesForIdentifier(identifier, ti_class) {
+  public Set getTitlesForIdentifier(identifier, ti_class) {
     log.debug("Get components for ${identifier}")
     Set result = []
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
     identifier.activeIdentifiedComponents.each { idc ->
-      if (ti_class.isInstance(ClassUtils.deproxy(idc)) && idc.status != status_deleted) {
+      KBComponent obj = ClassUtils.deproxy(idc)
+
+      if (ti_class.isInstance(obj) && idc.status != status_deleted) {
         result << idc
       }
     }

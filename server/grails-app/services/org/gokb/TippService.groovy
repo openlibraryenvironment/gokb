@@ -1297,7 +1297,7 @@ class TippService {
     result
   }
 
-  private TIPPCoverageStatement latest(List covStmts) {
+  private TIPPCoverageStatement latest(Collection covStmts) {
     TIPPCoverageStatement latest = null
 
     if (covStmts?.size() > 0) {
@@ -1317,8 +1317,8 @@ class TippService {
     return latest
   }
 
-  private Boolean handleFindConflicts(TitleInstancePackagePlatform tipp, Map found, CuratoryGroup activeCg = null) {
-    Boolean result = false
+  private boolean handleFindConflicts(TitleInstancePackagePlatform tipp, Map found, CuratoryGroup activeCg = null) {
+    boolean result = false
     RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
     RefdataValue type_cic = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
 
@@ -1327,7 +1327,10 @@ class TippService {
 
       Map additionalInfo = [invalidIds: found.invalid]
       RefdataValue type_ii = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Indentifiers")
-      int num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type", [tid: tipp, type: type_ii])[0]
+      int num_existing = ReviewRequest.executeQuery('''select count(*) from ReviewRequest
+          where componentToReview = :tid
+          and stdDesc = :type''',
+          [tid: tipp, type: type_ii])[0]
 
       if (num_existing == 0) {
         reviewRequestService.raise(
@@ -1344,7 +1347,11 @@ class TippService {
     else if (found.matches.size() > 1 && !tipp.title) {
       result = true
       RefdataValue type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
-      int num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: tipp, type: type_atm, so: status_open])[0]
+      int num_existing = ReviewRequest.executeQuery('''select count(*) from ReviewRequest
+          where componentToReview = :tid
+          and stdDesc = :type
+          and status = :so''',
+          [tid: tipp, type: type_atm, so: status_open])[0]
 
       if (num_existing == 0) {
         Map additionalInfo = [otherComponents: []]
@@ -1373,7 +1380,11 @@ class TippService {
       List tipp_id_list = tipp.ids.collect { "${it.namespace.value}:${it.value}" }
       TitleInstance component_to_review = found.matches.removeLast().object
 
-      List ctc_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: component_to_review, type: type_cic, so: status_open])[0]
+      int ctc_existing = ReviewRequest.executeQuery('''select count(*) from ReviewRequest
+          where componentToReview = :tid
+          and stdDesc = :type
+          and status = :so''',
+          [tid: component_to_review, type: type_cic, so: status_open])[0]
 
       if (ctc_existing == 0) {
         List other_objects = found.matches.collect {
@@ -1410,7 +1421,12 @@ class TippService {
       RefdataValue type_sic = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict')
 
       found.matches.each { comp ->
-        Map otherComponent = [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+        Map otherComponent = [
+          oid: "${comp.object.class.name}:${comp.object.id}",
+          name: comp.object.name,
+          id: comp.object.id,
+          uuid: comp.object.uuid
+        ]
         List mismatches = []
 
         comp.conflicts.each { conflict ->
@@ -1967,7 +1983,7 @@ class TippService {
     hasChanged
   }
 
-  public Map updateLinks(TitleInstancePackagePlatform obj, reqBody, boolean changed, boolean remove = true) {
+  public Map updateLinks(TitleInstancePackagePlatform obj, reqBody, Boolean changed, boolean remove = true) {
     log.debug("Updating TIPP links ..")
     Map errors = [:]
     Boolean needsSave = false

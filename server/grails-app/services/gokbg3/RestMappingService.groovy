@@ -1170,7 +1170,7 @@ class RestMappingService {
 
         if (!tp) {
           tp = new TitlePublisher(title: obj, publisher: pub_obj)
-          obj.addToPublisherLinks(new_obj)
+          obj.addToPublisherLinks(tp)
           tp.save(flush: true)
           result.changed = true
         }
@@ -1201,7 +1201,7 @@ class RestMappingService {
       }
     }
 
-    log.debug("New list of pubs: ${new_pubs}")
+    log.debug("New list of pubs: ${new_links}")
 
     if (remove && !result.errors) {
       existing_links.each { elid ->

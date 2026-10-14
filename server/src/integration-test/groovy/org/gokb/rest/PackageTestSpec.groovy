@@ -145,23 +145,23 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform").each {
-      TitleInstancePackagePlatform.findById(it).expunge()
-    }
-
-    Package.executeQuery("select id from Package").each {
-      Package.findById(it).expunge()
-    }
-
-    Source.findByName("TestPack")?.expunge()
-
-    TitleInstance.executeQuery("select id from TitleInstancePlatform").each {
-      TitleInstancePlatform.findById(it)?.expunge()
+    TitleInstancePlatform.executeQuery("select id from TitleInstancePlatform").each {
+      TitleInstancePlatform.findById(it).expunge()
     }
 
     TitleInstance.executeQuery("select id from TitleInstance").each {
       TitleInstance.findById(it)?.expunge()
     }
+
+    TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform").each {
+      TitleInstancePackagePlatform.findById(it)?.expunge()
+    }
+
+    Package.executeQuery("select id from Package").each {
+      Package.findById(it).refresh()?.expunge()
+    }
+
+    Source.findByName("TestPack")?.expunge()
 
     CuratoryGroup.findByName("cgtest1")?.expunge()
     Platform.findByName("PackTestPlt")?.expunge()

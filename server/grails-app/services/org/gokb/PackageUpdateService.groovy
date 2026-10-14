@@ -18,7 +18,7 @@ class PackageUpdateService {
   def tippUpsertService
 
   @Transactional
-  public Map updateLinks(Package obj, JSONObject reqBody, boolean changed, boolean remove = true, User user) {
+  public Map updateLinks(Package obj, JSONObject reqBody, Boolean changed, boolean remove = true, User user) {
     log.debug("Updating package links ..")
     Map errors = [:]
 

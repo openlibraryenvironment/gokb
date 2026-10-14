@@ -346,26 +346,28 @@ abstract class KBComponent {
 
   static mappedBy = [
     additionalProperties: 'fromComponent',
-    variantNames        : 'owner',
-    reviewRequests      : 'componentToReview',
-    people              : 'component',
-    subjects            : 'component',
-    prices              : 'owner',
-    comments            : 'owner',
-    linkedIds           : 'component',
-    fileAttachments     : 'component'
+    variantNames: 'owner',
+    reviewRequests: 'componentToReview',
+    people: 'component',
+    subjects: 'component',
+    prices: 'owner',
+    comments: 'owner',
+    linkedIds: 'component',
+    fileAttachments: 'component',
+    duplicates: 'duplicateOf'
   ]
 
   static hasMany = [
-    linkedIds           : ComponentIdentifier,
-    fileAttachments     : ComponentAttachment,
+    linkedIds: ComponentIdentifier,
+    fileAttachments: ComponentAttachment,
     additionalProperties: KBComponentAdditionalProperty,
-    variantNames        : KBComponentVariantName,
-    reviewRequests      : ReviewRequest,
-    people              : ComponentPerson,
-    subjects            : ComponentSubject,
-    prices              : ComponentPrice,
-    comments            : KBComponentComment
+    variantNames: KBComponentVariantName,
+    reviewRequests: ReviewRequest,
+    people: ComponentPerson,
+    subjects: ComponentSubject,
+    prices: ComponentPrice,
+    comments: KBComponentComment,
+    duplicates: KBComponent
   ]
 
 
@@ -1099,13 +1101,26 @@ abstract class KBComponent {
     return Note.findAllByOwnerClassAndOwnerId(this.class.name, this.getId()) ?: []
   }
 
+  /*
+  * Delete all possible non-KBComponent links and finally hard delete this item
+  */
+
   public Map expunge() {
-    log.debug("Component expunge");
+    log.debug("Component expunge for ${this}");
     Map result = [deleteType: this.class.name, deleteId: this.id]
-    log.debug("Removing all components");
-    ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component", [component: this])
-    KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component", [component: this])
-    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf = :component", [component: this])
+    log.debug("Removing all component links");
+    ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component = :component", [component: this])
+    KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner = :component", [component: this])
+    def dupes_total = this.class.executeQuery("from KBComponent where duplicateOf is not NULL")
+
+    dupes_total.each {
+      log.debug("ID ${it.id} -> ${it.duplicateOf}")
+    }
+
+    int dupes_count = this.class.executeQuery("select count(*) from KBComponent where duplicateOf = :component", [component: this])[0]
+    int dupes_updated = this.class.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf != NULL and duplicateOf = :component", [component: this])
+    log.debug("Removed duplicate info (total: ${dupes_total.size()}) for ${dupes_updated}/${dupes_count} components.")
+
     KBComponent.executeUpdate("delete from ComponentPrice where owner = :component", [component: this])
 
     List events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: this])
@@ -1135,10 +1150,8 @@ abstract class KBComponent {
       }
     }
 
-    if (this.respondsTo('publisherLinks')) {
+    if (TitleInstance.isAssignableFrom(this.class)) {
       TitlePublisher.executeUpdate("delete from TitlePublisher where title = :component", [component: this])
-      TitleInstancePlatform.executeUpdate("delete from TitleInstancePlatform where title = :component", [component: this])
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set title = null where title = :component", [component: this])
     }
     else if (this.class == Org) {
       TitlePublisher.executeUpdate("delete from TitlePublisher where publisher = :component", [component: this])

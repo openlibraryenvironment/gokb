@@ -132,7 +132,7 @@ class Source extends KBComponent {
     List result = CuratoryGroup.executeQuery('''from CuratoryGroup as c
                                                 where exists (
                                                   select 1 from SourceCuratoryGroup
-                                                  where platform = :comp
+                                                  where source = :comp
                                                   and group = c
                                                 )''', [comp: this])
 

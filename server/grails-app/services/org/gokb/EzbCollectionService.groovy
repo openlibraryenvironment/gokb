@@ -569,7 +569,7 @@ class EzbCollectionService {
       List ordered_attachments = ComponentAttachment.executeQuery('''select c.file from ComponentAttachment as c
                                                                       where c.component.id = :pkg
                                                                       order by c.dateCreated desc''',
-                                                                      [ct: type_fa, pkg: pid])
+                                                                      [pkg: pid])
 
       String last_df_md5 = ordered_attachments.size() > 0 ? ordered_attachments[0].md5 : null
 
@@ -659,21 +659,21 @@ class EzbCollectionService {
       ca: link_active,
       local: local_status
     ]
-    def qry = '''FROM Package AS p
-        WHERE
-        status = :sc
+
+    String qry = '''FROM Package AS p
+        WHERE status = :sc
         AND global != :local
         AND exists (
           SELECT 1 FROM ComponentIdentifier
           WHERE component = p
           AND status = :ca
-          AND toComponent = :clId)'''
+          AND identifier = :clId)'''
 
     if (curator_id) {
       qry_pars.curator = curator_id
       qry += ''' AND EXISTS (
           SELECT 1 FROM PackageCuratoryGroup
-          WHERE group = :curator
+          WHERE group.id = :curator
           AND pkg = p)'''
     }
 

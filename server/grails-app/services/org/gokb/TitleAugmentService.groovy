@@ -500,7 +500,7 @@ class TitleAugmentService {
     try {
       info.history.each { he ->
         if (validationService.checkZdbId(he.zdbId)) {
-          def candidates = Identifier.findByValueIlikeAndNamespace(he.zdbId, IdentifierNamespace.findByValue('zdb'))?.getActiveIdentifiedComponents('JournalInstance')
+          List candidates = Identifier.findByValueIlikeAndNamespace(he.zdbId, IdentifierNamespace.findByValue('zdb'))?.getActiveIdentifiedComponentsOfType('JournalInstance')
 
           if (candidates?.size() == 1 && candidates[0] != titleInstance) {
             LocalDateTime parsedLocal = he.prev ? GOKbTextUtils.completeDateString(info.publishedFrom) : GOKbTextUtils.completeDateString(he.publishedFrom ?: info.publishedTo)
@@ -978,9 +978,10 @@ class TitleAugmentService {
     if (result.candidates.size() == 1) {
       log.debug("Found a single candidate DOI ..")
       Identifier new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('doi', result.candidates[0])
-      List linked_titles = new_id.getActiveIdentifiedComponents('TitleInstance')
+      List linked_titles = new_id.getActiveIdentifiedComponentsOfType('TitleInstance')
 
       if (linked_titles.size() == 0) {
+        log.debug("Adding new ID ${new_id} to ${ti}")
         ti.addIdentifier(new_id)
 
         touchTitleTipps(ti)

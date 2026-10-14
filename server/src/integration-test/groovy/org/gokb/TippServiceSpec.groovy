@@ -306,8 +306,8 @@ class TippServiceSpec extends Specification {
   void "Test attach existing title with a TIPP by its IDs"() {
     given:
     Identifier my_isbn = Identifier.findByNamespaceAndValue(IdentifierNamespace.findByValue('isbn'), '979-11-655-6390-5') ?: new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5').save(flush: true, failOnError: true)
-    Package pkg_id = Package.findByName("TippService Test Package").id
-    Platform plt_id = Platform.findByName("TippService Test Platform").id
+    Long pkg_id = Package.findByName("TippService Test Package").id
+    Long plt_id = Platform.findByName("TippService Test Platform").id
 
     Map tmap = [
       pkg            : pkg_id,
@@ -409,8 +409,8 @@ class TippServiceSpec extends Specification {
   void "Test skip title linking due to ambiguous matches"() {
     given:
     Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483').save(flush: true, failOnError: true)
-    Package pkg_id = Package.findByName("TippService Test Package").id
-    Platform plt_id = Platform.findByName("TippService Test Platform").id
+    Long pkg_id = Package.findByName("TippService Test Package").id
+    Long plt_id = Platform.findByName("TippService Test Platform").id
 
     Map tmap = [
       pkg: pkg_id,
@@ -572,7 +572,7 @@ class TippServiceSpec extends Specification {
     ]
 
     when:
-    boolean result = tippService.updateTippFields(tipp_to_update, update_info)
+    boolean changed = tippService.updateTippFields(tipp_to_update, update_info)
 
     then:
     changed == true

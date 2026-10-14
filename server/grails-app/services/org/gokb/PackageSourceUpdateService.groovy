@@ -663,50 +663,51 @@ class PackageSourceUpdateService {
 
   public Boolean hasFileChanged(pkgId, checksum) {
     List ordered_links = ComponentAttachment.executeQuery('''select c.file.md5 from ComponentAttachment as c
-                                                              where c.component.id = :pkg
-                                                              order by c.dateCreated desc''',
-                                                              [ct: type_fa, pkg: pkgId], [max: 1])
+        where c.component.id = :pkg
+        order by c.dateCreated desc''',
+        [pkg: pkgId],
+        [max: 1])
 
     return (ordered_links.size() == 0 || ordered_links[0] != checksum)
   }
 
-  private def createJobResult(pkg, job, startTime, dryRun, ownerId, groupId, result) {
-    def job_map = [:]
-    def job_uuid = job?.uuid ?: UUID.randomUUID().toString()
+  private Map createJobResult(pkg, job, startTime, dryRun, ownerId, groupId, result) {
+    Map job_map = [:]
+    String job_uuid = job?.uuid ?: UUID.randomUUID().toString()
 
     if (job) {
       job_map = [
-        uuid        : (job_uuid),
-        description : (job.description),
+        uuid: (job_uuid),
+        description: (job.description),
         resultObject: (result as JSON).toString(),
-        type        : (job.type),
-        statusText  : (result.result),
-        ownerId     : (job.ownerId),
-        groupId     : (job.groupId),
-        startTime   : (job.startTime),
-        endTime     : (new Date()),
+        type: (job.type),
+        statusText: (result.result),
+        ownerId: (job.ownerId),
+        groupId: (job.groupId),
+        startTime: (job.startTime),
+        endTime: (new Date()),
         linkedItemId: (job.linkedItem?.id)
       ]
     }
     else {
       job_map = [
-        uuid        : (job_uuid),
-        description : ("KBART Source ingest (${pkg.name})".toString()),
+        uuid: (job_uuid),
+        description: ("KBART Source ingest (${pkg.name})".toString()),
         resultObject: (result as JSON).toString(),
-        type        : (dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')),
-        statusText  : (result.result),
-        ownerId     : (ownerId),
-        groupId     : (groupId),
-        startTime   : (startTime),
-        endTime     : (new Date()),
+        type: (dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')),
+        statusText: (result.result),
+        ownerId: (ownerId),
+        groupId: (groupId),
+        startTime: (startTime),
+        endTime: (new Date()),
         linkedItemId: (pkg.id)
       ]
     }
 
-    def result_object = JobResult.findByUuid(job_uuid)
+    JobResult result_object = JobResult.findByUuid(job_uuid)
 
     if (!result_object) {
-      def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+      new JobResult(job_map).save(flush: true, failOnError: true)
     }
     else {
       job_map.each { k, v ->
@@ -715,7 +716,7 @@ class PackageSourceUpdateService {
       }
     }
 
-    def info_map = [
+    Map info_map = [
       uuid: job_map.uuid,
       groupId: job_map.groupId,
       linkedItemId: pkg.id,
@@ -728,9 +729,12 @@ class PackageSourceUpdateService {
     return info_map
   }
 
-  def fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean restrictSize = true) {
+  public Map fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean restrictSize = true) {
 
-      def result = [content_mime_type: null, file_name: null]
+      Map result = [
+        content_mime_type: null,
+        file_name: null
+      ]
       Long max_length = 20971520L // 1024 * 1024 * 20
 
       FTPClient ftp = new FTPClient()
@@ -761,17 +765,17 @@ class PackageSourceUpdateService {
         else {
           ftp.connect(hostname)
         }
+
         ftp.enterLocalPassiveMode()
-        def loggedIn = ftp.login(username, password)
+        ftp.login(username, password)
 
         if (ftp.isConnected()) {
 
           ftp.changeWorkingDirectory(directory)
           List files
 
-          if(isUrlWithDate) {
-
-            def dateMaskMatch = (filename =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
+          if (isUrlWithDate) {
+            Matcher dateMaskMatch = (filename =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
             String matchedDate = dateMaskMatch[0][1]
             String fixFilenamePart = filename.substring(0, filename.indexOf(matchedDate))
 
@@ -789,6 +793,7 @@ class PackageSourceUpdateService {
           }
           else {
             files = ftp.listFiles(filename).toList()
+
             if(files.size() > 0) {
               foundFile = files.get(0)
               foundFileName = filename
@@ -799,6 +804,7 @@ class PackageSourceUpdateService {
           if(foundFile){
 
             Long foundFileSize = foundFile.getSize()
+
             if(foundFileSize > max_length && restrictSize){
               result.fileSizeError = true
               result.result = 'ERROR'

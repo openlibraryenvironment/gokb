@@ -70,6 +70,10 @@ class BulkImportSpec extends Specification {
     TitleInstancePackagePlatform.list().each {
       it.expunge()
     }
+
+    TitleInstancePlatform.list().each {
+      it.expunge()
+    }
     TitleInstance.list().each {
       it.expunge()
     }

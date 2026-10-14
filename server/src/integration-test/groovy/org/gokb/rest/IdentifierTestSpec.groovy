@@ -46,15 +46,6 @@ class IdentifierTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    sleep(500)
-    Identifier.findByValue("6644-2231")?.expunge()
-    Identifier.findByValue("6644-223")?.expunge()
-    Identifier.findByValue("6644-2284")?.expunge()
-    Identifier.findByValue("0001-5547")?.expunge()
-    Identifier.findByValue("1938-2650")?.expunge()
-    Identifier.findByValue("9780781783385")?.expunge()
-    test_id?.expunge()
-    test_journal?.refresh().expunge()
   }
 
   void "test /rest/identifiers/<id> without token"() {

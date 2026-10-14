@@ -123,9 +123,6 @@ class OaiSpec extends Specification {
     Source.findByName("PackTestSource")?.expunge()
     Platform.findByName('Test Platform')?.expunge()
     Org.findByName('OAI Test Org')?.expunge()
-    Identifier.findByValue('1234-3456')?.expunge()
-    Identifier.findByValue('1234-4567')?.expunge()
-    Identifier.findByValue('ZDB-1-OAIT')?.expunge()
   }
 
   void "test ListRecords response status"() {

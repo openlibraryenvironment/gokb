@@ -432,12 +432,10 @@ class PackageCSVExportService {
                 'Title\t' +
                 'TIPP Status\t' +
                 '[TI] Publisher\t' +
-                '[TI] Imprint\t' +
                 '[TI] Published From\t' +
                 '[TI] Published to\t' +
                 '[TI] Medium\t' +
                 '[TI] OA Status\t' +
-                '[TI] Continuing series\t' +
                 '[TI] ISSN\t' +
                 '[TI] EISSN\t' +
                 '[TI] ZDB-ID\t' +
@@ -916,12 +914,10 @@ class PackageCSVExportService {
           sanitize(tipp.name ?: ti?.name),
           sanitize(tipp.status.value),
           sanitize(ti?.getCurrentPublisher()?.name),
-          sanitize(ti?.imprint?.name),
           sanitize(ti?.publishedFrom),
           sanitize(ti?.publishedTo),
           sanitize(ti?.medium?.value),
           sanitize(ti?.OAStatus?.value),
-          sanitize(ti?.continuingSeries?.value),
           sanitize(tipp.getIdentifierValue('issn') ?: ti?.getIdentifierValue('issn')),
           sanitize(tipp.getIdentifierValue('eissn') ?: ti?.getIdentifierValue('eissn')),
           sanitize(tipp.getIdentifierValue('zdb') ?: ti?.getIdentifierValue('zdb')),
@@ -963,12 +959,10 @@ class PackageCSVExportService {
         sanitize(tipp.name ?: ti?.name),
         sanitize(tipp.status.value),
         sanitize(ti?.getCurrentPublisher()?.name),
-        sanitize(ti?.imprint?.name),
         sanitize(ti?.publishedFrom),
         sanitize(ti?.publishedTo),
         sanitize(ti?.medium?.value),
         sanitize(ti?.OAStatus?.value),
-        sanitize(ti?.continuingSeries?.value),
         sanitize(tipp.getIdentifierValue('issn') ?: ti?.getIdentifierValue('issn')),
         sanitize(tipp.getIdentifierValue('eissn') ?: ti?.getIdentifierValue('eissn')),
         sanitize(tipp.getIdentifierValue('zdb') ?: ti?.getIdentifierValue('zdb')),
@@ -982,15 +976,15 @@ class PackageCSVExportService {
         sanitize(tipp.editStatus?.value),
         sanitize(tipp.accessStartDate),
         sanitize(tipp.accessEndDate),
-        sanitize(tipp.startDate),
-        sanitize(tipp.startVolume),
-        sanitize(tipp.startIssue),
-        sanitize(tipp.endDate),
-        sanitize(tipp.endVolume),
-        sanitize(tipp.endIssue),
-        sanitize(tipp.embargo),
-        sanitize(tipp.coverageDepth),
-        sanitize(tipp.coverageNote),
+        sanitize(null),
+        sanitize(null),
+        sanitize(null),
+        sanitize(null),
+        sanitize(null),
+        sanitize(null),
+        sanitize(null),
+        sanitize(null),
+        sanitize(null),
         sanitize(tipp.hostPlatform.primaryUrl),
         sanitize(tipp.format?.value),
         sanitize(tipp.paymentType?.value),

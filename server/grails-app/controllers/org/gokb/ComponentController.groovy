@@ -234,7 +234,7 @@ class ComponentController {
           components: []
         ]
 
-        item.getActiveIdentifiedComponents(resolvedComponentType?.cls ?: null).each { aic ->
+        item.getActiveIdentifiedComponentsOfType(resolvedComponentType?.cls ?: null).each { aic ->
           info_map.components.add([id: aic.id, uuid: aic.uuid, name: aic.name, status: aic.status.value, niceName: aic.niceName])
         }
 

@@ -43,7 +43,7 @@ class CleanupServiceSpec extends Specification {
         name: "CleanupHistoryTestTipp"
       ]
 
-      tippActive = new TitleInstancePackagePlatform(tippInfo).save(flush: true)
+      tippActive = new TitleInstancePackagePlatform(tippInfo).save(flush: true, failOnError: true)
       tippActive.addIdentifier(url_doi)
     }
 
@@ -85,9 +85,24 @@ class CleanupServiceSpec extends Specification {
     JournalInstance.findByName("CleanupHistoryTestTitleOne")?.expunge()
     JournalInstance.findByName("CleanupHistoryTestTitleTwo")?.expunge()
     BookInstance.findByName("CleanupTestNewDoiBook")?.expunge()
-    Identifier.findByValue('http://doi.org/10.23242/354-234234-233-23')?.expunge()
-    Identifier.findByValue('10.23242/354-234234-233-23')?.expunge()
-    Identifier.findByValue('10.23434/234666523X')?.expunge()
+
+    List ids_to_remove = []
+
+    Identifier id1 = Identifier.findByValue('http://doi.org/10.23242/354-234234-233-23')
+    Identifier id2 = Identifier.findByValue('10.23242/354-234234-233-23')
+    Identifier id3 = Identifier.findByValue('10.23434/234666523X')
+
+    if (id1) {
+      ids_to_remove.add(id1.id)
+    }
+    if (id2) {
+      ids_to_remove.add(id2.id)
+    }
+    if (id3) {
+      ids_to_remove.add(id3.id)
+    }
+
+    cleanupService.expungeIdentifiers(ids_to_remove)
   }
 
   void "test deleteOrphanedHistoryEvents"() {
@@ -95,9 +110,9 @@ class CleanupServiceSpec extends Specification {
     def eventDate = ComponentHistoryEventParticipant.findByParticipant(titleTwo).event.eventDate
     cleanupService.deleteOrphanedHistoryEvents()
     then:
-    tippActive.refresh()
-    titleOne.refresh()
-    titleTwo.refresh()
+    tippActive?.refresh()
+    titleOne?.refresh()
+    titleTwo?.refresh()
     expect:
     eventDate != null
     titleOne.titleHistory.size() == 0
@@ -117,7 +132,7 @@ class CleanupServiceSpec extends Specification {
     when:
     Map result = cleanupService.ensureTipls()
     then:
-    result.new_tipls == 1
+    result.new_tipls == 2
   }
 
   void "test generateTitleDOIsFromTippInfo"() {

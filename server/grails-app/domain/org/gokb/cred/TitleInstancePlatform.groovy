@@ -9,8 +9,6 @@ class TitleInstancePlatform extends KBComponent {
   Platform hostPlatform
   TitleInstance title
 
-  static belongsTo = [TitleInstance]
-
   static mapping = {
     includes KBComponent.mapping
     hostPlatform column: 'tipl_host_platform_fk'

@@ -56,8 +56,6 @@ class UpdatePackageRunFTPSpec extends Specification{
 
     new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true)
 
-    Org provider = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
-    Platform.findByName("Test Platform") ?: new Platform(name: "Test Platform", primaryUrl: "https://search.ebscohost.com", provider: provider).save(flush: true)
     WebHookEndpoint.findByName("whe1") ?: new WebHookEndpoint(name: "whe1" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
     Source.findByName("source1") ?: new Source(name: "source1", webEndpoint: WebHookEndpoint.findByName("whe1"), ftpPath: "/kbart.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
     Package.findByName("package1") ?: new Package(name: "package1").save(flush: true)
@@ -88,10 +86,6 @@ class UpdatePackageRunFTPSpec extends Specification{
 
     ftpServer?.stop()
 
-    CuratoryGroup.findByName('TestGroup1')?.expunge()
-    Org.findByName("American Chemical Society")?.expunge()
-    Platform.findByName("Test Platform")?.expunge()
-
     Package.findByName("package1")?.expunge()
     Source.findByName("source1")?.expunge()
     WebHookEndpoint.findByName("whe1")?.delete()
@@ -108,6 +102,7 @@ class UpdatePackageRunFTPSpec extends Specification{
     Source.findByName("source4")?.expunge()
     WebHookEndpoint.findByName("whe4")?.delete()
 
+    CuratoryGroup.findByName('TestGroup1')?.expunge()
   }
 
   void "test Mock FTP Server runs"() {

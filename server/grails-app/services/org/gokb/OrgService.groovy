@@ -182,7 +182,7 @@ class OrgService {
   */
 
   @Transactional
-  public Map updateLinks(Org obj, JSONObject reqBody, boolean changed, boolean remove = true) {
+  public Map updateLinks(Org obj, JSONObject reqBody, Boolean changed, boolean remove = true) {
     log.debug("Updating org links ..")
     Map errors = [:]
 
@@ -583,7 +583,7 @@ class OrgService {
         List dupes = TitlePublisher.executeQuery("select id from TitlePublisher where title = :ti and publisher = :np", [ti: ti_obj, np: new_org])
 
         if (dupes.size() == 0) {
-          List links_to_update = TitlePublisher.findByTitleAndPublisher(ti_obj, old_org)
+          List links_to_update = TitlePublisher.findAllByTitleAndPublisher(ti_obj, old_org)
 
           links_to_update.each { ctu ->
             ctu.publisher = new_org
@@ -631,7 +631,7 @@ class OrgService {
 
       // Transfer Platforms
 
-      List affected_platforms = Platform.findAllByProviderAndStatus(old_org, status_deleted)
+      List affected_platforms = Platform.findAllByProviderAndStatusNotEqual(old_org, status_deleted)
 
       affected_platforms?.each { plt ->
         plt.provider = new_org

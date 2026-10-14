@@ -120,7 +120,7 @@ class ZdbAPIService {
         }
         catch ( Exception e ) {
           result.result = 'ERROR_FETCH'
-          log.error("Unknown error fetching ZDB record for '$id' (${e.class.name})!")
+          log.error("Unknown error fetching ZDB record for '$id' (${e.class.name})!", e)
           return result
         }
       }
@@ -177,19 +177,19 @@ class ZdbAPIService {
       result.title = GOKbTextUtils.cleanTitleString(result.displayTitle)
     }
 
-    String fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}
-    String toDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'b'}
+    String fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}?.text() ?: null
+    String toDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'b'}?.text() ?: null
 
     if (fromDate)
-      result.publishedFrom = fromDate.text()
+      result.publishedFrom = fromDate
 
     if (toDate)
-      result.publishedTo = toDate.text()
+      result.publishedTo = toDate
 
-    String pubName = rec.global.'*'.find { it.@id == '033A' }.'*'.find {it.@id == 'n'}
+    String pubName = rec.global.'*'.find { it.@id == '033A' }.'*'.find {it.@id == 'n'}?.text() ?: null
 
     if (pubName) {
-      result.publisher = pubName.text()
+      result.publisher = pubName
     }
 
     List otherPubs = []
@@ -244,7 +244,7 @@ class ZdbAPIService {
   }
 
   private List extractHistory(fields) {
-    def history = []
+    List history = []
 
     fields.each { lf ->
       Map item = [:]

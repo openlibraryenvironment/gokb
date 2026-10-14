@@ -149,33 +149,33 @@ class Package extends KBComponent {
   }
 
   static jsonMapping = [
-    'ignore'       : [
+    ignore: [
     ],
-    'es'           : [
-      'nominalPlatformUuid': "nominalPlatform.uuid",
-      'nominalPlatformName': "nominalPlatform.name",
-      'nominalPlatform'    : "nominalPlatform.id",
-      'cpname'             : false,
-      'provider'           : "provider.id",
-      'providerName'       : "provider.name",
-      'providerUuid'       : "provider.uuid",
-      'contentProvider'    : "contentProvider.id",
-      'contentProviderName': "contentProvider.name",
-      'contentProviderUUid': "contentProvider.uuid",
-      'paymentType'        : false,
-      'listStatus'         : "refdata",
-      'contentType'        : "refdata",
-      'scope'              : "refdata",
-      'global'             : "refdata",
-      'editStatus'         : "refdata"
+    es: [
+      nominalPlatformUuid: "nominalPlatform.uuid",
+      nominalPlatformName: "nominalPlatform.name",
+      nominalPlatform: "nominalPlatform.id",
+      cpname: false,
+      provider: "provider.id",
+      providerName: "provider.name",
+      providerUuid: "provider.uuid",
+      contentProvider: "contentProvider.id",
+      contentProviderName: "contentProvider.name",
+      contentProviderUUid: "contentProvider.uuid",
+      paymentType: false,
+      listStatus: "refdata",
+      contentType: "refdata",
+      scope: "refdata",
+      global: "refdata",
+      editStatus: "refdata"
     ],
-    'defaultLinks' : [
+    defaultLinks: [
       'provider',
       'nominalPlatform',
       'linkedCurators',
       'contentProvider'
     ],
-    'defaultEmbeds': [
+    defaultEmbeds: [
       'ids',
       'variantNames',
       'linkedCurators',

@@ -15,11 +15,7 @@ import io.micronaut.http.uri.UriBuilder
 import java.text.SimpleDateFormat
 
 import org.gokb.*
-import org.gokb.cred.JournalInstance
-import org.gokb.cred.Org
-import org.gokb.cred.Package
-import org.gokb.cred.Platform
-import org.gokb.cred.TitleInstancePackagePlatform
+import org.gokb.cred.*
 
 import spock.lang.Specification
 import spock.lang.Shared
@@ -47,39 +43,41 @@ class PackageExportSpec extends Specification {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
 
-    journal1 = JournalInstance.findByName("PackageExportJournal1") ?: new JournalInstance(name: "PackageExportJournal1").save(flush:true)
-    journal2 = JournalInstance.findByName("PackageExportJournal2") ?: new JournalInstance(name: "PackageExportJournal2").save(flush:true)
-    journal3 = JournalInstance.findByName("PackageExportJournal3") ?: new JournalInstance(name: "PackageExportJournal3").save(flush:true)
-    pack1 = Package.findByName("Packageexportpackage1") ?: new Package(name: "Packageexportpackage1").save(flush:true)
-    pack2 = Package.findByName("Packageexportpackage2") ?: new Package(name: "Packageexportpackage2").save(flush:true)
-    plt = Platform.findByName("PackageExportPlatform") ?: new Platform(name: "PackageExportPlatform").save(flush:true)
-    org = Org.findByName("PackageExportOrg") ?: new Org(name: "PackageExportOrg").save(flush:true)
+    journal1 = JournalInstance.findByName("PackageExportJournal1") ?: new JournalInstance(name: "PackageExportJournal1").save(flush:true, failOnError: true)
+    journal2 = JournalInstance.findByName("PackageExportJournal2") ?: new JournalInstance(name: "PackageExportJournal2").save(flush:true, failOnError: true)
+    journal3 = JournalInstance.findByName("PackageExportJournal3") ?: new JournalInstance(name: "PackageExportJournal3").save(flush:true, failOnError: true)
+    pack1 = Package.findByName("Packageexportpackage1") ?: new Package(name: "Packageexportpackage1").save(flush:true, failOnError: true)
+    pack2 = Package.findByName("Packageexportpackage2") ?: new Package(name: "Packageexportpackage2").save(flush:true, failOnError: true)
+    plt = Platform.findByName("PackageExportPlatform") ?: new Platform(name: "PackageExportPlatform").save(flush:true, failOnError: true)
+    org = Org.findByName("PackageExportOrg") ?: new Org(name: "PackageExportOrg").save(flush:true, failOnError: true)
 
     if (!pack1.nominalPlatform || !pack1.provider) {
       pack1.nominalPlatform = plt
       pack1.provider = org
-      pack1.save(flush: true)
+      pack1.save(flush:true, failOnError: true)
     }
 
     if (!pack2.nominalPlatform || !pack2.provider) {
       pack2.nominalPlatform = plt
       pack2.provider = org
-      pack2.save(flush: true)
+      pack2.save(flush:true, failOnError: true)
     }
 
-    tipp1 = tippUpsertService.tiplAwareCreate(name: "PackageExportJournal1", hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date(), importId: "pkgexporttipp1", url: "http://testexporttipp1.de")
-    tipp2 = tippUpsertService.tiplAwareCreate(name: "PackageExportJournal2", hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp2", url: "http://testexporttipp2.de")
-    tipp3 = tippUpsertService.tiplAwareCreate(name: "PackageExportJournal3", hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date(), importId: "pkgexporttipp3", url: "http://testexporttipp3.de")
-    tipp4 = tippUpsertService.tiplAwareCreate(name: "PackageExportJournal2", hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp4", url: "http://testexporttipp4.de")
+    tipp1 = TitleInstancePackagePlatform.findByName("PackageExportJournalTIPP1") ?: new TitleInstancePackagePlatform(name: "PackageExportJournalTIPP1", hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date(), importId: "pkgexporttipp1", url: "http://testexporttipp1.de").save(flush:true, failOnError: true)
+    tipp2 = TitleInstancePackagePlatform.findByName("PackageExportJournalTIPP2") ?: new TitleInstancePackagePlatform(name: "PackageExportJournalTIPP2", hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp2", url: "http://testexporttipp2.de").save(flush:true, failOnError: true)
+    tipp3 = TitleInstancePackagePlatform.findByName("PackageExportJournalTIPP3") ?: new TitleInstancePackagePlatform(name: "PackageExportJournalTIPP3", hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date(), importId: "pkgexporttipp3", url: "http://testexporttipp3.de").save(flush:true, failOnError: true)
+    tipp4 = TitleInstancePackagePlatform.findByName("PackageExportJournalTIPP4") ?: new TitleInstancePackagePlatform(name: "PackageExportJournalTIPP4", hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp4", url: "http://testexporttipp4.de").save(flush:true, failOnError: true)
   }
 
   def cleanup() {
-    pack1?.expunge()
-    pack2?.expunge()
     tipp1?.expunge()
     tipp2?.expunge()
     tipp3?.expunge()
     tipp4?.expunge()
+
+    pack1?.expunge()
+    pack2?.expunge()
+
     journal1?.expunge()
     journal2?.expunge()
     journal3?.expunge()
@@ -101,8 +99,8 @@ class PackageExportSpec extends Specification {
 
     then:
     resp.status == HttpStatus.OK
-    resp.body()?.contains("PackageExportJournal1")
-    resp.body()?.contains("PackageExportJournal2")
+    resp.body()?.contains("PackageExportJournalTIPP1")
+    resp.body()?.contains("PackageExportJournalTIPP2")
     resp.header("Content-Disposition") == "attachment; filename=\"Packageexportorg_Global_Packageexportpackage1_${new SimpleDateFormat("yyyy-MM-dd").format(new Date())}.txt\""
   }
 

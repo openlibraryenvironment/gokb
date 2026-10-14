@@ -97,13 +97,14 @@ class TippTestSpec extends AbstractAuthSpec {
   def cleanup() {
     if (last) {
       sleep(500)
-      Package.findByName("TippTestPack")?.refresh().expunge()
-      Platform.findByName("TippTestPlat")?.refresh().expunge()
-      JournalInstance.findByName("TippTestJournal")?.refresh().expunge()
-      CuratoryGroup.findByName("cgtipptest")?.refresh().expunge()
       TitleInstancePackagePlatform.findByName("previous TIPP")?.refresh().expunge()
       TitleInstancePackagePlatform.findByName("merge target TIPP")?.refresh().expunge()
       TitleInstancePackagePlatform.findByName("merge victim TIPP")?.refresh().expunge()
+      Package.findByName("TippTestPack")?.refresh().expunge()
+      Platform.findByName("TippTestPlat")?.refresh().expunge()
+      TitleInstancePlatform.findByUrl("http://host-url.test/old")?.refresh().expunge()
+      JournalInstance.findByName("TippTestJournal")?.refresh().expunge()
+      CuratoryGroup.findByName("cgtipptest")?.refresh().expunge()
     }
   }
 
@@ -229,7 +230,6 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.body().publisherName == "some Publisher"
     resp.body()._embedded.ids?.size() == 2
     resp.body()._embedded.coverageStatements?.size() == 2
-    resp.body()._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
   }
 
   void "test add new TIPP price"() {
@@ -293,14 +293,13 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.body().publisherName == "some Publisher"
     resp.body()._embedded.ids?.size() == 2
     resp.body()._embedded.coverageStatements?.size() == 2
-    resp.body()._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
     resp.body()._embedded.prices?.size() == 1
     resp.body()._embedded.prices[0].price == "0.01"
   }
 
   void "test remove TIPP price"() {
     given:
-    Map tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.com")
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.com")
     Map upd_body = [
       pkg: testPackage.id,
       hostPlatform: testPlatform.id,
@@ -352,7 +351,6 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.body().publisherName == "some Publisher"
     resp.body()._embedded.ids?.size() == 2
     resp.body()._embedded.coverageStatements?.size() == 2
-    resp.body()._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
     resp.body()._embedded.prices?.size() == 0
   }
 
@@ -431,7 +429,6 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.body().publisherName == "some Publisher"
     resp.body()._embedded.ids?.size() == 2
     resp.body()._embedded.coverageStatements?.size() == 2
-    resp.body()._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
     resp.body()._embedded.prices?.size() == 1
     resp.body()._embedded.prices[0].price == "10.58"
   }

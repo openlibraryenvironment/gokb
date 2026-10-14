@@ -200,7 +200,7 @@ class CleanupService {
       j?.message("TIPPs to process: ${result.count}")
 
       while (more) {
-        List<Long> batch = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
+        List<Long> batch = TitleInstancePackagePlatform.executeQuery('''select tipp from TitleInstancePackagePlatform as tipp
                                                                         where tipp.status = :sc
                                                                         and tipp.url is not null
                                                                         and tipp.title is not null
@@ -223,8 +223,7 @@ class CleanupService {
           more = false
         }
 
-        batch.each { tid ->
-          TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tid)
+        batch.each { tipp ->
           List tipls = checkForTipl(tipp.title, tipp.hostPlatform, tipp.url)
           TitleInstancePlatform final_tipl = null
 
@@ -232,6 +231,7 @@ class CleanupService {
             log.warn("ensureTipls :: Skipping TIPP ${tipp} due to missing info!")
           }
           else if (tipls.size() == 0) {
+            log.debug("ensureTipls :: Created new TIPL for ${tipp}..")
             final_tipl = new TitleInstancePlatform(url: tipp.url, hostPlatform: tipp.hostPlatform, title: tipp.title).save(flush: true, failOnError: true)
             result.new_tipls++
           }
@@ -239,7 +239,7 @@ class CleanupService {
             log.debug("ensureTipls :: Skipping TIPP ${tipp} due to matched tipl during in-batch check..")
           }
           else {
-            log.debug("Found more than one TIPL for ${tipp.title ?: tipp} on ${tipp.hostPlatform}!")
+            log.debug("ensureTipls :: Found more than one TIPL for ${tipp.title ?: tipp} on ${tipp.hostPlatform}!")
           }
 
           log.debug("TIPL ${final_tipl}")
@@ -271,7 +271,7 @@ class CleanupService {
     List<TitleInstancePlatform> result = []
 
     if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
-      def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       result = TitleInstancePlatform.executeQuery('''select tipl from TitleInstancePlatform as tipl
                                                       where tipl.status = :sc
                                                       and tipl.title = :ti
@@ -465,7 +465,7 @@ class CleanupService {
         cobj.status = ci_status_deleted
         cobj.save(flush: true)
 
-        JournalInstance journal = JournalInstance.get(cobj.fromComponent.id)
+        JournalInstance journal = JournalInstance.get(cobj.component.id)
 
         journal.lastSeen = new Date().getTime()
         journal.save(flush: true)
@@ -757,19 +757,19 @@ class CleanupService {
   * Used to expunge a list of KBComponents via their id in batches
   */
 
-  public Map expungeComponentsById(List<Long> components, Job j = null) {
+  public Map expungeComponentsById(List<Long> component_ids, Job j = null) {
     Map result = [num_requested: components.size(), num_expunged: 0]
     def esclient = ESWrapperService.getClient()
     log.debug("Component bulk expunge")
     log.debug("Expunging ${result.num_requested} components")
 
-    List remaining = components
+    List remaining = component_ids
 
     while (remaining.size() > 0){
       def batch = remaining.take(50)
       remaining = remaining.drop(50)
 
-      ComponentIdentifier.executeUpdate('''delete from ComponentIdentifier as c where c.component.id IN (:component)''', [component: batch])
+      ComponentIdentifier.executeUpdate('''delete from ComponentIdentifier as c where and c.component.id IN (:component)''', [component: batch])
       ComponentWatch.executeUpdate('''delete from ComponentWatch as cw where cw.component.id IN (:component)''', [component: batch])
       KBComponentAdditionalProperty.executeUpdate('''delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)''', [component: batch])
       KBComponentVariantName.executeUpdate('''delete from KBComponentVariantName as c where c.owner.id IN (:component)''', [component: batch])
@@ -795,7 +795,7 @@ class CleanupService {
       ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)", [component: batch])
       ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch])
       ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch])
-      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
+      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf != null and duplicateOf.id IN (:component)", [component: batch])
       ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
       ComponentAttachment.executeUpdate("delete from ComponentAttachment as cp where cp.component.id IN (:component)", [component: batch])
 
@@ -1032,9 +1032,10 @@ class CleanupService {
           result++
 
           components_to_update.each { ctu ->
-            if (ctu.tipps) {
-              titleAugmentService.touchTitleTipps(ctu, false)
-            }
+            ctu.lastUpdateComment = "Removed history event from title"
+            ctu.save(flush: true)
+
+            titleAugmentService.touchTitleTipps(ctu, false)
           }
         }
         else {
@@ -1123,6 +1124,7 @@ class CleanupService {
       result = processTitleDOIcleanup(session, j)
     }
     catch (Exception e) {
+      log.error("New session needed: ", e)
       TitleInstance.withNewSession { session ->
         result = processTitleDOIcleanup(session, j)
       }
@@ -1150,7 +1152,7 @@ class CleanupService {
     int count = BookInstance.executeQuery("select count(id) ${query_string}".toString(),
                                           [sc: status_current, nsd: doi_ns])[0]
 
-    log.debug("Got total of ${count} ..")
+    log.debug("processTitleDOIcleanup :: Got total of ${count} ..")
     int ctr = 0
 
     while (more) {
@@ -1167,7 +1169,7 @@ class CleanupService {
 
         def augment_result = titleAugmentService.addMissingDoiFromTipps(book)
 
-        log.debug("Got TI augment result ${augment_result}")
+        log.debug("processTitleDOIcleanup :: Got TI augment result ${augment_result}")
 
         if (!result.counts[augment_result.result]) {
           result.counts[augment_result.result] = 1

@@ -308,9 +308,9 @@ class TitleInstance extends KBComponent {
   public void toGoKBXml(builder, attr) {
 
     try {
-      List publisher_links = getPublisherLinks()
-      List history = getTitleHistory()
-      List tipps = getTipps()
+      def publisher_links = getPublisherLinks()
+      def history = getTitleHistory()
+      def tipps = getTipps()
 
       builder.'gokb'(attr) {
         builder.'title'(['id': (id), 'uuid': (uuid)]) {
@@ -328,17 +328,15 @@ class TitleInstance extends KBComponent {
             builder.'firstAuthor'(this.firstAuthor)
           }
 
-          builder.'imprint'(imprint?.name)
           builder.'medium'(medium?.value)
           builder.'type'(this.class.simpleName)
           builder.'OAStatus'(OAStatus?.value)
-          builder.'continuingSeries'(continuingSeries?.value)
           builder.'publishedFrom'(this.publishedFrom ? DateFormatService.formatDate(this.publishedFrom) : null)
           builder.'publishedTo'(this.publishedTo ? DateFormatService.formatDate(this.publishedTo)  : null)
 
           builder.'publishers' {
             publisher_links?.each { TitlePublisher pc ->
-              List pub_info = Org.executeQuery("select id, uuid, name from Org where id = :fc", [fc: pc.publisher.id])
+              List pub_info = Org.executeQuery("select id, uuid, name from Org where id = :fc", [fc: pc.publisher.id])[0]
 
               if (pub_info) {
                 builder."publisher"(['id': pub_info[0], 'uuid': pub_info[1]]) {
@@ -406,13 +404,13 @@ class TitleInstance extends KBComponent {
                 builder.'name'(tipp.name)
                 builder.'status'(tipp.status.value)
 
-                List pkg_info = Package.executeQuery("select id, uuid, name from Package where id = :pid", [pid: tipp.pkg.id])
+                List pkg_info = Package.executeQuery("select id, uuid, name from Package where id = :pid", [pid: tipp.pkg.id])[0]
 
                 builder.'package'(['id': pkg_info[0], 'uuid': pkg_info[1]]) {
                   builder.'name'(pkg_info[2])
                 }
 
-                List plt_info = Platform.executeQuery("select id, uuid, name from Platform where id = :pid", [pid: tipp.hostPlatform.id])
+                List plt_info = Platform.executeQuery("select id, uuid, name from Platform where id = :pid", [pid: tipp.hostPlatform.id])[0]
 
                 builder.'platform'(['id': plt_info[0], 'uuid': plt_info[1]]) {
                   builder.'name'(plt_info[2])
@@ -431,7 +429,7 @@ class TitleInstance extends KBComponent {
                   }
                 }
 
-                List cov_statements = tipp.coverageStatements
+                Collection cov_statements = tipp.coverageStatements
 
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
@@ -442,7 +440,7 @@ class TitleInstance extends KBComponent {
                       endDate: (tcs.endDate ? DateFormatService.formatDate(tcs.endDate) : null),
                       endVolume: tcs.endVolume,
                       endIssue: tcs.endIssue,
-                      coverageDepth: tcs.coverageDepth?.value ?: tipp.coverageDepth?.value,
+                      coverageDepth: tcs.coverageDepth?.value ?: 'Fulltext',
                       coverageNote: tcs.coverageNote,
                       embargo: tcs.embargo
                     )

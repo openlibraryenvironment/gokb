@@ -316,6 +316,7 @@ class ComponentLookupService {
         else {
           paramStr += " AND "
         }
+
         List alts = params[p.name] ? params.list(p.name) : params.list(mapped_field)
 
         if ( p instanceof Association ) {
@@ -336,8 +337,8 @@ class ComponentLookupService {
               if (mapped_field == 'ids') {
                 validStr.add(Identifier.normalizeIdentifier(a))
               }
-              else if (!addedLong && p.type != RefdataValue) {
-                validStr.add(a.toLowerCase())
+              else if (!addedLong) {
+                validStr.add(p.type != RefdataValue ? a.toLowerCase() : a)
               }
             }
           }
@@ -469,7 +470,7 @@ class ComponentLookupService {
               paramStr += "EXISTS (SELECT 1 FROM ComponentIdentifier where component = p AND ("
               paramStr += "identifier.value = :idval${idx} "
               paramStr += "OR identifier.uuid = :idval${idx} "
-              paramStr += "OR identifier.normname = :idval${idx})"
+              paramStr += "OR identifier.normname = :idval${idx}))"
 
               qryParams["idval${idx}"] = idp
 
@@ -902,12 +903,13 @@ class ComponentLookupService {
    * @param result : The result object
    * @param cls : The class of returned objects
    * @param context : Possible override of the generated link path
+   * @param params : GrailsParameterMap handed on from the controller action
    * @param max : Maximum items per page
    * @param offset : Result offset
    * @param total : Number of total results
    */
 
-  public void generateLinks(Map result, Class cls, String context, def params, int max, int offset, int total) {
+  public void generateLinks(Map result, Class cls, String context, params, Integer max = 10, Integer offset = 0, Integer total) {
     String endpoint = ""
 
     if (context) {

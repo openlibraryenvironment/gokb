@@ -11,6 +11,7 @@ import org.grails.web.json.JSONObject
 class ReviewRequestService {
 
   def grailsApplication
+  def componentLookupService
 
   public ReviewRequest raise(KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, String additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
     // Create a request.

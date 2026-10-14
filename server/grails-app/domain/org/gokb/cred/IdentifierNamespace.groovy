@@ -22,7 +22,6 @@ class IdentifierNamespace {
   }
 
   static constraints = {
-    // II: Want this, but need to tidy live first :: value (nullable:true, blank:false, unique:true)
     name (nullable:true)
     value (nullable:true, blank:false, unique:true)
     datatype (nullable:true, blank:false)
@@ -32,7 +31,10 @@ class IdentifierNamespace {
     baseUrl (nullable:true, blank:false)
   }
 
-  public static final String restPath = "/namespaces"
+  public String getRestPath() {
+    return "/namespaces"
+  }
+
   // used by @gokbg3.RestMappingService.selectJsonLabel
   public static final String jsonLabel = "name"
 

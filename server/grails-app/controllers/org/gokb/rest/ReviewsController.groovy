@@ -116,6 +116,7 @@ class ReviewsController {
   @Transactional
   def save() {
     Map result = [result:'OK', params: params]
+    User user = User.get(springSecurityService.principal.id)
     JSONObject reqBody = request.JSON
     ReviewRequest obj
 
@@ -145,6 +146,7 @@ class ReviewsController {
   @Transactional
   def transfer() {
     Map result = [result: 'OK', params: params]
+    User user = User.get(springSecurityService.principal.id)
     JSONObject reqBody = request.JSON
 
     ReviewRequest obj = ReviewRequest.get(genericOIDService.oidToId(params.id))

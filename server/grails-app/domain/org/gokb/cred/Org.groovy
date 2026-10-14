@@ -186,7 +186,7 @@ class Org extends KBComponent {
     List result = CuratoryGroup.executeQuery('''from CuratoryGroup as c
                                                 where exists (
                                                   select 1 from OrgCuratoryGroup
-                                                  where pkg = :comp
+                                                  where org = :comp
                                                   and group = c
                                                 )''', [comp: this])
 
@@ -277,11 +277,8 @@ class Org extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def publishes = getPublishedTitles()
-    def issues = getIssuedTitles()
     def platforms = getProvidedPlatforms()
     def offices = getOffices()
-    def identifiers = getIds()
 
     builder.'gokb'(attr) {
       builder.'org'(['id': (id), 'uuid': (uuid)]) {
