@@ -4,6 +4,7 @@ import gokbg3.RestMappingService
 import grails.core.GrailsApplication
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.gokb.cred.User
 
 class CuratoryGroupsService {
@@ -18,17 +19,43 @@ class CuratoryGroupsService {
   Map restLookup(User user, Map params) {
     Map result = [data: [], errors: [:]]
 
-    def status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
+
+    log.debug("###### " + params)
 
     if (params.status) {
-      def status = RefdataCategory.lookup('KBComponent.Status', params.status)
+
+      RefdataValue status = RefdataCategory.lookup('KBComponent.Status', params.status)
+        // params.status can be a Number but instance of String
+      if (!status) {
+        try {
+          int statusId = Integer.parseInt(params.status)
+          RefdataCategory cat = RefdataCategory.findByLabel('KBComponent.Status')
+          status = RefdataValue.get(params.status)
+
+        } catch (NumberFormatException nfe) {
+          log.warn(nfe)
+        }
+      }
 
       if (status) {
         status_filter = status
       }
     }
 
-    def curGroups = CuratoryGroup.findAllByStatus(status_filter)
+    String name_filter = null
+    if (params.curatoryGroupName) {
+      name_filter = params.curatoryGroupName.toString().trim()
+    }
+
+    List<CuratoryGroup> curGroups = null
+
+    if (name_filter) {
+      curGroups = CuratoryGroup.findAllByNameIlikeAndStatus(name_filter, status_filter)
+    }
+    else {
+      curGroups = CuratoryGroup.findAllByStatus(status_filter)
+    }
 
     String sortField = null, sortOrder = null
     if (params._sort) {

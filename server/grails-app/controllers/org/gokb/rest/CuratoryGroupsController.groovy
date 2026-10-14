@@ -11,6 +11,7 @@ import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.CuratoryGroupType
 import org.gokb.cred.JobResult
 import org.gokb.cred.KBComponent
+import org.gokb.cred.Package
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Org
@@ -36,6 +37,7 @@ class CuratoryGroupsController {
 
     User user = springSecurityService.currentUser
     Map result = curatoryGroupsService.restLookup(user, params)
+    // Map result = componentLookupService.restLookup(user, CuratoryGroup, params)
 
     /* def status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
@@ -71,7 +73,7 @@ class CuratoryGroupsController {
     curGroups.each { group ->
       result.data += restMappingService.mapObjectToJson(group, params, null)
     }
-     */
+    */
 
     render result as JSON
   }
@@ -79,7 +81,7 @@ class CuratoryGroupsController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
-    def curGroup = null
+    CuratoryGroup curGroup = null
     def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
