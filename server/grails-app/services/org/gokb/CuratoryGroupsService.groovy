@@ -34,7 +34,7 @@ class CuratoryGroupsService {
           status = RefdataValue.get(params.status)
 
         } catch (NumberFormatException nfe) {
-          log.warn(nfe)
+          log.debug("param.status not existing RDV string: ${params.status}")
         }
       }
 
