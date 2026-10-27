@@ -91,7 +91,7 @@ class PackageSourceUpdateService {
     List<URL> urls
 
     Package.withNewSession {
-      Package p = Package.get(pid)
+      Package p = Package.findById(pid)
       pkgInfo = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
       Platform pkg_plt = p.nominalPlatform ? Platform.get(p.nominalPlatform.id) : null
       Org pkg_prov = p.provider ? Org.get(p.provider.id) : null
@@ -100,6 +100,10 @@ class PackageSourceUpdateService {
       title_ns_id = pkg_source?.targetNamespace?.id ?: null
       title_ns_serial_id = pkg_source?.titleIdSerial?.id ?: null
       title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: null
+
+      if (!p || !pkg_plt || !pkg_prov || !pkg_source) {
+        log.warn("Package source update with missing info: [pkg: ${p}, platform: ${pkg_plt}, provider: ${pkg_prov}, source: ${pkg_source}]")
+      }
 
       if ( restrictSize ) {
         boolean ignoreSizeLimit = pkg_source?.getIgnoreSizeLimit()
@@ -296,7 +300,7 @@ class PackageSourceUpdateService {
           }
         }
         else {
-          log.debug("No source URL!")
+          log.debug("No source URL for source ${pkg_source}!")
           result.result = 'ERROR'
           result.messageCode = 'kbart.errors.url.missing'
           result.message = "Package source does not have an URL!"

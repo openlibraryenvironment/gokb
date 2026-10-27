@@ -214,7 +214,7 @@ class Package extends KBComponent {
 
     if (this.id) {
       if (onlyCurrent) {
-        def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+        RefdataValue refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
         all_titles = TitleInstance.executeQuery('''select title
             from TitleInstance as title
@@ -222,10 +222,10 @@ class Package extends KBComponent {
               select 1 from TitleInstancePackagePlatform as tipp
               where tipp.pkg = :pkg
               and tipp.title = title
-              and tipp.status = :stipp
+              and tipp.status = :sc
             )
-            and title.status = :stitle''',
-            [pkg: this, stipp: refdata_current, stitle: refdata_current],
+            and title.status = :sc''',
+            [pkg: this, sc: refdata_current],
             [max: max, offset: offset])
       }
       else {

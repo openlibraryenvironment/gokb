@@ -149,12 +149,12 @@ class PackageTestSpec extends AbstractAuthSpec {
       TitleInstancePlatform.findById(it).expunge()
     }
 
-    TitleInstance.executeQuery("select id from TitleInstance").each {
-      TitleInstance.findById(it)?.expunge()
-    }
-
     TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform").each {
       TitleInstancePackagePlatform.findById(it)?.expunge()
+    }
+
+    TitleInstance.executeQuery("select id from TitleInstance").each {
+      TitleInstance.findById(it)?.expunge()
     }
 
     Package.executeQuery("select id from Package").each {
@@ -381,14 +381,7 @@ class PackageTestSpec extends AbstractAuthSpec {
                 title       : testTitle.id,
                 hostPlatform: testPlt.id,
                 url         : "http://testpkgwithtipp.test",
-                name        : "TIPP Name",
-                prices      : [
-                    [
-                        type    : 'list',
-                        amount  : 34.50,
-                        currency: 'GBP'
-                    ]
-                ]
+                name        : "TIPP Name"
             ]
         ]
     ]
@@ -406,8 +399,11 @@ class PackageTestSpec extends AbstractAuthSpec {
 
     then:
     resp.status == HttpStatus.CREATED
-    Package new_pkg = Package.get(resp.body().id)
-    new_pkg?.tippCount == 1
+    sleep(200)
+    Package.withNewSession {
+      Package new_pkg = Package.findById(resp.body().id)
+      new_pkg?.tippCount == 1
+    }
   }
 
   void "test /rest/packages/<id>/ingest with matching tipps"() {

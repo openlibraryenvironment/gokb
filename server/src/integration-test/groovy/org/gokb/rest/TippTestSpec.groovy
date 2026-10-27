@@ -74,7 +74,6 @@ class TippTestSpec extends AbstractAuthSpec {
       merge_target.addToCoverageStatements([startVolume: "1", startIssue: "1", coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Fulltext")]).save(flush: true)
       Identifier new_id = Identifier.findByValue('2345-2323') ?: new Identifier(value: '2345-2323', namespace: ns_eissn).save(flush:true)
       merge_target.addIdentifier(new_id)
-      merge_target.save(flush: true)
     }
 
     if (!TitleInstancePackagePlatform.findByName("merge victim TIPP")) {
@@ -90,22 +89,26 @@ class TippTestSpec extends AbstractAuthSpec {
       merge_victim.addToCoverageStatements([startVolume: "3", startIssue: "10", coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Fulltext")]).save(flush: true)
       Identifier old_id = Identifier.findByValue('2345-2331') ?: new Identifier(value: '2345-2331', namespace: ns_eissn).save(flush:true)
       merge_victim.addIdentifier(old_id)
-      merge_victim.save(flush: true)
     }
   }
 
   def cleanup() {
-    if (last) {
-      sleep(500)
-      TitleInstancePackagePlatform.findByName("previous TIPP")?.refresh().expunge()
-      TitleInstancePackagePlatform.findByName("merge target TIPP")?.refresh().expunge()
-      TitleInstancePackagePlatform.findByName("merge victim TIPP")?.refresh().expunge()
-      Package.findByName("TippTestPack")?.refresh().expunge()
-      Platform.findByName("TippTestPlat")?.refresh().expunge()
-      TitleInstancePlatform.findByUrl("http://host-url.test/old")?.refresh().expunge()
-      JournalInstance.findByName("TippTestJournal")?.refresh().expunge()
-      CuratoryGroup.findByName("cgtipptest")?.refresh().expunge()
+    TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform").each {
+      TitleInstancePackagePlatform.findById(it)?.expunge()
     }
+    TitleInstancePlatform.executeQuery("select id from TitleInstancePlatform").each {
+      TitleInstancePlatform.findById(it)?.expunge()
+    }
+    TitleInstance.executeQuery("select id from TitleInstance").each {
+      TitleInstance.findById(it)?.expunge()
+    }
+
+    sleep(200)
+
+    Package.findByName("TippTestPack")?.refresh().expunge()
+    Platform.findByName("TippTestPlat")?.refresh().expunge()
+    Org.findByName("TippTestOrg")?.expunge()
+    CuratoryGroup.findByName("cgtipptest")?.refresh().expunge()
   }
 
   void "test /rest/tipps without token"() {
@@ -125,14 +128,14 @@ class TippTestSpec extends AbstractAuthSpec {
     String urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.GET("${urlPath}/rest/tipps?_embed=prices")
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/tipps")
       .bearerAuth(accessToken)
     HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
     resp.body() != null
-    resp.body().data['_embedded'].prices.size() > 0
+    resp.body().data.size() == 2 // merge target is Deleted
   }
 
   void "test /rest/tipps POST"() {
@@ -151,14 +154,7 @@ class TippTestSpec extends AbstractAuthSpec {
           coverageDepth: "Fulltext"
         ]
       ],
-      publisherName: "other Publisher",
-      prices: [
-        [
-          type: [name: 'list'],
-          price: 12.95,
-          currency: [name: "EUR"]
-        ]
-      ]
+      publisherName: "other Publisher"
     ]
 
     String urlPath = getUrlPath()
@@ -173,7 +169,6 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.status == HttpStatus.CREATED
     resp.body().url == upd_body.url
     resp.body()._embedded.coverageStatements?.size() == 1
-    resp.body()._embedded.prices?.size() == 1
     resp.body().publisherName == "other Publisher"
   }
 
@@ -232,207 +227,6 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.body()._embedded.coverageStatements?.size() == 2
   }
 
-  void "test add new TIPP price"() {
-    given:
-    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.com")
-    Map upd_body = [
-      pkg: testPackage.id,
-      hostPlatform: testPlatform.id,
-      title: testTitle.id,
-      publisherName: "some Publisher",
-      url: "http://new-url.com",
-      coverageStatements: [
-        [
-          id: tipp.coverageStatements[0].id,
-          startDate: "2005-01-01",
-          startVolume: "1",
-          startIssue: "1",
-          endVolume: "5",
-          endDate: "2008-01-01",
-          coverageDepth: "Fulltext"
-        ],
-        [
-          startDate: "2010-01-01",
-          startVolume: "7",
-          startIssue: "1",
-          coverageDepth: "Fulltext"
-        ]
-      ],
-      ids: [
-        [
-          type: 'issn',
-          value: '3245-2349'
-        ],
-        [
-          type: 'eissn',
-          value: '3241-2541'
-        ]
-      ],
-      prices: [
-        [
-          price: "0.01",
-          currency: [ name: "EUR"],
-          startDate: "2020-01-01",
-          type: "list"
-        ]
-      ]
-    ]
-    String urlPath = getUrlPath()
-
-    when:
-    String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/tipps/${tipp.id}", upd_body)
-      .bearerAuth(accessToken)
-    HttpResponse resp = http.exchange(request, Map)
-
-    then:
-    resp.status == HttpStatus.OK
-    resp.body().id == tipp.id
-    resp.body().url == upd_body.url
-    resp.body().name == "previous TIPP"
-    resp.body().publisherName == "some Publisher"
-    resp.body()._embedded.ids?.size() == 2
-    resp.body()._embedded.coverageStatements?.size() == 2
-    resp.body()._embedded.prices?.size() == 1
-    resp.body()._embedded.prices[0].price == "0.01"
-  }
-
-  void "test remove TIPP price"() {
-    given:
-    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.com")
-    Map upd_body = [
-      pkg: testPackage.id,
-      hostPlatform: testPlatform.id,
-      title: testTitle.id,
-      publisherName: "some Publisher",
-      url: "http://new-url.com",
-      coverageStatements: [
-        [
-            id: tipp.coverageStatements[0].id,
-            startDate: "2005-01-01",
-            startVolume: "1",
-            startIssue: "1",
-            endVolume: "5",
-            endDate: "2008-01-01",
-            coverageDepth: "Fulltext"
-        ],
-        [
-            startDate: "2010-01-01",
-            startVolume: "7",
-            startIssue: "1",
-            coverageDepth: "Fulltext"
-        ]
-      ],
-      ids: [
-        [
-          type: 'issn',
-          value: '3245-2349'
-        ],
-        [
-          type: 'eissn',
-          value: '3241-2541'
-        ]
-      ],
-      prices: []
-    ]
-    String urlPath = getUrlPath()
-
-    when:
-    String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/tipps/${tipp.id}", upd_body)
-      .bearerAuth(accessToken)
-    HttpResponse resp = http.exchange(request, Map)
-
-    then:
-    resp.status == HttpStatus.OK
-    resp.body().id == tipp.id
-    resp.body().url == upd_body.url
-    resp.body().name == "previous TIPP"
-    resp.body().publisherName == "some Publisher"
-    resp.body()._embedded.ids?.size() == 2
-    resp.body()._embedded.coverageStatements?.size() == 2
-    resp.body()._embedded.prices?.size() == 0
-  }
-
-  void "test replace TIPP price"() {
-    given:
-    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.com")
-    Map init_body = [
-      pkg: testPackage.id,
-      hostPlatform: testPlatform.id,
-      title: testTitle.id,
-      publisherName: "some Publisher",
-      url: "http://new-url.com",
-      ids: [
-        [
-          type: 'issn',
-          value: '3245-2349'
-        ],
-        [
-          type: 'eissn',
-          value: '3241-2541'
-        ]
-      ],
-      prices: [
-        [
-          price: "0.01",
-          currency: [ name: "EUR"],
-          startDate: "2020-01-01",
-          type: "list"
-        ]
-      ]
-    ]
-
-    Map upd_body = [
-        pkg: testPackage.id,
-        hostPlatform: testPlatform.id,
-        title: testTitle.id,
-        publisherName: "some Publisher",
-        url: "http://new-url.com",
-        ids: [
-          [
-            type: 'issn',
-            value: '3245-2341'
-          ],
-          [
-            type: 'eissn',
-            value: '3241-2541'
-          ]
-        ],
-        prices: [
-          [
-            price: "10.58",
-            currency: [ name: "EUR"],
-            startDate: "2020-01-01",
-            type: "list"
-          ]
-        ]
-    ]
-
-    String urlPath = getUrlPath()
-
-    when:
-    String accessToken = getAccessToken()
-    HttpRequest req1 = HttpRequest.PUT("${urlPath}/rest/tipps/${tipp.id}", init_body)
-      .bearerAuth(accessToken)
-    HttpResponse resp1 = http.exchange(req1, Map)
-
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/tipps/${tipp.id}", upd_body)
-      .bearerAuth(accessToken)
-    HttpResponse resp = http.exchange(request, Map)
-
-    then:
-    resp.status == HttpStatus.OK
-    resp.body().id == tipp.id
-    resp.body().url == upd_body.url
-    resp.body().name == "previous TIPP"
-    resp.body().publisherName == "some Publisher"
-    resp.body()._embedded.ids?.size() == 2
-    resp.body()._embedded.coverageStatements?.size() == 2
-    resp.body()._embedded.prices?.size() == 1
-    resp.body()._embedded.prices[0].price == "10.58"
-  }
-
   void "test TIPP merge keep updates"() {
     given:
     TitleInstancePackagePlatform dupe = TitleInstancePackagePlatform.findByName("merge victim TIPP")
@@ -440,7 +234,6 @@ class TippTestSpec extends AbstractAuthSpec {
     String urlPath = getUrlPath()
 
     when:
-    last = true
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.PUT("${urlPath}/rest/tipps/${dupe.id}/merge?target=${target.id}", null)
       .bearerAuth(accessToken)

@@ -18,9 +18,9 @@ class PackageUpdateService {
   def tippUpsertService
 
   @Transactional
-  public Map updateLinks(Package obj, JSONObject reqBody, Boolean changed, boolean remove = true, User user) {
+  public boolean updateLinks(Package obj, JSONObject reqBody, Map errors, boolean remove = true, User user) {
     log.debug("Updating package links ..")
-    Map errors = [:]
+    boolean changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       Collection id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
@@ -204,6 +204,7 @@ class PackageUpdateService {
       obj.lastSeen = System.currentTimeMillis()
       obj.save(flush: true)
     }
-    errors
+
+    return changed
   }
 }

@@ -474,15 +474,13 @@ class PlatformService {
 
           if (dupes == 0) {
             ctp.hostPlatform = new_platform
+            ctp.lastUpdateComment = "Platform cleanup"
             ctp.save(flush: true, failOnError: true)
-
-            connected_tipl.lastUpdateComment = "Platform cleanup"
-            connected_tipl.save(flush: true, failOnError: true)
           }
           else {
-            log.debug("Not creating duplicate TIPL for ${connected_tipl.title}")
-            connected_tipl.status = status_deleted
-            connected_tipl.save(flush: true, failOnError: true)
+            log.debug("Not creating duplicate TIPL for ${ctp.title}")
+            ctp.status = status_deleted
+            ctp.save(flush: true, failOnError: true)
           }
         }
 
@@ -513,8 +511,8 @@ class PlatformService {
     result
   }
 
-  private Map updateLinks(Platform obj, JSONObject reqBody, Boolean changed, boolean remove = true) {
-    Map errors = [:]
+  public boolean updateLinks(Platform obj, JSONObject reqBody, Map errors, boolean remove = true) {
+    boolean changed = false
     log.debug("Updating platform hasMany links ..")
 
     if (reqBody.ids || reqBody.identifiers) {
@@ -532,6 +530,6 @@ class PlatformService {
       }
     }
 
-    errors
+    return changed
   }
 }

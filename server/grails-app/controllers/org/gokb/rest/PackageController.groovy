@@ -133,7 +133,6 @@ class PackageController {
     Map errors = [:]
     User user = User.get(springSecurityService.principal.id)
     boolean editable = true
-    boolean changed = true
 
     if (reqBody) {
       if (!user.isAdmin()) {
@@ -194,7 +193,7 @@ class PackageController {
             ]
 
             log.debug("Updating ${obj}")
-            changed = restMappingService.updateObject(obj, jsonMap, reqBody)
+            restMappingService.updateObject(obj, jsonMap, reqBody)
 
             if (obj.validate()) {
               if (errors.size() == 0) {
@@ -217,7 +216,7 @@ class PackageController {
                   reqBody.curatoryGroups = [reqBody.activeGroup]
                 }
 
-                errors << packageUpdateService.updateLinks(obj, reqBody, changed, false, user)
+                packageUpdateService.updateLinks(obj, reqBody, errors, false, user)
 
                 if (errors.size() == 0) {
                   log.debug("No errors: ${errors}")
@@ -339,7 +338,7 @@ class PackageController {
             errors.subjects = subject_result.errors
           }
 
-          errors << packageUpdateService.updateLinks(obj, reqBody, result.changed, remove, user)
+          result.changed |= packageUpdateService.updateLinks(obj, reqBody, errors, remove, user)
 
           if (errors.size() == 0) {
             log.debug("No errors.. saving")

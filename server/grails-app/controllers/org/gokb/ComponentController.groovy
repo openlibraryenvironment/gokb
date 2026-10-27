@@ -212,7 +212,7 @@ class ComponentController {
         }
 
         if (item.class == Org) {
-          info_map.providedPackagesCount = item.providedPackages.size()
+          info_map.providedPackagesCount = item.getProvidedPackagesCount()
           info_map.providedPlatforms = []
 
           item.providedPlatforms.each { pp ->

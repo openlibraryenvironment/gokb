@@ -84,7 +84,6 @@ class SourcesController {
   @Transactional
   def save() {
     Source obj = null
-    Boolean changed = true
     Map result = [:]
     Map errors = [:]
     def reqBody = request.JSON
@@ -101,7 +100,7 @@ class SourcesController {
           fieldConfig.immutable.removeAll(['ignoreSizeLimit', 'ezbMatch'])
         }
 
-        changed = restMappingService.updateObject(obj, fieldConfig, reqBody)
+        restMappingService.updateObject(obj, fieldConfig, reqBody)
       }
       catch (grails.validation.ValidationException ve) {
         errors = ve.errors
@@ -115,7 +114,7 @@ class SourcesController {
       if ( obj.validate() ) {
         obj.save(flush: true)
 
-        errors << updateLinks(obj, reqBody, changed, false)
+        updateLinks(obj, reqBody, errors, false)
 
         if (!errors) {
           response.status = 201
@@ -165,9 +164,9 @@ class SourcesController {
 
       result.changed |= restMappingService.updateObject(obj, fieldConfig, reqBody)
 
-      errors << updateLinks(obj, reqBody, result.changed, remove)
-
       if (!errors) {
+        result.changed |= updateLinks(obj, reqBody, errors, remove)
+
         if ( obj.validate() ) {
           obj = obj.merge(flush: true)
           result = restMappingService.mapObjectToJson(obj, params, user)
@@ -190,9 +189,9 @@ class SourcesController {
     render result as JSON
   }
 
-  private Map updateLinks(obj, reqBody, changed, boolean remove = true) {
+  private boolean updateLinks(obj, reqBody, Map errors, boolean remove = true) {
     log.debug("Updating source links ..")
-    Map errors = [:]
+    boolean changed = false
 
     if (reqBody.curatoryGroups) {
       Map update_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
@@ -204,6 +203,6 @@ class SourcesController {
       }
     }
 
-    errors
+    return changed
   }
 }

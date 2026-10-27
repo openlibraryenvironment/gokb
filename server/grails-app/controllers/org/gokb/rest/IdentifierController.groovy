@@ -97,11 +97,12 @@ class IdentifierController {
     if ( reqBody?.value && reqBody?.namespace ) {
       IdentifierNamespace ns = null
 
-      if (reqBody.namespace instanceof Integer) {
-        ns = IdentifierNamespace.get(reqBody.namespace)
-      }
-      else if (reqBody.namespace instanceof String) {
+
+      if (reqBody.namespace instanceof String) {
         ns = IdentifierNamespace.findByValueIlike(reqBody.namespace)
+      }
+      else {
+        ns = IdentifierNamespace.get(reqBody.namespace)
       }
 
       if (ns) {
@@ -144,18 +145,40 @@ class IdentifierController {
           if (reqBody.component) {
             KBComponent comp = null
 
-            if ( reqBody.component instanceof Integer ) {
-              comp = KBComponent.get(reqBody.component)
-            }
-            else if ( reqBody.component instanceof String ) {
+            if ( reqBody.component instanceof String ) {
               comp = KBComponent.findByUuid(reqBody.component)
+            }
+            else {
+              comp = KBComponent.findById(reqBody.component)
             }
 
             if (comp) {
+              if (ns.targetType) {
+                if (ns.targetType.value == comp.class.simpleName) {
+
+                }
+                else if (ns.targetType.value == 'Title' && (TitleInstance.isAssignableFrom(comp.class) || comp.class == TitleInstancePackagePlatform)) {
+                }
+                else if (ns.targetType.value == 'Book' && (comp.class == BookInstance || (comp.class == TitleInstancePackagePlatform) && comp.publicationType?.value == 'Monograph')) {
+
+                }
+                else if (ns.targetType.value == 'Journal' && (comp.class == JournalInstance || comp.class == DatabaseInstance || (comp.class == TitleInstancePackagePlatform) && comp.publicationType?.value == 'Serial')) {
+
+                }
+                else {
+                  result.message = "Provided type of component (${comp.class.simpleName}) is not allowed to be linked to identifiers of the given namespace!"
+                  result.badData = [component: reqBody.component, namespace: reqBody.namespace]
+                  response.status = 400
+                  result.code = 400
+                  result.result = 'ERROR'
+
+                  render result as JSON
+                  return
+                }
+              }
+
               if ( comp?.isEditable() ) {
                 comp.addIdentifier(obj)
-
-                params['_embed'] = params['_embed'] ?: 'identifiedComponents'
                 response.status = 201
 
                 result = restMappingService.mapObjectToJson(obj, params, user)

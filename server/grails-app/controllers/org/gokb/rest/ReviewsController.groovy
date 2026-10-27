@@ -126,6 +126,7 @@ class ReviewsController {
       obj = create_result.object
       result = restMappingService.mapObjectToJson(obj, params, user)
       result.additionalInfo = obj.additional
+      response.status = 201
 
       result._links = generateLinks(obj, user)
     }

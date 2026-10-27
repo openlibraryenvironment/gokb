@@ -565,7 +565,7 @@ class TitleAugmentService {
   }
 
   public boolean editMonographFields(ti, updatedInfo, boolean onlyNew = false) {
-    def book_changed = false
+    boolean book_changed = false
 
     ["editionDifferentiator",
      "editionStatement", "volumeNumber",
@@ -1141,9 +1141,8 @@ class TitleAugmentService {
     errors
   }
 
-  public Map updateLinks(TitleInstance obj, JSONObject reqBody, Boolean changed, boolean remove = true) {
-    log.debug("Updating title links .. changed: ${changed}")
-    Map errors = [:]
+  public boolean updateLinks(TitleInstance obj, JSONObject reqBody, Map errors, boolean remove = true) {
+    boolean changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       List id_list = (reqBody.ids ?: reqBody.identifiers) as List
@@ -1172,6 +1171,6 @@ class TitleAugmentService {
       touchTitleTipps(obj, false)
     }
 
-    errors
+    return changed
   }
 }

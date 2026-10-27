@@ -182,9 +182,9 @@ class OrgService {
   */
 
   @Transactional
-  public Map updateLinks(Org obj, JSONObject reqBody, Boolean changed, boolean remove = true) {
+  public boolean updateLinks(Org obj, JSONObject reqBody, Map errors, boolean remove = true) {
+    boolean changed = false
     log.debug("Updating org links ..")
-    Map errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       List id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
@@ -199,9 +199,7 @@ class OrgService {
     }
 
     if (reqBody.providedPlatforms instanceof Collection) {
-      List plts = reqBody.providedPlatforms
-
-      Map plts_result = updatePlatforms(obj, plts, remove)
+      Map plts_result = updatePlatforms(obj, reqBody.providedPlatforms, remove)
 
       changed |= plts_result.changed
 
@@ -243,13 +241,13 @@ class OrgService {
     }
 
     log.debug("After update: ${obj}")
-    errors
+    return changed
   }
 
   @Transactional
   public Map updatePlatforms(obj, plts, boolean remove = true) {
     Map result = [changed: false, errors: []]
-    List removed_plts = obj.providedPlatforms*.id
+    List removed_plts = obj.providedPlatforms*.id ?: []
     List new_plts = []
 
     plts.each { plt ->
@@ -336,7 +334,6 @@ class OrgService {
           log.debug("Adding new platform ${c}..")
           c.provider = obj
           c.save(flush: true)
-          FTUpdateService.updateSingleItem(c)
           result.changed = true
         }
         else {
@@ -351,7 +348,6 @@ class OrgService {
 
           plt_obj.provider = null
           plt_obj.save(flush: true)
-          FTUpdateService.updateSingleItem(plt_obj)
           result.changed = true
         }
       }
@@ -367,9 +363,10 @@ class OrgService {
     log.debug("Update offices ${offices}")
     Map result = [changed: false, errors: []]
 
-    RefdataValue language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
-    RefdataValue function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
+    RefdataCategory language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
+    RefdataCategory function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
     List old_ids = org.offices.collect { it.id }
+    log.debug("Old offices: ${old_ids}")
     List new_offices = []
 
     offices.each { office ->
@@ -397,7 +394,7 @@ class OrgService {
           }
 
           if (office.function instanceof String) {
-            office.function = RefdataCategory.lookup(Office.RD_FUNCTION, function)
+            office.function = RefdataCategory.lookup(Office.RD_FUNCTION, office.function)
           }
           else if (office.function instanceof Integer) {
             RefdataValue function_rdv = RefdataValue.get(function)
@@ -421,8 +418,11 @@ class OrgService {
     if (remove) {
       old_ids.each { old_office_id ->
         if (!new_offices*.id.contains(old_office_id)) {
-          log.debug("Removing stale office entry..")
-          org.removeFromOffices(Office.get(old_office_id))
+          log.debug("Removing stale office entry ${old_office_id}..")
+          Office office_to_remove = Office.findById(old_office_id)
+          org.removeFromOffices(office_to_remove)
+          org.save()
+          office_to_remove.expunge()
           result.changed = true
         }
       }

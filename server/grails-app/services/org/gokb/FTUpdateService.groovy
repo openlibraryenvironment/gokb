@@ -647,7 +647,7 @@ class FTUpdateService {
 
           if (bulkResponse.hasFailures()) {
             logBulkFailures(bulkResponse)
-            log.error("Bulk Update had errors!")
+            log.error("updateSpecifiedTippBulk :: Bulk Update had errors!")
             result.result = "ERROR"
             break
           }
@@ -676,6 +676,47 @@ class FTUpdateService {
     log.debug("... final:: Processed ${count} out of ${total} records. ")
 
     return result
+  }
+
+  public Map refreshPackagesForOrg(Org org) {
+    Map result = [result: 'OK']
+    def esClient = ESWrapperService.getClient()
+    String indexName = grailsApplication.config.getProperty('gokb.es.indices.packages')
+
+    List<Long> ids_to_refresh = Package.executeQuery("select id from Package where provider = :org", [org:org])
+
+    while (ids_to_refresh.size() > 0) {
+      BulkRequest bulkRequest = new BulkRequest()
+      List<Long> current_batch = ids_to_refresh.take(50)
+      ids_to_refresh.drop(50)
+
+      List<Package> batch_objects = Package.executeQuery("from Package where id in (:batch)", [batch: current_batch])
+
+      batch_objects.each { b ->
+        Map pkg_record = buildEsRecord(b)
+
+        if (pkg_record != null) {
+          IndexRequest singleRequest = new IndexRequest(indexName)
+          singleRequest.id(pkg_record['_id'].toString())
+          pkg_record.remove('_id')
+          singleRequest.source((pkg_record as JSON).toString(), XContentType.JSON)
+          bulkRequest.add(singleRequest)
+        }
+      }
+
+      BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+
+      if (bulkResponse.hasFailures()) {
+        logBulkFailures(bulkResponse)
+        log.error("refreshPackagesForOrg :: Bulk Update had errors!")
+        result.result = "ERROR"
+        break
+      }
+
+      cleanUpGorm()
+    }
+
+    result
   }
 
   boolean updateES(esClient, domain, boolean reindex = false, JobDataMap dataMap, job) {

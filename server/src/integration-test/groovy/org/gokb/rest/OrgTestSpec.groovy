@@ -42,8 +42,7 @@ class OrgTestSpec extends AbstractAuthSpec {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
 
-    Source new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true, failOnError: true)
-    test_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source).save(flush: true, failOnError: true)
+    test_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch").save(flush: true, failOnError: true)
     Office new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice", org: test_org).save(flush: true, failOnError: true)
 
     test_org_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true, failOnError: true)
@@ -51,6 +50,12 @@ class OrgTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
+    Platform.findByName("TestOrgPlt")?.expunge()
+    Platform.findByName("TestOrgPltUpdate")?.expunge()
+
+    Org.findByName("TestOrgPatch")?.expunge()
+    Org.findByName("TestOrgPost")?.expunge()
+    Org.findByName("TestOrgUpdateNew")?.expunge()
   }
 
   void "test /rest/orgs without token"() {
@@ -92,9 +97,9 @@ class OrgTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     String accessToken = getAccessToken()
     Map json_record = [
-      name             : "TestOrgPost",
-      ids              : [
-        [namespace: "global", value: "test-org-id-val"]
+      name: "TestOrgPost",
+      ids: [
+        [namespace: "viaf", value: "435338757555"]
       ],
       providedPlatforms: ["TestOrgPlt"],
       offices: [
@@ -119,8 +124,8 @@ class OrgTestSpec extends AbstractAuthSpec {
     expect:
     resp.body()?.name == "TestOrgPost"
     resp.body()?._embedded?.ids?.size() == 1
-    resp.body()?._embedded?.offices?.size()==3
-    resp.body()?._embedded?.offices*.function.name.count("Technical Support")==2
+    resp.body()?._embedded?.offices?.size() == 3
+    resp.body()?._embedded?.offices*.function.name.count("Technical Support") == 2
     resp.body()?._embedded?.offices*.function.name.count("Other")
   }
 
@@ -151,8 +156,8 @@ class OrgTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
 
     Map update_record = [
-      name             : "TestOrgUpdateNew",
-      ids              : [
+      name: "TestOrgUpdateNew",
+      ids: [
         [namespace: "viaf", value: "4870153184551227100006"]
       ],
       providedPlatforms: [test_org_plt.id],
@@ -309,7 +314,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     Map initial_record = [
       name: "TestOrgPatch",
-      comments              : [
+      comments: [
         [language: [name: 'eng'], value: "sdgozfgsdf\n\ndlghdgshfgsd"]
       ],
     ]

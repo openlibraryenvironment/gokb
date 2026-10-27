@@ -176,6 +176,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     importId(nullable: true, blank: true)
     publisherName(nullable: true, blank: true)
     title(nullable: true, blank: true)
+    pkg(nullable: false, blank: true)
+    hostPlatform(nullable: false, blank: true)
   }
 
   public static final String restPath = "/package-titles"

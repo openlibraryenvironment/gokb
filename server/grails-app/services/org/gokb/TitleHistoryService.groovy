@@ -7,7 +7,7 @@ import grails.gorm.transactions.Transactional
 import java.time.LocalDateTime
 
 import org.gokb.cred.*
-import org.grails.web.json.JSONObject
+import org.grails.web.json.JSONArray
 
 @Transactional
 class TitleHistoryService {
@@ -54,7 +54,7 @@ class TitleHistoryService {
     result
   }
 
-  public Map restUpdate(ti, JSONObject reqBody) {
+  public Map restUpdate(ti, JSONArray reqBody) {
     Map result = [result: 'OK']
     List current_history = ti.titleHistory
     List events = []
@@ -278,10 +278,10 @@ class TitleHistoryService {
         result.message = "There were errors updating the title history!"
         result.errors = errors
       }
-      else if (remove) {
+      else {
         current_history.each { ce ->
           if (!events.find { it == ce.id }) {
-            def event = ComponentHistoryEvent.get(ce.id)
+            ComponentHistoryEvent event = ComponentHistoryEvent.get(ce.id)
             event.delete(flush:true, failOnError:true)
           }
         }
@@ -290,7 +290,7 @@ class TitleHistoryService {
     else {
       log.debug("Found illegal payload format!")
       result.result = 'ERROR'
-      result.message = "Unexpected payload format, expected array of events!"
+      result.message = "Unexpected payload format, expected list of events!"
     }
 
     result

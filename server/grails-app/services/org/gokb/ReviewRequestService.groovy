@@ -180,7 +180,6 @@ class ReviewRequestService {
             pars.reviewRequest,
             pars.descriptionOfCause,
             user,
-            null,
             pars.additionalInfo,
             pars.stdDesc,
             editorialTargetGroup ?: componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user, reqBody.activeGroup)

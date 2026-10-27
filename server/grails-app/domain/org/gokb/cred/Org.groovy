@@ -63,7 +63,6 @@ class Org extends KBComponent {
     'previous': Org,
     offices: Office,
     providedPlatforms: Platform,
-    providedPackages: Package,
     linkedCurators: OrgCuratoryGroup
   ]
 
@@ -71,7 +70,6 @@ class Org extends KBComponent {
     children: 'parent',
     offices: 'org',
     providedPlatforms: 'provider',
-    providedPackages: 'provider',
     linkedCurators: 'org',
     previous: 'successor'
   ]

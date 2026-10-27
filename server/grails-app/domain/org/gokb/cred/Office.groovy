@@ -21,7 +21,7 @@ class Office extends KBComponent {
   RefdataValue function
   Org org
 
-  static belongsTo = [Org]
+  static belongsTo = [org: Org]
 
   static mapping = {
     includes KBComponent.mapping

@@ -186,31 +186,24 @@ class TippServiceSpec extends Specification {
   }
 
   def cleanup() {
-    [
-      "Test Title from full TIPP",
-      "Test Title from minimal TIPP",
-      "TippService Journal 1",
-      "TippService Journal 2",
-      "Test TIPP idmatch",
-      "TippService Update Journal",
-      "TippService Book 1",
-      "TippService Journal Conflict 1",
-      "TippService Journal Conflict 2",
-      "Test TIPP ambiguous review",
-      "Test TIPP updateTippFields",
-      "TippService CreateTiplTest"
-    ].each {
-      TitleInstancePackagePlatform.findByName(it)?.expunge()
+    TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform").each {
+      TitleInstancePackagePlatform.findById(it)?.expunge()
     }
-    Package.findByName("TippService Test Package")?.expunge()
-    Package.findByName("TippService Test reviewAmbiguousMatches Package")?.expunge()
-    Package.findByName("TippService TiplTestPackage")?.expunge()
+
+    TitleInstancePlatform.executeQuery("select id from TitleInstancePlatform").each {
+      TitleInstancePlatform.findById(it)?.expunge()
+    }
+
+    TitleInstance.executeQuery("select id from TitleInstance").each {
+      TitleInstance.findById(it)?.expunge()
+    }
+
+    Package.executeQuery("select id from Package").each {
+      Package.findById(it)?.expunge()
+    }
+
     Platform.findByName("TippService Test Platform")?.expunge()
     Org.findByName("TippService Test Org")?.expunge()
-    BookInstance.findByName("TippService Book 1")?.expunge()
-    BookInstance.findByName("TippService Update Book")?.expunge()
-    JournalInstance.findByName("TippService Journal 1")?.expunge()
-    JournalInstance.findByName("TippService Journal Conflict 1")?.expunge()
   }
 
   void "Test create new title from a minimal TIPP"() {
@@ -281,8 +274,8 @@ class TippServiceSpec extends Specification {
 
     when:
     TitleInstancePackagePlatform tipp = tippUpsertService.upsertDTO(tmap)
-    Boolean changed = true
-    tippService.updateLinks(tipp, [identifiers: [[type: 'isbn', value: '9783406730696'], [type: 'pisbn', value: '9783406718175']]], changed)
+    Map errors = [:]
+    tippService.updateLinks(tipp, [identifiers: [[type: 'isbn', value: '9783406730696'], [type: 'pisbn', value: '9783406718175']]], errors)
     sleep(300)
     Map result = tippService.matchTitle(tipp.id)
     sleep(300)
@@ -433,7 +426,7 @@ class TippServiceSpec extends Specification {
     result.reviewCreated == true
     tipp.title == null
     ReviewRequest.findByComponentToReviewAndStdDesc(tipp, RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Title Matches')) != null
-    ReviewRequest.findByComponentToReviewAndStdDesc(JournalInstance.findByName("TippService Journal 2"), RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')) != null
+    ReviewRequest.findByStdDesc(RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')) != null
   }
 
   void "Test Package Update from TIPPs"() {

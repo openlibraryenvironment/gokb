@@ -43,6 +43,8 @@
   <logger name="org.gokb.cred.KBComponent" level="DEBUG"/>
   <logger name="org.gokb.UserDetailsInterceptor" level="ERROR"/>
   <logger name="org.gokb.PreferencesInterceptor" level="ERROR"/>
+  <!-- <logger name='org.hibernate.type' level="TRACE"/> -->
+  <!-- <logger name="org.hibernate.SQL" level="DEBUG"/> -->
 
   <root level="error">
     <appender-ref ref="STDOUT" />

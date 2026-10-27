@@ -114,7 +114,7 @@ class PlatformController {
   @Transactional
   @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def save() {
-    Map result = ['result':'OK', 'params': params, changed: true]
+    Map result = ['result':'OK', 'params': params]
     JSONObject reqBody = request.JSON
     Map errors = [:]
     User user = User.get(springSecurityService.principal.id)
@@ -160,20 +160,18 @@ class PlatformController {
         Map jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
-        result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
+        restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if (obj.validate()) {
           log.debug("No errors.. saving")
 
           Map variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
-          result.changed |= variant_result.changed
-
           if (variant_result.errors.size() > 0) {
             errors.variantNames = variant_result.errors
           }
 
-          errors << platformService.updateLinks(obj, reqBody, result.changed)
+          platformService.updateLinks(obj, reqBody, errors)
 
           obj.save(flush:true, failOnError: true)
 
@@ -222,7 +220,7 @@ class PlatformController {
 
         Map jsonMap = obj.jsonMapping
 
-        result.changed = restMappingService.updateObject(obj, jsonMap, reqBody)
+        result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
         Map variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
@@ -232,7 +230,7 @@ class PlatformController {
           errors.variantNames = variant_result.errors
         }
 
-        errors << platformService.updateLinks(obj, reqBody, result.changed, remove)
+        result.changed |= platformService.updateLinks(obj, reqBody, errors, remove)
 
         if (obj.validate()) {
           if (errors.size() == 0) {

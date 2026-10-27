@@ -328,9 +328,6 @@ abstract class KBComponent {
   // Read only flag should be honoured in the UI
   boolean systemComponent = false
 
-  // used in data tidy routines
-  KBComponent duplicateOf
-
   // MD5 Hash of the comparable title for the component. This hash is used to group
   // candidate duplicate works together. It is the means by which we group possible duplicates
   // for more meaningful comparisons. As such, it needs to be coarse and as widely encompassing
@@ -353,8 +350,7 @@ abstract class KBComponent {
     prices: 'owner',
     comments: 'owner',
     linkedIds: 'component',
-    fileAttachments: 'component',
-    duplicates: 'duplicateOf'
+    fileAttachments: 'component'
   ]
 
   static hasMany = [
@@ -366,8 +362,7 @@ abstract class KBComponent {
     people: ComponentPerson,
     subjects: ComponentSubject,
     prices: ComponentPrice,
-    comments: KBComponentComment,
-    duplicates: KBComponent
+    comments: KBComponentComment
   ]
 
 
@@ -387,7 +382,6 @@ abstract class KBComponent {
     shortcode column: 'kbc_shortcode', index: 'kbc_shortcode_idx'
     dateCreated column: 'kbc_date_created', index: 'kbc_date_created_idx'
     lastUpdated column: 'kbc_last_updated', index: 'kbc_last_updated_idx'
-    duplicateOf column: 'kbc_duplicate_of'
     reviewRequests sort: 'id', order: 'asc'
     lastSeen column: 'kbc_last_seen'
     insertBenchmark column: 'kbc_insert_benchmark'
@@ -407,7 +401,6 @@ abstract class KBComponent {
     name(nullable: true, blank: false, maxSize: 2048)
     shortcode(nullable: true, blank: false, maxSize: 128)
     description(nullable: true, blank: false)
-    duplicateOf(nullable: true, blank: false)
     normname(nullable: true, blank: false, maxSize: 2048)
     status(nullable: true, blank: false)
     editStatus(nullable: true, blank: false)
@@ -687,20 +680,20 @@ abstract class KBComponent {
   def afterInsert() {
 
     // Alter the timestamps of any dependants.
-    touchAllDependants()
+    // touchAllDependants()
   }
 
   def afterUpdate() {
 
 
     // Alter the timestamps of any dependants.
-    touchAllDependants()
+    // touchAllDependants()
   }
 
   def afterDelete() {
 
     // Alter the timestamps of any dependants.
-    touchAllDependants()
+    // touchAllDependants()
   }
 
   def beforeUpdate() {
@@ -1111,15 +1104,6 @@ abstract class KBComponent {
     log.debug("Removing all component links");
     ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component = :component", [component: this])
     KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner = :component", [component: this])
-    def dupes_total = this.class.executeQuery("from KBComponent where duplicateOf is not NULL")
-
-    dupes_total.each {
-      log.debug("ID ${it.id} -> ${it.duplicateOf}")
-    }
-
-    int dupes_count = this.class.executeQuery("select count(*) from KBComponent where duplicateOf = :component", [component: this])[0]
-    int dupes_updated = this.class.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf != NULL and duplicateOf = :component", [component: this])
-    log.debug("Removed duplicate info (total: ${dupes_total.size()}) for ${dupes_updated}/${dupes_count} components.")
 
     KBComponent.executeUpdate("delete from ComponentPrice where owner = :component", [component: this])
 
@@ -1151,7 +1135,14 @@ abstract class KBComponent {
     }
 
     if (TitleInstance.isAssignableFrom(this.class)) {
-      TitlePublisher.executeUpdate("delete from TitlePublisher where title = :component", [component: this])
+      TitlePublisher.executeQuery("select id from TitlePublisher where title = :component", [component: this]).each {
+        TitlePublisher tp_to_remove = TitlePublisher.get(it)
+
+        this.removeFromPublisherLinks(tp_to_remove)
+        tp_to_remove.delete(flush: true)
+      }
+
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set title = null where title = :component", [component: this])
     }
     else if (this.class == Org) {
       TitlePublisher.executeUpdate("delete from TitlePublisher where publisher = :component", [component: this])

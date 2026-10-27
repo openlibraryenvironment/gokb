@@ -96,7 +96,7 @@ class PlatformServiceSpec extends Specification {
     List moved_tipp = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where hostPlatform = :np", [np: new_plt])
     moved_tipp.size() == 1
 
-    List moved_tipl = TitleInstancePlatform.executeQuery("from TitleInstancePlatform as t where hostPlatform = :np)", [np: new_plt])
+    List moved_tipl = TitleInstancePlatform.executeQuery("from TitleInstancePlatform as t where hostPlatform = :np", [np: new_plt])
     moved_tipl.size() == 1
 
     Package pkg = Package.findByName("PlatformService Test Package")

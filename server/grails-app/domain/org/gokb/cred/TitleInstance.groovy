@@ -33,15 +33,11 @@ class TitleInstance extends KBComponent {
   }
 
   static hasMany = [
-    publisherLinks: TitlePublisher,
-    tipps: TitleInstancePackagePlatform,
-    tipls: TitleInstancePlatform
+    publisherLinks: TitlePublisher
   ]
 
   static mappedBy = [
-    publisherLinks: 'title',
-    tipps: 'title',
-    tipls: 'title'
+    publisherLinks: 'title'
   ]
 
   static constraints = {
@@ -183,6 +179,18 @@ class TitleInstance extends KBComponent {
     publisherLinks.each {
       result << it.publisher
     }
+
+    return result
+  }
+
+  public List getTipps() {
+    List result = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform where title = :obj", [obj: this])
+
+    return result
+  }
+
+  public List getTipls() {
+    List result = TitleInstancePlatform.executeQuery("from TitleInstancePlatform where title = :obj", [obj: this])
 
     return result
   }

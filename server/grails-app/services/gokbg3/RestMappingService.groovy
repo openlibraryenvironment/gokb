@@ -281,9 +281,9 @@ class RestMappingService {
    */
 
   @Transactional
-  public Boolean updateObject(obj, jsonMap, reqBody) {
+  public boolean updateObject(obj, jsonMap, reqBody) {
     log.debug("Update object ${obj} - ${reqBody}")
-    Boolean changed = false
+    boolean changed = false
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
     def toIgnore = defaultIgnore + (jsonMap?.ignore ?: [])
@@ -1206,7 +1206,9 @@ class RestMappingService {
     if (remove && !result.errors) {
       existing_links.each { elid ->
         if (!new_links*.id.contains(elid)) {
-          TitlePublisher.findById(elid).delete(flush: true, failOnError: true)
+          TitlePublisher tp_to_delete = TitlePublisher.findById(elid)
+          obj.removeFromPublisherLinks(tp_to_delete)
+          tp_to_delete.delete(flush: true, failOnError: true)
           result.changed = true
         }
       }

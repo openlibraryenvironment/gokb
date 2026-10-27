@@ -61,7 +61,7 @@ class Platform extends KBComponent {
         }
       }
     })
-    provider(nullable: true)
+    provider(nullable: true, blank: false)
   }
 
   private static refdataDefaults = [

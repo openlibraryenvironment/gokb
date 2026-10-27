@@ -363,15 +363,16 @@
         </div>
 
         <div class="tab-pane" id="packages">
-          <dl>
-            <dt>
-              <g:annotatedLabel owner="${d}" property="packages">Packages</g:annotatedLabel>
-            </dt>
-            <dd>
-              <g:render template="/apptemplates/hasManyList"
-                        model="${[d:d, noadd: true, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name', action:'link']],targetClass:'org.gokb.cred.Package']}" />
-            </dd>
-          </dl>
+          <g:if test="${params.controller != 'create'}">
+            <dl>
+              <dt><g:annotatedLabel owner="${d}" property="packages">Packages</g:annotatedLabel></dt>
+              <dd>
+                <g:link class="display-inline" controller="search" action="index"
+                  params="[qbe:'g:1packages', qp_provider_id:d.id, inline:true, refOid: d.getLogEntityId(), hide:['qp_provider_id', 'qp_platform_id']]"
+                  id="">Packages provided by this Organization</g:link>
+              </dd>
+            </dl>
+          </g:if>
         </div>
     </div>
     <g:if test="${d.id}">

@@ -9,6 +9,7 @@ import java.time.LocalDateTime
 
 import org.gokb.cred.*
 import org.grails.web.json.JSONObject
+import org.grails.web.json.JSONArray
 
 @Transactional(readOnly = true)
 class TitleController {
@@ -163,7 +164,6 @@ class TitleController {
     Map errors = [:]
     Class type = setType(reqBody?.type ? reqBody : params)
     TitleInstance obj = null
-    boolean changed = true
     User user = User.get(springSecurityService.principal.id)
     List ids = reqBody.ids ?: reqBody.identifiers ?: []
     String base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
@@ -196,7 +196,7 @@ class TitleController {
           obj = type.newInstance()
           obj.name = reqBody.name.trim()
 
-          changed |= restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+          restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
           if ( obj.validate() ) {
             obj.save(flush:true)
@@ -243,7 +243,7 @@ class TitleController {
               errors.subjects = subject_result.errors
             }
 
-            errors << titleAugmentService.updateLinks(obj, reqBody, changed)
+            titleAugmentService.updateLinks(obj, reqBody, errors)
 
             result = restMappingService.mapObjectToJson(obj, params, user)
             response.status = 201
@@ -382,7 +382,7 @@ class TitleController {
       response.status = 400
     }
     else {
-      result.data = titleHistoryService.getDirectHistory(ti, [:])
+      result.data = titleHistoryService.getDirectHistory(ti, false)
     }
 
     render result as JSON
@@ -395,7 +395,7 @@ class TitleController {
     Map result = [:]
     Map errors = [:]
     boolean remove = (request.method == 'PUT')
-    JSONObject reqBody = request.JSON
+    JSONArray reqBody = request.JSON
     TitleInstance ti = null
 
     if (params.id) {
@@ -407,10 +407,10 @@ class TitleController {
     }
 
     if (ti) {
-      result = titleHistoryService.restUpdate(ti, reqBody)
+      Map update_result = titleHistoryService.restUpdate(ti, reqBody)
 
       if (update_result.result == 'OK') {
-        result.data = titleHistoryService.getDirectHistory(ti, [:])
+        result.data = titleHistoryService.getDirectHistory(ti, false)
       }
       else {
         response.status = 400
@@ -482,7 +482,7 @@ class TitleController {
             errors.subjects = subject_result.errors
           }
 
-          errors << titleAugmentService.updateLinks(obj, reqBody, result.changed, remove)
+          result.changed |= titleAugmentService.updateLinks(obj, reqBody, errors, remove)
 
           if ( errors.size() == 0 ) {
             obj = obj.merge(flush:true)

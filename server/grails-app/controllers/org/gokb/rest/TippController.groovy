@@ -98,7 +98,6 @@ class TippController {
   def save() {
     Map result = ['result': 'OK', 'params': params]
     JSONObject reqBody = request.JSON
-    Boolean changed = true
     Map errors = [:]
     User user = User.get(springSecurityService.principal.id)
     Package pkg = null
@@ -130,7 +129,7 @@ class TippController {
               errors.subjects = subject_result.errors
             }
 
-            errors << tippService.updateLinks(obj, reqBody, changed)
+            tippService.updateLinks(obj, reqBody, errors)
 
             tippService.touchPackage(obj)
 
@@ -244,7 +243,7 @@ class TippController {
               }
             }
 
-            errors << tippService.updateLinks(obj, reqBody, result.changed, remove)
+            result.changed |= tippService.updateLinks(obj, reqBody, errors, remove)
 
             if (obj?.validate()) {
               if (reqBody.coverageStatements != null) {

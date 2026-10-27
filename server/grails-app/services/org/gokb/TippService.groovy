@@ -1380,6 +1380,8 @@ class TippService {
       List tipp_id_list = tipp.ids.collect { "${it.namespace.value}:${it.value}" }
       TitleInstance component_to_review = found.matches.removeLast().object
 
+      log.debug("Using last entry ${component_to_review} as primary component ..")
+
       int ctc_existing = ReviewRequest.executeQuery('''select count(*) from ReviewRequest
           where componentToReview = :tid
           and stdDesc = :type
@@ -1387,6 +1389,8 @@ class TippService {
           [tid: component_to_review, type: type_cic, so: status_open])[0]
 
       if (ctc_existing == 0) {
+        log.debug("No existing ti conflicts ..")
+
         List other_objects = found.matches.collect {
                               [
                                 oid: "${it.object.class.name}:${it.object.id}",
@@ -1983,32 +1987,28 @@ class TippService {
     hasChanged
   }
 
-  public Map updateLinks(TitleInstancePackagePlatform obj, reqBody, Boolean changed, boolean remove = true) {
+  public boolean updateLinks(TitleInstancePackagePlatform obj, reqBody, Map errors, boolean remove = true) {
     log.debug("Updating TIPP links ..")
-    Map errors = [:]
-    Boolean needsSave = false
+    boolean changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       List id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
       Map id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
+      changed |= id_result.changed
+
       if (id_result.errors.size() > 0) {
         errors.ids = id_result.errors
       }
-
-      if (id_result.changed) {
-        needsSave = true
-        changed = true
-      }
     }
 
-    if (needsSave) {
+    if (changed) {
       obj.lastSeen = System.currentTimeMillis()
       obj.save(flush: true)
     }
 
-    errors
+    return changed
   }
 
   public Map reactivateOldestTitleTipp(TitleInstancePackagePlatform obj, User user = null, CuratoryGroup activeGroup = null) {

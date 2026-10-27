@@ -217,7 +217,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     JournalInstance obj = JournalInstance.findByName("TestUpdateJournalHistory")
 
     when:
-    Map json_record = [
+    List json_record = [
       [
         date: "1990-01-01",
         from: [JournalInstance.findByName("TestPrevJournal").id]
@@ -242,12 +242,13 @@ class TitleTestSpec extends AbstractAuthSpec {
     String urlPath = getUrlPath()
     last = true
     JournalInstance obj = JournalInstance.findByName("TestUpdateJournalHistory")
+    JournalInstance prev = JournalInstance.findByName("TestPrevJournal")
 
     when:
-    Map json_record = [
+    List json_record = [
       [
         date: "1990-01-01",
-        from: [JournalInstance.findByName("TestPrevJournal").id]
+        from: [prev.id]
       ]
     ]
 
@@ -278,7 +279,7 @@ class TitleTestSpec extends AbstractAuthSpec {
       name: "TitleTestJournalV2",
       version: "0"
     ]
-    HttpRequest req2 = HttpRequest.PUT("${urlPath}/rest/titles/$id", json_stale_record)
+    HttpRequest req2 = HttpRequest.PUT("${urlPath}/rest/titles/${obj.id}", json_stale_record)
       .bearerAuth(accessToken)
     HttpStatus status2
 
@@ -296,20 +297,19 @@ class TitleTestSpec extends AbstractAuthSpec {
 
   void "test merge titles"() {
     String urlPath = getUrlPath()
-    JournalInstance tid = JournalInstance.findByName("TitleTestJournal")
-    JournalInstance mergeid = JournalInstance.findByName("TestTitleMergeObject")
+    JournalInstance target = JournalInstance.findByName("TitleTestJournal")
+    JournalInstance merged = JournalInstance.findByName("TestTitleMergeObject")
 
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/${mergeid.id}/merge?target=${tid.id}&mergeTipps=true&mergeIds=true", null)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/${merged.id}/merge?target=${target.id}&mergeTipps=true&mergeIds=true", null)
       .bearerAuth(accessToken)
     HttpResponse resp = client.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
     sleep(300)
-    JournalInstance target = JournalInstance.findById(tid)
-    JournalInstance merged = JournalInstance.findById(mergeid)
+
     TitleInstancePackagePlatform test_tipp = TitleInstancePackagePlatform.findByName("TestTitleMergeTipp")
     test_tipp.title == target
     merged.refresh().status.value == 'Deleted'

@@ -248,6 +248,13 @@ globalSearchTemplates = [
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'contentType'],
         ],
         [
+          prompt:'Package ID',
+          qparam:'qp_provider_id',
+          placeholder:'Provider ID',
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'provider.id', 'type' : 'java.lang.Long'],
+          hide:true
+        ],
+        [
           type:'lookup',
           baseClass:'org.gokb.cred.Org',
           prompt:'Provider',

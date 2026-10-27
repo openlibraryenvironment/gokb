@@ -36,32 +36,32 @@ class AutoUpdateSpec extends Specification{
     String twoWeeksBefore = LocalDate.now().minusWeeks(2).toString()
     String urlTwoWeeksBefore = "https://www.abc.de/kbart-" + twoWeeksBefore + ".txt"
 
-    Source.findByName("source1") ?: new Source(name: "source1", url: "https://www.abc.de/kbart.txt", lastImportFileDate: lastFound, frequency: freqMonthly).save(flush: true)
-    Source.findByName("source2") ?: new Source(name: "source2", url: "https://www.abc.de/kbart-2025-12-24.txt", lastImportFileDate: null, frequency: freqMonthly).save(flush: true)
-    Source.findByName("source3") ?: new Source(name: "source3", url: urlTwoWeeksBefore, lastImportFileDate: lastFound, frequency: freqMonthly).save(flush: true)
-    Source.findByName("source4") ?: new Source(name: "source4", url: "https://www.abc.de/kbart-2026-02-03.txt", lastImportFileDate: lastFoundBeforeAllTimeIntervals, frequency: freqMonthly).save(flush: true)
-    Source.findByName("source5") ?: new Source(name: "source5", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: null, frequency: freqYearly).save(flush: true)
-    Source.findByName("source6") ?: new Source(name: "source6", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: null, frequency: freqQuarterly).save(flush: true)
-    Source.findByName("source7") ?: new Source(name: "source7", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: lastFoundBeforeAllTimeIntervals, frequency: freqWeekly).save(flush: true)
-    Source.findByName("source8") ?: new Source(name: "source8", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: lastFoundThreeWeeksBefore, frequency: freqMonthly).save(flush: true)
+    Source.findByName("AutoUpdateTestSource1") ?: new Source(name: "AutoUpdateTestSource1", url: "https://www.abc.de/kbart.txt", lastImportFileDate: lastFound, frequency: freqMonthly).save(flush: true)
+    Source.findByName("AutoUpdateTestSource2") ?: new Source(name: "AutoUpdateTestSource2", url: "https://www.abc.de/kbart-2025-12-24.txt", lastImportFileDate: null, frequency: freqMonthly).save(flush: true)
+    Source.findByName("AutoUpdateTestSource3") ?: new Source(name: "AutoUpdateTestSource3", url: urlTwoWeeksBefore, lastImportFileDate: lastFound, frequency: freqMonthly).save(flush: true)
+    Source.findByName("AutoUpdateTestSource4") ?: new Source(name: "AutoUpdateTestSource4", url: "https://www.abc.de/kbart-2026-02-03.txt", lastImportFileDate: lastFoundBeforeAllTimeIntervals, frequency: freqMonthly).save(flush: true)
+    Source.findByName("AutoUpdateTestSource5") ?: new Source(name: "AutoUpdateTestSource5", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: null, frequency: freqYearly).save(flush: true)
+    Source.findByName("AutoUpdateTestSource6") ?: new Source(name: "AutoUpdateTestSource6", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: null, frequency: freqQuarterly).save(flush: true)
+    Source.findByName("AutoUpdateTestSource7") ?: new Source(name: "AutoUpdateTestSource7", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: lastFoundBeforeAllTimeIntervals, frequency: freqWeekly).save(flush: true)
+    Source.findByName("AutoUpdateTestSource8") ?: new Source(name: "AutoUpdateTestSource8", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: lastFoundThreeWeeksBefore, frequency: freqMonthly).save(flush: true)
 
   }
 
   def cleanup() {
-    Source.findByName("source1")?.expunge()
-    Source.findByName("source2")?.expunge()
-    Source.findByName("source3")?.expunge()
-    Source.findByName("source4")?.expunge()
-    Source.findByName("source5")?.expunge()
-    Source.findByName("source6")?.expunge()
-    Source.findByName("source7")?.expunge()
-    Source.findByName("source8")?.expunge()
+    Source.findByName("AutoUpdateTestSource1")?.expunge()
+    Source.findByName("AutoUpdateTestSource2")?.expunge()
+    Source.findByName("AutoUpdateTestSource3")?.expunge()
+    Source.findByName("AutoUpdateTestSource4")?.expunge()
+    Source.findByName("AutoUpdateTestSource5")?.expunge()
+    Source.findByName("AutoUpdateTestSource6")?.expunge()
+    Source.findByName("AutoUpdateTestSource7")?.expunge()
+    Source.findByName("AutoUpdateTestSource8")?.expunge()
   }
 
 
   void "Test AutoUpdate :: URL without date"() {
 
-    Source source = Source.findByName("source1")
+    Source source = Source.findByName("AutoUpdateTestSource1")
     String givenUrl = source.url
 
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
@@ -74,7 +74,7 @@ class AutoUpdateSpec extends Specification{
 
   void "Test AutoUpdate :: Fixed Date out of interval, no lastFoundFile"() {
 
-    Source source = Source.findByName("source2")
+    Source source = Source.findByName("AutoUpdateTestSource2")
     String givenUrl = source.url
 
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
@@ -91,7 +91,7 @@ class AutoUpdateSpec extends Specification{
 
   void "Test AutoUpdate :: Fixed Date in interval, no lastFoundFile"() {
 
-    Source source = Source.findByName("source3")
+    Source source = Source.findByName("AutoUpdateTestSource3")
     String givenUrl = source.url
 
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
@@ -108,7 +108,7 @@ class AutoUpdateSpec extends Specification{
 
   void "Test AutoUpdate :: Fixed Date out of interval, lastFoundFile out of interval"() {
 
-    Source source = Source.findByName("source4")
+    Source source = Source.findByName("AutoUpdateTestSource4")
     String givenUrl = source.url
 
     List res = packageSourceUpdateService.findUrlsToCall(givenUrl, source, false)
@@ -126,7 +126,7 @@ class AutoUpdateSpec extends Specification{
   void "Test AutoUpdate :: check all dates of a year"() {
 
     given: "no found file, no fix date in URL"
-    Source source = Source.findByName("source5")
+    Source source = Source.findByName("AutoUpdateTestSource5")
     String givenUrl = source.url
 
     LocalDate now = LocalDate.now()
@@ -152,7 +152,7 @@ class AutoUpdateSpec extends Specification{
   void "Test AutoUpdate :: check all dates of a Quarter year"() {
 
     given: "no found file, no fix date in URL"
-    Source source = Source.findByName("source6")
+    Source source = Source.findByName("AutoUpdateTestSource6")
     String givenUrl = source.url
 
     LocalDate now = LocalDate.now()
@@ -177,7 +177,7 @@ class AutoUpdateSpec extends Specification{
   void "Test AutoUpdate :: Date Mask, lastFoundFile out of interval"() {
 
     given: "weekly Update"
-    Source source = Source.findByName("source7")
+    Source source = Source.findByName("AutoUpdateTestSource7")
     LocalDate oneWeekBefore = LocalDate.now().minusWeeks(1)
     LocalDate today = LocalDate.now()
 
@@ -199,7 +199,7 @@ class AutoUpdateSpec extends Specification{
   void "Test AutoUpdate :: Date Mask, lastFoundFile inside interval"() {
 
     given: "Monthly Update, lastFoundFile 3 weeks before"
-    Source source = Source.findByName("source8")
+    Source source = Source.findByName("AutoUpdateTestSource8")
     LocalDate today = LocalDate.now()
     LocalDate oneMonthBefore = today.minusMonths(1)
     LocalDate threeWeeksBefore = today.minusWeeks(3)

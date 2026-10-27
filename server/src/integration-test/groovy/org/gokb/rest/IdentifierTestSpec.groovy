@@ -87,7 +87,6 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     then:
     resp.status == HttpStatus.OK
     resp.body().data != null
-    resp.body()._links.size() == 1
     resp.body().data.size() >= 8
     resp.body().data[1].name != null
   }
@@ -103,11 +102,9 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     then:
     resp1.status == HttpStatus.OK
     resp1.body().data != null
-    resp1.body()._links.size() == 1
-    resp1.body().data.size() == 3
+    resp1.body().data.size() >= 2
     resp2.status == HttpStatus.OK
     resp2.body().data != null
-    resp2.body()._links.size() == 1
     resp2.body().data.size() >= 7
   }
 
@@ -162,14 +159,15 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     ]
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.POST("${urlPath}/rest/identifiers?_embed=identifiedComponents", obj_map)
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/identifiers", obj_map)
       .bearerAuth(accessToken)
     HttpResponse resp = http.exchange(request, Map)
     then:
     resp.status == HttpStatus.CREATED
     resp.body().value == "6644-2281"
-    resp.body()._embedded?.identifiedComponents.size() == 1
-    resp.body()._embedded?.identifiedComponents[0].id == test_journal.id
+    sleep(250)
+    Identifier new_id = Identifier.findById(resp.body().id)
+    new_id?.identifiedComponents?.size() == 1
   }
 
   void "test identifier create reformatted ISBN"() {

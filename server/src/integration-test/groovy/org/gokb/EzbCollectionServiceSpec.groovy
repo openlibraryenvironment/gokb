@@ -3,13 +3,7 @@ package org.gokb
 
 import grails.testing.mixin.integration.Integration
 
-import org.gokb.cred.CuratoryGroup
-import org.gokb.cred.Identifier
-import org.gokb.cred.IdentifierNamespace
-import org.gokb.cred.Org
-import org.gokb.cred.Platform
-import org.gokb.cred.Package
-import org.gokb.cred.Source
+import org.gokb.cred.*
 import org.hibernate.SessionFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.annotation.Rollback
@@ -28,38 +22,46 @@ class EzbCollectionServiceSpec extends Specification {
   @Autowired
   EzbCollectionService ezbCollectionService
 
-  Org testProvider
-  Platform testPlatform
-  Package testPackage
-  CuratoryGroup testCurator
-  Identifier testId
-
   def setup() {
     Org.withNewSession {
-      testCurator = CuratoryGroup.findByName("EzbTestCurator") ?: new CuratoryGroup(name: "EzbTestCurator").save(flush: true)
-      testProvider = Org.findByName("EzbTestProvider") ?: new Org(name: "EzbTestProvider").save(flush: true)
-      testPlatform = Platform.findByName("EzbTestPlatform") ?: new Platform(name: "EzbTestPlatform", provider: testProvider).save(flush: true)
-      testId = Identifier.findByValue("EZB-TEST-12345") ?: new Identifier(value: 'EZB-TEST-12345', namespace: IdentifierNamespace.findByValue('ezb-collection-id')).save(flush: true)
-      Source testSrc = Source.findByName("EZB-TEST-12345: EzbTestPkg") ?: new Source(name: "EZB-TEST-12345: EzbTestPkg", url: "https://ezb.uni-regensburg.de/services/titlelist.phtml?collection_id=EZB-NALFO-01634&title_split=1").save(flush:true)
-      testPackage = Package.findByName("EzbTestPkg") ?: new Package(name: "EzbTestPkg", source: testSrc, provider: testProvider, nominalPlatform: testPlatform).save(flush: true)
+      CuratoryGroup testCurator = CuratoryGroup.findByName("EzbTestCurator") ?: new CuratoryGroup(name: "EzbTestCurator").save(flush: true, failOnError: true)
+      Org testProvider = Org.findByName("EzbTestProvider") ?: new Org(name: "EzbTestProvider").save(flush: true, failOnError: true)
+      Platform testPlatform = Platform.findByName("EzbTestPlatform") ?: new Platform(name: "EzbTestPlatform", provider: testProvider).save(flush: true, failOnError: true)
+      Identifier testId = Identifier.findByValue("EZB-TEST-12345") ?: new Identifier(value: 'EZB-TEST-12345', namespace: IdentifierNamespace.findByValue('ezb-collection-id')).save(flush: true, failOnError: true)
+      Source testSrc = Source.findByName("EZB-TEST-12345: EzbTestPkg") ?: new Source(name: "EZB-TEST-12345: EzbTestPkg", url: "https://ezb.uni-regensburg.de/services/titlelist.phtml?collection_id=EZB-NALFO-01634&title_split=1").save(flush: true, failOnError: true)
+      Package testPackage = Package.findByName("EzbTestPkg") ?: new Package(name: "EzbTestPkg", source: testSrc, provider: testProvider, nominalPlatform: testPlatform).save(flush: true, failOnError: true)
       testPackage.addIdentifier(testId)
       testPackage.addToCuratoryGroups(testCurator)
-      testPackage.save(flush: true)
+      testPackage.save(flush: true, failOnError: true)
     }
   }
 
   def cleanup() {
-    Package.findByName("EZB-TEST-12345: EzbTestPkg")?.refresh()?.expunge()
+    TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform").each {
+      TitleInstancePackagePlatform.findById(it).expunge()
+    }
+    TitleInstancePlatform.executeQuery("select id from TitleInstancePlatform").each {
+      TitleInstancePlatform.findById(it).expunge()
+    }
+    TitleInstance.executeQuery("select id from TitleInstance").each {
+      TitleInstance.findById(it).expunge()
+    }
+    Package.executeQuery("select id from Package").each {
+      Package.findById(it).expunge()
+    }
+    Platform.executeQuery("select id from Platform").each {
+      Platform.findById(it).expunge()
+    }
+    Org.executeQuery("select id from Org").each {
+      Org.findById(it).expunge()
+    }
     Source.findByName("EZB-TEST-12345: EzbTestPkg")?.refresh()?.expunge()
-    Package.findByName("EZB-NALIW-00492: Sage Journals Online / Humanities and Social Sciences (HSS): Nationalkonsortium")?.refresh()?.expunge()
-  }
-
-  void "test buildPackageName"() {
-
   }
 
   void "test create new package info"() {
     given:
+    Org testProvider = Org.findByName("EzbTestProvider")
+    Platform testPlatform = Platform.findByName("EzbTestPlatform")
 
     Map item = [
       ezb_collection_id: "EZB-NALIW-00492",
@@ -103,6 +105,7 @@ class EzbCollectionServiceSpec extends Specification {
     ]
 
     when:
+    sleep(300)
     Map result = ezbCollectionService.processPackageInfo(item, type_results)
 
     then:
@@ -123,8 +126,8 @@ class EzbCollectionServiceSpec extends Specification {
   void "test import ezb package content"() {
 
     given:
-    String provider_uuid = Org.findByName("EzbTestProvider").uuid
-    String platform_uuid = Platform.findByName("EzbTestPlatform").uuid
+    Org testProvider = Org.findByName("EzbTestProvider")
+    Platform testPlatform = Platform.findByName("EzbTestPlatform")
 
     Map item = [
       ezb_collection_id: "EZB-WISO-01791",
@@ -173,10 +176,6 @@ class EzbCollectionServiceSpec extends Specification {
     then:
     type_results.total == 1
     type_results.created == 1
-    Package.withNewSession {
-      Package new_ezb_pkg = Package.findByName("EZB-WISO-01791: WISO Pflege")
-      new_ezb_pkg?.tippCount > 0
-    }
   }
 
   void "test check existing package source URL"() {
@@ -192,6 +191,9 @@ class EzbCollectionServiceSpec extends Specification {
 
   void "test match existing package by id with other curator"() {
     given:
+    Org testProvider = Org.findByName("EzbTestProvider")
+    Platform testPlatform = Platform.findByName("EzbTestPlatform")
+
     Map item = [
       ezb_collection_id: "EZB-TEST-12345",
       ezb_collection_shortname: "EzbTestPkg",

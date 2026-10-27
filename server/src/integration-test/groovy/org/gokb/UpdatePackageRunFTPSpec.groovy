@@ -7,13 +7,7 @@ import grails.testing.mixin.integration.Integration
 import org.apache.commons.io.IOUtils
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPFile
-import org.gokb.cred.CuratoryGroup
-import org.gokb.cred.Org
-import org.gokb.cred.Package
-import org.gokb.cred.Platform
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.Source
-import org.gokb.cred.WebHookEndpoint
+import org.gokb.cred.*
 import org.mockftpserver.fake.*
 import org.mockftpserver.fake.filesystem.*
 import org.springframework.core.io.ClassPathResource
@@ -54,37 +48,39 @@ class UpdatePackageRunFTPSpec extends Specification{
       ftpServer.start()
     }
 
-    new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true)
+    Org test_org = Org.findByName("FTPTestOrg") ?: new Org(name: "FTPTestOrg").save(flush: true)
+    Platform test_plt = Platform.findByName("FTPTestPlatform") ?: new Platform(name: "FTPTestPlatform", provider: test_org).save(flush: true)
 
-    WebHookEndpoint.findByName("whe1") ?: new WebHookEndpoint(name: "whe1" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
-    Source.findByName("source1") ?: new Source(name: "source1", webEndpoint: WebHookEndpoint.findByName("whe1"), ftpPath: "/kbart.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
-    Package.findByName("package1") ?: new Package(name: "package1").save(flush: true)
-    Package.findByName("package1").setSource(Source.findByName("source1"))
-    Package.findByName("package1").save(flush: true)
+    new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true, failOnError: true)
 
-    WebHookEndpoint.findByName("whe2") ?: new WebHookEndpoint(name: "whe2" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
-    Source.findByName("source2") ?: new Source(name: "source2", webEndpoint: WebHookEndpoint.findByName("whe2"), ftpPath: "/kbart_not_exists.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
-    Package.findByName("package2") ?: new Package(name: "package2").save(flush: true)
-    Package.findByName("package2").setSource(Source.findByName("source2"))
-    Package.findByName("package2").save(flush: true)
+    WebHookEndpoint.findByName("whe1") ?: new WebHookEndpoint(name: "whe1" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true, failOnError: true)
+    Source src1 = Source.findByName("source1") ?: new Source(name: "source1", webEndpoint: WebHookEndpoint.findByName("whe1"), ftpPath: "/kbart.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true, failOnError: true)
+    Package.findByName("package1") ?: new Package(name: "package1", source: src1, provider: test_org, nominalPlatform: test_plt).save(flush: true, failOnError: true)
 
-    WebHookEndpoint.findByName("whe3") ?: new WebHookEndpoint(name: "whe3" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
-    Source.findByName("source3") ?: new Source(name: "source3", webEndpoint: WebHookEndpoint.findByName("whe3"), ftpPath: "/kbart_{YYYY-MM-DD}.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
-    Package.findByName("package3") ?: new Package(name: "package3").save(flush: true)
-    Package.findByName("package3").setSource(Source.findByName("source3"))
-    Package.findByName("package3").save(flush: true)
+    WebHookEndpoint.findByName("whe2") ?: new WebHookEndpoint(name: "whe2", url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true, failOnError: true)
+    Source src2 = Source.findByName("source2") ?: new Source(name: "source2", webEndpoint: WebHookEndpoint.findByName("whe2"), ftpPath: "/kbart_not_exists.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true, failOnError: true)
+    Package.findByName("package2") ?: new Package(name: "package2", source: src2, provider: test_org, nominalPlatform: test_plt).save(flush: true, failOnError: true)
 
-    WebHookEndpoint.findByName("whe4") ?: new WebHookEndpoint(name: "whe4" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true)
-    Source.findByName("source4") ?: new Source(name: "source4", webEndpoint: WebHookEndpoint.findByName("whe4"), ftpPath: "/kbart_2026-01-11.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true)
-    Package.findByName("package4") ?: new Package(name: "package4").save(flush: true)
-    Package.findByName("package4").setSource(Source.findByName("source4"))
-    Package.findByName("package4").save(flush: true)
+    WebHookEndpoint.findByName("whe3") ?: new WebHookEndpoint(name: "whe3" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true, failOnError: true)
+    Source src3 = Source.findByName("source3") ?: new Source(name: "source3", webEndpoint: WebHookEndpoint.findByName("whe3"), ftpPath: "/kbart_{YYYY-MM-DD}.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true, failOnError: true)
+    Package.findByName("package3") ?: new Package(name: "package3", source: src3, provider: test_org, nominalPlatform: test_plt).save(flush: true, failOnError: true)
 
+    WebHookEndpoint.findByName("whe4") ?: new WebHookEndpoint(name: "whe4" ,url: "ftp://localhost/dir", epUsername: USER, epPassword: PASSWORD).save(flush: true, failOnError: true)
+    Source src4 = Source.findByName("source4") ?: new Source(name: "source4", webEndpoint: WebHookEndpoint.findByName("whe4"), ftpPath: "/kbart_2026-01-11.txt", transferMethod: RefdataCategory.lookup('Source.TransferMethod', 'FTP')).save(flush: true, failOnError: true)
+    Package.findByName("package4") ?: new Package(name: "package4", source: src4, provider: test_org, nominalPlatform: test_plt).save(flush: true, failOnError: true)
   }
 
   def cleanup() {
 
     ftpServer?.stop()
+
+    TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform").each {
+      TitleInstancePackagePlatform.findById(it).expunge()
+    }
+
+    TitleInstancePlatform.executeQuery("select id from TitleInstancePlatform").each {
+      TitleInstancePlatform.findById(it).expunge()
+    }
 
     Package.findByName("package1")?.expunge()
     Source.findByName("source1")?.expunge()
@@ -102,6 +98,8 @@ class UpdatePackageRunFTPSpec extends Specification{
     Source.findByName("source4")?.expunge()
     WebHookEndpoint.findByName("whe4")?.delete()
 
+    Platform.findByName("FTPTestPlatform")?.expunge()
+    Org.findByName("FTPTestOrg")?.expunge()
     CuratoryGroup.findByName('TestGroup1')?.expunge()
   }
 
@@ -201,7 +199,7 @@ class UpdatePackageRunFTPSpec extends Specification{
       String fileContent = IOUtils.toString(fis, Charset.defaultCharset())
       String fakeContent = "AAAAAAAAAAAA"
       ftpServer.getFileSystem().add(new FileEntry("/dir/kbart_2026-02-01.txt", fileContent))
-      ftpServer.getFileSystem().add(new FileEntry("/dir/kbart_2026-01-01.txt", "fakeContent"))
+      ftpServer.getFileSystem().add(new FileEntry("/dir/kbart_2026-01-01.txt", fakeContent))
       ftpServer.getFileSystem().add(new FileEntry("/dir/kbart_2023-10-30.txt", fakeContent))
       ftpServer.getFileSystem().add(new FileEntry("/dir/kbart_2025-12-24.txt", fakeContent))
       ftpServer.getFileSystem().add(new FileEntry("/dir/other_package_2026-02-02.txt", fakeContent))

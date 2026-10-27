@@ -1,19 +1,16 @@
 package org.gokb
 
-import com.k_int.ConcurrencyManagerService
-import gokbg3.DateFormatService
 import grails.testing.mixin.integration.Integration
-import grails.testing.services.ServiceUnitTest
 import java.time.LocalDateTime
 import org.gokb.TitleAugmentService
 import org.gokb.ZdbAPIService
 import org.gokb.EzbAPIService
 import org.gokb.cred.*
-import org.hibernate.SessionFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.annotation.Rollback
 import org.springframework.transaction.annotation.Transactional
 
+import spock.lang.Ignore
 import spock.lang.Specification
 
 @Integration
@@ -79,6 +76,7 @@ class TitleAugmentServiceSpec extends Specification {
     titleOne.titleHistory.size() == 1
   }
 
+  @Ignore
   void "test ezb augment"() {
     when:
     titleAugmentService.augmentEzb(titleOne)

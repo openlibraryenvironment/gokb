@@ -108,7 +108,6 @@ class OrgController {
   @Secured(value = ["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def save() {
     Map result = [result: 'OK', params: params]
-    Boolean changed = true
     JSONObject reqBody = request.JSON
     Map errors = [:]
     User user = User.get(springSecurityService.principal.id)
@@ -154,7 +153,7 @@ class OrgController {
         Map jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
-        changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
+        restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if (obj.validate()) {
           log.debug("No errors.. saving")
@@ -172,18 +171,16 @@ class OrgController {
             errors.comments = comments_result.errors
           }
 
-          errors << orgService.updatelinks(obj, reqBody, changed)
-
-          if (errors) {
-            obj.expunge()
-          }
+          orgService.updateLinks(obj, reqBody, errors)
         }
         else {
           errors << messageService.processValidationErrors(obj.errors, request.locale)
           obj.expunge()
         }
 
-        result = restMappingService.mapObjectToJson(obj, params, user)
+        if (!errors) {
+          result = restMappingService.mapObjectToJson(obj, params, user)
+        }
       }
     }
     else {
@@ -248,7 +245,7 @@ class OrgController {
 
           result.changed |= comments_result.changed
 
-          errors << orgService.updateLinks(obj, reqBody, result.changed, remove)
+          result.changed |= orgService.updateLinks(obj, reqBody, errors, remove)
 
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
@@ -267,9 +264,7 @@ class OrgController {
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
         if (result.changed && reqBody.name && reqBody.name != old_name && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          obj.providedPackages.each {
-            FTUpdateService.updateSingleItem(it)
-          }
+          FTUpdateService.refreshPackagesForOrg(obj)
         }
       }
       else {
