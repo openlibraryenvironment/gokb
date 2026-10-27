@@ -349,6 +349,7 @@ class TitleAugmentService {
                                   where exists (
                                     select 1 from TitleInstancePackagePlatform as tipp
                                     where tipp.title = :title
+                                    and tipp.pkg = pkg
                                     and status = :sc
                                   )''',
                                   qry_params)
@@ -359,6 +360,7 @@ class TitleAugmentService {
                                   where exists (
                                     select 1 from TitleInstancePackagePlatform as tipp
                                     where tipp.title = :title
+                                    and tipp.pkg = pkg
                                     and status != :sd
                                   )''',
                                   qry_params)

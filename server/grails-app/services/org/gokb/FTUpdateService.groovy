@@ -347,7 +347,7 @@ class FTUpdateService {
             cst.startDate = tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null
             cst.startVolume = tcs.startVolume ?: ""
             cst.startIssue = tcs.startIssue ?: ""
-            cst.endDate = tcs.startDate ? dateFormatService.formatDate(tcs.endDate) : null
+            cst.endDate = tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null
             cst.endVolume = tcs.endVolume ?: ""
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
