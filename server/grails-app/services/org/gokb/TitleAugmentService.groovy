@@ -631,8 +631,7 @@ class TitleAugmentService {
       if (!unlinkedOnly) {
         queryString += '''exists (
                           select ci from ComponentIdentifier as ci
-                          where ci.type = :ctype
-                          and ci.component = ti
+                          where ci.component = ti
                           and ci.identifier.namespace = :ns
                           and ci.status = :active
                         )'''
