@@ -169,7 +169,7 @@ class JobResultService {
 
       jobs.each { j ->
         KBComponent component = linkedItemObj ?: (j.linkedItemId ? KBComponent.get(j.linkedItemId) : null)
-        CuratoryGroup cg = groupFilterObj ?: CuratoryGroup.get(j.groupId)
+        CuratoryGroup cg = groupFilterObj ?: (j.groupId ? CuratoryGroup.get(j.groupId) : null)
 
         result.data << [
             group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
