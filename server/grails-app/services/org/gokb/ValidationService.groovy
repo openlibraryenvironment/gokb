@@ -183,6 +183,7 @@ class ValidationService {
         ]
     ],
     zdb_id: [
+      proprietary: true,
       mandatory: false,
       pubType: "Serial",
       namespaces: [
@@ -194,6 +195,7 @@ class ValidationService {
       ]
     ],
     ddc: [
+      proprietary: true,
       mandatory: false,
       validator: [
         name: "checkDDCList",
@@ -201,6 +203,7 @@ class ValidationService {
       ]
     ],
     doi_identifier: [
+      proprietary: true,
       mandatory: false,
       namespaces: [
         'Serial': 'doi',
@@ -228,6 +231,14 @@ class ValidationService {
       'doi_identifier'
   ]
 
+  static final String[] PHASE_THREE_COLS = [
+      'content_type',
+      'contributor',
+      'contributor_type',
+      'alternate_title',
+      'alternate_title_type'
+  ]
+
   static ISSNValidator ISSN_VAL = new ISSNValidator()
 
   public Map generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false, IdentifierNamespace titleIdNamespaceSerial = null, IdentifierNamespace titleIdNamespaceMonograph = null) {
@@ -249,6 +260,7 @@ class ValidationService {
         ],
         errors: [
             missingColumns: [],
+            invalidColumns: [],
             rows: [:],
             type: [:]
         ],
@@ -275,6 +287,23 @@ class ValidationService {
       col_positions[it] = ctr++
     }
 
+    // Deny KBART Phase III for now
+    PHASE_THREE_COLS.eachWithIndex { colName, idx ->
+      if (header.contains(colName) && col_positions[colName] <= 29) {
+        result.errors.invalidColumns.add(colName)
+        result.valid = false
+      }
+    }
+
+    if (!result.valid) {
+      result.message = "Unsupported Phase III file detected!"
+      result.messageCode = "kbart.errors.version.phase3"
+
+      csv.close()
+
+      return result
+    }
+
     KNOWN_COLUMNS.each { colName, info ->
       if (info.mandatory && !header.contains(colName) && (!info.strictOnly || strict)) {
         result.errors.missingColumns.add(colName)
@@ -296,11 +325,11 @@ class ValidationService {
           result.rows.total++
           result.rows.error++
           result.errors.rows["${rowCount}"] = [
-              columnsCount: [
-                  message: "Inconsistent column count (${nl.size()} <> ${header.size()})!",
-                  messageCode: "kbart.errors.tabsCountRow",
-                  args: [nl.size(), header.size()]
-              ]
+            columnsCount: [
+              message: "Inconsistent column count (${nl.size()} <> ${header.size()})!",
+              messageCode: "kbart.errors.tabsCountRow",
+              args: [nl.size(), header.size()]
+            ]
           ]
           addOrIncreaseTypedCount(result, 'columnCount', 'errors')
           result.valid = false
