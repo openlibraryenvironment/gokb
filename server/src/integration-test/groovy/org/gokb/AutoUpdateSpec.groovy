@@ -44,6 +44,8 @@ class AutoUpdateSpec extends Specification{
     Source.findByName("source6") ?: new Source(name: "source6", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: null, frequency: freqQuarterly).save(flush: true)
     Source.findByName("source7") ?: new Source(name: "source7", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: lastFoundBeforeAllTimeIntervals, frequency: freqWeekly).save(flush: true)
     Source.findByName("source8") ?: new Source(name: "source8", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: lastFoundThreeWeeksBefore, frequency: freqMonthly).save(flush: true)
+    Source.findByName("source9") ?: new Source(name: "source9", url: "https://www.abc.de/kbart-{YYYY-MM-DD}.txt", lastImportFileDate: null, frequency: null).save(flush: true)
+    Source.findByName("source10") ?: new Source(name: "source10", url: "https://www.abc.de/kbart-2026-04-01.txt", lastImportFileDate: null, frequency: null).save(flush: true)
 
   }
 
@@ -56,6 +58,8 @@ class AutoUpdateSpec extends Specification{
     Source.findByName("source6")?.expunge()
     Source.findByName("source7")?.expunge()
     Source.findByName("source8")?.expunge()
+    Source.findByName("source9")?.expunge()
+    Source.findByName("source10")?.expunge()
   }
 
 
@@ -224,6 +228,31 @@ class AutoUpdateSpec extends Specification{
 
   }
 
+  void "Test AutoUpdate :: Date Mask, no frequency"() {
+
+    Source source = Source.findByName("source9")
+    LocalDate today = LocalDate.now()
+
+    List res = packageSourceUpdateService.findUrlsToCall(source.url, source, false)
+
+    expect:
+    res.size() == 1
+    res.get(0).toString().equals("https://www.abc.de/kbart-" + today.toString() + ".txt")
+
+  }
+
+  void "Test AutoUpdate :: Fix Date, no frequency"() {
+
+    Source source = Source.findByName("source10")
+    LocalDate fixDate = packageSourceUpdateService.extractDateFromUrl(source.url)
+
+    List res = packageSourceUpdateService.findUrlsToCall(source.url, source, false)
+
+    expect:
+    res.size() == 1
+    res.get(0).toString().equals("https://www.abc.de/kbart-" + fixDate.toString() + ".txt")
+
+  }
 
 
 }

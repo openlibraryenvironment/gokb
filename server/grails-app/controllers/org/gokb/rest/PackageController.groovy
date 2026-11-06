@@ -318,6 +318,17 @@ class PackageController {
             'listStatus'
         ]
 
+        Map validate_result = packageService.restValidate(obj, reqBody, request_locale, remove)
+
+        if (validate_result.valid == false) {
+          response.status = 400
+          result.result = 'ERROR'
+          result.errors = validate_result.errors
+
+          render result as JSON
+          return
+        }
+
         result.changed |= restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if (obj.validate()) {

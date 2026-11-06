@@ -163,6 +163,8 @@ class PackageCleanupService {
         obj.endYear = new_end
 
         if (!obj.validate()) {
+          obj.discard()
+
           result.invalid++
         }
         else {
@@ -177,7 +179,6 @@ class PackageCleanupService {
       }
 
       if (ctr % 50 == 0) {
-        session.flush()
         session.clear()
       }
     }

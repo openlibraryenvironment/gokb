@@ -1108,7 +1108,7 @@ class ValidationService {
             matches["${nc.id}"] = []
 
           matches["${nc.id}"] << [
-            field: 'name',
+            field: "${isVariant ? 'variantNames' : 'name'}",
             value: name,
             baddata: name,
             cls: cls.simpleName,
@@ -1129,7 +1129,7 @@ class ValidationService {
       }
 
       matches["${vm.id}"] << [
-        field: 'name',
+        field: "${isVariant ? 'variantNames' : 'name'}",
         value: name,
         baddata: name,
         cls: cls.simpleName,

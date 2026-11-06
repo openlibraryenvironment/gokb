@@ -8,6 +8,7 @@ import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
 
 import org.gokb.cred.*
+import org.grails.web.json.JSONObject
 import org.hibernate.Session
 
 import static grails.async.Promises.*
@@ -1161,10 +1162,10 @@ class PackageService {
   /**
    * REST package header validation
    */
-  public Map restValidate(packageHeaderDTO, locale, remove) {
+  public Map restValidate(JSONObject packageHeaderDTO, Locale locale, Boolean remove) {
     def result = [valid: true, errors: [:]]
 
-    if (!packageHeaderDTO.name || !packageHeaderDTO.name.trim()) {
+    if (remove && (!packageHeaderDTO.name || !packageHeaderDTO.name.trim())) {
       result.valid = false
       result.errors.name = [
         [
@@ -1197,6 +1198,30 @@ class PackageService {
     result
   }
 
+
+  public Map restValidate(Package obj, JSONObject packageHeaderDTO, Locale locale, Boolean remove) {
+    Map result = restValidate(packageHeaderDTO, locale, remove)
+
+    Map lookup_result = restLookup(packageHeaderDTO)
+
+    lookup_result.matches?.each { id, errors ->
+      if (id != "${obj.id}") {
+        errors.each { er ->
+          if (!result.errors[er.field]) {
+            result.errors[er.field] = [er]
+          }
+          else {
+            result.errors[er.field] << er
+          }
+        }
+
+        result.valid = false
+      }
+    }
+
+    result
+  }
+
   private void validateLinkedInfo (result, packageHeaderDTO, linkType, cls, remove) {
     Object obj
 
@@ -1216,6 +1241,18 @@ class PackageService {
           plt = cls.get(packageHeaderDTO[linkType].id)
         }
       }
+
+      if (!obj) {
+        result.valid = false
+
+        result.errors[linkType] = [
+          [
+            message: 'Unable to reference mandatory linked component!',
+            code: 404,
+            baddata: packageHeaderDTO[linkType]
+          ]
+        ]
+      }
     }
     else if (packageHeaderDTO[linkType] == null && remove) {
       result.valid = false
@@ -1225,17 +1262,6 @@ class PackageService {
           message: 'Mandatory link must not be empty!',
           code: 400,
           baddata: null
-        ]
-      ]
-    }
-    else if (!obj) {
-      result.valid = false
-
-      result.errors[linkType] = [
-        [
-          message: 'Unable to reference mandatory linked component!',
-          code: 404,
-          baddata: packageHeaderDTO[linkType]
         ]
       ]
     }

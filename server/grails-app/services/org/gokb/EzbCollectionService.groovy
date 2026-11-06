@@ -586,23 +586,17 @@ class EzbCollectionService {
     boolean result = true
     Source source = pkg.source
     IdentifierNamespace ezb_ns = IdentifierNamespace.findByValue('ezb')
+    boolean source_changed = false
 
     if (!source) {
       log.debug("Setting new package source..")
 
       try {
-        def dupe = Source.findByName(pkg.name)
+        source = new Source(name: pkg.name, url: item.ezb_collection_titlelist, targetNamespace: ezb_ns).save(flush:true, failOnError: true)
 
-        if (!dupe) {
-          source = new Source(name: pkg.name, url: item.ezb_collection_titlelist, targetNamespace: ezb_ns).save(flush:true, failOnError: true)
-
-          if (curator) {
-            source.curatoryGroups << curator
-          }
-        }
-        else {
-          log.warn("Found existing source with package name ${pkg.name}!")
-          source = dupe
+        if (curator) {
+          source.curatoryGroups << curator
+          source_changed = true
         }
       }
       catch (Exception e) {
@@ -618,17 +612,21 @@ class EzbCollectionService {
 
     if (source && source.automaticUpdates) {
       source.automaticUpdates = false
-      source.save()
+      source_changed = true
     }
 
     if (source && !source.importConfig) {
       source.importConfig = RefdataCategory.lookup('Source.ImportConfig', 'EZB')
-      source.save()
+      source_changed = true
     }
 
     if (source && source.url != item.ezb_collection_titlelist) {
       source.url = item.ezb_collection_titlelist
-      source.save()
+      source_changed = true
+    }
+
+    if (source_changed == true) {
+      source.save(flush: true, failOnError: true)
     }
 
     result

@@ -406,7 +406,7 @@ class PackageSourceUpdateService {
 
     urls.add(new URL(givenUrl))
 
-    if(!isFtpTransfer && (dynamic_date || fixed_date)) {
+    if(!isFtpTransfer && (dynamic_date || fixed_date) && source.frequency) {
 
       // search for the file in most likely order
       Map<String, Integer> maxCallsPerFrequency = [

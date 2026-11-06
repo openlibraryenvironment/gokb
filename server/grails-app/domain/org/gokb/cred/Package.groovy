@@ -700,16 +700,19 @@ class Package extends KBComponent {
 
     String idJsonKey = 'ids'
     def ids_list = packageHeaderDTO[idJsonKey]
+
     if (!ids_list) {
       idJsonKey = 'identifiers'
       ids_list = packageHeaderDTO[idJsonKey]
     }
+
     if (ids_list) {
       def id_errors = Identifier.validateDTOs(ids_list, locale)
       if (id_errors.size() > 0) {
         result.errors.put(idJsonKey, id_errors)
       }
     }
+
     if (result.valid) {
       def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       def pkg_normname = GOKbTextUtils.cleanTitleString(packageHeaderDTO.name)
@@ -755,9 +758,9 @@ class Package extends KBComponent {
 
             if (var_pkg) {
               log.debug("Found existing package name for variantName ${vname}")
+              result.match = true
             }
             else {
-
               def variant_normname = GOKbTextUtils.normaliseString(vname)
               def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
