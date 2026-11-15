@@ -503,8 +503,8 @@ class BulkPackageImportService {
           for (item in type.package_list) {
             if (Thread.currentThread().isInterrupted()) {
               log.error("Bulk Import Cancelled!")
-              break
               cancelled = true
+              break
             }
 
             boolean skip = false
