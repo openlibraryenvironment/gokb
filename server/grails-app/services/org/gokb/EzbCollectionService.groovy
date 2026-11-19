@@ -147,9 +147,9 @@ class EzbCollectionService {
         if (!cancelled) {
           for (item in items) {
             if (Thread.currentThread().isInterrupted() || job.isCancelled()) {
-              break
               cancelled = true
               result.result = 'CANCELLED'
+              break
             }
 
             handleEzbCollectionItem(item, type_results)
