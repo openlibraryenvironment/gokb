@@ -224,7 +224,7 @@ class JobsController {
           RefdataValue rdv_type = RefdataValue.get(params.int('type'))
 
           if (rdv_type) {
-            if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
+            if (rdv_type.owner?.label == 'Job.Type') {
               qry_pars.jt = rdv_type
 
               count_qry += " where type = :jt"
@@ -291,7 +291,7 @@ class JobsController {
           RefdataValue rdv_type = RefdataValue.get(params.int('type'))
 
           if (rdv_type) {
-            if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
+            if (rdv_type.owner?.label == 'Job.Type') {
               result = concurrencyManagerService.getJobsForType(rdv_type, max, offset, showFinished)
             }
             else {
