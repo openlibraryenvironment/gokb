@@ -183,11 +183,11 @@ class TitleHistoryService {
           else if (entry.id) {
             cti = ti.class.get(entry.id)
           }
-          else if (allow_lookups && entry.name) {
+          else if (allow_lookups && (entry.name || entry.title)) {
             lookup_by_find = true
 
             Map lookup_result = titleLookupService.find(
-              entry.name,
+              (entry.name ?: entry.title),
               null,
               (entry.ids ?: entry.identifiers),
               ti.class.name
@@ -196,8 +196,8 @@ class TitleHistoryService {
             if (lookup_result.to_create) {
               log.debug("Unable to reference title")
             }
-            else if (title_lookup.matches.size() == 1) {
-              cti = title_lookup.matches[0].object
+            else if (lookup_result.matches.size() == 1) {
+              cti = lookup_result.matches[0].object
             }
           }
         }

@@ -60,7 +60,7 @@ class IntegrationControllerSpec extends Specification {
 
     if (!history_title) {
       IdentifierNamespace ns_eissn = IdentifierNamespace.findByValue('eissn')
-      Identifier history_issn = Identifier.findByValue('1541-5745') ?: new Identifier(value: '1541-5745', namespace: ns_eissn).save(flush:true)
+      Identifier history_issn = Identifier.findByValue('2345-2331') ?: new Identifier(value: '2345-2331', namespace: ns_eissn).save(flush:true)
       history_title = new JournalInstance(name: 'IntegrationHistoryTitle').save(flush: true, failOnError: true)
 
       history_title.addIdentifier(history_issn)
@@ -228,7 +228,6 @@ class IntegrationControllerSpec extends Specification {
 
   void "Test crossReferenceTitle :: Journal with history containing new title"() {
     given:
-    JournalInstance main_ti = JournalInstance.findByName("Journal of chemical information and modeling")
     when: "Caller asks for this record to be cross referenced"
     Map json_record = [
       identifiers: [
@@ -294,7 +293,7 @@ class IntegrationControllerSpec extends Specification {
     resp.body()?.message != null
     resp.body()?.result == 'OK'
     expect: "Missing title is not created"
-    main_ti.refresh()
+    JournalInstance main_ti = JournalInstance.findByName("Journal of chemical information and modeling")
     main_ti.titleHistory.size() == 0
   }
 
@@ -322,12 +321,11 @@ class IntegrationControllerSpec extends Specification {
           date: "1982-01-01",
           from: [
               [
-                title: "Journal of chemical documentation",
-                uuid: history_title.uuid,
+                title: "Journal of chemical documentation", // title discrepancy should not matter
                 identifiers: [
                   [
                     type: "eissn",
-                    value: "1541-5745"
+                    value: "2345-2331"
                   ]
                 ]
               ]
