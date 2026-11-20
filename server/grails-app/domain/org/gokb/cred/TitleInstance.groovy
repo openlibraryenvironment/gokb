@@ -69,16 +69,8 @@ class TitleInstance extends KBComponent {
   static Map jsonMapping = [
     ignore: [
       'pureOA',
-      'continuingSeries',
-      'reasonRetired',
       'work',
-      'coverImage',
-      'issuer',
-      'translatedFrom',
-      'absorbedBy',
-      'mergedWith',
-      'renamedTo',
-      'splitFrom'
+      'coverImage'
     ],
     es: [
       publisherUuid: "publisher.uuid",
@@ -316,9 +308,9 @@ class TitleInstance extends KBComponent {
   public void toGoKBXml(builder, attr) {
 
     try {
-      def publisher_links = getPublisherLinks()
-      def history = getTitleHistory()
-      def tipps = getTipps()
+      Collection publisher_links = getPublisherLinks()
+      List history = getTitleHistory()
+      List tipps = getTipps()
 
       builder.'gokb'(attr) {
         builder.'title'(['id': (id), 'uuid': (uuid)]) {

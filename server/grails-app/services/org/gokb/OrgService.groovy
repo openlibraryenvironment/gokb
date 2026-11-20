@@ -18,20 +18,15 @@ class OrgService {
   def titleAugmentService
   def sessionFactory
   def validationService
+  def messageService
 
-  public Map restLookup(JSONObject orgDTO, User user = null) {
-    log.info("Upsert org with header ${orgDTO}")
+  public Map restLookup(JSONObject reqBody, User user = null) {
+    log.info("Upsert org with header ${reqBody}")
     Map result = [to_create: true]
-    RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    String normname = Org.generateNormname(orgDTO.name)
-    String variant_normname = GOKbTextUtils.normaliseString(orgDTO.name)
+    List ids_list = reqBody.identifiers ?: reqBody.ids
+    Map matches = validationService.matchForName(Org, reqBody.name)
 
-    log.debug("Checking by normname ${normname} ..")
-    List name_candidates = Org.executeQuery("from Org as p where p.normname = :nn and p.status <> :sd", [nn: normname, sd: status_deleted])
-    List ids_list = orgDTO.identifiers ?: orgDTO.ids
-    Map matches = validationService.matchForName(Org, orgDTO.name)
-
-    if (orgDTO.ids?.size() > 0) {
+    if (reqBody.ids?.size() > 0) {
       ids_list.each { rid ->
         Identifier the_id = null
 
@@ -65,10 +60,10 @@ class OrgService {
       }
     }
 
-    if (orgDTO.variantNames?.size() > 0) {
+    if (reqBody.variantNames?.size() > 0) {
       log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
 
-      orgDTO.variantNames.each {
+      reqBody.variantNames.each {
         String variant_string
 
         if (it instanceof String) {
@@ -93,87 +88,108 @@ class OrgService {
   }
 
   @Transactional
-  public Org upsert(JSONObject orgDTO, def user = null) {
-    log.info("Upsert org with header ${orgDTO}")
-    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    String org_normname = Org.generateNormname(orgDTO.name)
+  public Map upsert(JSONObject reqBody, boolean remove = false) {
+    log.info("Upsert org with header ${reqBody}")
+    Map result = [result: 'OK', changed: false]
+    Map errors = [:]
+    Org obj
 
-    log.debug("Checking by normname ${org_normname} ..")
-    List name_candidates = Org.executeQuery("from Org as p where p.normname = :nn and p.status <> :sd", [nn: org_normname, sd: status_deleted])
-    List full_matches = []
-    boolean created = false
-    Org result = orgDTO.uuid ? Org.findByUuid(orgDTO.uuid) : null
-    boolean changed = false
-
-    if (!result && name_candidates.size() == 1) {
-      log.debug("Matched org by name!")
-      result = name_candidates[0]
+    if (reqBody.uuid) {
+      obj = Org.findByUuid(reqBody.uuid)
     }
-    else if (result && result.name != orgDTO.name) {
-      String current_name = result.name
-      changed |= ClassUtils.setStringIfDifferent(result, 'name', orgDTO.name)
 
-      if (!result.variantNames.find { it.variantName == current_name }) {
-        new KBComponentVariantName(owner: result, variantName: current_name).save(flush: true, failOnError: true)
+    if (!obj) {
+      Map lookup_result = restLookup(reqBody)
+
+      if (lookup_result.to_create) {
+        log.debug("No existing Org matched. Creating new Org..")
+
+        obj = new Org(name: reqBody.name)
+
+        if (reqBody.uuid && reqBody.uuid.trim().size() > 0) {
+          obj.uuid = reqBody.uuid
+        }
+
+        result.message = "Created new Org ${obj}."
+
+        obj.save(flush: true, failOnError: true)
       }
-    }
-
-    if (!result) {
-      log.debug("Did not find a match via name, trying existing variantNames..")
-      String variant_normname = GOKbTextUtils.normaliseString(orgDTO.name)
-      List variant_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
-
-      if (variant_candidates.size() == 1) {
-        result = variant_candidates[0]
-        log.debug("Package matched via existing variantName.")
-      }
-    }
-
-    if (!result && orgDTO.variantNames?.size() > 0) {
-      log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
-      orgDTO.variantNames.each {
-
-        if (it.trim().size() > 0) {
-          result = Org.findByName(it)
-
-          if (result) {
-            log.debug("Found existing package name for variantName ${it}")
+      else {
+        if (lookup_result.matches.size() == 1) {
+          lookup_result.matches.each { oid, match_list ->
+            obj = Org.get(oid)
           }
-          else {
 
-            String variant_normname = GOKbTextUtils.normaliseString(it)
-            List variant_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
+          result.message = "Matched existing Org ${obj}."
+        }
+        else if (lookup_result.matches.size() > 1) {
+          lookup_result.matches.each { oid, match_list ->
+            match_list.each { match_inst ->
+              Map match_info = match_inst
+              match_info['id'] = oid
 
-            if (variant_candidates.size() == 1) {
-              log.debug("Found existing Org variant name for variantName ${it}")
-              result = variant_candidates[0]
+              if (!errors[match_inst.field]) {
+                errors[match_inst.field] = []
+              }
+
+              errors[match_inst.field] << match_info
             }
           }
         }
       }
     }
 
-    if (!result) {
-      log.debug("No existing Org matched. Creating new Org..")
+    if (obj) {
+      result.orgId = obj.id
 
-      result = new Org(name: orgDTO.name, normname: org_normname)
+      String old_name = obj.name
 
-      created = true
+      result.changed |= restMappingService.updateObject(obj, [:], reqBody)
 
-      if (orgDTO.uuid && orgDTO.uuid.trim().size() > 0) {
-        result.uuid = orgDTO.uuid
+      if (obj.validate()) {
+        Map variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        result.changed |= variant_result.changed
+
+        if (variant_result.errors.size() > 0) {
+          errors.variantNames = variant_result.errors
+        }
+
+        Map comments_result = restMappingService.updateComments(obj, reqBody.comments, remove)
+
+        if (comments_result.errors.size() > 0) {
+          errors.comments = comments_result.errors
+        }
+
+        result.changed |= comments_result.changed
+
+        result.changed |= updateLinks(obj, reqBody, errors, remove)
+
+        if (errors.size() == 0) {
+          log.debug("No errors.. saving")
+          obj = obj.merge(flush: true)
+        }
+        else {
+          log.debug("Errors: ${errors}")
+          result.messageCode = "default.update.errors.message"
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        errors << messageService.processValidationErrors(obj.errors, request.locale)
       }
 
-      result.save(flush: true, failOnError: true)
-    }
-    else if (user && !user.hasRole('ROLE_SUPERUSER') && result.curatoryGroups && result.curatoryGroups?.size() > 0) {
-      List cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)
-
-      if (!cur) {
-        log.debug("No curator!")
-        return result
+      if (result.changed && reqBody.name && reqBody.name != old_name && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
+        FTUpdateService.refreshPackagesForOrg(obj)
       }
     }
+
+    if (errors.size() > 0) {
+      log.debug("Errors: ${errors}")
+      result.message = 'There have been errors upserting the org!'
+      result.error = errors
+    }
+
     result
   }
 

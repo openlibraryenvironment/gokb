@@ -9,18 +9,18 @@ import GOKbSyncBase
 config.deferred = config.deferred ?: [:]
 
 while ( moredata ) {
-  
+
   def resources = []
   fetchFromSource (path: "${sourceContext}/oai/titles") { resp, body ->
-  
+
     println("Cursor: ${body?.'ListRecords'?.'resumptionToken'?.'@cursor'} RT: ${body?.'ListRecords'?.'resumptionToken'?.text()} ")
 
     body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
 
       def data = rec.metadata.gokb.title
-      
+
       println("Record ${index + 1}")
-  
+
       // The basic record.
       def resourceFieldMap = addCoreItems ( data )
 
@@ -36,29 +36,38 @@ while ( moredata ) {
         resourceFieldMap.type = 'Book'
       }
 
-      
+
       // Identifier count should be calculated after the irrelevant ones have been stripped.
       int identifier_count = resourceFieldMap?.identifiers?.size() ?: 0
-      
-      
-      directAddFields (data, ['defaultAccessURL', 'publishedFrom', 'publishedTo', 
-        'continuingSeries', 'OAStatus', 'imprint', 'issuer',"editionNumber","editionDifferentiator", "editionStatement", "volumeNumber", "summaryOfContent", "firstAuthor", "firstEditor", "dateFirstInPrint", "dateFirstOnline"], resourceFieldMap)
+
+
+      directAddFields (data, [
+          "publishedFrom",
+          "publishedTo",
+          "OAStatus",
+          "editionDifferentiator",
+          "editionStatement",
+          "volumeNumber",
+          "firstAuthor",
+          "firstEditor",
+          "dateFirstInPrint",
+          "dateFirstOnline"], resourceFieldMap)
 
       String medium = "${cleanText(data.medium?.text())}"
       resourceFieldMap['medium'] = medium
 
       // Might be several publishers each with it's own from and to...
-      resourceFieldMap['publisher_history'] = data.publishers?.publisher?.collect { pub ->
+      resourceFieldMap['publisher'] = data.publishers?.publisher?.collect { pub ->
         [
           'name': cleanText(pub.name.text()),
-          'status': cleanText(pub.status.text()),
-          'startDate': cleanText(pub.startDate.text()),
-          'endDate': cleanText(pub.endDate.text())
+          '_linkStatus': cleanText(pub.status.text()),
+          '_linkStart': cleanText(pub.startDate.text()),
+          '_linkEnd': cleanText(pub.endDate.text())
         ]
       } ?: []
 
-      println("Publishers: ${data.publishers} -> ${resourceFieldMap.publisher_history}")
-      
+      println("Publishers: ${data.publishers} -> ${resourceFieldMap.publisher}")
+
       resourceFieldMap['historyEvents'] = data.history?.historyEvent?.collect { he ->
         println("\tHandle history event")
         [
@@ -71,7 +80,7 @@ while ( moredata ) {
           } ?: []
         ]
       } ?: []
-      
+
       if (identifier_count > 0) {
         // Process identified components now.
         resources.add(resourceFieldMap)
@@ -93,11 +102,11 @@ while ( moredata ) {
       config.lastTimestamp = rec.header.datestamp.text()
     }
   }
-  
+
   resources.each {
     sendToTarget (path: "${targetContext}/integration/crossReferenceTitle", body: it)
   }
-  
+
   // Save the config.
   println("Current config: ${config}")
   saveConfig()

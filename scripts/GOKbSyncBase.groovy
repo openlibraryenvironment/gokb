@@ -161,7 +161,7 @@ abstract class GOKbSyncBase extends Script {
             uri.path = parameters['path']
           }
 
-          uri.query = [fullsync: 'true', user: config.uploadUser, password: config.uploadPass]
+          uri.query = [fullsync: 'true']
 
           if (parameters['body']) {
             body = parameters['body']

@@ -1960,13 +1960,9 @@ databaseChangeLog = {
         dropForeignKeyConstraint(baseTableName: "refine_project", constraintName: "fkt70yc8y9yotrq10rakh8yi0ot")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-152") {
-        dropUniqueConstraint(constraintName: "uk_ewy7285o9j55jgydja5ipl92a", tableName: "party")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-153") {
-        dropTable(tableName: "audit_log")
-    }
+    // changeSet(author: "horn (generated)", id: "1790176327340-152") {
+    //     dropUniqueConstraint(constraintName: "uk_ewy7285o9j55jgydja5ipl92a", tableName: "party")
+    // }
 
     changeSet(author: "horn (generated)", id: "1790176327340-154") {
         dropTable(tableName: "classification")
@@ -2064,20 +2060,8 @@ databaseChangeLog = {
         dropTable(tableName: "user_organisation_membership")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-175") {
-        dropColumn(columnName: "ba_password", tableName: "web_hook_endpoint")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-176") {
-        dropColumn(columnName: "ba_username", tableName: "web_hook_endpoint")
-    }
-
     changeSet(author: "horn (generated)", id: "1790176327340-177") {
         dropColumn(columnName: "continuing_series_id", tableName: "title_instance")
-    }
-
-    changeSet(author: "horn (generated)", id: "1790176327340-178") {
-        dropColumn(columnName: "ftp_url", tableName: "source")
     }
 
     changeSet(author: "horn (generated)", id: "1790176327340-179") {
@@ -2100,9 +2084,9 @@ databaseChangeLog = {
         dropColumn(columnName: "refine_project_id", tableName: "review_request")
     }
 
-    changeSet(author: "horn (generated)", id: "1790176327340-196") {
-        dropColumn(columnName: "type", tableName: "source")
-    }
+    // changeSet(author: "horn (generated)", id: "1790176327340-196") {
+    //     dropColumn(columnName: "type", tableName: "source")
+    // }
 
     changeSet(author: "horn (generated)", id: "1790176327340-1") {
         dropNotNullConstraint(columnDataType: "varchar(255)", columnName: "ep_url", tableName: "web_hook_endpoint")

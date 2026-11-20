@@ -642,8 +642,9 @@ class TitleLookupService {
       ids.each { id_def ->
         // Class ones only.
         if (id_def.value && id_def.ns && class_one_ids.contains(id_def.ns)) {
+          ctr++
           IdentifierNamespace ns = IdentifierNamespace.findByValue(id_def.ns)
-          String normval = Identifier.generateNormname(id_def.value)
+          String normval = Identifier.normalizeIdentifier(id_def.value)
 
           if (ns) {
             List the_id = Identifier.executeQuery('from Identifier as i where i.normname = :val and i.namespace = :ns', [val: normval, ns: ns])

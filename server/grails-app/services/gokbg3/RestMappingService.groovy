@@ -23,6 +23,7 @@ class RestMappingService {
   def messageService
   def dateFormatService
   def validationService
+  def orgService
 
   static final List defaultIgnore = [
       'bucketHash',
@@ -1144,10 +1145,12 @@ class RestMappingService {
    * @param obj : The TitleInstance object to be updated
    * @param new_vals : A list of Orgs
    * @param remove : Flag for removal of existing Combos not present in the new list
+   * @param allow_lookups : Flag for allowing the org lookup via name, variantNames or ids
    */
 
   @Transactional
-  public Map updatePublisherList(TitleInstance obj, List new_vals, boolean remove = true) {
+  public Map updatePublisherList(TitleInstance obj, List new_vals, boolean remove = true, boolean allow_lookups = false) {
+    log.debug("Updating publishers ${new_vals}")
     Map result = [changed: false, errors: []]
     List existing_links = TitlePublisher.executeQuery("select id from TitlePublisher where title = :ti ", [ti: obj])
     List new_links = []
@@ -1156,7 +1159,22 @@ class RestMappingService {
       Org pub_obj
 
       if (pub instanceof Map) {
-        pub_obj = Org.get(pub.id)
+        if (pub.uuid) {
+          pub_obj = Org.findByUuid(pub.uuid)
+        }
+        if (pub.id) {
+          pub_obj = Org.get(pub.id)
+        }
+        else if (pub.name && allow_lookups) {
+          Map lookup_result = orgService.restLookup(pub)
+
+          if (lookup_result.to_create) {
+            result.errors << [message: "Unable to reference org for given info!", baddata: (pub as Map)]
+          }
+          else if (lookup_result.matches.size() == 1) {
+            pub_obj = Org.get(lookup_result.matches.keySet()[0])
+          }
+        }
       }
       else {
         pub_obj = Org.get(pub)
@@ -1191,10 +1209,25 @@ class RestMappingService {
 
             if (link_status) {
               tp.status = link_status
-              tp.save(flush: true)
             }
             else {
-              result.errors << [message: "Unable to save status for publisher link with info ${pub}!", baddata: pub['_linkedStatus']]
+              result.errors << [message: "Unable to save status for publisher link with info ${pub}!", baddata: pub['_linkedStatus'], oid: tp.id, field: '_linkedStatus']
+            }
+          }
+
+          if (!result.errors && tp.validate()) {
+            tp.save(flush: true, failOnError: true)
+          }
+          else if (!tp.validate()) {
+            Map validation_errors = messageService.processValidationErrors(tp.errors)
+
+            validation_errors.each { propname, entries ->
+              entries.each { err ->
+                err.oid = tp.id
+                err.field = propname
+
+                result.errors << err
+              }
             }
           }
         }
@@ -1264,7 +1297,7 @@ class RestMappingService {
       LocalDateTime dateObj = GOKbTextUtils.completeDateString(val)
 
       if (dateObj) {
-        ClassUtils.updateDateField(val, obj, prop)
+        ClassUtils.updateDateField(dateObj, obj, prop)
       }
       else {
         obj.errors.reject(
@@ -1277,7 +1310,7 @@ class RestMappingService {
             'typeMismatch.java.util.Date'
         )
       }
-      log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))")
+      log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj} -> ${obj[prop]})")
     }
   }
 

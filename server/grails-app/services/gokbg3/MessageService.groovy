@@ -9,13 +9,13 @@ class MessageService {
   def messageSource
 
   public Map processValidationErrors(errors, def locale = null) {
-    def result = [:]
+    Map result = [:]
 
     errors.allErrors.each { eo ->
       log.debug("Processing ${eo} (${eo.class.name})")
-      def field = 'object'
-      def resolvedArgs = []
-      def errorMessage = null
+      String field = 'object'
+      Map resolvedArgs = []
+      String errorMessage = null
 
       locale = locale ?: new Locale('en')
 

@@ -160,9 +160,11 @@ class PlatformService {
     if (platformDTO.uuid) {
       result = Platform.findByUuid(platformDTO.uuid)
     }
+
     if (result) {
       changed |= ClassUtils.setStringIfDifferent(result, 'name', platformDTO.name)
-    } else {
+    }
+    else {
       if (platformDTO.name.startsWith("http")) {
         try {
           log.debug("checking if platform name is an URL..")

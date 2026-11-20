@@ -1145,9 +1145,9 @@ class TitleAugmentService {
   public boolean updateLinks(TitleInstance obj, JSONObject reqBody, Map errors, boolean remove = true) {
     boolean changed = false
 
-    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
-      List id_list = (reqBody.ids ?: reqBody.identifiers) as List
+    List id_list = (reqBody.ids instanceof Collection ? reqBody.ids : (reqBody.identifiers instanceof Collection ? reqBody.identifiers : [])) as List
 
+    if (id_list) {
       Map id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
       changed |= id_result.changed

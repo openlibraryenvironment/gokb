@@ -20,6 +20,3 @@ groovy ./sync_gokb_titles.groovy
 
 echo 6. Sync platforms
 groovy ./sync_gokb_platforms.groovy
-
-echo 7. Sync packages
-groovy ./sync_gokb_packages.groovy

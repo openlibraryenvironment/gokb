@@ -54,8 +54,8 @@ class TitleHistoryService {
     result
   }
 
-  public Map restUpdate(ti, JSONArray reqBody) {
-    Map result = [result: 'OK']
+  public Map restUpdate(TitleInstance ti, reqBody, boolean allow_lookups = false) {
+    Map result = [result: 'OK', changed: false]
     List current_history = ti.titleHistory
     List events = []
     Map errors = [:]
@@ -68,6 +68,7 @@ class TitleHistoryService {
       reqBody.each { event ->
         log.debug("Event ${event}")
         Map parts = [from: [], to: []]
+        boolean event_errors = false
 
         if (event.id) {
           Map matched_event = current_history.find { it.id == event.id }
@@ -88,10 +89,12 @@ class TitleHistoryService {
                   errors.date = []
 
                 errors.date << [message: "Unable to parse event date!", baddate: event]
+                event_errors = true
               }
 
-              if (errors.size() == 0 && parsed_date) {
+              if (!event_errors && parsed_date) {
                 he_obj.eventDate = parsed_date
+                result.changed = true
                 log.debug("Updated date of existing event!")
               }
 
@@ -99,6 +102,8 @@ class TitleHistoryService {
             }
             else {
               log.debug("Unable to lookup event by id!")
+              event_errors = true
+
               if (!errors.id)
                 errors.id = []
 
@@ -107,169 +112,24 @@ class TitleHistoryService {
           }
           else if (!matched_event) {
             log.debug("Matched event is not connected to this title!")
+            event_errors = true
+
             if (!errors.id)
               errors.id = []
 
             errors.id << [message: "Existing event with ID ${event.id} is not connected to this title!", baddata: event]
           }
           else {
+            // Check participants and throw error for inconsistencies?
+
             events.add(matched_event.id)
           }
         }
         else {
           List lookedUpIds = []
 
-          if (event.from instanceof List) {
-            event.from.each { entry ->
-              TitleInstance cti = null
-
-              if (entry instanceof Integer) {
-                if (entry == ti.id) {
-                  cti = ti
-                }
-                else {
-                  cti = TitleInstance.get(entry)
-                }
-              }
-              else if (entry instanceof Map) {
-                if (entry.id == ti.id) {
-                  cti = ti
-                }
-                else {
-                  cti = TitleInstance.get(entry.id)
-                }
-              }
-
-              if (cti) {
-                if (!lookedUpIds.contains(cti.id)) {
-                  lookedUpIds.add(cti.id)
-                }
-                else {
-                  if (!errors.from)
-                    errors.from = []
-
-                  errors.from << [message: "Multiple instances of title ${cti.id} in event participants!", baddata: entry, code: 404]
-                }
-
-                if (cti.id != ti.id) {
-                  Map addResult = ensureSingleParticipant(ti, 'from', cti, event.date)
-
-                  if (addResult.errors) {
-                    errors << addResult.errors
-                  }
-                  else {
-                    log.debug("New event ${addResult}")
-                    events.add(addResult.id)
-                  }
-                }
-              }
-              else {
-                if (!errors.from)
-                  errors.from = []
-
-                errors.from << [message: "Unable to lookup title for ${entry}", baddata: entry, code: 404]
-              }
-            }
-          }
-
-          if (event.to instanceof List) {
-            event.to.each { entry ->
-              TitleInstance cti = null
-
-              if (entry instanceof Integer) {
-                if (entry == ti.id) {
-                  cti = ti
-                }
-                else {
-                  cti = TitleInstance.get(entry)
-                }
-              }
-              else if (entry instanceof Map) {
-                if (entry.id == ti.id) {
-                  cti = ti
-                }
-                else {
-                  cti = TitleInstance.get(entry.id)
-                }
-              }
-
-              if (cti) {
-                if (!lookedUpIds.contains(cti.id)) {
-                  lookedUpIds.add(cti.id)
-                }
-                else {
-                  if (!errors.to)
-                    errors.to = []
-
-                  errors.to << [message: "Multiple instances of title ${cti.id} in event participants!", baddata: entry, code: 404]
-                }
-
-                if (cti.id != ti.id) {
-                  Map addResult = ensureSingleParticipant(ti, 'to', cti, event.date)
-
-                  if (addResult.errors) {
-                    errors << addResult.errors
-                  }
-                  else {
-                    log.debug("New event ${addResult}")
-                    events.add(addResult.id)
-                  }
-                }
-              }
-              else {
-                if (!errors.to)
-                  errors.to = []
-
-                errors.to << [message: "Unable to lookup title for ${entry}", baddata: entry, code: 404]
-              }
-            }
-          }
-
-          if (event.from instanceof Integer && event.from != ti.id) {
-            TitleInstance cti = TitleInstance.get(event.from)
-
-            if (cti) {
-              if (cti.id != ti.id) {
-                Map addResult = ensureSingleParticipant(ti, 'from', cti, event.date)
-
-                if (addResult.errors) {
-                  errors << addResult.errors
-                }
-                else {
-                  log.debug("New event ${addResult}")
-                  events.add(addResult.id)
-                }
-              }
-            }
-            else {
-              if (!errors.id)
-                errors.from = []
-
-              errors.id << [message: "Unable to lookup title for ID ${from_entry.id}", baddata: entry, code: 404]
-            }
-          } else if (event.to instanceof Integer && event.to != ti.id) {
-            TitleInstance cti = TitleInstance.get(event.from)
-
-            if (cti) {
-              if (cti.id != ti.id) {
-                Map addResult = ensureSingleParticipant(ti, 'from', cti, event.date)
-
-                if (addResult.errors) {
-                  errors << addResult.errors
-                }
-                else {
-                  log.debug("New event ${addResult}")
-                  events.add(addResult.id)
-                }
-              }
-            }
-            else {
-              if (!errors.id)
-                errors.from = []
-
-              errors.id << [message: "Unable to lookup title for ID ${from_entry.id}", baddata: entry, code: 404]
-            }
-          }
+          result.changed |= handleEventPart(ti, 'from', allow_lookups, event.date, event.from, events, lookedUpIds, errors)
+          result.changed |= handleEventPart(ti, 'to', allow_lookups, event.date, event.to, events, lookedUpIds, errors)
         }
       }
 
@@ -283,6 +143,7 @@ class TitleHistoryService {
           if (!events.find { it == ce.id }) {
             ComponentHistoryEvent event = ComponentHistoryEvent.get(ce.id)
             event.delete(flush:true, failOnError:true)
+            result.changed = true
           }
         }
       }
@@ -296,8 +157,117 @@ class TitleHistoryService {
     result
   }
 
-  public Map ensureSingleParticipant(ti, type, participant, date) {
-    Map result = [:]
+  private boolean handleEventPart(ti, type, allow_lookups, event_date, info, events, lookedUpIds, errors) {
+    boolean result = false
+
+    if (info instanceof List) {
+      info.each { entry ->
+        TitleInstance cti
+        boolean lookup_by_find = false
+
+        if (entry instanceof Integer || entry instanceof Long) {
+          if (entry == ti.id) {
+            cti = ti
+          }
+          else {
+            cti = ti.class.get(entry)
+          }
+        }
+        else if (entry instanceof Map) {
+          if (entry.id == ti.id || entry.uuid == ti.uuid) {
+            cti = ti
+          }
+          else if (entry.uuid) {
+            cti = ti.class.findByUuid(entry.uuid)
+          }
+          else if (entry.id) {
+            cti = ti.class.get(entry.id)
+          }
+          else if (allow_lookups && entry.name) {
+            lookup_by_find = true
+
+            Map lookup_result = titleLookupService.find(
+              entry.name,
+              null,
+              (entry.ids ?: entry.identifiers),
+              ti.class.name
+            )
+
+            if (lookup_result.to_create) {
+              log.debug("Unable to reference title")
+            }
+            else if (title_lookup.matches.size() == 1) {
+              cti = title_lookup.matches[0].object
+            }
+          }
+        }
+
+        if (cti) {
+          if (!lookedUpIds.contains(cti.id)) {
+            lookedUpIds.add(cti.id)
+          }
+          else {
+            if (!errors[type])
+              errors[type] = []
+
+            errors[type] << [message: "Multiple instances of title ${cti.id} in event participants!", baddata: entry, code: 404]
+          }
+
+          if (cti.id != ti.id) {
+            Map addResult = ensureSingleParticipant(ti, type, cti, event_date)
+
+            if (addResult.errors) {
+              errors << addResult.errors
+            }
+            else {
+              log.debug("New event ${addResult}")
+              events.add(addResult.id)
+
+              result |= addResult.created
+            }
+          }
+        }
+        else if (!lookup_by_find) {
+          if (!errors[type])
+            errors[type] = []
+
+          errors[type] << [message: "Unable to lookup title for ${entry}", baddata: entry, code: 404]
+        }
+      }
+    }
+    else if ((info instanceof Integer || info instanceof Long)) {
+      if (info != ti.id) {
+        TitleInstance cti = ti.class.get(info)
+
+        if (cti) {
+          if (cti.id != ti.id) {
+            Map addResult = ensureSingleParticipant(ti, type, cti, event_date)
+
+            if (addResult.errors) {
+              errors << addResult.errors
+            }
+            else {
+              log.debug("New event ${addResult}")
+              events.add(addResult.id)
+
+              result |= addResult.created
+            }
+          }
+        }
+        else {
+          if (!errors.id)
+            errors[type] = []
+
+          errors.id << [message: "Unable to lookup title for ID ${entry.id}", baddata: entry, code: 404]
+        }
+      }
+    }
+
+    result
+  }
+
+  public Map ensureSingleParticipant(TitleInstance ti, String type, TitleInstance participant, String date) {
+    Map result = [created: false]
     String dupe_hql = '''select che from ComponentHistoryEvent as che
                           where exists (
                             select pf.id from ComponentHistoryEventParticipant as pf
@@ -338,6 +308,7 @@ class TitleHistoryService {
       }
       else {
         result.id = add_result.new_events[0]
+        result.created = true
       }
     }
     else {
