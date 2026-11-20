@@ -4,8 +4,12 @@ import groovy.util.logging.*
 
 import org.gokb.GOKbTextUtils
 
+import java.time.LocalDateTime
+
 @Slf4j
 class JournalInstance extends TitleInstance {
+
+  LocalDateTime lastZdbSync
 
   private static refdataDefaults = [
     "TitleInstance.medium"		: "Journal"
@@ -16,6 +20,7 @@ class JournalInstance extends TitleInstance {
   }
 
   static constraints = {
+    lastZdbSync(nullable:true, blank:true)
   }
 
   @Override
