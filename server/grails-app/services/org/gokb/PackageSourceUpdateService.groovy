@@ -89,6 +89,7 @@ class PackageSourceUpdateService {
     def startTime = new Date()
     def ftpUrlParts
     List<URL> urls
+    Boolean kbartRetryAfterAccessDenied
 
     Package.withNewSession {
       Package p = Package.get(pid)
@@ -100,6 +101,7 @@ class PackageSourceUpdateService {
       title_ns_id = pkg_source?.targetNamespace?.id ?: null
       title_ns_serial_id = pkg_source?.titleIdSerial?.id ?: null
       title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: null
+      kbartRetryAfterAccessDenied = pkg_prov?.kbartRetryAfterAccessDenied ?: false
 
       if ( restrictSize ) {
         def ignoreSizeLimit = pkg_source?.getIgnoreSizeLimit()
@@ -168,7 +170,7 @@ class PackageSourceUpdateService {
                 log.debug("Fetching URL " + urls.get(i))
                 file_info = fetchKbartFile(tmp_file, urls.get(i), restrictSize)
 
-                processErrorState(result, pkg_source, file_info)
+                processErrorState(result, pkg_source, file_info, kbartRetryAfterAccessDenied)
 
                 if (result.result == 'ERROR') {
                   result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
@@ -492,7 +494,7 @@ class PackageSourceUpdateService {
     return urls
   }
 
-  private void processErrorState(result, pkg_source, file_info) {
+  private void processErrorState(result, pkg_source, file_info, Boolean kbartRetryAfterAccessDenied) {
     if (file_info.connectError) {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.url.connection'
@@ -519,16 +521,19 @@ class PackageSourceUpdateService {
     else if (file_info.status && file_info.status != 404) {
       log.debug("URL request failed (status ${file_info.status})!")
 
-      if (file_info.status == 403 || file_info.status == 401) {
+      if ((file_info.status == 403 && !kbartRetryAfterAccessDenied) || file_info.status == 401) {
         result.result = 'ERROR'
         result.messageCode = 'kbart.errors.url.denied'
         result.message = "URL request was denied (status ${file_info.status}), skipping further tries!"
 
+        // Disabled because too severe
+        /*
         if (pkg_source.automaticUpdates) {
           log.debug("Deactivate automated updating ..")
           pkg_source.automaticUpdates = false
           pkg_source.save(flush: true)
         }
+        */
       }
       else if (file_info.status >= 500) {
         result.result = 'ERROR'
@@ -555,8 +560,8 @@ class PackageSourceUpdateService {
       HttpHead httpHead = new HttpHead(src_url.toURI())
       HttpGet httpGet = new HttpGet(src_url.toURI())
 
-      httpHead.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater")
-      httpGet.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater")
+      httpHead.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater, https://gokb.org")
+      httpGet.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater, https://gokb.org")
 
       httpClient.execute(httpHead, classicHttpResponse -> {
         int code = classicHttpResponse.getStatusLine().getStatusCode()
