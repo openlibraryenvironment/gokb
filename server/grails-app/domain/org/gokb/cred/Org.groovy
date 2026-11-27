@@ -39,6 +39,7 @@ class Org extends KBComponent {
   Date importInfoLastUpdated
   RefdataValue kbartScope
   RefdataValue kbartPublicationType
+  Boolean kbartRetryAfterAccessDenied = false
 
 
 
@@ -136,7 +137,9 @@ class Org extends KBComponent {
   }
 
   static jsonMapping = [
-    'ignore'       : [],
+    'ignore'       : [
+      'kbartRetryAfterAccessDenied'
+    ],
     'es'           : [],
     'defaultLinks' : [],
     'defaultEmbeds': [

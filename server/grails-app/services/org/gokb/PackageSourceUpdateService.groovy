@@ -3,6 +3,7 @@ package org.gokb
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
+import grails.core.GrailsApplication
 import grails.util.Environment
 import groovy.util.logging.Slf4j
 import org.apache.commons.net.ftp.FTPClient
@@ -37,6 +38,8 @@ import java.util.stream.Collectors
 
 @Slf4j
 class PackageSourceUpdateService {
+
+  GrailsApplication grailsApplication
   def concurrencyManagerService
   def TSVIngestionService
   def validationService
@@ -66,8 +69,7 @@ class PackageSourceUpdateService {
       if (job && !job.endTime) {
         job.endTime = new Date()
       }
-    }
-    else {
+    } else {
       log.error("update skipped - already running")
       result.result = 'ALREADY_RUNNING'
     }
@@ -89,6 +91,7 @@ class PackageSourceUpdateService {
     def startTime = new Date()
     def ftpUrlParts
     List<URL> urls
+    Boolean kbartRetryAfterAccessDenied
 
     Package.withNewSession {
       Package p = Package.get(pid)
@@ -100,8 +103,9 @@ class PackageSourceUpdateService {
       title_ns_id = pkg_source?.targetNamespace?.id ?: null
       title_ns_serial_id = pkg_source?.titleIdSerial?.id ?: null
       title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: null
+      kbartRetryAfterAccessDenied = pkg_prov?.kbartRetryAfterAccessDenied ?: false
 
-      if ( restrictSize ) {
+      if (restrictSize) {
         def ignoreSizeLimit = pkg_source?.getIgnoreSizeLimit()
         restrictSize = !ignoreSizeLimit
       }
@@ -111,7 +115,7 @@ class PackageSourceUpdateService {
       }
 
       isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value == "WEKB")
-      if ( isExternalSourceImportOrUpdate ) {
+      if (isExternalSourceImportOrUpdate) {
         result = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, p, job, async, restrictSize)
 
       } else {
@@ -124,7 +128,7 @@ class PackageSourceUpdateService {
           Boolean dynamic_date = false
           String completeFtpUrl = null
 
-          if(isFtpTransfer){
+          if (isFtpTransfer) {
             ftpUrlParts = webEndpointService.extractFtpUrlParts(pkg_source.getWebEndpoint()?.getUrl(), pkg_source.getFtpPath())
             completeFtpUrl = ftpUrlParts.complete
           }
@@ -139,8 +143,7 @@ class PackageSourceUpdateService {
             urls = findUrlsToCall(valid_url_string, pkg_source, isFtpTransfer)
             src_url = urls.get(0)
 
-          }
-          else {
+          } else {
             log.debug("No source URL!")
             result.result = 'ERROR'
             result.messageCode = 'kbart.errors.url.invalid'
@@ -157,18 +160,17 @@ class PackageSourceUpdateService {
             pkg_source.lastRun = new Date()
             pkg_source.save(flush: true)
 
-            if ( isFtpTransfer ) {
-                log.debug("Start FTP Update from Source " + pkg_source )
-                ftpUrlParts["complete"] = src_url.toString()
-                file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, restrictSize)
-            }
-            else { // start not-FTP
+            if (isFtpTransfer) {
+              log.debug("Start FTP Update from Source " + pkg_source)
+              ftpUrlParts["complete"] = src_url.toString()
+              file_info = fetchKbartFileFromFTPServer(tmp_file, pkg_source, ftpUrlParts, restrictSize)
+            } else { // start not-FTP
 
-              for(int i = 0; i < urls.size(); i++) {
+              for (int i = 0; i < urls.size(); i++) {
                 log.debug("Fetching URL " + urls.get(i))
                 file_info = fetchKbartFile(tmp_file, urls.get(i), restrictSize)
 
-                processErrorState(result, pkg_source, file_info)
+                processErrorState(result, pkg_source, file_info, kbartRetryAfterAccessDenied)
 
                 if (result.result == 'ERROR') {
                   result.jobInfo = createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
@@ -179,15 +181,13 @@ class PackageSourceUpdateService {
                   // set lastFoundFile property
                   if (extractDateFromUrl(file_info.file_name) != null) {
                     pkg_source.lastImportFileDate = extractDateFromUrl(file_info.file_name)
-                  }
-                  else {
+                  } else {
                     pkg_source.lastImportFileDate = LocalDate.now()
                   }
 
                   pkg_source.save(flush: true)
                   break
-                }
-                else {
+                } else {
                   sleep(500)
                 }
 
@@ -284,8 +284,7 @@ class PackageSourceUpdateService {
 
               return result
             }
-          }
-          else {
+          } else {
             result.result = 'ERROR'
             result.messageCode = 'kbart.errors.url.protocol'
             result.message = "KBART URL has an unsupported protocol!"
@@ -295,8 +294,7 @@ class PackageSourceUpdateService {
 
             return result
           }
-        }
-        else {
+        } else {
           log.debug("No source URL!")
           result.result = 'ERROR'
           result.messageCode = 'kbart.errors.url.missing'
@@ -310,34 +308,33 @@ class PackageSourceUpdateService {
     if (datafile_id) {
       if (job) {
         result = TSVIngestionService.updatePackage(pid,
-                                                    datafile_id,
-                                                    title_ns_id,
-                                                    async,
-                                                    false,
-                                                    user,
-                                                    preferred_group,
-                                                    dryRun,
-                                                    skipInvalid,
-                                                    deleteMissing,
-                                                    job,
-                                                    title_ns_serial_id,
-                                                    title_ns_mono_id)
-      }
-      else {
+                datafile_id,
+                title_ns_id,
+                async,
+                false,
+                user,
+                preferred_group,
+                dryRun,
+                skipInvalid,
+                deleteMissing,
+                job,
+                title_ns_serial_id,
+                title_ns_mono_id)
+      } else {
         Job update_job = concurrencyManagerService.createJob { Job j ->
           TSVIngestionService.updatePackage(pid,
-                                            datafile_id,
-                                            title_ns_id,
-                                            async,
-                                            false,
-                                            user,
-                                            preferred_group,
-                                            dryRun,
-                                            skipInvalid,
-                                            deleteMissing,
-                                            j,
-                                            title_ns_serial_id,
-                                            title_ns_mono_id)
+                  datafile_id,
+                  title_ns_id,
+                  async,
+                  false,
+                  user,
+                  preferred_group,
+                  dryRun,
+                  skipInvalid,
+                  deleteMissing,
+                  j,
+                  title_ns_serial_id,
+                  title_ns_mono_id)
         }
 
         if (preferred_group) {
@@ -361,8 +358,7 @@ class PackageSourceUpdateService {
           log.error("Package import threw an exception!", e)
         }
       }
-    }
-    else if (!isExternalSourceImportOrUpdate && result.result != 'SKIPPED') {
+    } else if (!isExternalSourceImportOrUpdate && result.result != 'SKIPPED') {
       log.debug("Unable to reference DataFile")
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.url.unknown'
@@ -383,7 +379,7 @@ class PackageSourceUpdateService {
     return extractedDate
   }
 
-  List<URL> findUrlsToCall (String givenUrl, Source source, boolean isFtpTransfer) {
+  List<URL> findUrlsToCall(String givenUrl, Source source, boolean isFtpTransfer) {
     List<URL> urls = new ArrayList<>()
     boolean dynamic_date = false
     boolean fixed_date = false
@@ -396,8 +392,7 @@ class PackageSourceUpdateService {
       log.debug("URL contains date Mask ..")
       givenUrl = givenUrl.replace('{YYYY-MM-DD}', local_date_string)
       dynamic_date = true
-    }
-    else {
+    } else {
       if (extractDateFromUrl(givenUrl)) {
         log.debug("URL contains fix date ..")
         fixed_date = true
@@ -406,7 +401,7 @@ class PackageSourceUpdateService {
 
     urls.add(new URL(givenUrl))
 
-    if(!isFtpTransfer && (dynamic_date || fixed_date) && source.frequency) {
+    if (!isFtpTransfer && (dynamic_date || fixed_date) && source.frequency) {
 
       // search for the file in most likely order
       Map<String, Integer> maxCallsPerFrequency = [
@@ -492,7 +487,7 @@ class PackageSourceUpdateService {
     return urls
   }
 
-  private void processErrorState(result, pkg_source, file_info) {
+  private void processErrorState(result, pkg_source, file_info, boolean kbartRetryAfterAccessDenied) {
     if (file_info.connectError) {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.url.connection'
@@ -510,27 +505,27 @@ class PackageSourceUpdateService {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.url.html'
       result.message = "URL returned HTML, indicating provider configuration issues!"
-    }
-    else if (file_info.mimeTypeError) {
+    } else if (file_info.mimeTypeError) {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.url.mimeType'
       result.message = "KBART URL returned a wrong content type!"
-    }
-    else if (file_info.status && file_info.status != 404) {
+    } else if (file_info.status && file_info.status != 404) {
       log.debug("URL request failed (status ${file_info.status})!")
 
-      if (file_info.status == 403 || file_info.status == 401) {
+      if ((file_info.status == 403 && !kbartRetryAfterAccessDenied) || file_info.status == 401) {
         result.result = 'ERROR'
         result.messageCode = 'kbart.errors.url.denied'
         result.message = "URL request was denied (status ${file_info.status}), skipping further tries!"
 
+        // Disabled because too severe
+        /*
         if (pkg_source.automaticUpdates) {
           log.debug("Deactivate automated updating ..")
           pkg_source.automaticUpdates = false
           pkg_source.save(flush: true)
         }
-      }
-      else if (file_info.status >= 500) {
+        */
+      } else if (file_info.status >= 500) {
         result.result = 'ERROR'
         result.messageCode = 'kbart.errors.url.serverError'
         result.message = "URL request returned status ${file_info.status}, skipping further tries!"
@@ -555,16 +550,20 @@ class PackageSourceUpdateService {
       HttpHead httpHead = new HttpHead(src_url.toURI())
       HttpGet httpGet = new HttpGet(src_url.toURI())
 
-      httpHead.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater")
-      httpGet.setHeader(HttpHeaders.USER_AGENT, "GOKB KBART Updater")
+      String gokbUserAgent = "GOKB KBART Updater (+https://gokb.org".concat(
+              grailsApplication.config.getProperty('gokb.support.emailTo') ?
+                      "; mailto:" + grailsApplication.config.getProperty('gokb.support.emailTo') : ""
+      ).concat(")")
+
+      httpHead.setHeader(HttpHeaders.USER_AGENT, gokbUserAgent)
+      httpGet.setHeader(HttpHeaders.USER_AGENT, gokbUserAgent)
 
       httpClient.execute(httpHead, classicHttpResponse -> {
         int code = classicHttpResponse.getStatusLine().getStatusCode()
 
         if (code == 405) {
           log.debug("Unable to send HEAD request ..")
-        }
-        else if (code) {
+        } else if (code) {
           content_length = classicHttpResponse.containsHeader('Content-Length') ? Long.valueOf(classicHttpResponse.getFirstHeader('Content-Length').getValue()) : null
         }
 
@@ -582,8 +581,7 @@ class PackageSourceUpdateService {
 
         if (file_name?.contains('filename=')) {
           file_name = file_name.split('filename=')[1]
-        }
-        else if (file_name?.contains('filename*=')) {
+        } else if (file_name?.contains('filename*=')) {
           file_name = file_name.split('filename*=')[1].split("'")[2]
         }
 
@@ -594,11 +592,9 @@ class PackageSourceUpdateService {
 
           result.status = code
           return result
-        }
-        else if (!file_name && result.content_mime_type?.startsWith('text/plain')) {
+        } else if (!file_name && result.content_mime_type?.startsWith('text/plain')) {
           file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
-        }
-        else if (!file_name && result.content_mime_type?.startsWith('text/html')) {
+        } else if (!file_name && result.content_mime_type?.startsWith('text/html')) {
           log.warn("Got HTML result at KBART URL ${src_url}!")
           result.accessError = true
           return result
@@ -608,8 +604,7 @@ class PackageSourceUpdateService {
 
         if (restrictSize && content_length && content_length > max_length) {
           result.fileSizeError = true
-        }
-        else if (file_name?.trim()) {
+        } else if (file_name?.trim()) {
           file_name = file_name.replaceAll(/\"/, '')
 
           if ((file_name?.trim()?.endsWith('.tsv') || file_name?.trim()?.endsWith('.txt') || file_name?.trim()?.endsWith('.kbart')) &&
@@ -626,7 +621,7 @@ class PackageSourceUpdateService {
                 int bytesRead;
                 Long current_total = 0;
 
-                while((bytesRead = inputStream.read(dataBuffer)) != -1) {
+                while ((bytesRead = inputStream.read(dataBuffer)) != -1) {
                   fileOutputStream.write(dataBuffer, 0, bytesRead);
 
                   current_total += bytesRead
@@ -646,8 +641,7 @@ class PackageSourceUpdateService {
                 tmp_file.delete()
               }
             }
-          }
-          else {
+          } else {
             result.mimeTypeError = true
           }
         }
@@ -669,7 +663,7 @@ class PackageSourceUpdateService {
                                               where c.type = :ct
                                               and c.fromComponent.id = :pkg
                                               order by c.dateCreated desc''',
-                                              [ct: type_fa, pkg: pkgId])
+            [ct: type_fa, pkg: pkgId])
 
     return (ordered_combos.size() == 0 || ordered_combos[0] != datafileId)
   }
@@ -680,30 +674,29 @@ class PackageSourceUpdateService {
 
     if (job) {
       job_map = [
-        uuid        : (job_uuid),
-        description : (job.description),
-        resultObject: (result as JSON).toString(),
-        type        : (job.type),
-        statusText  : (result.result),
-        ownerId     : (job.ownerId),
-        groupId     : (job.groupId),
-        startTime   : (job.startTime),
-        endTime     : (new Date()),
-        linkedItemId: (job.linkedItem?.id)
+              uuid        : (job_uuid),
+              description : (job.description),
+              resultObject: (result as JSON).toString(),
+              type        : (job.type),
+              statusText  : (result.result),
+              ownerId     : (job.ownerId),
+              groupId     : (job.groupId),
+              startTime   : (job.startTime),
+              endTime     : (new Date()),
+              linkedItemId: (job.linkedItem?.id)
       ]
-    }
-    else {
+    } else {
       job_map = [
-        uuid        : (job_uuid),
-        description : ("KBART Source ingest (${pkg.name})".toString()),
-        resultObject: (result as JSON).toString(),
-        type        : (dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')),
-        statusText  : (result.result),
-        ownerId     : (ownerId),
-        groupId     : (groupId),
-        startTime   : (startTime),
-        endTime     : (new Date()),
-        linkedItemId: (pkg.id)
+              uuid        : (job_uuid),
+              description : ("KBART Source ingest (${pkg.name})".toString()),
+              resultObject: (result as JSON).toString(),
+              type        : (dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')),
+              statusText  : (result.result),
+              ownerId     : (ownerId),
+              groupId     : (groupId),
+              startTime   : (startTime),
+              endTime     : (new Date()),
+              linkedItemId: (pkg.id)
       ]
     }
 
@@ -711,8 +704,7 @@ class PackageSourceUpdateService {
 
     if (!result_object) {
       def jr = new JobResult(job_map).save(flush: true, failOnError: true)
-    }
-    else {
+    } else {
       job_map.each { k, v ->
         result_object[k] = v
         result_object.save(flush: true)
@@ -720,133 +712,127 @@ class PackageSourceUpdateService {
     }
 
     def info_map = [
-      uuid: job_map.uuid,
-      groupId: job_map.groupId,
-      linkedItemId: pkg.id,
-      linkedItemName: pkg.name,
-      startTime: job_map.startTime,
-      endTime: job_map.endTime,
-      messageCode: result.messageCode
+            uuid          : job_map.uuid,
+            groupId       : job_map.groupId,
+            linkedItemId  : pkg.id,
+            linkedItemName: pkg.name,
+            startTime     : job_map.startTime,
+            endTime       : job_map.endTime,
+            messageCode   : result.messageCode
     ]
 
     return info_map
   }
 
-  def fetchKbartFileFromFTPServer (File tmp_file, Source source, def urlParts, boolean restrictSize = true) {
+  def fetchKbartFileFromFTPServer(File tmp_file, Source source, def urlParts, boolean restrictSize = true) {
 
-      def result = [content_mime_type: null, file_name: null]
-      Long max_length = 20971520L // 1024 * 1024 * 20
+    def result = [content_mime_type: null, file_name: null]
+    Long max_length = 20971520L // 1024 * 1024 * 20
 
-      FTPClient ftp = new FTPClient()
-      FTPClientConfig config = new FTPClientConfig()
+    FTPClient ftp = new FTPClient()
+    FTPClientConfig config = new FTPClientConfig()
 
-      String username = source.getWebEndpoint().getEpUsername()
-      String password = source.getWebEndpoint().getEpPassword()
+    String username = source.getWebEndpoint().getEpUsername()
+    String password = source.getWebEndpoint().getEpPassword()
 
-      String hostname = urlParts.hostname
-      String directory = urlParts.directory
-      String filename = urlParts.filename
-      String foundFileName = null
-      FTPFile foundFile = null
-      boolean isUrlWithDate = false
+    String hostname = urlParts.hostname
+    String directory = urlParts.directory
+    String filename = urlParts.filename
+    String foundFileName = null
+    FTPFile foundFile = null
+    boolean isUrlWithDate = false
 
-      if (extractDateFromUrl(urlParts.complete)) {
-        // in case of date mask, the pattern in the filename is already replaced by the actual date
-        String[] parts = urlParts.complete.split("/")
-        filename = parts[parts.length - 1]
-        isUrlWithDate = true
+    if (extractDateFromUrl(urlParts.complete)) {
+      // in case of date mask, the pattern in the filename is already replaced by the actual date
+      String[] parts = urlParts.complete.split("/")
+      filename = parts[parts.length - 1]
+      isUrlWithDate = true
+    }
+
+    try {
+      // for integration test purpose
+      if (Environment.current == Environment.TEST) {
+        ftp.connect(hostname, 12345)
+      } else {
+        ftp.connect(hostname)
+      }
+      ftp.enterLocalPassiveMode()
+      def loggedIn = ftp.login(username, password)
+
+      if (ftp.isConnected()) {
+
+        ftp.changeWorkingDirectory(directory)
+        List files
+
+        if (isUrlWithDate) {
+
+          def dateMaskMatch = (filename =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
+          String matchedDate = dateMaskMatch[0][1]
+          String fixFilenamePart = filename.substring(0, filename.indexOf(matchedDate))
+
+          files = ftp.listFiles().toList()
+          List unorderedRes = files.stream().filter(f ->
+                  f.name =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN && f.name.startsWith(fixFilenamePart))
+                  .collect(Collectors.toList())
+          List res = unorderedRes.sort((f1, f2) -> f1.getName().compareTo(f2.getName()))
+
+          // file with latest date is the last in list res
+          if (res.size() > 0) {
+            foundFile = res.get(res.size() - 1)
+            foundFileName = foundFile.name
+          }
+        } else {
+          files = ftp.listFiles(filename).toList()
+          if (files.size() > 0) {
+            foundFile = files.get(0)
+            foundFileName = filename
+          }
+        }
+
+
+        if (foundFile) {
+
+          Long foundFileSize = foundFile.getSize()
+          if (foundFileSize > max_length && restrictSize) {
+            result.fileSizeError = true
+            result.result = 'ERROR'
+            result.messageCode = 'kbart.errors.url.fileSize'
+            result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
+
+            tmp_file.delete()
+
+            return result
+          }
+
+          result.file_name = foundFileName
+
+          InputStream is = ftp.retrieveFileStream(foundFileName)
+          OutputStream outStream = new FileOutputStream(tmp_file)
+
+          byte[] buffer = new byte[1024];
+          for (int length; (length = is.read(buffer)) != -1;) {
+            outStream.write(buffer, 0, length);
+          }
+
+          outStream.close()
+
+        } else {
+          // no filename --> handled in calling method
+
+        }
+
+        ftp.logout()
+        ftp.disconnect()
       }
 
-      try {
-        // for integration test purpose
-        if (Environment.current == Environment.TEST) {
-          ftp.connect(hostname, 12345)
-        }
-        else {
-          ftp.connect(hostname)
-        }
-        ftp.enterLocalPassiveMode()
-        def loggedIn = ftp.login(username, password)
+    } catch (Exception e) {
+      log.error("Fehler bei FTP-Verbindung ", e)
 
-        if (ftp.isConnected()) {
+    }
 
-          ftp.changeWorkingDirectory(directory)
-          List files
-
-          if(isUrlWithDate) {
-
-            def dateMaskMatch = (filename =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
-            String matchedDate = dateMaskMatch[0][1]
-            String fixFilenamePart = filename.substring(0, filename.indexOf(matchedDate))
-
-            files = ftp.listFiles().toList()
-            List unorderedRes = files.stream().filter(f ->
-                    f.name =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN && f.name.startsWith(fixFilenamePart))
-                    .collect(Collectors.toList())
-            List res = unorderedRes.sort((f1, f2) -> f1.getName().compareTo(f2.getName()))
-
-            // file with latest date is the last in list res
-            if(res.size() > 0) {
-              foundFile = res.get(res.size() - 1)
-              foundFileName = foundFile.name
-            }
-          }
-          else {
-            files = ftp.listFiles(filename).toList()
-            if(files.size() > 0) {
-              foundFile = files.get(0)
-              foundFileName = filename
-            }
-          }
-
-
-          if(foundFile){
-
-            Long foundFileSize = foundFile.getSize()
-            if(foundFileSize > max_length && restrictSize){
-              result.fileSizeError = true
-              result.result = 'ERROR'
-              result.messageCode = 'kbart.errors.url.fileSize'
-              result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
-
-              tmp_file.delete()
-
-              return result
-            }
-
-            result.file_name = foundFileName
-
-            InputStream is = ftp.retrieveFileStream(foundFileName)
-            OutputStream outStream = new FileOutputStream(tmp_file)
-
-            byte[] buffer = new byte[1024];
-            for (int length; (length = is.read(buffer)) != -1; ) {
-              outStream.write(buffer, 0, length);
-            }
-
-            outStream.close()
-
-          }
-          else {
-            // no filename --> handled in calling method
-
-          }
-
-          ftp.logout()
-          ftp.disconnect()
-        }
-
-      } catch (Exception e) {
-          log.error("Fehler bei FTP-Verbindung ", e)
-
-      }
-
-      return result
+    return result
 
   }
-
-
-
 
 
 }
